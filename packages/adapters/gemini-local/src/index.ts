@@ -11,37 +11,37 @@ export const models = [
   { id: "gemini-2.0-flash-lite", label: "Gemini 2.0 Flash Lite" },
 ];
 
-export const agentConfigurationDoc = `# gemini_local agent configuration
+export const agentConfigurationDoc = `# Configuración del agente gemini_local
 
-Adapter: gemini_local
+Adaptador: gemini_local
 
-Use when:
-- You want Paperclip to run the Gemini CLI locally on the host machine
-- You want Gemini chat sessions resumed across heartbeats with --resume
-- You want Paperclip skills injected locally without polluting the global environment
+Casos de uso:
+- Quieres que Paperclip ejecute la CLI de Gemini localmente en la máquina anfitriona
+- Quieres reanudar las sesiones de chat de Gemini entre latidos con --resume
+- Quieres inyectar las habilidades de Paperclip localmente sin contaminar el entorno global
 
-Don't use when:
-- You need webhook-style external invocation (use http or openclaw_gateway)
-- You only need a one-shot script without an AI coding agent loop (use process)
-- Gemini CLI is not installed on the machine that runs Paperclip
+No usar cuando:
+- Necesitas invocación externa tipo webhook (usa http u openclaw_gateway)
+- Solo necesitas un script de una sola ejecución sin el ciclo de un agente de código con IA (usa process)
+- La CLI de Gemini no está instalada en la máquina que ejecuta Paperclip
 
-Core fields:
-- cwd (string, optional): default absolute working directory fallback for the agent process (created if missing when possible)
-- instructionsFilePath (string, optional): absolute path to a markdown instructions file prepended to the run prompt
-- promptTemplate (string, optional): run prompt template
-- model (string, optional): Gemini model id. Defaults to auto.
-- sandbox (boolean, optional): run in sandbox mode (default: false, passes --sandbox=none)
-- command (string, optional): defaults to "gemini"
-- extraArgs (string[], optional): additional CLI args
-- env (object, optional): KEY=VALUE environment variables
+Campos principales:
+- cwd (string, optional): directorio de trabajo absoluto predeterminado de reserva para el proceso del agente (se crea si falta cuando es posible)
+- instructionsFilePath (string, optional): ruta absoluta a un archivo markdown de instrucciones que se antepone al prompt de la ejecución
+- promptTemplate (string, optional): plantilla del prompt de la ejecución
+- model (string, optional): id del modelo de Gemini. Predeterminado: auto.
+- sandbox (boolean, optional): ejecutar en modo sandbox (predeterminado: false, pasa --sandbox=none)
+- command (string, optional): valor predeterminado "gemini"
+- extraArgs (string[], optional): argumentos adicionales de la CLI
+- env (object, optional): variables de entorno CLAVE=VALOR
 
-Operational fields:
-- timeoutSec (number, optional): run timeout in seconds
-- graceSec (number, optional): SIGTERM grace period in seconds
+Campos operativos:
+- timeoutSec (number, optional): tiempo máximo de ejecución en segundos
+- graceSec (number, optional): período de gracia de SIGTERM en segundos
 
-Notes:
-- Runs use positional prompt arguments, not stdin.
-- Sessions resume with --resume when stored session cwd matches the current cwd.
-- Paperclip auto-injects local skills into \`~/.gemini/skills/\` via symlinks, so the CLI can discover both credentials and skills in their natural location.
-- Authentication can use GEMINI_API_KEY / GOOGLE_API_KEY or local Gemini CLI login.
+Notas:
+- Las ejecuciones usan argumentos posicionales de prompt, no stdin.
+- Las sesiones se reanudan con --resume cuando el cwd de la sesión guardada coincide con el cwd actual.
+- Paperclip inyecta automáticamente las habilidades locales en \`~/.gemini/skills/\` mediante enlaces simbólicos, para que la CLI descubra las credenciales y las habilidades en su ubicación natural.
+- La autenticación puede usar GEMINI_API_KEY / GOOGLE_API_KEY o el inicio de sesión local de la CLI de Gemini.
 `;

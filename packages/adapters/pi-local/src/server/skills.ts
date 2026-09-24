@@ -42,9 +42,9 @@ async function buildPiSkillSnapshot(config: Record<string, unknown>): Promise<Ad
     installed,
     skillsHome,
     locationLabel: "~/.pi/agent/skills",
-    missingDetail: "Configured but not currently linked into the Pi skills home.",
-    externalConflictDetail: "Skill name is occupied by an external installation.",
-    externalDetail: "Installed outside Paperclip management.",
+    missingDetail: "Configurada, pero no enlazada actualmente en el directorio de habilidades de Pi.",
+    externalConflictDetail: "El nombre de la habilidad está ocupado por una instalación externa.",
+    externalDetail: "Instalada fuera de la gestión de Paperclip.",
   });
 }
 

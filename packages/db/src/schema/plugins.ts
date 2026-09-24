@@ -11,12 +11,12 @@ import {
 import type { PluginCategory, PluginStatus, PaperclipPluginManifestV1 } from "@paperclipai/shared";
 
 /**
- * `plugins` table — stores one row per installed plugin.
+ * Tabla `plugins`: almacena una fila por cada plugin instalado.
  *
- * Each plugin is uniquely identified by `plugin_key` (derived from
- * the manifest `id`). The full manifest is persisted as JSONB in
- * `manifest_json` so the host can reconstruct capability and UI
- * slot information without loading the plugin package.
+ * Cada plugin se identifica de forma única por `plugin_key` (derivado del
+ * `id` del manifiesto). El manifiesto completo se persiste como JSONB en
+ * `manifest_json` para que el host pueda reconstruir la información de capacidades e
+ * interfaz sin cargar el paquete del plugin.
  *
  * @see PLUGIN_SPEC.md §21.3
  */
@@ -32,7 +32,7 @@ export const plugins = pgTable(
     manifestJson: jsonb("manifest_json").$type<PaperclipPluginManifestV1>().notNull(),
     status: text("status").$type<PluginStatus>().notNull().default("installed"),
     installOrder: integer("install_order"),
-    /** Resolved package path for local-path installs; used to find worker entrypoint. */
+    /** Ruta resuelta del paquete para instalaciones de ruta local; se usa para encontrar el punto de entrada del worker. */
     packagePath: text("package_path"),
     lastError: text("last_error"),
     installedAt: timestamp("installed_at", { withTimezone: true }).notNull().defaultNow(),

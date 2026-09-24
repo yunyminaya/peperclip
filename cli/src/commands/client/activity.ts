@@ -17,16 +17,16 @@ interface ActivityListOptions extends BaseClientOptions {
 }
 
 export function registerActivityCommands(program: Command): void {
-  const activity = program.command("activity").description("Activity log operations");
+  const activity = program.command("activity").description("Operaciones del registro de actividad");
 
   addCommonClientOptions(
     activity
       .command("list")
-      .description("List company activity log entries")
-      .requiredOption("-C, --company-id <id>", "Company ID")
-      .option("--agent-id <id>", "Filter by agent ID")
-      .option("--entity-type <type>", "Filter by entity type")
-      .option("--entity-id <id>", "Filter by entity ID")
+      .description("Listar entradas del registro de actividad de la empresa")
+      .requiredOption("-C, --company-id <id>", "ID de empresa")
+      .option("--agent-id <id>", "Filtrar por ID de agente")
+      .option("--entity-type <type>", "Filtrar por tipo de entidad")
+      .option("--entity-id <id>", "Filtrar por ID de entidad")
       .action(async (opts: ActivityListOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });

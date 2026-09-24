@@ -1,8 +1,8 @@
-# Example Company Package
+# Paquete de empresa de ejemplo
 
-A minimal but complete example of an agent company package.
+Un ejemplo mínimo pero completo de un paquete de empresa de agentes.
 
-## Directory Structure
+## Estructura de directorios
 
 ```
 lean-dev-shop/
@@ -162,7 +162,7 @@ schedule:
 Review the status of Q2 Launch project. Check progress on all open tasks, identify blockers, and update priorities for the week.
 ```
 
-## skills/code-review/SKILL.md (with external reference)
+## skills/code-review/SKILL.md (con referencia externa)
 
 ```markdown
 ---

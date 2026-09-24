@@ -1,19 +1,19 @@
 /**
- * @fileoverview Plugin UI slot system — dynamic loading, error isolation,
- * and rendering of plugin-contributed UI extensions.
+ * @fileoverview Sistema de slots de UI de plugins — carga dinámica, aislamiento de errores
+ * y renderizado de extensiones de UI aportadas por plugins.
  *
- * Provides:
- * - `usePluginSlots(type, context?)` — React hook that discovers and
- *   filters plugin UI contributions for a given slot type.
- * - `PluginSlotOutlet` — renders all matching slots inline with error
- *   boundary isolation per plugin.
- * - `PluginBridgeScope` — wraps each plugin's component tree to inject
- *   the bridge context (`pluginId`, host context) needed by bridge hooks.
+ * Proporciona:
+ * - `usePluginSlots(type, context?)` — hook de React que descubre y
+ *   filtra las contribuciones de UI de plugins para un tipo de slot dado.
+ * - `PluginSlotOutlet` — renderiza todos los slots coincidentes en línea con aislamiento
+ *   de límite de error por plugin.
+ * - `PluginBridgeScope` — envuelve el árbol de componentes de cada plugin para inyectar
+ *   el contexto del puente (`pluginId`, contexto del host) que necesitan los hooks del puente.
  *
- * Plugin UI modules are loaded via dynamic ESM `import()` from the host's
- * static file server (`/_plugins/:pluginId/ui/:entryFile`). Each module
- * exports named React components that correspond to `ui.slots[].exportName`
- * in the manifest.
+ * Los módulos de UI de plugins se cargan vía `import()` dinámico de ESM desde el servidor
+ * de archivos estáticos del host (`/_plugins/:pluginId/ui/:entryFile`). Cada módulo
+ * exporta componentes de React nombrados que corresponden a `ui.slots[].exportName`
+ * en el manifiesto.
  *
  * @see PLUGIN_SPEC.md §19 — UI Extension Model
  * @see PLUGIN_SPEC.md §19.0.3 — Bundle Serving
@@ -51,7 +51,7 @@ export type PluginSlotContext = {
   projectId?: string | null;
   entityId?: string | null;
   entityType?: PluginUiSlotEntityType | null;
-  /** Parent entity ID for nested slots (e.g. comment annotations within an issue). */
+  /** ID de entidad padre para slots anidados (p. ej. anotaciones de comentarios dentro de un issue). */
   parentEntityId?: string | null;
   projectRef?: string | null;
 };
@@ -92,8 +92,8 @@ type UsePluginSlotsResult = {
 };
 
 /**
- * In-memory registry for plugin UI exports loaded by the host page.
- * Keys are `${pluginKey}:${exportName}` to match manifest slot declarations.
+ * Registro en memoria de las exportaciones de UI de plugins cargadas por la página del host.
+ * Las claves son `${pluginKey}:${exportName}` para coincidir con las declaraciones de slots del manifiesto.
  */
 const registry = new Map<string, RegisteredPluginComponent>();
 
@@ -107,11 +107,11 @@ function requiresEntityType(slotType: PluginUiSlotType): boolean {
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) return error.message;
-  return "Unknown error";
+  return "Error desconocido";
 }
 
 /**
- * Registers a React component export for a plugin UI slot.
+ * Registra una exportación de componente de React para un slot de UI de plugin.
  */
 export function registerPluginReactComponent(
   pluginKey: string,
@@ -125,7 +125,7 @@ export function registerPluginReactComponent(
 }
 
 /**
- * Registers a custom element tag for a plugin UI slot.
+ * Registra una etiqueta de elemento personalizado para un slot de UI de plugin.
  */
 export function registerPluginWebComponent(
   pluginKey: string,
@@ -150,31 +150,31 @@ export function resolveRegisteredPluginComponent(
 }
 
 // ---------------------------------------------------------------------------
-// Plugin module dynamic import loader
+// Cargador dinámico de módulos de plugins con import
 // ---------------------------------------------------------------------------
 
 type PluginLoadState = "idle" | "loading" | "loaded" | "error";
 
 /**
- * Tracks the load state for each plugin's UI module by contribution cache key.
+ * Rastrea el estado de carga del módulo de UI de cada plugin por clave de caché de contribución.
  *
- * Once a plugin module is loaded, all its named exports are inspected and
- * registered into the component `registry` so that `resolveRegisteredComponent`
- * can find them when slots render.
+ * Una vez cargado un módulo de plugin, todas sus exportaciones nombradas se inspeccionan y
+ * se registran en el `registry` de componentes para que `resolveRegisteredComponent`
+ * pueda encontrarlas cuando los slots se rendericen.
  */
 const pluginLoadStates = new Map<string, PluginLoadState>();
 
 /**
- * Promise cache to prevent concurrent duplicate imports for the same plugin.
+ * Caché de promesas para evitar importaciones duplicadas concurrentes del mismo plugin.
  */
 const inflightImports = new Map<string, Promise<void>>();
 
 /**
- * Build the full URL for a plugin's UI entry module.
+ * Construye la URL completa del módulo de entrada de UI de un plugin.
  *
- * The server serves plugin UI bundles at `/_plugins/:pluginId/ui/*`.
- * The `uiEntryFile` from the contribution (typically `"index.js"`) is
- * appended to form the complete import path.
+ * El servidor sirve los bundles de UI de plugins en `/_plugins/:pluginId/ui/*`.
+ * El `uiEntryFile` de la contribución (típicamente `"index.js"`) se
+ * añade para formar la ruta de importación completa.
  */
 function buildPluginModuleKey(contribution: PluginUiContribution): string {
   const cacheHint = contribution.updatedAt ?? contribution.version ?? "0";
@@ -187,25 +187,25 @@ function buildPluginUiUrl(contribution: PluginUiContribution): string {
 }
 
 /**
- * Import a plugin's UI entry module with bare-specifier rewriting.
+ * Importa el módulo de entrada de UI de un plugin con reescritura de especificadores desnudos.
  *
- * Plugin bundles are built with `external: ["@paperclipai/plugin-sdk/ui", "react", "react-dom"]`,
- * so their ESM output contains bare specifier imports like:
+ * Los bundles de plugins se construyen con `external: ["@paperclipai/plugin-sdk/ui", "react", "react-dom"]`,
+ * por lo que su salida ESM contiene importaciones de especificadores desnudos como:
  *
  * ```js
  * import { usePluginData } from "@paperclipai/plugin-sdk/ui";
  * import React from "react";
  * ```
  *
- * Browsers cannot resolve bare specifiers without an import map. Rather than
- * fighting import map timing constraints, we:
- * 1. Fetch the module source text
- * 2. Rewrite bare specifier imports to use blob URLs that re-export from the
- *    host's global bridge registry (`globalThis.__paperclipPluginBridge__`)
- * 3. Import the rewritten module via a blob URL
+ * Los navegadores no pueden resolver especificadores desnudos sin un mapa de importación. En lugar de
+ * lidiar con las restricciones de tiempo de los mapas de importación, hacemos:
+ * 1. Obtener el texto fuente del módulo
+ * 2. Reescribir las importaciones de especificadores desnudos para usar blob URLs que reexportan desde
+ *    el registro global del puente del host (`globalThis.__paperclipPluginBridge__`)
+ * 3. Importar el módulo reescrito vía blob URL
  *
- * This approach is compatible with all modern browsers and avoids import map
- * ordering issues.
+ * Este enfoque es compatible con todos los navegadores modernos y evita problemas de
+ * orden de los mapas de importación.
  */
 const shimBlobUrls: Record<string, string> = {};
 
@@ -270,15 +270,15 @@ function getShimBlobUrl(specifier: "react" | "react-dom" | "react-dom/client" | 
 }
 
 /**
- * Rewrite bare specifier imports in an ESM source string to use blob URLs.
+ * Reescribe las importaciones de especificadores desnudos en una cadena fuente de ESM para usar blob URLs.
  *
- * This handles the standard import patterns emitted by esbuild/rollup:
+ * Esto maneja los patrones de importación estándar que emiten esbuild/rollup:
  * - `import { ... } from "react";`
  * - `import React from "react";`
  * - `import * as React from "react";`
  * - `import { ... } from "@paperclipai/plugin-sdk/ui";`
  *
- * Also handles re-exports:
+ * También maneja reexportaciones:
  * - `export { ... } from "react";`
  */
 function rewriteBareSpecifiers(source: string): string {
@@ -300,10 +300,10 @@ function rewriteBareSpecifiers(source: string): string {
 
   let result = source;
   for (const [from, to] of Object.entries(rewrites)) {
-    // Only rewrite in import/export from contexts, not in arbitrary strings.
-    // The regex matches `from "..."` or `from '...'` patterns.
+    // Solo reescribir en contextos de import/export from, no en cadenas arbitrarias.
+    // La expresión coincide con patrones `from "..."` o `from '...'`.
     result = result.replaceAll(` from ${from}`, ` from ${to}`);
-    // Also handle `import "..."` (side-effect imports)
+    // También manejar `import "..."` (importaciones solo por efecto colateral)
     result = result.replaceAll(`import ${from}`, `import ${to}`);
   }
 
@@ -311,31 +311,31 @@ function rewriteBareSpecifiers(source: string): string {
 }
 
 /**
- * Fetch, rewrite, and import a plugin UI module.
+ * Obtiene, reescribe e importa un módulo de UI de plugin.
  *
- * @param url - The URL to the plugin's UI entry module
- * @returns The module's exports
+ * @param url - La URL del módulo de entrada de UI del plugin
+ * @returns Las exportaciones del módulo
  */
 async function importPluginModule(url: string): Promise<Record<string, unknown>> {
-  // Check if the bridge registry is available. If not, fall back to direct
-  // import (which will fail on bare specifiers but won't crash the loader).
+  // Revisa si el registro del puente está disponible. Si no, recurre a la
+  // importación directa (que fallará con especificadores desnudos pero no romperá el cargador).
   if (!globalThis.__paperclipPluginBridge__) {
-    console.warn("[plugin-loader] Bridge registry not initialized, falling back to direct import");
+    console.warn("[plugin-loader] Registro del puente no inicializado, recurriendo a la importación directa");
     return import(/* @vite-ignore */ url);
   }
 
-  // Fetch the module source text
+  // Obtener el texto fuente del módulo
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Failed to fetch plugin module: ${response.status} ${response.statusText}`);
+    throw new Error(`No se pudo obtener el módulo del plugin: ${response.status} ${response.statusText}`);
   }
 
   const source = await response.text();
 
-  // Rewrite bare specifier imports to blob URLs
+  // Reescribir las importaciones de especificadores desnudos a blob URLs
   const rewritten = rewriteBareSpecifiers(source);
 
-  // Create a blob URL from the rewritten source and import it
+  // Crear una blob URL desde la fuente reescrita e importarla
   const blob = new Blob([rewritten], { type: "application/javascript" });
   const blobUrl = URL.createObjectURL(blob);
 
@@ -343,43 +343,43 @@ async function importPluginModule(url: string): Promise<Record<string, unknown>>
     const mod = await import(/* @vite-ignore */ blobUrl);
     return mod;
   } finally {
-    // Clean up the blob URL after import (the module is already loaded)
+    // Limpiar la blob URL tras la importación (el módulo ya está cargado)
     URL.revokeObjectURL(blobUrl);
   }
 }
 
 /**
- * Dynamically import a plugin's UI entry module and register all named
- * exports that look like React components (functions or classes) into the
- * component registry.
+ * Importa dinámicamente el módulo de entrada de UI de un plugin y registra todas las
+ * exportaciones nombradas que parezcan componentes de React (funciones o clases) en el
+ * registro de componentes.
  *
- * This replaces the previous approach where plugin bundles had to
- * self-register via `window.paperclipPlugins.registerReactComponent()`.
- * Now the host is responsible for importing the module and binding
- * exports to the correct `pluginKey:exportName` registry keys.
+ * Esto reemplaza el enfoque anterior donde los bundles de plugins tenían que
+ * autorregistrarse vía `window.paperclipPlugins.registerReactComponent()`.
+ * Ahora el host es responsable de importar el módulo y vincular
+ * las exportaciones a las claves correctas del registro `pluginKey:exportName`.
  *
- * Plugin modules are loaded with bare-specifier rewriting so that imports
- * of `@paperclipai/plugin-sdk/ui`, `react`, and `react-dom` resolve to the
- * host-provided implementations via the bridge registry.
+ * Los módulos de plugins se cargan con reescritura de especificadores desnudos para que las importaciones
+ * de `@paperclipai/plugin-sdk/ui`, `react` y `react-dom` resuelvan a las
+ * implementaciones proporcionadas por el host vía el registro del puente.
  *
- * Web-component registrations still work: if the module has a named export
- * that matches an `exportName` declared in a slot AND that export is a
- * string (the custom element tag name), it's registered as a web component.
+ * Los registros de web components siguen funcionando: si el módulo tiene una exportación nombrada
+ * que coincide con un `exportName` declarado en un slot Y esa exportación es una
+ * cadena (el nombre de etiqueta del elemento personalizado), se registra como web component.
  */
 async function loadPluginModule(contribution: PluginUiContribution): Promise<void> {
   const { pluginId, pluginKey, slots, launchers } = contribution;
   const moduleKey = buildPluginModuleKey(contribution);
 
-  // Already loaded or loading — return early.
+  // Ya cargado o cargando — retorno temprano.
   const state = pluginLoadStates.get(moduleKey);
   if (state === "loaded" || state === "loading") {
-    // If currently loading, wait for the inflight promise.
+    // Si está cargando actualmente, espera la promesa en curso.
     const inflight = inflightImports.get(pluginId);
     if (inflight) await inflight;
     return;
   }
 
-  // If another import for this plugin ID is currently in progress, wait for it.
+  // Si otra importación de este ID de plugin está en curso, espera a que termine.
   const running = inflightImports.get(pluginId);
   if (running) {
     await running;
@@ -395,12 +395,12 @@ async function loadPluginModule(contribution: PluginUiContribution): Promise<voi
 
   const importPromise = (async () => {
     try {
-      // Dynamic ESM import of the plugin's UI entry module with
-      // bare-specifier rewriting for host-provided dependencies.
+      // Importación dinámica de ESM del módulo de entrada de UI del plugin con
+      // reescritura de especificadores desnudos para dependencias provistas por el host.
       const mod: Record<string, unknown> = await importPluginModule(url);
 
-      // Collect the set of export names declared across all UI contributions so
-      // we only register what the manifest advertises (ignore extra exports).
+      // Recopila el conjunto de nombres de exportación declarados en todas las contribuciones de UI para
+      // solo registrar lo que el manifiesto anuncia (ignora exportaciones extra).
       const declaredExports = new Set<string>();
       for (const slot of slots) {
         declaredExports.add(slot.exportName);
@@ -418,24 +418,24 @@ async function loadPluginModule(contribution: PluginUiContribution): Promise<voi
         const exported = mod[exportName];
         if (exported === undefined) {
           console.warn(
-            `Plugin "${pluginKey}" declares slot export "${exportName}" but the module does not export it.`,
+            `El plugin "${pluginKey}" declara la exportación de slot "${exportName}" pero el módulo no la exporta.`,
           );
           continue;
         }
 
         if (typeof exported === "function") {
-          // React component (function component or class component).
+          // Componente de React (componente de función o de clase).
           registerPluginReactComponent(
             pluginKey,
             exportName,
             exported as ComponentType<PluginSlotComponentProps>,
           );
         } else if (typeof exported === "string") {
-          // Web component tag name.
+          // Nombre de etiqueta del web component.
           registerPluginWebComponent(pluginKey, exportName, exported);
         } else {
           console.warn(
-            `Plugin "${pluginKey}" export "${exportName}" is neither a function nor a string tag name — skipping.`,
+            `La exportación "${exportName}" del plugin "${pluginKey}" no es ni función ni cadena de nombre de etiqueta — se omite.`,
           );
         }
       }
@@ -443,7 +443,7 @@ async function loadPluginModule(contribution: PluginUiContribution): Promise<voi
       pluginLoadStates.set(moduleKey, "loaded");
     } catch (err) {
       pluginLoadStates.set(moduleKey, "error");
-      console.error(`Failed to load UI module for plugin "${pluginKey}"`, err);
+      console.error(`No se pudo cargar el módulo de UI del plugin "${pluginKey}"`, err);
     } finally {
       inflightImports.delete(pluginId);
     }
@@ -460,10 +460,10 @@ function isLauncherComponentTarget(launcher: PluginLauncherDeclaration): boolean
 }
 
 /**
- * Load UI modules for a set of plugin contributions.
+ * Carga los módulos de UI para un conjunto de contribuciones de plugins.
  *
- * Returns a promise that resolves once all modules have been loaded (or
- * failed). Plugins that are already loaded are skipped.
+ * Devuelve una promesa que se resuelve cuando todos los módulos se han cargado (o
+ * fallado). Los plugins que ya están cargados se omiten.
  */
 async function ensurePluginModulesLoaded(contributions: PluginUiContribution[]): Promise<void> {
   await Promise.all(
@@ -478,10 +478,10 @@ export async function ensurePluginContributionLoaded(
 }
 
 /**
- * Returns the aggregate load state across a set of plugin contributions.
- * - If any plugin is still loading → "loading"
- * - If all are loaded (or no contributions) → "loaded"
- * - If all finished but some errored → "loaded" (errors are logged, not fatal)
+ * Devuelve el estado de carga agregado para un conjunto de contribuciones de plugins.
+ * - Si algún plugin sigue cargando → "loading"
+ * - Si todos están cargados (o no hay contribuciones) → "loaded"
+ * - Si todos terminaron pero algunos fallaron → "loaded" (los errores se registran, no son fatales)
  */
 function aggregateLoadState(contributions: PluginUiContribution[]): "loading" | "loaded" {
   for (const c of contributions) {
@@ -494,15 +494,15 @@ function aggregateLoadState(contributions: PluginUiContribution[]): "loading" | 
 }
 
 // ---------------------------------------------------------------------------
-// React hooks
+// Hooks de React
 // ---------------------------------------------------------------------------
 
 /**
- * Trigger dynamic loading of plugin UI modules when contributions change.
+ * Activa la carga dinámica de módulos de UI de plugins cuando cambian las contribuciones.
  *
- * This hook is intentionally decoupled from usePluginSlots so that callers
- * who consume slots via `usePluginSlots()` automatically get module loading
- * without extra wiring.
+ * Este hook está intencionalmente desacoplado de usePluginSlots para que quienes
+ * consumen slots vía `usePluginSlots()` obtengan automáticamente la carga de módulos
+ * sin cableado extra.
  */
 function usePluginModuleLoader(contributions: PluginUiContribution[] | undefined) {
   const [, setTick] = useState(0);
@@ -510,7 +510,7 @@ function usePluginModuleLoader(contributions: PluginUiContribution[] | undefined
   useEffect(() => {
     if (!contributions || contributions.length === 0) return;
 
-    // Filter to contributions that haven't been loaded yet.
+    // Filtrar las contribuciones que aún no se han cargado.
     const unloaded = contributions.filter((c) => {
       const state = pluginLoadStates.get(buildPluginModuleKey(c));
       return state !== "loaded" && state !== "loading";
@@ -520,7 +520,7 @@ function usePluginModuleLoader(contributions: PluginUiContribution[] | undefined
 
     let cancelled = false;
     void ensurePluginModulesLoaded(unloaded).then(() => {
-      // Re-render so the slot mount can resolve the newly-registered components.
+      // Volver a renderizar para que el montaje del slot pueda resolver los componentes recién registrados.
       if (!cancelled) setTick((t) => t + 1);
     });
 
@@ -531,15 +531,15 @@ function usePluginModuleLoader(contributions: PluginUiContribution[] | undefined
 }
 
 /**
- * Resolves and sorts slots across all ready plugin contributions.
+ * Resuelve y ordena slots entre todas las contribuciones de plugins listas.
  *
- * Filtering rules:
- * - `slotTypes` must match one of the caller-requested host slot types.
- * - Entity-scoped slot types (`detailTab`, `taskDetailView`, `contextMenuItem`)
- *   require `entityType` and must include it in `slot.entityTypes`.
+ * Reglas de filtrado:
+ * - `slotTypes` debe coincidir con uno de los tipos de slot del host solicitados por quien llama.
+ * - Los tipos de slot con alcance de entidad (`detailTab`, `taskDetailView`, `contextMenuItem`)
+ *   requieren `entityType` y deben incluirlo en `slot.entityTypes`.
  *
- * Automatically triggers dynamic import of plugin UI modules for any
- * newly-discovered contributions. Components render once loading completes.
+ * Activa automáticamente la importación dinámica de módulos de UI de plugins para cualquier
+ * contribución recién descubierta. Los componentes se renderizan cuando termina la carga.
  */
 export function usePluginSlots(filters: SlotFilters): UsePluginSlotsResult {
   const queryEnabled = filters.enabled ?? true;
@@ -549,7 +549,7 @@ export function usePluginSlots(filters: SlotFilters): UsePluginSlotsResult {
     enabled: queryEnabled,
   });
 
-  // Kick off dynamic imports for any new plugin contributions.
+  // Inicia las importaciones dinámicas para cualquier contribución de plugin nueva.
   usePluginModuleLoader(data);
 
   const slotTypesKey = useMemo(() => [...filters.slotTypes].sort().join("|"), [filters.slotTypes]);
@@ -584,7 +584,7 @@ export function usePluginSlots(filters: SlotFilters): UsePluginSlotsResult {
     return rows;
   }, [data, filters.entityType, slotTypesKey]);
 
-  // Consider loading until both query and module imports are done.
+  // Considerar cargando hasta que terminen tanto la consulta como las importaciones de módulos.
   const modulesLoaded = data ? aggregateLoadState(data) === "loaded" : true;
   const isLoading = queryEnabled && (isQueryLoading || !modulesLoaded);
 
@@ -613,8 +613,8 @@ class PluginSlotErrorBoundary extends Component<PluginSlotErrorBoundaryProps, Pl
   }
 
   override componentDidCatch(error: unknown, info: ErrorInfo): void {
-    // Keep plugin failures isolated while preserving actionable diagnostics.
-    console.error("Plugin slot render failed", {
+    // Mantiene los fallos de plugins aislados sin perder diagnósticos accionables.
+    console.error("Falló el renderizado del slot del plugin", {
       pluginKey: this.props.slot.pluginKey,
       slotId: this.props.slot.id,
       error,
@@ -626,7 +626,7 @@ class PluginSlotErrorBoundary extends Component<PluginSlotErrorBoundaryProps, Pl
     if (this.state.hasError) {
       return (
         <div className={cn("rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1 text-xs text-destructive", this.props.className)}>
-          {this.props.slot.pluginDisplayName}: failed to render
+          {this.props.slot.pluginDisplayName}: no se pudo renderizar
         </div>
       );
     }
@@ -649,7 +649,7 @@ function PluginWebComponentMount({
 
   useEffect(() => {
     if (!ref.current) return;
-    // Bridge manifest slot/context metadata onto the custom element instance.
+    // Puentea los metadatos de slot/contexto del manifiesto en la instancia del elemento personalizado.
     const el = ref.current as HTMLElement & {
       pluginSlot?: ResolvedPluginSlot;
       pluginContext?: PluginSlotContext;
@@ -669,10 +669,10 @@ type PluginSlotMountProps = {
 };
 
 /**
- * Maps the slot's `PluginSlotContext` to a `PluginHostContext` for the bridge.
+ * Mapea el `PluginSlotContext` del slot a un `PluginHostContext` para el puente.
  *
- * The bridge hooks need the full host context shape; the slot context carries
- * the subset available from the rendering location.
+ * Los hooks del puente necesitan la forma completa del contexto del host; el contexto del slot lleva
+ * el subconjunto disponible desde la ubicación de renderizado.
  */
 function slotContextToHostContext(
   pluginSlotContext: PluginSlotContext,
@@ -691,10 +691,10 @@ function slotContextToHostContext(
 }
 
 /**
- * Wrapper component that sets the active bridge context around plugin renders.
+ * Componente envoltorio que establece el contexto del puente activo alrededor de los renderizados de plugins.
  *
- * This ensures that `usePluginData()`, `usePluginAction()`, and `useHostContext()`
- * have access to the current plugin ID and host context during the render phase.
+ * Esto garantiza que `usePluginData()`, `usePluginAction()` y `useHostContext()`
+ * tengan acceso al ID del plugin actual y al contexto del host durante la fase de renderizado.
  */
 function PluginBridgeScope({
   pluginId,
@@ -806,7 +806,7 @@ export function PluginSlotOutlet({
   if (errorMessage) {
     return (
       <div className={cn("rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1 text-xs text-destructive", errorClassName)}>
-        Plugin extensions unavailable: {errorMessage}
+        Extensiones de plugins no disponibles: {errorMessage}
       </div>
     );
   }
@@ -829,11 +829,11 @@ export function PluginSlotOutlet({
 }
 
 // ---------------------------------------------------------------------------
-// Test helpers — exported for use in test suites only.
+// Utilidades de pruebas — exportadas solo para uso en suites de pruebas.
 // ---------------------------------------------------------------------------
 
 /**
- * Reset the module loader state. Only use in tests.
+ * Reinicia el estado del cargador de módulos. Usar solo en pruebas.
  * @internal
  */
 export function _resetPluginModuleLoader(): void {

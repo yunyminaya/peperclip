@@ -6,68 +6,68 @@ description: >
   draft a new agent prompt/config, and submit a hire request.
 ---
 
-# Paperclip Create Agent Skill
+# Habilidad para crear agentes en Paperclip
 
-Use this skill when you are asked to hire/create an agent.
+Usa esta habilidad cuando te pidan contratar/crear un agente.
 
-## Preconditions
+## Requisitos previos
 
-You need either:
+Necesitas uno de los dos:
 
-- board access, or
-- agent permission `can_create_agents=true` in your company
+- acceso al tablero, o
+- permiso de agente `can_create_agents=true` en tu empresa
 
-If you do not have this permission, escalate to your CEO or board.
+Si no tienes este permiso, escala a tu CEO o tablero.
 
-## Workflow
+## Flujo de trabajo
 
-1. Confirm identity and company context.
+1. Confirma identidad y contexto de la empresa.
 
 ```sh
 curl -sS "$PAPERCLIP_API_URL/api/agents/me" \
   -H "Authorization: Bearer $PAPERCLIP_API_KEY"
 ```
 
-2. Discover available adapter configuration docs for this Paperclip instance.
+2. Descubre los documentos de configuración de adaptador disponibles para esta instancia de Paperclip.
 
 ```sh
 curl -sS "$PAPERCLIP_API_URL/llms/agent-configuration.txt" \
   -H "Authorization: Bearer $PAPERCLIP_API_KEY"
 ```
 
-3. Read adapter-specific docs (example: `claude_local`).
+3. Lee los documentos específicos del adaptador (ejemplo: `claude_local`).
 
 ```sh
 curl -sS "$PAPERCLIP_API_URL/llms/agent-configuration/claude_local.txt" \
   -H "Authorization: Bearer $PAPERCLIP_API_KEY"
 ```
 
-4. Compare existing agent configurations in your company.
+4. Compara las configuraciones de agentes existentes en tu empresa.
 
 ```sh
 curl -sS "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/agent-configurations" \
   -H "Authorization: Bearer $PAPERCLIP_API_KEY"
 ```
 
-5. Discover allowed agent icons and pick one that matches the role.
+5. Descubre los íconos de agente permitidos y elige uno que coincida con el rol.
 
 ```sh
 curl -sS "$PAPERCLIP_API_URL/llms/agent-icons.txt" \
   -H "Authorization: Bearer $PAPERCLIP_API_KEY"
 ```
 
-6. Draft the new hire config:
-- role/title/name
-- icon (required in practice; use one from `/llms/agent-icons.txt`)
-- reporting line (`reportsTo`)
-- adapter type
-- optional `desiredSkills` from the company skill library when this role needs installed skills on day one
-- adapter and runtime config aligned to this environment
-- capabilities
-- run prompt in adapter config (`promptTemplate` where applicable)
-- source issue linkage (`sourceIssueId` or `sourceIssueIds`) when this hire came from an issue
+6. Redacta la config de la nueva contratación:
+- rol/título/nombre
+- ícono (obligatorio en la práctica; usa uno de `/llms/agent-icons.txt`)
+- línea de reporte (`reportsTo`)
+- tipo de adaptador
+- `desiredSkills` opcional de la biblioteca de habilidades de la empresa cuando este rol necesite habilidades instaladas desde el primer día
+- config de adaptador y runtime alineada con este entorno
+- capacidades
+- prompt de ejecución en la config del adaptador (`promptTemplate` donde aplique)
+- vinculación del issue de origen (`sourceIssueId` o `sourceIssueIds`) cuando esta contratación vino de un issue
 
-7. Submit hire request.
+7. Envía la solicitud de contratación.
 
 ```sh
 curl -sS -X POST "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/agent-hires" \
@@ -88,10 +88,10 @@ curl -sS -X POST "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/agent-h
   }'
 ```
 
-8. Handle governance state:
-- if response has `approval`, hire is `pending_approval`
-- monitor and discuss on approval thread
-- when the board approves, you will be woken with `PAPERCLIP_APPROVAL_ID`; read linked issues and close/comment follow-up
+8. Maneja el estado de gobernanza:
+- si la respuesta tiene `approval`, la contratación está en `pending_approval`
+- monitorea y discute en el hilo de aprobación
+- cuando el tablero apruebe, despertarás con `PAPERCLIP_APPROVAL_ID`; lee los issues vinculados y cierra/comenta el seguimiento
 
 ```sh
 curl -sS "$PAPERCLIP_API_URL/api/approvals/<approval-id>" \
@@ -100,10 +100,10 @@ curl -sS "$PAPERCLIP_API_URL/api/approvals/<approval-id>" \
 curl -sS -X POST "$PAPERCLIP_API_URL/api/approvals/<approval-id>/comments" \
   -H "Authorization: Bearer $PAPERCLIP_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"body":"## CTO hire request submitted\n\n- Approval: [<approval-id>](/approvals/<approval-id>)\n- Pending agent: [<agent-ref>](/agents/<agent-url-key-or-id>)\n- Source issue: [<issue-ref>](/issues/<issue-identifier-or-id>)\n\nUpdated prompt and adapter config per board feedback."}'
+  -d '{"body":"## CTO hire request submitted\n\n- Approval: [<approval-id>](/approvals/<approval-id>)\n- Pending agent: [<agent-ref>](/agents/<agent-url-key-or-id>)\n- Source issue: [<issue-ref>](/issues/<issue-identifier-or-id>)\n\nPrompt actualizado y configuración del adaptador según los comentarios del tablero."}'
 ```
 
-If the approval already exists and needs manual linking to the issue:
+Si la aprobación ya existe y necesita vinculación manual al issue:
 
 ```sh
 curl -sS -X POST "$PAPERCLIP_API_URL/api/issues/<issue-id>/approvals" \
@@ -112,7 +112,7 @@ curl -sS -X POST "$PAPERCLIP_API_URL/api/issues/<issue-id>/approvals" \
   -d '{"approvalId":"<approval-id>"}'
 ```
 
-After approval is granted, run this follow-up loop:
+Después de otorgarse la aprobación, ejecuta este ciclo de seguimiento:
 
 ```sh
 curl -sS "$PAPERCLIP_API_URL/api/approvals/$PAPERCLIP_APPROVAL_ID" \
@@ -122,21 +122,21 @@ curl -sS "$PAPERCLIP_API_URL/api/approvals/$PAPERCLIP_APPROVAL_ID/issues" \
   -H "Authorization: Bearer $PAPERCLIP_API_KEY"
 ```
 
-For each linked issue, either:
-- close it if approval resolved the request, or
-- comment in markdown with links to the approval and next actions.
+Para cada issue vinculado:
+- ciérralo si la aprobación resolvió la solicitud, o
+- comenta en markdown con enlaces a la aprobación y las siguientes acciones.
 
-## Quality Bar
+## Nivel de calidad
 
-Before sending a hire request:
+Antes de enviar una solicitud de contratación:
 
-- if the role needs skills, make sure they already exist in the company library or install them first using the Paperclip company-skills workflow
-- Reuse proven config patterns from related agents where possible.
-- Set a concrete `icon` from `/llms/agent-icons.txt` so the new hire is identifiable in org and task views.
-- Avoid secrets in plain text unless required by adapter behavior.
-- Ensure reporting line is correct and in-company.
-- Ensure prompt is role-specific and operationally scoped.
-- If board requests revision, update payload and resubmit through approval flow.
+- si el rol necesita habilidades, asegúrate de que ya existan en la biblioteca de la empresa o instálalas primero usando el flujo de habilidades de empresa de Paperclip
+- Reutiliza patrones de config probados de agentes relacionados cuando sea posible.
+- Configura un `icon` concreto de `/llms/agent-icons.txt` para que la nueva contratación sea identificable en las vistas de organigrama y de tareas.
+- Evita secretos en texto plano a menos que el comportamiento del adaptador lo requiera.
+- Asegúrate de que la línea de reporte sea correcta y dentro de la empresa.
+- Asegúrate de que el prompt sea específico del rol y con alcance operativo.
+- Si el tablero pide revisión, actualiza el payload y reenvía a través del flujo de aprobación.
 
-For endpoint payload shapes and full examples, read:
+Para formas de payload de endpoints y ejemplos completos, lee:
 `skills/paperclip-create-agent/references/api-reference.md`

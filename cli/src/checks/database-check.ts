@@ -7,11 +7,11 @@ export async function databaseCheck(config: PaperclipConfig, configPath?: string
   if (config.database.mode === "postgres") {
     if (!config.database.connectionString) {
       return {
-        name: "Database",
+        name: "Base de datos",
         status: "fail",
-        message: "PostgreSQL mode selected but no connection string configured",
+        message: "Modo PostgreSQL seleccionado pero no hay cadena de conexión configurada",
         canRepair: false,
-        repairHint: "Run `paperclipai configure --section database`",
+        repairHint: "Ejecuta `paperclipai configure --section database`",
       };
     }
 
@@ -20,17 +20,17 @@ export async function databaseCheck(config: PaperclipConfig, configPath?: string
       const db = createDb(config.database.connectionString);
       await db.execute("SELECT 1");
       return {
-        name: "Database",
+        name: "Base de datos",
         status: "pass",
-        message: "PostgreSQL connection successful",
+        message: "Conexión a PostgreSQL exitosa",
       };
     } catch (err) {
       return {
-        name: "Database",
+        name: "Base de datos",
         status: "fail",
-        message: `Cannot connect to PostgreSQL: ${err instanceof Error ? err.message : String(err)}`,
+        message: `No se pudo conectar a PostgreSQL: ${err instanceof Error ? err.message : String(err)}`,
         canRepair: false,
-        repairHint: "Check your connection string and ensure PostgreSQL is running",
+        repairHint: "Revisa tu cadena de conexión y asegúrate de que PostgreSQL esté en ejecución",
       };
     }
   }
@@ -43,17 +43,17 @@ export async function databaseCheck(config: PaperclipConfig, configPath?: string
     }
 
     return {
-      name: "Database",
+      name: "Base de datos",
       status: "pass",
-      message: `Embedded PostgreSQL configured at ${dataDir} (port ${config.database.embeddedPostgresPort})`,
+      message: `PostgreSQL embebido configurado en ${dataDir} (puerto ${config.database.embeddedPostgresPort})`,
     };
   }
 
   return {
-    name: "Database",
+    name: "Base de datos",
     status: "fail",
-    message: `Unknown database mode: ${String(config.database.mode)}`,
+    message: `Modo de base de datos desconocido: ${String(config.database.mode)}`,
     canRepair: false,
-    repairHint: "Run `paperclipai configure --section database`",
+    repairHint: "Ejecuta `paperclipai configure --section database`",
   };
 }

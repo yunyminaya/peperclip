@@ -118,19 +118,19 @@ function diffConfigSnapshot(
 }
 
 function configPatchFromSnapshot(snapshot: unknown): Partial<typeof agents.$inferInsert> {
-  if (!isPlainRecord(snapshot)) throw unprocessable("Invalid revision snapshot");
+  if (!isPlainRecord(snapshot)) throw unprocessable("Instantánea de revisión no válida");
 
   if (typeof snapshot.name !== "string" || snapshot.name.length === 0) {
-    throw unprocessable("Invalid revision snapshot: name");
+    throw unprocessable("Instantánea de revisión no válida: name");
   }
   if (typeof snapshot.role !== "string" || snapshot.role.length === 0) {
-    throw unprocessable("Invalid revision snapshot: role");
+    throw unprocessable("Instantánea de revisión no válida: role");
   }
   if (typeof snapshot.adapterType !== "string" || snapshot.adapterType.length === 0) {
-    throw unprocessable("Invalid revision snapshot: adapterType");
+    throw unprocessable("Instantánea de revisión no válida: adapterType");
   }
   if (typeof snapshot.budgetMonthlyCents !== "number" || !Number.isFinite(snapshot.budgetMonthlyCents)) {
-    throw unprocessable("Invalid revision snapshot: budgetMonthlyCents");
+    throw unprocessable("Instantánea de revisión no válida: budgetMonthlyCents");
   }
 
   return {
@@ -251,20 +251,20 @@ export function agentService(db: Db) {
 
   async function ensureManager(companyId: string, managerId: string) {
     const manager = await getById(managerId);
-    if (!manager) throw notFound("Manager not found");
+    if (!manager) throw notFound("Gerente no encontrado");
     if (manager.companyId !== companyId) {
-      throw unprocessable("Manager must belong to same company");
+      throw unprocessable("El gerente debe pertenecer a la misma empresa");
     }
     return manager;
   }
 
   async function assertNoCycle(agentId: string, reportsTo: string | null | undefined) {
     if (!reportsTo) return;
-    if (reportsTo === agentId) throw unprocessable("Agent cannot report to itself");
+    if (reportsTo === agentId) throw unprocessable("El agente no puede reportarse a sí mismo");
 
     let cursor: string | null = reportsTo;
     while (cursor) {
-      if (cursor === agentId) throw unprocessable("Reporting relationship would create cycle");
+      if (cursor === agentId) throw unprocessable("La relación de reporte crearía un ciclo");
       const next = await getById(cursor);
       cursor = next?.reportsTo ?? null;
     }
@@ -290,7 +290,7 @@ export function agentService(db: Db) {
     const hasCollision = hasAgentShortnameCollision(candidateName, existingAgents, options);
     if (hasCollision) {
       throw conflict(
-        `Agent shortname '${candidateShortname}' is already in use in this company`,
+        `El nombre corto de agente '${candidateShortname}' ya está en uso en esta empresa`,
       );
     }
   }
@@ -304,7 +304,7 @@ export function agentService(db: Db) {
     if (!existing) return null;
 
     if (existing.status === "terminated" && data.status && data.status !== "terminated") {
-      throw conflict("Terminated agents cannot be resumed");
+      throw conflict("Los agentes terminados no se pueden reanudar");
     }
     if (
       existing.status === "pending_approval" &&
@@ -312,7 +312,7 @@ export function agentService(db: Db) {
       data.status !== "pending_approval" &&
       data.status !== "terminated"
     ) {
-      throw conflict("Pending approval agents cannot be activated directly");
+      throw conflict("Los agentes pendientes de aprobación no se pueden activar directamente");
     }
 
     if (data.reportsTo !== undefined) {
@@ -408,7 +408,7 @@ export function agentService(db: Db) {
     pause: async (id: string, reason: "manual" | "budget" | "system" = "manual") => {
       const existing = await getById(id);
       if (!existing) return null;
-      if (existing.status === "terminated") throw conflict("Cannot pause terminated agent");
+      if (existing.status === "terminated") throw conflict("No se puede pausar un agente terminado");
 
       const updated = await db
         .update(agents)
@@ -427,9 +427,9 @@ export function agentService(db: Db) {
     resume: async (id: string) => {
       const existing = await getById(id);
       if (!existing) return null;
-      if (existing.status === "terminated") throw conflict("Cannot resume terminated agent");
+      if (existing.status === "terminated") throw conflict("No se puede reanudar un agente terminado");
       if (existing.status === "pending_approval") {
-        throw conflict("Pending approval agents cannot be resumed");
+        throw conflict("Los agentes pendientes de aprobación no se pueden reanudar");
       }
 
       const updated = await db
@@ -547,7 +547,7 @@ export function agentService(db: Db) {
         .then((rows) => rows[0] ?? null);
       if (!revision) return null;
       if (containsRedactedMarker(revision.afterConfig)) {
-        throw unprocessable("Cannot roll back a revision that contains redacted secret values");
+        throw unprocessable("No se puede revertir una revisión que contiene valores secretos censurados");
       }
 
       const patch = configPatchFromSnapshot(revision.afterConfig);
@@ -563,12 +563,12 @@ export function agentService(db: Db) {
 
     createApiKey: async (id: string, name: string) => {
       const existing = await getById(id);
-      if (!existing) throw notFound("Agent not found");
+      if (!existing) throw notFound("Agente no encontrado");
       if (existing.status === "pending_approval") {
-        throw conflict("Cannot create keys for pending approval agents");
+        throw conflict("No se pueden crear claves para agentes pendientes de aprobación");
       }
       if (existing.status === "terminated") {
-        throw conflict("Cannot create keys for terminated agents");
+        throw conflict("No se pueden crear claves para agentes terminados");
       }
 
       const token = createToken();

@@ -1,118 +1,118 @@
-# 2026-03-13 Company Import / Export V2 Plan
+# Plan de importación/exportación de empresas V2 2026-03-13
 
-Status: Proposed implementation plan
-Date: 2026-03-13
-Audience: Product and engineering
-Supersedes for package-format direction:
-- `doc/plans/2026-02-16-module-system.md` sections that describe company templates as JSON-only
-- `docs/specs/cliphub-plan.md` assumptions about blueprint bundle shape where they conflict with the markdown-first package model
+Estado: Plan de implementación propuesto
+Fecha: 2026-03-13
+Audiencia: Producto e ingeniería
+Reemplaza para la dirección del formato de paquete:
+- `doc/plans/2026-02-16-module-system.md`: secciones que describen las plantillas de empresa solo como JSON
+- `docs/specs/cliphub-plan.md`: supuestos sobre la forma del paquete blueprint donde entren en conflicto con el modelo de paquete markdown-first
 
-## 1. Purpose
+## 1. Propósito
 
-This document defines the next-stage plan for Paperclip company import/export.
+Este documento define el plan de próxima etapa para la importación/exportación de empresas en Paperclip.
 
-The core shift is:
+El cambio central es:
 
-- move from a Paperclip-specific JSON-first portability package toward a markdown-first package format
-- make GitHub repositories first-class package sources
-- treat the company package model as an extension of the existing Agent Skills ecosystem instead of inventing a separate skill format
-- support company, team, agent, and skill reuse without requiring a central registry
+- pasar de un paquete de portabilidad JSON-first específico de Paperclip a un formato de paquete markdown-first
+- hacer que los repositorios de GitHub sean fuentes de paquete de primera clase
+- tratar el modelo de paquete de empresa como una extensión del ecosistema existente de Agent Skills en lugar de inventar un formato de habilidad separado
+- admitir la reutilización de empresa, equipo, agente y habilidad sin requerir un registro central
 
-The normative package format draft lives in:
+El borrador normativo del formato de paquete está en:
 
 - `docs/companies/companies-spec.md`
 
-This plan is about implementation and rollout inside Paperclip.
+Este plan trata sobre la implementación y el despliegue dentro de Paperclip.
 
-Adapter-wide skill rollout details live in:
+Los detalles del despliegue de habilidades en todos los adaptadores están en:
 
 - `doc/plans/2026-03-14-adapter-skill-sync-rollout.md`
 
-## 2. Executive Summary
+## 2. Resumen ejecutivo
 
-Paperclip already has portability primitives in the repo:
+Paperclip ya tiene primitivas de portabilidad en el repositorio:
 
-- server import/export/preview APIs
-- CLI import/export commands
-- shared portability types and validators
+- API de importación/exportación/vista previa del servidor
+- comandos de importación/exportación del CLI
+- tipos y validadores compartidos de portabilidad
 
-Those primitives are being cut over to the new package model rather than extended for backward compatibility.
+Esas primitivas están migrando al nuevo modelo de paquete en lugar de extenderse para compatibilidad con versiones anteriores.
 
-The new direction is:
+La nueva dirección es:
 
-1. markdown-first package authoring
-2. GitHub repo or local folder as the default source of truth
-3. a vendor-neutral base package spec for agent-company runtimes, not just Paperclip
-4. the company package model is explicitly an extension of Agent Skills
-5. no future dependency on `paperclip.manifest.json`
-6. implicit folder discovery by convention for the common case
-7. an always-emitted `.paperclip.yaml` sidecar for high-fidelity Paperclip-specific details
-8. package graph resolution at import time
-9. entity-level import UI with dependency-aware tree selection
-10. `skills.sh` compatibility is a V1 requirement for skill packages and skill installation flows
-11. adapter-aware skill sync surfaces so Paperclip can read, diff, enable, disable, and reconcile skills where the adapter supports it
+1. autoría de paquetes markdown-first
+2. repositorio de GitHub o carpeta local como fuente de verdad predeterminada
+3. una especificación de paquete base neutral ante proveedores para tiempos de ejecución de empresas de agentes, no solo Paperclip
+4. el modelo de paquete de empresa es explícitamente una extensión de Agent Skills
+5. sin dependencia futura de `paperclip.manifest.json`
+6. descubrimiento implícito de carpetas por convención para el caso común
+7. un sidecar `.paperclip.yaml` siempre emitido para detalles de alta fidelidad específicos de Paperclip
+8. resolución del grafo de paquetes en tiempo de importación
+9. UI de importación a nivel de entidad con selección de árbol consciente de dependencias
+10. la compatibilidad con `skills.sh` es un requisito de V1 para los paquetes de habilidades y los flujos de instalación de habilidades
+11. superficies de sincronización de habilidades conscientes del adaptador para que Paperclip pueda leer, comparar, habilitar, deshabilitar y conciliar habilidades donde el adaptador lo admita
 
-## 3. Product Goals
+## 3. Objetivos del producto
 
-### 3.1 Goals
+### 3.1 Objetivos
 
-- A user can point Paperclip at a local folder or GitHub repo and import a company package without any registry.
-- A package is readable and writable by humans with normal git workflows.
-- A package can contain:
-  - company definition
-  - org subtree / team definition
-  - agent definitions
-  - optional starter projects and tasks
-  - reusable skills
-- V1 skill support is compatible with the existing `skills.sh` / Agent Skills ecosystem.
-- A user can import into:
-  - a new company
-  - an existing company
-- Import preview shows:
-  - what will be created
-  - what will be updated
-  - what is skipped
-  - what is referenced externally
-  - what needs secrets or approvals
-- Export preserves attribution, licensing, and pinned upstream references.
-- Export produces a clean vendor-neutral package plus a Paperclip sidecar.
-- `companies.sh` can later act as a discovery/index layer over repos implementing this format.
+- Un usuario puede apuntar Paperclip a una carpeta local o un repositorio de GitHub e importar un paquete de empresa sin ningún registro.
+- Un paquete es legible y escribible por humanos con flujos de trabajo git normales.
+- Un paquete puede contener:
+  - definición de empresa
+  - definición de subárbol de organización / equipo
+  - definiciones de agentes
+  - proyectos y tareas iniciales opcionales
+  - habilidades reutilizables
+- El soporte de habilidades V1 es compatible con el ecosistema existente de `skills.sh` / Agent Skills.
+- Un usuario puede importar a:
+  - una empresa nueva
+  - una empresa existente
+- La vista previa de importación muestra:
+  - qué se creará
+  - qué se actualizará
+  - qué se omitirá
+  - qué se referencia externamente
+  - qué necesita secretos o aprobaciones
+- La exportación conserva la atribución, las licencias y las referencias upstream fijadas.
+- La exportación produce un paquete limpio neutral ante proveedores más un sidecar de Paperclip.
+- `companies.sh` puede actuar más adelante como capa de descubrimiento/índice sobre repositorios que implementen este formato.
 
-### 3.2 Non-Goals
+### 3.2 No objetivos
 
-- No central registry is required for package validity.
-- This is not full database backup/restore.
-- This does not attempt to export runtime state like:
-  - heartbeat runs
-  - API keys
-  - spend totals
-  - run sessions
-  - transient workspaces
-- This does not require a first-class runtime `teams` table before team portability ships.
+- No se requiere un registro central para la validez del paquete.
+- Esto no es una copia de seguridad/restauración completa de la base de datos.
+- Esto no intenta exportar el estado de tiempo de ejecución como:
+  - ejecuciones de latido
+  - claves de API
+  - totales de gasto
+  - sesiones de ejecución
+  - espacios de trabajo transitorios
+- Esto no requiere una tabla de `teams` de tiempo de ejecución de primera clase antes de que la portabilidad de equipos esté disponible.
 
-## 4. Current State In Repo
+## 4. Estado actual en el repositorio
 
-Current implementation exists here:
+La implementación actual existe aquí:
 
-- shared types: `packages/shared/src/types/company-portability.ts`
-- shared validators: `packages/shared/src/validators/company-portability.ts`
-- server routes: `server/src/routes/companies.ts`
-- server service: `server/src/services/company-portability.ts`
-- CLI commands: `cli/src/commands/client/company.ts`
+- tipos compartidos: `packages/shared/src/types/company-portability.ts`
+- validadores compartidos: `packages/shared/src/validators/company-portability.ts`
+- rutas del servidor: `server/src/routes/companies.ts`
+- servicio del servidor: `server/src/services/company-portability.ts`
+- comandos del CLI: `cli/src/commands/client/company.ts`
 
-Current product limitations:
+Limitaciones actuales del producto:
 
-1. Import/export UX still needs deeper tree-selection and skill/package management polish.
-2. Adapter-specific skill sync remains uneven across adapters and must degrade cleanly when unsupported.
-3. Projects and starter tasks should stay opt-in on export rather than default package content.
-4. Import/export still needs stronger coverage around attribution, pin verification, and executable-package warnings.
-5. The current markdown frontmatter parser is intentionally lightweight and should stay constrained to the documented shape.
+1. La UX de importación/exportación aún necesita una selección de árbol más profunda y pulido en la gestión de habilidades/paquetes.
+2. La sincronización de habilidades específica del adaptador sigue siendo desigual entre adaptadores y debe degradarse con elegancia cuando no se admite.
+3. Los proyectos y las tareas iniciales deberían seguir siendo opt-in en la exportación en lugar de contenido predeterminado del paquete.
+4. La importación/exportación aún necesita una cobertura más sólida en torno a la atribución, la verificación de fijados y las advertencias de paquetes ejecutables.
+5. El analizador actual de frontmatter de markdown es intencionalmente ligero y debe mantenerse limitado a la forma documentada.
 
-## 5. Canonical Package Direction
+## 5. Dirección canónica del paquete
 
-### 5.1 Canonical Authoring Format
+### 5.1 Formato de autoría canónico
 
-The canonical authoring format becomes a markdown-first package rooted in one of:
+El formato de autoría canónico se convierte en un paquete markdown-first con raíz en uno de:
 
 - `COMPANY.md`
 - `TEAM.md`
@@ -121,65 +121,65 @@ The canonical authoring format becomes a markdown-first package rooted in one of
 - `TASK.md`
 - `SKILL.md`
 
-The normative draft is:
+El borrador normativo es:
 
 - `docs/companies/companies-spec.md`
 
-### 5.2 Relationship To Agent Skills
+### 5.2 Relación con Agent Skills
 
-Paperclip must not redefine `SKILL.md`.
+Paperclip no debe redefinir `SKILL.md`.
 
-Rules:
+Reglas:
 
-- `SKILL.md` stays Agent Skills compatible
-- the company package model is an extension of Agent Skills
-- the base package is vendor-neutral and intended for any agent-company runtime
-- Paperclip-specific fidelity lives in `.paperclip.yaml`
-- Paperclip may resolve and install `SKILL.md` packages, but it must not require a Paperclip-only skill format
-- `skills.sh` compatibility is a V1 requirement, not a future nice-to-have
+- `SKILL.md` sigue siendo compatible con Agent Skills
+- el modelo de paquete de empresa es una extensión de Agent Skills
+- el paquete base es neutral ante proveedores y está pensado para cualquier tiempo de ejecución de empresa de agentes
+- la fidelidad específica de Paperclip está en `.paperclip.yaml`
+- Paperclip puede resolver e instalar paquetes `SKILL.md`, pero no debe requerir un formato de habilidad exclusivo de Paperclip
+- la compatibilidad con `skills.sh` es un requisito de V1, no algo deseable para el futuro
 
-### 5.3 Agent-To-Skill Association
+### 5.3 Asociación de agente a habilidad
 
-`AGENTS.md` should associate skills by skill shortname or slug, not by verbose path in the common case.
+`AGENTS.md` debería asociar habilidades por nombre corto o slug de habilidad, no por ruta detallada en el caso común.
 
-Preferred example:
+Ejemplo preferido:
 
 - `skills: [review, react-best-practices]`
 
-Resolution model:
+Modelo de resolución:
 
-- `review` resolves to `skills/review/SKILL.md` by package convention
-- if the skill is external or referenced, the skill package owns that complexity
-- exporters should prefer shortname-based associations in `AGENTS.md`
-- importers should resolve the shortname against local package skills first, then referenced or installed company skills
-### 5.4 Base Package Vs Paperclip Extension
+- `review` se resuelve a `skills/review/SKILL.md` por convención del paquete
+- si la habilidad es externa o referenciada, el paquete de habilidad es dueño de esa complejidad
+- los exportadores deberían preferir asociaciones basadas en nombre corto en `AGENTS.md`
+- los importadores deberían resolver el nombre corto primero contra las habilidades locales del paquete, luego contra las habilidades de empresa referenciadas o instaladas
+### 5.4 Paquete base vs extensión de Paperclip
 
-The repo format should have two layers:
+El formato del repositorio debería tener dos capas:
 
-- base package:
-  - minimal, readable, social, vendor-neutral
-  - implicit folder discovery by convention
-  - no Paperclip-only runtime fields by default
-- Paperclip extension:
+- paquete base:
+  - mínimo, legible, social, neutral ante proveedores
+  - descubrimiento implícito de carpetas por convención
+  - sin campos de tiempo de ejecución exclusivos de Paperclip por defecto
+- extensión de Paperclip:
   - `.paperclip.yaml`
-  - adapter/runtime/permissions/budget/workspace fidelity
-  - emitted by Paperclip tools as a sidecar while the base package stays readable
+  - fidelidad de adaptador/tiempo de ejecución/permisos/presupuesto/espacio de trabajo
+  - emitido por las herramientas de Paperclip como sidecar mientras el paquete base sigue siendo legible
 
-### 5.5 Relationship To Current V1 Manifest
+### 5.5 Relación con el manifiesto V1 actual
 
-`paperclip.manifest.json` is not part of the future package direction.
+`paperclip.manifest.json` no forma parte de la dirección futura del paquete.
 
-This should be treated as a hard cutover in product direction.
+Esto debe tratarse como un corte duro en la dirección del producto.
 
-- markdown-first repo layout is the target
-- no new work should deepen investment in the old manifest model
-- future portability APIs and UI should target the markdown-first model only
+- el diseño de repositorio markdown-first es el objetivo
+- ningún trabajo nuevo debería profundizar la inversión en el modelo de manifiesto antiguo
+- las futuras API y UI de portabilidad deberían apuntar solo al modelo markdown-first
 
-## 6. Package Graph Model
+## 6. Modelo de grafo de paquetes
 
-### 6.1 Entity Kinds
+### 6.1 Tipos de entidad
 
-Paperclip import/export should support these entity kinds:
+La importación/exportación de Paperclip debería admitir estos tipos de entidad:
 
 - company
 - team
@@ -188,51 +188,51 @@ Paperclip import/export should support these entity kinds:
 - task
 - skill
 
-### 6.2 Team Semantics
+### 6.2 Semántica de equipo
 
-`team` is a package concept first, not a database-table requirement.
+`team` es primero un concepto de paquete, no un requisito de tabla de base de datos.
 
-In Paperclip V2 portability:
+En la portabilidad V2 de Paperclip:
 
-- a team is an importable org subtree
-- it is rooted at a manager agent
-- it can be attached under a target manager in an existing company
+- un equipo es un subárbol de organización importable
+- tiene como raíz un agente gerente
+- puede adjuntarse bajo un gerente objetivo en una empresa existente
 
-This avoids blocking portability on a future runtime `teams` model.
+Esto evita bloquear la portabilidad en un futuro modelo de `teams` de tiempo de ejecución.
 
-Imported-team tracking should initially be package/provenance-based:
+El seguimiento de equipos importados debería ser inicialmente basado en paquete/procedencia:
 
-- if a team package was imported, the imported agents should carry enough provenance to reconstruct that grouping
-- Paperclip can treat “this set of agents came from team package X” as the imported-team model
-- provenance grouping is the intended near- and medium-term team model for import/export
-- only add a first-class runtime `teams` table later if product needs move beyond what provenance grouping can express
+- si se importó un paquete de equipo, los agentes importados deberían llevar suficiente procedencia para reconstruir esa agrupación
+- Paperclip puede tratar "este conjunto de agentes vino del paquete de equipo X" como el modelo de equipo importado
+- la agrupación por procedencia es el modelo de equipo previsto a corto y mediano plazo para importación/exportación
+- solo agregar una tabla de `teams` de tiempo de ejecución de primera clase más adelante si las necesidades del producto van más allá de lo que la agrupación por procedencia puede expresar
 
-### 6.3 Dependency Graph
+### 6.3 Grafo de dependencias
 
-Import should operate on an entity graph, not raw file selection.
+La importación debería operar sobre un grafo de entidades, no sobre selección cruda de archivos.
 
-Examples:
+Ejemplos:
 
-- selecting an agent auto-selects its required docs and skill refs
-- selecting a team auto-selects its subtree
-- selecting a company auto-selects all included entities by default
-- selecting a project auto-selects its starter tasks
+- seleccionar un agente selecciona automáticamente sus documentos y referencias de habilidades requeridas
+- seleccionar un equipo selecciona automáticamente su subárbol
+- seleccionar una empresa selecciona automáticamente todas las entidades incluidas por defecto
+- seleccionar un proyecto selecciona automáticamente sus tareas iniciales
 
-The preview output should reflect graph resolution explicitly.
+La salida de vista previa debería reflejar explícitamente la resolución del grafo.
 
-## 7. External References, Pinning, And Attribution
+## 7. Referencias externas, fijado y atribución
 
-### 7.1 Why This Matters
+### 7.1 Por qué esto importa
 
-Some packages will:
+Algunos paquetes:
 
-- reference upstream files we do not want to republish
-- include third-party work where attribution must remain visible
-- need protection from branch hot-swapping
+- referenciarán archivos upstream que no queremos volver a publicar
+- incluirán trabajo de terceros donde la atribución debe permanecer visible
+- necesitarán protección contra el intercambio de ramas
 
-### 7.2 Policy
+### 7.2 Política
 
-Paperclip should support source references in package metadata with:
+Paperclip debería admitir referencias de fuente en los metadatos del paquete con:
 
 - repo
 - path
@@ -243,126 +243,126 @@ Paperclip should support source references in package metadata with:
 - license
 - usage mode
 
-Usage modes:
+Modos de uso:
 
 - `vendored`
 - `referenced`
 - `mirrored`
 
-Default exporter behavior for third-party content should be:
+El comportamiento predeterminado del exportador para contenido de terceros debería ser:
 
-- prefer `referenced`
-- preserve attribution
-- do not silently inline third-party content into exports
+- preferir `referenced`
+- conservar la atribución
+- no insertar silenciosamente contenido de terceros en las exportaciones
 
-### 7.3 Trust Model
+### 7.3 Modelo de confianza
 
-Imported package content should be classified by trust level:
+El contenido de paquete importado debería clasificarse por nivel de confianza:
 
 - markdown-only
 - markdown + assets
 - markdown + scripts/executables
 
-The UI and CLI should surface this clearly before apply.
+La UI y el CLI deberían mostrarlo claramente antes de aplicar.
 
-## 8. Import Behavior
+## 8. Comportamiento de importación
 
-### 8.1 Supported Sources
+### 8.1 Fuentes admitidas
 
-- local folder
-- local package root file
-- GitHub repo URL
-- GitHub subtree URL
-- direct URL to markdown/package root
+- carpeta local
+- archivo raíz de paquete local
+- URL de repositorio de GitHub
+- URL de subárbol de GitHub
+- URL directa a markdown/raíz de paquete
 
-Registry-based discovery may be added later, but must remain optional.
+El descubrimiento basado en registro puede agregarse más adelante, pero debe seguir siendo opcional.
 
-### 8.2 Import Targets
+### 8.2 Objetivos de importación
 
-- new company
-- existing company
+- empresa nueva
+- empresa existente
 
-For existing company imports, the preview must support:
+Para importaciones en empresas existentes, la vista previa debe admitir:
 
-- collision handling
-- attach-point selection for team imports
-- selective entity import
+- manejo de colisiones
+- selección de punto de adjunto para importaciones de equipos
+- importación selectiva de entidades
 
-### 8.3 Collision Strategy
+### 8.3 Estrategia de colisiones
 
-Current `rename | skip | replace` support remains, but matching should improve over time.
+El soporte actual de `rename | skip | replace` se mantiene, pero la coincidencia debería mejorar con el tiempo.
 
-Preferred matching order:
+Orden de coincidencia preferido:
 
-1. prior install provenance
-2. stable package entity identity
+1. procedencia de instalación previa
+2. identidad estable de entidad del paquete
 3. slug
-4. human name as weak fallback
+4. nombre humano como último recurso débil
 
-Slug-only matching is acceptable only as a transitional strategy.
+La coincidencia solo por slug es aceptable únicamente como estrategia de transición.
 
-### 8.4 Required Preview Output
+### 8.4 Salida de vista previa requerida
 
-Every import preview should surface:
+Cada vista previa de importación debería mostrar:
 
-- target company action
-- entity-level create/update/skip plan
-- referenced external content
-- missing files
-- hash mismatch or pinning issues
-- env inputs, including required vs optional and default values when present
-- unsupported content types
-- trust/licensing warnings
+- acción de empresa objetivo
+- plan de creación/actualización/omisión a nivel de entidad
+- contenido externo referenciado
+- archivos faltantes
+- discrepancias de hash o problemas de fijado
+- entradas de entorno, incluyendo requeridas vs opcionales y valores predeterminados cuando existan
+- tipos de contenido no admitidos
+- advertencias de confianza/licencias
 
-### 8.5 Adapter Skill Sync Surface
+### 8.5 Superficie de sincronización de habilidades del adaptador
 
-People want skill management in the UI, but skills are adapter-dependent.
+La gente quiere gestión de habilidades en la UI, pero las habilidades dependen del adaptador.
 
-That means portability and UI planning must include an adapter capability model for skills.
+Eso significa que la planificación de portabilidad y UI debe incluir un modelo de capacidad del adaptador para habilidades.
 
-Paperclip should define a new adapter surface area around skills:
+Paperclip debería definir una nueva superficie del adaptador en torno a habilidades:
 
-- list currently enabled skills for an agent
-- report how those skills are represented by the adapter
-- install or enable a skill
-- disable or remove a skill
-- report sync state between desired package config and actual adapter state
+- listar las habilidades actualmente habilitadas para un agente
+- informar cómo el adaptador representa esas habilidades
+- instalar o habilitar una habilidad
+- deshabilitar o eliminar una habilidad
+- informar el estado de sincronización entre la configuración de paquete deseada y el estado real del adaptador
 
-Examples:
+Ejemplos:
 
-- Claude Code / Codex style adapters may manage skills as local filesystem packages or adapter-owned skill directories
-- OpenClaw-style adapters may expose currently enabled skills through an API or a reflected config surface
-- some adapters may be read-only and only report what they have
+- los adaptadores estilo Claude Code / Codex pueden gestionar habilidades como paquetes locales del sistema de archivos o directorios de habilidades propios del adaptador
+- los adaptadores estilo OpenClaw pueden exponer las habilidades actualmente habilitadas a través de una API o una superficie de configuración reflejada
+- algunos adaptadores pueden ser de solo lectura y solo informar lo que tienen
 
-Planned adapter capability shape:
+Forma de capacidad del adaptador planificada:
 
 - `supportsSkillRead`
 - `supportsSkillWrite`
 - `supportsSkillRemove`
 - `supportsSkillSync`
-- `skillStorageKind` such as `filesystem`, `remote_api`, `inline_config`, or `unknown`
+- `skillStorageKind` como `filesystem`, `remote_api`, `inline_config` o `unknown`
 
-Baseline adapter interface:
+Interfaz base del adaptador:
 
 - `listSkills(agent)`
 - `applySkills(agent, desiredSkills)`
-- `removeSkill(agent, skillId)` optional
-- `getSkillSyncState(agent, desiredSkills)` optional
+- `removeSkill(agent, skillId)` opcional
+- `getSkillSyncState(agent, desiredSkills)` opcional
 
-Planned Paperclip behavior:
+Comportamiento planificado de Paperclip:
 
-- if an adapter supports read, Paperclip should show current skills in the UI
-- if an adapter supports write, Paperclip should let the user enable/disable imported skills
-- if an adapter supports sync, Paperclip should compute desired vs actual state and offer reconcile actions
-- if an adapter does not support these capabilities, the UI should still show the package-level desired skills but mark them unmanaged
+- si un adaptador admite lectura, Paperclip debería mostrar las habilidades actuales en la UI
+- si un adaptador admite escritura, Paperclip debería permitir al usuario habilitar/deshabilitar habilidades importadas
+- si un adaptador admite sincronización, Paperclip debería calcular el estado deseado vs real y ofrecer acciones de conciliación
+- si un adaptador no admite estas capacidades, la UI debería seguir mostrando las habilidades deseadas a nivel de paquete pero marcarlas como no gestionadas
 
-## 9. Export Behavior
+## 9. Comportamiento de exportación
 
-### 9.1 Default Export Target
+### 9.1 Objetivo de exportación predeterminado
 
-Default export target should become a markdown-first folder structure.
+El objetivo de exportación predeterminado debería convertirse en una estructura de carpetas markdown-first.
 
-Example:
+Ejemplo:
 
 ```text
 my-company/
@@ -372,69 +372,69 @@ my-company/
 └── skills/
 ```
 
-### 9.2 Export Rules
+### 9.2 Reglas de exportación
 
-Exports should:
+Las exportaciones deberían:
 
-- omit machine-local ids
-- omit timestamps and counters unless explicitly needed
-- omit secret values
-- omit local absolute paths
-- omit duplicated inline prompt content from `.paperclip.yaml` when `AGENTS.md` already carries the instructions
-- preserve references and attribution
-- emit `.paperclip.yaml` alongside the base package
-- express adapter env/secrets as portable env input declarations rather than exported secret binding ids
-- preserve compatible `SKILL.md` content as-is
+- omitir identificadores locales de máquina
+- omitir marcas de tiempo y contadores a menos que se necesiten explícitamente
+- omitir valores de secretos
+- omitir rutas absolutas locales
+- omitir contenido de prompt duplicado en línea de `.paperclip.yaml` cuando `AGENTS.md` ya lleva las instrucciones
+- conservar referencias y atribución
+- emitir `.paperclip.yaml` junto al paquete base
+- expresar el entorno/secretos del adaptador como declaraciones portátiles de entradas de entorno en lugar de identificadores de enlaces de secretos exportados
+- conservar el contenido compatible de `SKILL.md` tal cual
 
-Projects and issues should not be exported by default.
+Los proyectos y los issues no deberían exportarse por defecto.
 
-They should be opt-in through selectors such as:
+Deberían ser opt-in mediante selectores como:
 
 - `--projects project-shortname-1,project-shortname-2`
 - `--issues PAP-1,PAP-3`
 - `--project-issues project-shortname-1,project-shortname-2`
 
-This supports “clean public company package” workflows where a maintainer exports a follower-facing company package without bundling active work items every time.
+Esto admite flujos de trabajo de "paquete de empresa público limpio" donde un mantenedor exporta un paquete de empresa orientado a seguidores sin empaquetar elementos de trabajo activos cada vez.
 
-### 9.3 Export Units
+### 9.3 Unidades de exportación
 
-Initial export units:
+Unidades de exportación iniciales:
 
-- company package
-- team package
-- single agent package
+- paquete de empresa
+- paquete de equipo
+- paquete de un solo agente
 
-Later optional units:
+Unidades opcionales posteriores:
 
-- skill pack export
-- seed projects/tasks bundle
+- exportación de paquete de habilidades
+- paquete de proyectos/tareas semilla
 
-## 10. Storage Model Inside Paperclip
+## 10. Modelo de almacenamiento dentro de Paperclip
 
-### 10.1 Short-Term
+### 10.1 Corto plazo
 
-In the first phase, imported entities can continue mapping onto current runtime tables:
+En la primera fase, las entidades importadas pueden seguir mapeándose a las tablas actuales de tiempo de ejecución:
 
 - company -> companies
 - agent -> agents
-- team -> imported agent subtree attachment plus package provenance grouping
-- skill -> company-scoped reusable package metadata plus agent-scoped desired-skill attachment state where supported
+- team -> adjunto de subárbol de agentes importados más agrupación por procedencia del paquete
+- skill -> metadatos de paquete reutilizable con alcance de empresa más estado de adjunto de habilidad deseada con alcance de agente donde se admita
 
-### 10.2 Medium-Term
+### 10.2 Mediano plazo
 
-Paperclip should add managed package/provenance records so imports are not anonymous one-off copies.
+Paperclip debería agregar registros gestionados de paquete/procedencia para que las importaciones no sean copias anónimas de una sola vez.
 
-Needed capabilities:
+Capacidades necesarias:
 
-- remember install origin
-- support re-import / upgrade
-- distinguish local edits from upstream package state
-- preserve external refs and package-level metadata
-- preserve imported team grouping without requiring a runtime `teams` table immediately
-- preserve desired-skill state separately from adapter runtime state
-- support both company-scoped reusable skills and agent-scoped skill attachments
+- recordar el origen de instalación
+- admitir reimportación / actualización
+- distinguir ediciones locales del estado upstream del paquete
+- conservar referencias externas y metadatos a nivel de paquete
+- conservar la agrupación de equipos importados sin requerir una tabla de `teams` de tiempo de ejecución de inmediato
+- conservar el estado de habilidad deseada separado del estado de tiempo de ejecución del adaptador
+- admitir tanto habilidades reutilizables con alcance de empresa como adjuntos de habilidades con alcance de agente
 
-Suggested future tables:
+Tablas futuras sugeridas:
 
 - package_installs
 - package_install_entities
@@ -442,203 +442,203 @@ Suggested future tables:
 - agent_skill_desires
 - adapter_skill_snapshots
 
-This is not required for phase 1 UI, but it is required for a robust long-term system.
+Esto no es necesario para la UI de la fase 1, pero sí para un sistema sólido a largo plazo.
 
-## 11. API Plan
+## 11. Plan de API
 
-### 11.1 Keep Existing Endpoints Initially
+### 11.1 Mantener los endpoints existentes inicialmente
 
-Retain:
+Conservar:
 
 - `POST /api/companies/:companyId/export`
 - `POST /api/companies/import/preview`
 - `POST /api/companies/import`
 
-But evolve payloads toward the markdown-first graph model.
+Pero evolucionar las cargas útiles hacia el modelo de grafo markdown-first.
 
-### 11.2 New API Capabilities
+### 11.2 Nuevas capacidades de API
 
-Add support for:
+Agregar soporte para:
 
-- package root resolution from local/GitHub inputs
-- graph resolution preview
-- source pin and hash verification results
-- entity-level selection
-- team attach target selection
-- provenance-aware collision planning
+- resolución de raíz de paquete desde entradas locales/GitHub
+- vista previa de resolución de grafo
+- resultados de verificación de fijado y hash de fuente
+- selección a nivel de entidad
+- selección de objetivo de adjunto de equipo
+- planificación de colisiones consciente de procedencia
 
-### 11.3 Parsing Changes
+### 11.3 Cambios de análisis
 
-Replace the current ad hoc markdown frontmatter parser with a real parser that can handle:
+Reemplazar el actual analizador ad hoc de frontmatter de markdown con un analizador real que pueda manejar:
 
-- nested YAML
-- arrays/objects reliably
-- consistent round-tripping
+- YAML anidado
+- arreglos/objetos de forma confiable
+- ida y vuelta consistente
 
-This is a prerequisite for the new package model.
+Esto es un prerrequisito para el nuevo modelo de paquete.
 
-## 12. CLI Plan
+## 12. Plan de CLI
 
-The CLI should continue to support direct import/export without a registry.
+El CLI debería seguir admitiendo importación/exportación directa sin registro.
 
-Target commands:
+Comandos objetivo:
 
 - `paperclipai company export <company-id> --out <path>`
 - `paperclipai company import <path-or-url> --dry-run`
 - `paperclipai company import <path-or-url> --target existing -C <company-id>`
 
-Planned additions:
+Adiciones planificadas:
 
 - `--package-kind company|team|agent`
-- `--attach-under <agent-id-or-slug>` for team imports
+- `--attach-under <agent-id-or-slug>` para importaciones de equipos
 - `--strict-pins`
 - `--allow-unpinned`
 - `--materialize-references`
 - `--sync-skills`
 
-## 13. UI Plan
+## 13. Plan de UI
 
-### 13.1 Company Settings Import / Export
+### 13.1 Importación/exportación en ajustes de empresa
 
-Add a real import/export section to Company Settings.
+Agregar una sección real de importación/exportación a los ajustes de empresa.
 
-Export UI:
+UI de exportación:
 
-- export package kind selector
-- include options
-- local download/export destination guidance
-- attribution/reference summary
+- selector de tipo de paquete de exportación
+- opciones de inclusión
+- guía de descarga/destino de exportación local
+- resumen de atribución/referencias
 
-Import UI:
+UI de importación:
 
-- source entry:
-  - upload/folder where supported
-  - GitHub URL
-  - generic URL
-- preview pane with:
-  - resolved package root
-  - dependency tree
-  - checkboxes by entity
-  - trust/licensing warnings
-  - secrets requirements
-  - collision plan
+- entrada de fuente:
+  - subida/carpeta donde se admita
+  - URL de GitHub
+  - URL genérica
+- panel de vista previa con:
+  - raíz de paquete resuelta
+  - árbol de dependencias
+  - casillas de verificación por entidad
+  - advertencias de confianza/licencias
+  - requisitos de secretos
+  - plan de colisiones
 
-### 13.2 Team Import UX
+### 13.2 UX de importación de equipos
 
-If importing a team into an existing company:
+Si se importa un equipo en una empresa existente:
 
-- show the subtree structure
-- require the user to choose where to attach it
-- preview manager/reporting updates before apply
-- preserve imported-team provenance so the UI can later say “these agents came from team package X”
+- mostrar la estructura del subárbol
+- exigir al usuario elegir dónde adjuntarlo
+- vista previa de actualizaciones de gerente/reportes antes de aplicar
+- conservar la procedencia del equipo importado para que la UI pueda decir más adelante "estos agentes vinieron del paquete de equipo X"
 
-### 13.3 Skills UX
+### 13.3 UX de habilidades
 
-See also:
+Ver también:
 
 - `doc/plans/2026-03-14-skills-ui-product-plan.md`
 
-If importing skills:
+Si se importan habilidades:
 
-- show whether each skill is local, vendored, or referenced
-- show whether it contains scripts/assets
-- preserve Agent Skills compatibility in presentation and export
-- preserve `skills.sh` compatibility in both import and install flows
-- show agent skill attachments by shortname/slug rather than noisy file paths
-- treat agent skills as a dedicated agent tab, not just another subsection of configuration
-- show current adapter-reported skills when supported
-- show desired package skills separately from actual adapter state
-- offer reconcile actions when the adapter supports sync
+- mostrar si cada habilidad es local, incluida o referenciada
+- mostrar si contiene scripts/recursos
+- conservar la compatibilidad con Agent Skills en la presentación y la exportación
+- conservar la compatibilidad con `skills.sh` tanto en la importación como en los flujos de instalación
+- mostrar los adjuntos de habilidades del agente por nombre corto/slug en lugar de rutas de archivo ruidosas
+- tratar las habilidades del agente como una pestaña dedicada del agente, no solo otra subsección de configuración
+- mostrar las habilidades actuales reportadas por el adaptador cuando se admita
+- mostrar las habilidades deseadas del paquete por separado del estado real del adaptador
+- ofrecer acciones de conciliación cuando el adaptador admita sincronización
 
-## 14. Rollout Phases
+## 14. Fases de despliegue
 
-### Phase 1: Stabilize Current V1 Portability
+### Fase 1: Estabilizar la portabilidad V1 actual
 
-- add tests for current portability flows
-- replace the frontmatter parser
-- add Company Settings UI for current import/export capabilities
-- start cutover work toward the markdown-first package reader
+- agregar pruebas para los flujos de portabilidad actuales
+- reemplazar el analizador de frontmatter
+- agregar UI de ajustes de empresa para las capacidades actuales de importación/exportación
+- comenzar el trabajo de migración hacia el lector de paquetes markdown-first
 
-### Phase 2: Markdown-First Package Reader
+### Fase 2: Lector de paquetes markdown-first
 
-- support `COMPANY.md` / `TEAM.md` / `AGENTS.md` root detection
-- build internal graph from markdown-first packages
-- support local folder and GitHub repo inputs natively
-- support agent skill references by shortname/slug
-- resolve local `skills/<slug>/SKILL.md` packages by convention
-- support `skills.sh`-compatible skill repos as V1 package sources
+- admitir detección de raíz `COMPANY.md` / `TEAM.md` / `AGENTS.md`
+- construir el grafo interno desde paquetes markdown-first
+- admitir entradas de carpeta local y repositorio de GitHub de forma nativa
+- admitir referencias de habilidades de agente por nombre corto/slug
+- resolver paquetes locales `skills/<slug>/SKILL.md` por convención
+- admitir repositorios de habilidades compatibles con `skills.sh` como fuentes de paquete V1
 
-### Phase 3: Graph-Based Import UX And Skill Surfaces
+### Fase 3: UX de importación basada en grafo y superficies de habilidades
 
-- entity tree preview
-- checkbox selection
-- team subtree attach flow
-- licensing/trust/reference warnings
-- company skill library groundwork
-- dedicated agent `Skills` tab groundwork
-- adapter skill read/sync UI groundwork
+- vista previa de árbol de entidades
+- selección con casillas de verificación
+- flujo de adjunto de subárbol de equipo
+- advertencias de licencias/confianza/referencias
+- base de la biblioteca de habilidades de empresa
+- base de la pestaña dedicada de `Skills` del agente
+- base de la UI de lectura/sincronización de habilidades del adaptador
 
-### Phase 4: New Export Model
+### Fase 4: Nuevo modelo de exportación
 
-- export markdown-first folder structure by default
+- exportar estructura de carpetas markdown-first por defecto
 
-### Phase 5: Provenance And Upgrades
+### Fase 5: Procedencia y actualizaciones
 
-- persist install provenance
-- support package-aware re-import and upgrades
-- improve collision matching beyond slug-only
-- add imported-team provenance grouping
-- add desired-vs-actual skill sync state
+- persistir la procedencia de instalación
+- admitir reimportación y actualizaciones conscientes del paquete
+- mejorar la coincidencia de colisiones más allá de solo slug
+- agregar agrupación por procedencia de equipos importados
+- agregar estado de sincronización de habilidades deseadas vs reales
 
-### Phase 6: Optional Seed Content
+### Fase 6: Contenido semilla opcional
 
-- goals
-- projects
-- starter issues/tasks
+- objetivos
+- proyectos
+- issues/tareas iniciales
 
-This phase is intentionally after the structural model is stable.
+Esta fase es intencionalmente posterior a que el modelo estructural esté estable.
 
-## 15. Documentation Plan
+## 15. Plan de documentación
 
-Primary docs:
+Documentos principales:
 
-- `docs/companies/companies-spec.md` as the package-format draft
-- this implementation plan for rollout sequencing
+- `docs/companies/companies-spec.md` como el borrador del formato de paquete
+- este plan de implementación para la secuencia de despliegue
 
-Docs to update later as implementation lands:
+Documentos a actualizar más adelante a medida que aterrice la implementación:
 
 - `doc/SPEC-implementation.md`
 - `docs/api/companies.md`
 - `docs/cli/control-plane-commands.md`
-- board operator docs for Company Settings import/export
+- documentos de operador del tablero para la importación/exportación en ajustes de empresa
 
-## 16. Open Questions
+## 16. Preguntas abiertas
 
-1. Should imported skill packages be stored as managed package files in Paperclip storage, or only referenced at import time?
-   Decision: managed package files should support both company-scoped reuse and agent-scoped attachment.
-2. What is the minimum adapter skill interface needed to make the UI useful across Claude Code, Codex, OpenClaw, and future adapters?
-   Decision: use the baseline interface in section 8.5.
-3. Should Paperclip support direct local folder selection in the web UI, or keep that CLI-only initially?
-4. Do we want optional generated lock files in phase 2, or defer them until provenance work?
-5. How strict should pinning be by default for GitHub references:
-   - warn on unpinned
-   - or block in normal mode
-6. Is package-provenance grouping enough for imported teams, or do we expect product requirements soon that would justify a first-class runtime `teams` table?
-   Decision: provenance grouping is enough for the import/export product model for now.
+1. ¿Los paquetes de habilidades importados deberían almacenarse como archivos de paquete gestionados en el almacenamiento de Paperclip, o solo referenciarse en tiempo de importación?
+   Decisión: los archivos de paquete gestionados deberían admitir tanto la reutilización con alcance de empresa como el adjunto con alcance de agente.
+2. ¿Cuál es la interfaz mínima de habilidades del adaptador necesaria para que la UI sea útil en Claude Code, Codex, OpenClaw y futuros adaptadores?
+   Decisión: usar la interfaz base de la sección 8.5.
+3. ¿Paperclip debería admitir la selección directa de carpetas locales en la UI web, o mantener eso solo en el CLI inicialmente?
+4. ¿Queremos archivos de bloqueo generados opcionales en la fase 2, o los diferimos hasta el trabajo de procedencia?
+5. ¿Qué tan estricto debería ser el fijado por defecto para las referencias de GitHub:
+   - advertir cuando no esté fijado
+   - o bloquear en modo normal
+6. ¿La agrupación por procedencia del paquete es suficiente para los equipos importados, o esperamos pronto requisitos de producto que justificarían una tabla de `teams` de tiempo de ejecución de primera clase?
+   Decisión: la agrupación por procedencia es suficiente por ahora para el modelo de producto de importación/exportación.
 
-## 17. Recommendation
+## 17. Recomendación
 
-Engineering should treat this as the current plan of record for company import/export beyond the existing V1 portability feature.
+Ingeniería debería tratar esto como el plan vigente actual para la importación/exportación de empresas más allá de la función de portabilidad V1 existente.
 
-Immediate next steps:
+Próximos pasos inmediatos:
 
-1. accept `docs/companies/companies-spec.md` as the package-format draft
-2. implement phase 1 stabilization work
-3. build phase 2 markdown-first package reader before expanding ClipHub or `companies.sh`
-4. treat the old manifest-based format as deprecated and not part of the future surface
+1. aceptar `docs/companies/companies-spec.md` como el borrador del formato de paquete
+2. implementar el trabajo de estabilización de la fase 1
+3. construir el lector de paquetes markdown-first de la fase 2 antes de expandir ClipHub o `companies.sh`
+4. tratar el formato antiguo basado en manifiesto como obsoleto y no parte de la superficie futura
 
-This keeps Paperclip aligned with:
+Esto mantiene a Paperclip alineado con:
 
-- GitHub-native distribution
-- Agent Skills compatibility
-- a registry-optional ecosystem model
+- distribución nativa de GitHub
+- compatibilidad con Agent Skills
+- un modelo de ecosistema opcional al registro

@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Backup the configured Paperclip database to the configured backup directory
-# (default: ~/.paperclip/instances/<instance-id>/data/backups)
+# Respalda la base de datos de Paperclip configurada en el directorio de respaldos configurado
+# (predeterminado: ~/.paperclip/instances/<instance-id>/data/backups)
 #
-# Usage:
+# Uso:
 #   ./scripts/backup-db.sh
 #   pnpm db:backup
 #
-# The embedded postgres must be running (start with: pnpm dev)
+# El postgres embebido debe estar en ejecución (inícialo con: pnpm dev)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"

@@ -9,15 +9,15 @@ import {
 import { plugins } from "./plugins.js";
 
 /**
- * `plugin_logs` table — structured log storage for plugin workers.
+ * Tabla `plugin_logs`: almacenamiento estructurado de registros para los workers de plugins.
  *
- * Each row stores a single log entry emitted by a plugin worker via
- * `ctx.logger.info(...)` etc. Logs are queryable by plugin, level, and
- * time range to support the operator logs panel and debugging workflows.
+ * Cada fila almacena una entrada de registro emitida por un worker de plugin mediante
+ * `ctx.logger.info(...)`, etc. Los registros se pueden consultar por plugin, nivel y
+ * rango de tiempo para apoyar el panel de registros del operador y los flujos de depuración.
  *
- * Rows are inserted by the host when handling `log` notifications from
- * the worker process. A capped retention policy can be applied via
- * periodic cleanup (e.g. delete rows older than 7 days).
+ * El host inserta las filas al manejar las notificaciones `log` del
+ * proceso worker. Se puede aplicar una política de retención limitada mediante
+ * limpieza periódica (p. ej. eliminar filas con más de 7 días).
  *
  * @see PLUGIN_SPEC.md §26 — Observability
  */

@@ -1,85 +1,84 @@
-# Doc Maintenance Audit Checklist
+# Lista de verificación de auditoría de mantenimiento de la documentación
 
-Use this checklist when auditing each target document. For each item, compare
-against the change summary from git history.
+Usar esta lista al auditar cada documento objetivo. Para cada elemento, comparar con el resumen de cambios del historial de git.
 
 ## README.md
 
-### Features table
-- [ ] Each feature card reflects a shipped capability
-- [ ] No feature cards for things that don't exist yet
-- [ ] No major shipped features missing from the table
+### Tabla de funciones
+- [ ] Cada tarjeta de función refleja una capacidad ya publicada
+- [ ] Sin tarjetas de funciones para cosas que aún no existen
+- [ ] Sin funciones principales publicadas ausentes de la tabla
 
-### Roadmap
-- [ ] Nothing listed as "planned" or "coming soon" that already shipped
-- [ ] No removed/cancelled items still listed
-- [ ] Items reflect current priorities (cross-check with recent PRs)
+### Hoja de ruta
+- [ ] Nada listado como «planned» o «coming soon» que ya se haya publicado
+- [ ] Sin elementos eliminados/cancelados aún listados
+- [ ] Los elementos reflejan las prioridades actuales (contrastar con PR recientes)
 
-### Quickstart
-- [ ] `npx paperclipai onboard` command is correct
-- [ ] Manual install steps are accurate (clone URL, commands)
-- [ ] Prerequisites (Node version, pnpm version) are current
-- [ ] Server URL and port are correct
+### Inicio rápido
+- [ ] El comando `npx paperclipai onboard` es correcto
+- [ ] Los pasos de instalación manual son correctos (URL de clonación, comandos)
+- [ ] Los requisitos previos (versión de Node, versión de pnpm) están actualizados
+- [ ] La URL del servidor y el puerto son correctos
 
-### "What is Paperclip" section
-- [ ] High-level description is accurate
-- [ ] Step table (Define goal / Hire team / Approve and run) is correct
+### Sección «Qué es Paperclip»
+- [ ] La descripción general es precisa
+- [ ] La tabla de pasos (Define goal / Hire team / Approve and run) es correcta
 
-### "Works with" table
-- [ ] All supported adapters/runtimes are listed
-- [ ] No removed adapters still listed
-- [ ] Logos and labels match current adapter names
+### Tabla «Funciona con»
+- [ ] Todos los adaptadores/runtimes soportados están listados
+- [ ] Sin adaptadores eliminados aún listados
+- [ ] Los logos y etiquetas coinciden con los nombres actuales de los adaptadores
 
-### "Paperclip is right for you if"
-- [ ] Use cases are still accurate
-- [ ] No claims about capabilities that don't exist
+### «Paperclip es para ti si»
+- [ ] Los casos de uso siguen siendo precisos
+- [ ] Sin afirmaciones sobre capacidades que no existen
 
-### "Why Paperclip is special"
-- [ ] Technical claims are accurate (atomic execution, governance, etc.)
-- [ ] No features listed that were removed or significantly changed
+### «Por qué Paperclip es especial»
+- [ ] Las afirmaciones técnicas son precisas (ejecución atómica, gobernanza, etc.)
+- [ ] Sin funciones listadas que se hayan eliminado o cambiado significativamente
 
 ### FAQ
-- [ ] Answers are still correct
-- [ ] No references to removed features or outdated behavior
+- [ ] Las respuestas siguen siendo correctas
+- [ ] Sin referencias a funciones eliminadas o comportamientos obsoletos
 
-### Development section
-- [ ] Commands are accurate (`pnpm dev`, `pnpm build`, etc.)
-- [ ] Link to DEVELOPING.md is correct
+### Sección de desarrollo
+- [ ] Los comandos son correctos (`pnpm dev`, `pnpm build`, etc.)
+- [ ] El enlace a DEVELOPING.md es correcto
 
 ## doc/SPEC.md
 
-### Company Model
-- [ ] Fields match current schema
-- [ ] Governance model description is accurate
+### Modelo de empresa
+- [ ] Los campos coinciden con el esquema actual
+- [ ] La descripción del modelo de gobernanza es precisa
 
-### Agent Model
-- [ ] Adapter types match what's actually supported
-- [ ] Agent configuration description is accurate
-- [ ] No features described as "not supported" or "not V1" that shipped
+### Modelo de agente
+- [ ] Los tipos de adaptador coinciden con lo realmente soportado
+- [ ] La descripción de la configuración del agente es precisa
+- [ ] Sin funciones descritas como «not supported» o «not V1» que ya se hayan publicado
 
-### Task Model
-- [ ] Task hierarchy description is accurate
-- [ ] Status values match current implementation
+### Modelo de tareas
+- [ ] La descripción de la jerarquía de tareas es precisa
+- [ ] Los valores de estado coinciden con la implementación actual
 
-### Extensions / Plugins
-- [ ] If plugins are shipped, no "not in V1" or "future" language
-- [ ] Plugin model description matches implementation
+### Extensiones / Plugins
+- [ ] Si los plugins están publicados, sin lenguaje de «not in V1» o «future»
+- [ ] La descripción del modelo de plugins coincide con la implementación
 
-### Open Questions
-- [ ] Resolved questions removed or updated
-- [ ] No "TBD" items that have been decided
+### Preguntas abiertas
+- [ ] Las preguntas resueltas se eliminaron o actualizaron
+- [ ] Sin elementos «TBD» ya decididos
 
 ## doc/PRODUCT.md
 
-### Core Concepts
-- [ ] Company, Employees, Task Management descriptions accurate
-- [ ] Agent Execution modes described correctly
-- [ ] No missing major concepts
+### Conceptos principales
+- [ ] Descripciones de Company, Employees, Task Management precisas
+- [ ] Modos de Agent Execution descritos correctamente
+- [ ] Sin conceptos principales faltantes
 
-### Principles
-- [ ] Principles haven't been contradicted by shipped features
-- [ ] No principles referencing removed capabilities
+### Principios
+- [ ] Los principios no han sido contradichos por funciones publicadas
+- [ ] Sin principios que referencien capacidades eliminadas
 
-### User Flow
-- [ ] Dream scenario still reflects actual onboarding
-- [ ] Steps are achievable with current features
+### Flujo de usuario
+- [ ] El escenario ideal aún refleja la incorporación real
+- [ ] Los pasos son alcanzables con las funciones actuales

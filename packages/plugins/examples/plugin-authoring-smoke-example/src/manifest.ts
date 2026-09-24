@@ -4,9 +4,9 @@ const manifest: PaperclipPluginManifestV1 = {
   id: "paperclipai.plugin-authoring-smoke-example",
   apiVersion: 1,
   version: "0.1.0",
-  displayName: "Plugin Authoring Smoke Example",
-  description: "A Paperclip plugin",
-  author: "Plugin Author",
+  displayName: "Ejemplo de prueba de humo de autor\u00eda de plugin",
+  description: "Un plugin de Paperclip",
+  author: "Autor del plugin",
   categories: ["connector"],
   capabilities: [
     "events.subscribe",
@@ -22,7 +22,7 @@ const manifest: PaperclipPluginManifestV1 = {
       {
         type: "dashboardWidget",
         id: "health-widget",
-        displayName: "Plugin Authoring Smoke Example Health",
+        displayName: "Salud del ejemplo de prueba de humo de autor\u00eda de plugin",
         exportName: "DashboardWidget"
       }
     ]

@@ -743,7 +743,7 @@ class GatewayWsClient {
         }
       }
       void Promise.resolve(this.opts.onEvent(parsed)).catch(() => {
-        // Ignore event callback failures and keep stream active.
+        // Ignorar los fallos de la devolución de llamada de eventos y mantener el stream activo.
       });
       return;
     }
@@ -1000,7 +1000,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       exitCode: 1,
       signal: null,
       timedOut: false,
-      errorMessage: "OpenClaw gateway adapter missing url",
+      errorMessage: "Al adaptador del gateway de OpenClaw le falta la url",
       errorCode: "openclaw_gateway_url_missing",
     };
   }
@@ -1011,7 +1011,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       exitCode: 1,
       signal: null,
       timedOut: false,
-      errorMessage: `Invalid gateway URL: ${urlValue}`,
+      errorMessage: `URL del gateway no válida: ${urlValue}`,
       errorCode: "openclaw_gateway_url_invalid",
     };
   }
@@ -1021,7 +1021,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       exitCode: 1,
       signal: null,
       timedOut: false,
-      errorMessage: `Unsupported gateway URL protocol: ${parsedUrl.protocol}`,
+      errorMessage: `Protocolo de URL del gateway no admitido: ${parsedUrl.protocol}`,
       errorCode: "openclaw_gateway_url_protocol",
     };
   }
@@ -1265,7 +1265,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
 
       if (acceptedStatus === "error") {
         const errorMessage =
-          nonEmpty(acceptedPayload?.summary) ?? lifecycleError ?? "OpenClaw gateway agent request failed";
+          nonEmpty(acceptedPayload?.summary) ?? lifecycleError ?? "Falló la solicitud del agente del gateway de OpenClaw";
         return {
           exitCode: 1,
           signal: null,
@@ -1291,7 +1291,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
             exitCode: 1,
             signal: null,
             timedOut: true,
-            errorMessage: `OpenClaw gateway run timed out after ${waitTimeoutMs}ms`,
+            errorMessage: `La ejecución del gateway de OpenClaw agotó el tiempo de espera después de ${waitTimeoutMs}ms`,
             errorCode: "openclaw_gateway_wait_timeout",
             resultJson: waitPayload,
           };
@@ -1305,7 +1305,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
             errorMessage:
               nonEmpty(waitPayload?.error) ??
               lifecycleError ??
-              "OpenClaw gateway run failed",
+              "Falló la ejecución del gateway de OpenClaw",
             errorCode: "openclaw_gateway_wait_error",
             resultJson: waitPayload,
           };
@@ -1316,7 +1316,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
             exitCode: 1,
             signal: null,
             timedOut: false,
-            errorMessage: `Unexpected OpenClaw gateway agent.wait status: ${waitStatus}`,
+            errorMessage: `Estado inesperado de agent.wait del gateway de OpenClaw: ${waitStatus}`,
             errorCode: "openclaw_gateway_wait_status_unexpected",
             resultJson: waitPayload,
           };

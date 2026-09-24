@@ -199,7 +199,7 @@ const adaptersByType = new Map<string, ServerAdapterModule>(
 export function getServerAdapter(type: string): ServerAdapterModule {
   const adapter = adaptersByType.get(type);
   if (!adapter) {
-    // Fall back to process adapter for unknown types
+    // Usar el adaptador de procesos para tipos desconocidos
     return processAdapter;
   }
   return adapter;

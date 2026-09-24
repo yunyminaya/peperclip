@@ -93,6 +93,6 @@ describe("resolveCommandContext", () => {
 
     expect(() =>
       resolveCommandContext({ context: contextPath, apiBase: "http://localhost:3100" }, { requireCompany: true }),
-    ).toThrow(/Company ID is required/);
+    ).toThrow(/Se requiere el ID de empresa/);
   });
 });

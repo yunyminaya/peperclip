@@ -39,7 +39,7 @@ const MAX_ISSUE_COMMENT_PAGE_LIMIT = 500;
 function assertTransition(from: string, to: string) {
   if (from === to) return;
   if (!ALL_ISSUE_STATUSES.includes(to)) {
-    throw conflict(`Unknown issue status: ${to}`);
+    throw conflict(`Estado de issue desconocido: ${to}`);
   }
 }
 
@@ -456,15 +456,15 @@ export function issueService(db: Db) {
       .where(eq(agents.id, agentId))
       .then((rows) => rows[0] ?? null);
 
-    if (!assignee) throw notFound("Assignee agent not found");
+    if (!assignee) throw notFound("Agente asignado no encontrado");
     if (assignee.companyId !== companyId) {
-      throw unprocessable("Assignee must belong to same company");
+      throw unprocessable("El asignado debe pertenecer a la misma empresa");
     }
     if (assignee.status === "pending_approval") {
-      throw conflict("Cannot assign work to pending approval agents");
+      throw conflict("No se puede asignar trabajo a agentes pendientes de aprobación");
     }
     if (assignee.status === "terminated") {
-      throw conflict("Cannot assign work to terminated agents");
+      throw conflict("No se puede asignar trabajo a agentes terminados");
     }
   }
 
@@ -482,7 +482,7 @@ export function issueService(db: Db) {
       )
       .then((rows) => rows[0] ?? null);
     if (!membership) {
-      throw notFound("Assignee user not found");
+      throw notFound("Usuario asignado no encontrado");
     }
   }
 
@@ -496,10 +496,10 @@ export function issueService(db: Db) {
       .from(projectWorkspaces)
       .where(eq(projectWorkspaces.id, projectWorkspaceId))
       .then((rows) => rows[0] ?? null);
-    if (!workspace) throw notFound("Project workspace not found");
-    if (workspace.companyId !== companyId) throw unprocessable("Project workspace must belong to same company");
+    if (!workspace) throw notFound("Espacio de trabajo del proyecto no encontrado");
+    if (workspace.companyId !== companyId) throw unprocessable("El espacio de trabajo del proyecto debe pertenecer a la misma empresa");
     if (projectId && workspace.projectId !== projectId) {
-      throw unprocessable("Project workspace must belong to the selected project");
+      throw unprocessable("El espacio de trabajo del proyecto debe pertenecer al proyecto seleccionado");
     }
   }
 
@@ -513,10 +513,10 @@ export function issueService(db: Db) {
       .from(executionWorkspaces)
       .where(eq(executionWorkspaces.id, executionWorkspaceId))
       .then((rows) => rows[0] ?? null);
-    if (!workspace) throw notFound("Execution workspace not found");
-    if (workspace.companyId !== companyId) throw unprocessable("Execution workspace must belong to same company");
+    if (!workspace) throw notFound("Espacio de trabajo de ejecución no encontrado");
+    if (workspace.companyId !== companyId) throw unprocessable("El espacio de trabajo de ejecución debe pertenecer a la misma empresa");
     if (projectId && workspace.projectId !== projectId) {
-      throw unprocessable("Execution workspace must belong to the selected project");
+      throw unprocessable("El espacio de trabajo de ejecución debe pertenecer al proyecto seleccionado");
     }
   }
 
@@ -527,7 +527,7 @@ export function issueService(db: Db) {
       .from(labels)
       .where(and(eq(labels.companyId, companyId), inArray(labels.id, labelIds)));
     if (existing.length !== new Set(labelIds).size) {
-      throw unprocessable("One or more labels are invalid for this company");
+      throw unprocessable("Una o más etiquetas no son válidas para esta empresa");
     }
   }
 
@@ -861,7 +861,7 @@ export function issueService(db: Db) {
         delete issueData.executionWorkspaceSettings;
       }
       if (data.assigneeAgentId && data.assigneeUserId) {
-        throw unprocessable("Issue can only have one assignee");
+        throw unprocessable("El issue solo puede tener un asignado");
       }
       if (data.assigneeAgentId) {
         await assertAssignableAgent(companyId, data.assigneeAgentId);
@@ -876,7 +876,7 @@ export function issueService(db: Db) {
         await assertValidExecutionWorkspace(companyId, data.projectId, data.executionWorkspaceId);
       }
       if (data.status === "in_progress" && !data.assigneeAgentId && !data.assigneeUserId) {
-        throw unprocessable("in_progress issues require an assignee");
+        throw unprocessable("Los issues en in_progress requieren un asignado");
       }
       return db.transaction(async (tx) => {
         const defaultCompanyGoal = await getDefaultCompanyGoal(tx, companyId);
@@ -991,10 +991,10 @@ export function issueService(db: Db) {
         issueData.assigneeUserId !== undefined ? issueData.assigneeUserId : existing.assigneeUserId;
 
       if (nextAssigneeAgentId && nextAssigneeUserId) {
-        throw unprocessable("Issue can only have one assignee");
+        throw unprocessable("El issue solo puede tener un asignado");
       }
       if (patch.status === "in_progress" && !nextAssigneeAgentId && !nextAssigneeUserId) {
-        throw unprocessable("in_progress issues require an assignee");
+        throw unprocessable("Los issues en in_progress requieren un asignado");
       }
       if (issueData.assigneeAgentId) {
         await assertAssignableAgent(existing.companyId, issueData.assigneeAgentId);
@@ -1105,7 +1105,7 @@ export function issueService(db: Db) {
         .from(issues)
         .where(eq(issues.id, id))
         .then((rows) => rows[0] ?? null);
-      if (!issueCompany) throw notFound("Issue not found");
+      if (!issueCompany) throw notFound("Issue no encontrado");
       await assertAssignableAgent(issueCompany.companyId, agentId);
 
       const now = new Date();
@@ -1157,7 +1157,7 @@ export function issueService(db: Db) {
         .where(eq(issues.id, id))
         .then((rows) => rows[0] ?? null);
 
-      if (!current) throw notFound("Issue not found");
+      if (!current) throw notFound("Issue no encontrado");
 
       if (
         current.assigneeAgentId === agentId &&
@@ -1207,7 +1207,7 @@ export function issueService(db: Db) {
         }
       }
 
-      // If this run already owns it and it's in_progress, return it (no self-409)
+      // Si esta ejecución ya lo posee y está en in_progress, la devuelve (sin self-409)
       if (
         current.assigneeAgentId === agentId &&
         current.status === "in_progress" &&
@@ -1218,7 +1218,7 @@ export function issueService(db: Db) {
         return enriched;
       }
 
-      throw conflict("Issue checkout conflict", {
+      throw conflict("Conflicto de checkout del issue", {
         issueId: current.id,
         status: current.status,
         assigneeAgentId: current.assigneeAgentId,
@@ -1239,7 +1239,7 @@ export function issueService(db: Db) {
         .where(eq(issues.id, id))
         .then((rows) => rows[0] ?? null);
 
-      if (!current) throw notFound("Issue not found");
+      if (!current) throw notFound("Issue no encontrado");
 
       if (
         current.status === "in_progress" &&
@@ -1271,7 +1271,7 @@ export function issueService(db: Db) {
         }
       }
 
-      throw conflict("Issue run ownership conflict", {
+      throw conflict("Conflicto de propiedad de ejecución del issue", {
         issueId: current.id,
         status: current.status,
         assigneeAgentId: current.assigneeAgentId,
@@ -1290,7 +1290,7 @@ export function issueService(db: Db) {
 
       if (!existing) return null;
       if (actorAgentId && existing.assigneeAgentId && existing.assigneeAgentId !== actorAgentId) {
-        throw conflict("Only assignee can release issue");
+        throw conflict("Solo el asignado puede liberar el issue");
       }
       if (
         actorAgentId &&
@@ -1299,7 +1299,7 @@ export function issueService(db: Db) {
         existing.checkoutRunId &&
         !sameRunLock(existing.checkoutRunId, actorRunId ?? null)
       ) {
-        throw conflict("Only checkout run can release issue", {
+        throw conflict("Solo la ejecución de checkout puede liberar el issue", {
           issueId: existing.id,
           assigneeAgentId: existing.assigneeAgentId,
           checkoutRunId: existing.checkoutRunId,
@@ -1452,7 +1452,7 @@ export function issueService(db: Db) {
         .where(eq(issues.id, issueId))
         .then((rows) => rows[0] ?? null);
 
-      if (!issue) throw notFound("Issue not found");
+      if (!issue) throw notFound("Issue no encontrado");
 
       const currentUserRedactionOptions = {
         enabled: (await instanceSettings.getGeneral()).censorUsernameInLogs,
@@ -1469,7 +1469,7 @@ export function issueService(db: Db) {
         })
         .returning();
 
-      // Update issue's updatedAt so comment activity is reflected in recency sorting
+      // Actualiza el updatedAt del issue para que la actividad de comentarios se refleje en el orden por recencia
       await db
         .update(issues)
         .set({ updatedAt: new Date() })
@@ -1495,7 +1495,7 @@ export function issueService(db: Db) {
         .from(issues)
         .where(eq(issues.id, input.issueId))
         .then((rows) => rows[0] ?? null);
-      if (!issue) throw notFound("Issue not found");
+      if (!issue) throw notFound("Issue no encontrado");
 
       if (input.issueCommentId) {
         const comment = await db
@@ -1503,9 +1503,9 @@ export function issueService(db: Db) {
           .from(issueComments)
           .where(eq(issueComments.id, input.issueCommentId))
           .then((rows) => rows[0] ?? null);
-        if (!comment) throw notFound("Issue comment not found");
+        if (!comment) throw notFound("Comentario de issue no encontrado");
         if (comment.companyId !== issue.companyId || comment.issueId !== issue.id) {
-          throw unprocessable("Attachment comment must belong to same issue and company");
+          throw unprocessable("El comentario con adjunto debe pertenecer al mismo issue y empresa");
         }
       }
 
@@ -1725,7 +1725,7 @@ export function issueService(db: Db) {
         currentId = parent.parentId ?? null;
       }
 
-      // Batch-fetch referenced projects and goals
+      // Obtiene en lote los proyectos y objetivos referenciados
       const projectIds = [...new Set(raw.map(a => a.projectId).filter((id): id is string => id != null))];
       const goalIds = [...new Set(raw.map(a => a.goalId).filter((id): id is string => id != null))];
 
@@ -1802,7 +1802,7 @@ export function issueService(db: Db) {
             workspaces,
             primaryWorkspace,
           });
-          // Also collect goalIds from projects
+          // También recolecta los goalIds de los proyectos
           if (r.goalId && !goalIds.includes(r.goalId)) goalIds.push(r.goalId);
         }
       }

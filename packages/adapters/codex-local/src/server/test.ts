@@ -65,13 +65,13 @@ export async function testEnvironment(
     checks.push({
       code: "codex_cwd_valid",
       level: "info",
-      message: `Working directory is valid: ${cwd}`,
+      message: `El directorio de trabajo es válido: ${cwd}`,
     });
   } catch (err) {
     checks.push({
       code: "codex_cwd_invalid",
       level: "error",
-      message: err instanceof Error ? err.message : "Invalid working directory",
+      message: err instanceof Error ? err.message : "Directorio de trabajo inválido",
       detail: cwd,
     });
   }
@@ -87,13 +87,13 @@ export async function testEnvironment(
     checks.push({
       code: "codex_command_resolvable",
       level: "info",
-      message: `Command is executable: ${command}`,
+      message: `El comando es ejecutable: ${command}`,
     });
   } catch (err) {
     checks.push({
       code: "codex_command_unresolvable",
       level: "error",
-      message: err instanceof Error ? err.message : "Command is not executable",
+      message: err instanceof Error ? err.message : "El comando no es ejecutable",
       detail: command,
     });
   }
@@ -101,12 +101,12 @@ export async function testEnvironment(
   const configOpenAiKey = env.OPENAI_API_KEY;
   const hostOpenAiKey = process.env.OPENAI_API_KEY;
   if (isNonEmpty(configOpenAiKey) || isNonEmpty(hostOpenAiKey)) {
-    const source = isNonEmpty(configOpenAiKey) ? "adapter config env" : "server environment";
+    const source = isNonEmpty(configOpenAiKey) ? "env de la configuración del adaptador" : "entorno del servidor";
     checks.push({
       code: "codex_openai_api_key_present",
       level: "info",
-      message: "OPENAI_API_KEY is set for Codex authentication.",
-      detail: `Detected in ${source}.`,
+      message: "OPENAI_API_KEY está definida para la autenticación de Codex.",
+      detail: `Detectado en ${source}.`,
     });
   } else {
     const codexHome = isNonEmpty(env.CODEX_HOME) ? env.CODEX_HOME : undefined;
@@ -115,15 +115,15 @@ export async function testEnvironment(
       checks.push({
         code: "codex_native_auth_present",
         level: "info",
-        message: "Codex is authenticated via its own auth configuration.",
-        detail: codexAuth.email ? `Logged in as ${codexAuth.email}.` : `Credentials found in ${path.join(codexHome ?? codexHomeDir(), "auth.json")}.`,
+        message: "Codex está autenticado mediante su propia configuración de autenticación.",
+        detail: codexAuth.email ? `Sesión iniciada como ${codexAuth.email}.` : `Credenciales encontradas en ${path.join(codexHome ?? codexHomeDir(), "auth.json")}.`,
       });
     } else {
       checks.push({
         code: "codex_openai_api_key_missing",
         level: "warn",
-        message: "OPENAI_API_KEY is not set. Codex runs may fail until authentication is configured.",
-        hint: "Set OPENAI_API_KEY in adapter env, shell environment, or run `codex auth` to log in.",
+        message: "OPENAI_API_KEY no está definida. Las ejecuciones de Codex pueden fallar hasta que se configure la autenticación.",
+        hint: "Define OPENAI_API_KEY en el env del adaptador, el entorno del shell, o ejecuta `codex auth` para iniciar sesión.",
       });
     }
   }
@@ -135,9 +135,9 @@ export async function testEnvironment(
       checks.push({
         code: "codex_hello_probe_skipped_custom_command",
         level: "info",
-        message: "Skipped hello probe because command is not `codex`.",
+        message: "Prueba hello omitida porque el comando no es `codex`.",
         detail: command,
-        hint: "Use the `codex` CLI command to run the automatic login and installation probe.",
+        hint: "Usa el comando CLI `codex` para ejecutar la prueba automática de inicio de sesión e instalación.",
       });
     } else {
       const model = asString(config.model, "").trim();
@@ -187,8 +187,8 @@ export async function testEnvironment(
         checks.push({
           code: "codex_hello_probe_timed_out",
           level: "warn",
-          message: "Codex hello probe timed out.",
-          hint: "Retry the probe. If this persists, verify Codex can run `Respond with hello` from this directory manually.",
+          message: "La prueba hello de Codex se agotó.",
+          hint: "Reintenta la prueba. Si persiste, verifica que Codex pueda ejecutar `Respond with hello` desde este directorio manualmente.",
         });
       } else if ((probe.exitCode ?? 1) === 0) {
         const summary = parsed.summary.trim();
@@ -197,30 +197,30 @@ export async function testEnvironment(
           code: hasHello ? "codex_hello_probe_passed" : "codex_hello_probe_unexpected_output",
           level: hasHello ? "info" : "warn",
           message: hasHello
-            ? "Codex hello probe succeeded."
-            : "Codex probe ran but did not return `hello` as expected.",
+            ? "La prueba hello de Codex tuvo éxito."
+            : "La prueba de Codex se ejecutó pero no devolvió `hello` como se esperaba.",
           ...(summary ? { detail: summary.replace(/\s+/g, " ").trim().slice(0, 240) } : {}),
           ...(hasHello
             ? {}
             : {
-                hint: "Try the probe manually (`codex exec --json -` then prompt: Respond with hello) to inspect full output.",
+                hint: "Prueba manualmente (`codex exec --json -` y luego el prompt: Respond with hello) para inspeccionar la salida completa.",
               }),
         });
       } else if (CODEX_AUTH_REQUIRED_RE.test(authEvidence)) {
         checks.push({
           code: "codex_hello_probe_auth_required",
           level: "warn",
-          message: "Codex CLI is installed, but authentication is not ready.",
+          message: "El CLI de Codex está instalado, pero la autenticación no está lista.",
           ...(detail ? { detail } : {}),
-          hint: "Configure OPENAI_API_KEY in adapter env/shell or run `codex login`, then retry the probe.",
+          hint: "Configura OPENAI_API_KEY en el env/shell del adaptador o ejecuta `codex login`, luego reintenta la prueba.",
         });
       } else {
         checks.push({
           code: "codex_hello_probe_failed",
           level: "error",
-          message: "Codex hello probe failed.",
+          message: "La prueba hello de Codex falló.",
           ...(detail ? { detail } : {}),
-          hint: "Run `codex exec --json -` manually in this working directory and prompt `Respond with hello` to debug.",
+          hint: "Ejecuta `codex exec --json -` manualmente en este directorio de trabajo con el prompt `Respond with hello` para depurar.",
         });
       }
     }

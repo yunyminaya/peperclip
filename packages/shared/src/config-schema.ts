@@ -131,7 +131,7 @@ export const paperclipConfigSchema = z
       if (value.server.exposure !== "private") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "server.exposure must be private when deploymentMode is local_trusted",
+          message: "server.exposure debe ser private cuando deploymentMode es local_trusted",
           path: ["server", "exposure"],
         });
       }
@@ -141,7 +141,7 @@ export const paperclipConfigSchema = z
     if (value.auth.baseUrlMode === "explicit" && !value.auth.publicBaseUrl) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "auth.publicBaseUrl is required when auth.baseUrlMode is explicit",
+        message: "auth.publicBaseUrl es obligatorio cuando auth.baseUrlMode es explicit",
         path: ["auth", "publicBaseUrl"],
       });
     }
@@ -149,7 +149,7 @@ export const paperclipConfigSchema = z
     if (value.server.exposure === "public" && value.auth.baseUrlMode !== "explicit") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "auth.baseUrlMode must be explicit when deploymentMode=authenticated and exposure=public",
+        message: "auth.baseUrlMode debe ser explicit cuando deploymentMode=authenticated y exposure=public",
         path: ["auth", "baseUrlMode"],
       });
     }
@@ -157,7 +157,7 @@ export const paperclipConfigSchema = z
     if (value.server.exposure === "public" && !value.auth.publicBaseUrl) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "auth.publicBaseUrl is required when deploymentMode=authenticated and exposure=public",
+        message: "auth.publicBaseUrl es obligatorio cuando deploymentMode=authenticated y exposure=public",
         path: ["auth", "publicBaseUrl"],
       });
     }

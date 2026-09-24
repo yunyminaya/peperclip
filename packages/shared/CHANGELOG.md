@@ -2,55 +2,55 @@
 
 ## 0.3.1
 
-### Patch Changes
+### Cambios de parche
 
-- Stable release preparation for 0.3.1
+- Preparación de la versión estable 0.3.1
 
 ## 0.3.0
 
-### Minor Changes
+### Cambios menores
 
-- 6077ae6: Add support for Pi local adapter in constants and onboarding UI.
-- Stable release preparation for 0.3.0
+- 6077ae6: Agregado el soporte del adaptador local Pi en constantes y en la UI de incorporación.
+- Preparación de la versión estable 0.3.0
 
 ## 0.2.7
 
-### Patch Changes
+### Cambios de parche
 
-- Version bump (patch)
+- Incremento de versión (parche)
 
 ## 0.2.6
 
-### Patch Changes
+### Cambios de parche
 
-- Version bump (patch)
+- Incremento de versión (parche)
 
 ## 0.2.5
 
-### Patch Changes
+### Cambios de parche
 
-- Version bump (patch)
+- Incremento de versión (parche)
 
 ## 0.2.4
 
-### Patch Changes
+### Cambios de parche
 
-- Version bump (patch)
+- Incremento de versión (parche)
 
 ## 0.2.3
 
-### Patch Changes
+### Cambios de parche
 
-- Version bump (patch)
+- Incremento de versión (parche)
 
 ## 0.2.2
 
-### Patch Changes
+### Cambios de parche
 
-- Version bump (patch)
+- Incremento de versión (parche)
 
 ## 0.2.1
 
-### Patch Changes
+### Cambios de parche
 
-- Version bump (patch)
+- Incremento de versión (parche)

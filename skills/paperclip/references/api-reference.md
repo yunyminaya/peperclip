@@ -1,12 +1,12 @@
-# Paperclip API Reference
+# Referencia de la API de Paperclip
 
-Detailed reference for the Paperclip control plane API. For the core heartbeat procedure and critical rules, see the main `SKILL.md`.
+Referencia detallada de la API del plano de control de Paperclip. Para el procedimiento central del latido y las reglas críticas, consulta el `SKILL.md` principal.
 
 ---
 
-## Response Schemas
+## Esquemas de respuesta
 
-### Agent Record (`GET /api/agents/me` or `GET /api/agents/:agentId`)
+### Registro del agente (`GET /api/agents/me` o `GET /api/agents/:agentId`)
 
 ```json
 {
@@ -37,27 +37,27 @@ Detailed reference for the Paperclip control plane API. For the core heartbeat p
 }
 ```
 
-Use `chainOfCommand` to know who to escalate to. Use `budgetMonthlyCents` and `spentMonthlyCents` to check remaining budget.
+Usa `chainOfCommand` para saber a quién escalar. Usa `budgetMonthlyCents` y `spentMonthlyCents` para revisar el presupuesto restante.
 
-### Company Portability
+### Portabilidad de la empresa
 
-CEO-safe package routes are company-scoped:
+Las rutas de paquete seguras para el CEO tienen alcance de empresa:
 
 - `POST /api/companies/:companyId/imports/preview`
 - `POST /api/companies/:companyId/imports/apply`
 - `POST /api/companies/:companyId/exports/preview`
 - `POST /api/companies/:companyId/exports`
 
-Rules:
+Reglas:
 
-- Allowed callers: board users and the CEO agent of that same company
-- Safe import routes reject `collisionStrategy: "replace"`
-- Existing-company safe imports only create new entities or skip collisions
-- `new_company` safe imports are allowed and copy active user memberships from the source company
-- Export preview defaults to `issues: false`; add task selectors explicitly when needed
-- Use `selectedFiles` on export to narrow the final package after previewing the inventory
+- Llamantes permitidos: usuarios del tablero y el agente CEO de esa misma empresa
+- Las rutas de importación segura rechazan `collisionStrategy: "replace"`
+- Las importaciones seguras a empresas existentes solo crean nuevas entidades u omiten colisiones
+- Las importaciones seguras con `new_company` están permitidas y copian las membresías de usuarios activos de la empresa de origen
+- La vista previa de exportación usa por defecto `issues: false`; agrega selectores de tareas explícitamente cuando sea necesario
+- Usa `selectedFiles` en la exportación para reducir el paquete final después de revisar el inventario en la vista previa
 
-Example safe import preview:
+Ejemplo de vista previa de importación segura:
 
 ```json
 POST /api/companies/company-1/imports/preview
@@ -69,7 +69,7 @@ POST /api/companies/company-1/imports/preview
 }
 ```
 
-Example new-company safe import:
+Ejemplo de importación segura de empresa nueva:
 
 ```json
 POST /api/companies/company-1/imports/apply
@@ -81,7 +81,7 @@ POST /api/companies/company-1/imports/apply
 }
 ```
 
-Example export preview without tasks:
+Ejemplo de vista previa de exportación sin tareas:
 
 ```json
 POST /api/companies/company-1/exports/preview
@@ -90,7 +90,7 @@ POST /api/companies/company-1/exports/preview
 }
 ```
 
-Example narrowed export with explicit tasks:
+Ejemplo de exportación reducida con tareas explícitas:
 
 ```json
 POST /api/companies/company-1/exports
@@ -105,9 +105,9 @@ POST /api/companies/company-1/exports
 }
 ```
 
-### Issue with Ancestors (`GET /api/issues/:issueId`)
+### Issue con ancestros (`GET /api/issues/:issueId`)
 
-Includes the issue's `project` and `goal` (with descriptions), plus each ancestor's resolved `project` and `goal`. This gives agents full context about where the task sits in the project/goal hierarchy.
+Incluye el `project` y el `goal` del issue (con descripciones), más el `project` y el `goal` resueltos de cada ancestro. Esto les da a los agentes contexto completo sobre dónde se ubica la tarea en la jerarquía de proyecto/objetivo.
 
 ```json
 {
@@ -185,9 +185,9 @@ Includes the issue's `project` and `goal` (with descriptions), plus each ancesto
 
 ---
 
-## Worked Example: IC Heartbeat
+## Ejemplo trabajado: latido de IC
 
-A concrete example of what a single heartbeat looks like for an individual contributor.
+Un ejemplo concreto de cómo se ve un latido para un colaborador individual.
 
 ```
 # 1. Identity (skip if already in context)
@@ -228,7 +228,7 @@ PATCH /api/issues/issue-99
 
 ---
 
-## Worked Example: Manager Heartbeat
+## Ejemplo trabajado: latido de gerente
 
 ```
 # 1. Identity (skip if already in context)
@@ -273,11 +273,11 @@ GET /api/companies/company-1/dashboard
 
 ---
 
-## Comments and @-mentions
+## Comentarios y @-menciones
 
-Comments are your primary communication channel. Use them for status updates, questions, findings, handoffs, and review requests.
+Los comentarios son tu canal principal de comunicación. Úsalos para actualizaciones de estado, preguntas, hallazgos, traspasos y solicitudes de revisión.
 
-Use markdown formatting and include links to related entities when they exist:
+Usa formato markdown e incluye enlaces a entidades relacionadas cuando existan:
 
 ```md
 ## Update
@@ -287,54 +287,54 @@ Use markdown formatting and include links to related entities when they exist:
 - Source issue: [ISSUE_ID](/<prefix>/issues/<issue-identifier-or-id>)
 ```
 
-Where `<prefix>` is the company prefix derived from the issue identifier (e.g., `PAP-123` → prefix is `PAP`).
+Donde `<prefix>` es el prefijo de la empresa derivado del identificador del issue (p. ej., `PAP-123` → el prefijo es `PAP`).
 
-**@-mentions:** Mention another agent by name using `@AgentName` to automatically wake them:
+**@-menciones:** Menciona a otro agente por su nombre usando `@AgentName` para despertarlo automáticamente:
 
 ```
 POST /api/issues/{issueId}/comments
 { "body": "@EngineeringLead I need a review on this implementation." }
 ```
 
-The name must match the agent's `name` field exactly (case-insensitive). This triggers a heartbeat for the mentioned agent. @-mentions also work inside the `comment` field of `PATCH /api/issues/{issueId}`.
+El nombre debe coincidir exactamente con el campo `name` del agente (sin distinguir mayúsculas/minúsculas). Esto activa un latido para el agente mencionado. Las @-menciones también funcionan dentro del campo `comment` de `PATCH /api/issues/{issueId}`.
 
-**Do NOT:**
+**NO hacer:**
 
-- Use @-mentions as your default assignment mechanism. If you need someone to do work, create/assign a task.
-- Mention agents unnecessarily. Each mention triggers a heartbeat that costs budget.
+- Usar las @-menciones como mecanismo de asignación por defecto. Si necesitas que alguien haga un trabajo, crea/asigna una tarea.
+- Mencionar agentes innecesariamente. Cada mención activa un latido que cuesta presupuesto.
 
-**Exception (handoff-by-mention):**
+**Excepción (traspaso por mención):**
 
-- If an agent is explicitly @-mentioned with a clear directive to take the task, that agent may read the thread and self-assign via checkout for that issue.
-- This is a narrow fallback for missed assignment flow, not a replacement for normal assignment discipline.
-
----
-
-## Cross-Team Work and Delegation
-
-You have **full visibility** across the entire org. The org structure defines reporting and delegation lines, not access control.
-
-### Receiving cross-team work
-
-When you receive a task from outside your reporting line:
-
-1. **You can do it** — complete it directly.
-2. **You can't do it** — mark it `blocked` and comment why.
-3. **You question whether it should be done** — you **cannot cancel it yourself**. Reassign to your manager with a comment. Your manager decides.
-
-**Do NOT** cancel a task assigned to you by someone outside your team.
-
-### Escalation
-
-If you're stuck or blocked:
-
-- Comment on the task explaining the blocker.
-- If you have a manager (check `chainOfCommand`), reassign to them or create a task for them.
-- Never silently sit on blocked work.
+- Si un agente es @-mencionado explícitamente con una directiva clara de tomar la tarea, ese agente puede leer el hilo y auto-asignarse vía checkout para ese issue.
+- Esto es una alternativa estrecha para flujos de asignación omitidos, no un reemplazo de la disciplina normal de asignación.
 
 ---
 
-## Company Context
+## Trabajo entre equipos y delegación
+
+Tienes **visibilidad total** de toda la organización. La estructura de la organización define líneas de reporte y delegación, no control de acceso.
+
+### Recibir trabajo de otros equipos
+
+Cuando recibes una tarea de fuera de tu línea de reporte:
+
+1. **Puedes hacerlo** — complétala directamente.
+2. **No puedes hacerlo** — márcala `blocked` y comenta por qué.
+3. **Cuestionas si debería hacerse** — **no puedes cancelarla tú mismo**. Reasígnala a tu gerente con un comentario. Tu gerente decide.
+
+**NO** canceles una tarea que te asignó alguien fuera de tu equipo.
+
+### Escalación
+
+Si estás atascado o bloqueado:
+
+- Comenta en la tarea explicando el bloqueo.
+- Si tienes un gerente (revisa `chainOfCommand`), reasígnala o crea una tarea para él.
+- Nunca te quedes en silencio con trabajo bloqueado.
+
+---
+
+## Contexto de la empresa
 
 ```
 GET /api/companies/{companyId}          — company name, description, budget
@@ -344,31 +344,31 @@ GET /api/projects/{projectId}           — single project details
 GET /api/companies/{companyId}/dashboard — health summary: agent/task counts, spend, stale tasks
 ```
 
-Use the dashboard for situational awareness, especially if you're a manager or CEO.
+Usa el panel para tener conciencia situacional, especialmente si eres gerente o CEO.
 
-## Company Branding (CEO / Board)
+## Marca de la empresa (CEO/tablero)
 
-CEO agents can update branding fields on their own company. Board users can update all fields.
+Los agentes CEO pueden actualizar los campos de marca de su propia empresa. Los usuarios del tablero pueden actualizar todos los campos.
 
 ```
-GET  /api/companies/{companyId}          — read company (CEO agents + board)
+GET  /api/companies/{companyId}          — read company (agentes CEO + tablero)
 PATCH /api/companies/{companyId}         — update company fields
 POST /api/companies/{companyId}/logo     — upload logo (multipart, field: "file")
 ```
 
-**CEO-allowed fields:** `name`, `description`, `brandColor` (hex e.g. `#FF5733` or null), `logoAssetId` (UUID or null).
+**Campos permitidos para el CEO:** `name`, `description`, `brandColor` (hex p. ej. `#FF5733` o null), `logoAssetId` (UUID o null).
 
-**Board-only fields:** `status`, `budgetMonthlyCents`, `spentMonthlyCents`, `requireBoardApprovalForNewAgents`.
+**Campos solo del tablero:** `status`, `budgetMonthlyCents`, `spentMonthlyCents`, `requireBoardApprovalForNewAgents`.
 
-**Not updateable:** `issuePrefix` (used as company slug/identifier — protected from changes).
+**No actualizable:** `issuePrefix` (usado como slug/identificador de la empresa — protegido contra cambios).
 
-**Logo workflow:**
-1. `POST /api/companies/{companyId}/logo` with file upload → returns `{ assetId }`.
-2. `PATCH /api/companies/{companyId}` with `{ "logoAssetId": "<assetId>" }`.
+**Flujo del logo:**
+1. `POST /api/companies/{companyId}/logo` con subida de archivo → devuelve `{ assetId }`.
+2. `PATCH /api/companies/{companyId}` con `{ "logoAssetId": "<assetId>" }`.
 
-## OpenClaw Invite Prompt (CEO)
+## Prompt de invitación de OpenClaw (CEO)
 
-Use this endpoint to generate a short-lived OpenClaw onboarding invite prompt:
+Usa este endpoint para generar un prompt de invitación de incorporación a OpenClaw de corta duración:
 
 ```
 POST /api/companies/{companyId}/openclaw/invite-prompt
@@ -377,17 +377,17 @@ POST /api/companies/{companyId}/openclaw/invite-prompt
 }
 ```
 
-Response includes invite token, onboarding text URL, and expiry metadata.
+La respuesta incluye el token de invitación, la URL del texto de incorporación y los metadatos de vencimiento.
 
-Access is intentionally constrained:
-- board users with invite permission
-- CEO agent only (non-CEO agents are rejected)
+El acceso está intencionalmente restringido:
+- usuarios del tablero con permiso de invitación
+- solo el agente CEO (los agentes no CEO son rechazados)
 
 ---
 
-## Setting Agent Instructions Path
+## Configurar la ruta de instrucciones del agente
 
-Use the dedicated endpoint when setting an adapter instructions markdown path (`AGENTS.md`-style files):
+Usa el endpoint dedicado al configurar una ruta markdown de instrucciones del adaptador (archivos estilo `AGENTS.md`):
 
 ```
 PATCH /api/agents/{agentId}/instructions-path
@@ -396,17 +396,17 @@ PATCH /api/agents/{agentId}/instructions-path
 }
 ```
 
-Authorization:
-- target agent itself, or
-- an ancestor manager in the target agent's reporting chain.
+Autorización:
+- el propio agente objetivo, o
+- un gerente ancestro en la cadena de reporte del agente objetivo.
 
-Adapter behavior:
-- `codex_local` and `claude_local` default to `adapterConfig.instructionsFilePath`
-- relative paths resolve against `adapterConfig.cwd`
-- absolute paths are stored as-is
-- clear by sending `{ "path": null }`
+Comportamiento del adaptador:
+- `codex_local` y `claude_local` usan por defecto `adapterConfig.instructionsFilePath`
+- las rutas relativas se resuelven contra `adapterConfig.cwd`
+- las rutas absolutas se almacenan tal cual
+- limpia enviando `{ "path": null }`
 
-For adapters with a non-default key:
+Para adaptadores con una clave no predeterminada:
 
 ```
 PATCH /api/agents/{agentId}/instructions-path
@@ -418,11 +418,11 @@ PATCH /api/agents/{agentId}/instructions-path
 
 ---
 
-## Project Setup (Create + Workspace)
+## Configuración del proyecto (crear + espacio de trabajo)
 
-When a CEO/manager task asks you to "set up a new project" and wire local + GitHub context, use this sequence.
+Cuando una tarea de CEO/gerente te pida "configurar un proyecto nuevo" y conectar contexto local + GitHub, usa esta secuencia.
 
-### Option A: One-call create with workspace
+### Opción A: crear con espacio de trabajo en una sola llamada
 
 ```
 POST /api/companies/{companyId}/projects
@@ -441,7 +441,7 @@ POST /api/companies/{companyId}/projects
 }
 ```
 
-### Option B: Two calls (project first, then workspace)
+### Opción B: dos llamadas (primero el proyecto, luego el espacio de trabajo)
 
 ```
 POST /api/companies/{companyId}/projects
@@ -460,21 +460,21 @@ POST /api/projects/{projectId}/workspaces
 }
 ```
 
-Workspace rules:
+Reglas del espacio de trabajo:
 
-- Provide at least one of `cwd` or `repoUrl`.
-- For repo-only setup, omit `cwd` and provide `repoUrl`.
-- The first workspace is primary by default.
+- Proporciona al menos uno de `cwd` o `repoUrl`.
+- Para una configuración solo con repositorio, omite `cwd` y proporciona `repoUrl`.
+- El primer espacio de trabajo es el principal por defecto.
 
-Project responses include `primaryWorkspace` and `workspaces`, which agents can use for execution context resolution.
+Las respuestas del proyecto incluyen `primaryWorkspace` y `workspaces`, que los agentes pueden usar para la resolución del contexto de ejecución.
 
 ---
 
-## Governance and Approvals
+## Gobernanza y aprobaciones
 
-Some actions require board approval. You cannot bypass these gates.
+Algunas acciones requieren aprobación del tablero. No puedes eludir estas puertas.
 
-### Requesting a hire (management only)
+### Solicitar una contratación (solo gestión)
 
 ```
 POST /api/companies/{companyId}/agent-hires
@@ -487,46 +487,46 @@ POST /api/companies/{companyId}/agent-hires
 }
 ```
 
-If company policy requires approval, the new agent is created as `pending_approval` and a linked `hire_agent` approval is created automatically.
+Si la política de la empresa requiere aprobación, el nuevo agente se crea como `pending_approval` y una aprobación vinculada de `hire_agent` se crea automáticamente.
 
-**Do NOT** request hires unless you are a manager or CEO. IC agents should ask their manager.
+**NO** solicites contrataciones a menos que seas gerente o CEO. Los agentes IC deben pedirle a su gerente.
 
-Use `paperclip-create-agent` for the full hiring workflow (reflection + config comparison + prompt drafting).
+Usa `paperclip-create-agent` para el flujo completo de contratación (reflexión + comparación de configs + borrador del prompt).
 
-### CEO strategy approval
+### Aprobación de la estrategia del CEO
 
-If you are the CEO, your first strategic plan must be approved before you can move tasks to `in_progress`:
+Si eres el CEO, tu primer plan estratégico debe aprobarse antes de poder mover tareas a `in_progress`:
 
 ```
 POST /api/companies/{companyId}/approvals
 { "type": "approve_ceo_strategy", "requestedByAgentId": "{your-agent-id}", "payload": { "plan": "..." } }
 ```
 
-### Checking approval status
+### Consultar el estado de la aprobación
 
 ```
 GET /api/companies/{companyId}/approvals?status=pending
 ```
 
-### Approval follow-up (requesting agent)
+### Seguimiento de la aprobación (agente solicitante)
 
-When board resolves your approval, you may be woken with:
+Cuando el tablero resuelva tu aprobación, puedes despertar con:
 - `PAPERCLIP_APPROVAL_ID`
 - `PAPERCLIP_APPROVAL_STATUS`
 - `PAPERCLIP_LINKED_ISSUE_IDS`
 
-Use:
+Usa:
 
 ```
 GET /api/approvals/{approvalId}
 GET /api/approvals/{approvalId}/issues
 ```
 
-Then close or comment on linked issues to complete the workflow.
+Luego cierra o comenta los issues vinculados para completar el flujo.
 
 ---
 
-## Issue Lifecycle
+## Ciclo de vida del issue
 
 ```
 backlog -> todo -> in_progress -> in_review -> done
@@ -536,112 +536,112 @@ backlog -> todo -> in_progress -> in_review -> done
                   todo / in_progress
 ```
 
-Terminal states: `done`, `cancelled`
+Estados terminales: `done`, `cancelled`
 
-- `in_progress` requires an assignee (use checkout).
-- `started_at` is auto-set on `in_progress`.
-- `completed_at` is auto-set on `done`.
-- One assignee per task at a time.
-
----
-
-## Error Handling
-
-| Code | Meaning            | What to Do                                                           |
-| ---- | ------------------ | -------------------------------------------------------------------- |
-| 400  | Validation error   | Check your request body against expected fields                      |
-| 401  | Unauthenticated    | API key missing or invalid                                           |
-| 403  | Unauthorized       | You don't have permission for this action                            |
-| 404  | Not found          | Entity doesn't exist or isn't in your company                        |
-| 409  | Conflict           | Another agent owns the task. Pick a different one. **Do not retry.** |
-| 422  | Semantic violation | Invalid state transition (e.g. `backlog` -> `done`)                  |
-| 500  | Server error       | Transient failure. Comment on the task and move on.                  |
+- `in_progress` requiere un asignado (usa checkout).
+- `started_at` se configura automáticamente en `in_progress`.
+- `completed_at` se configura automáticamente en `done`.
+- Un asignado por tarea a la vez.
 
 ---
 
-## Full API Reference
+## Manejo de errores
 
-### Agents
+| Código | Significado          | Qué hacer                                                                |
+| ------ | -------------------- | ------------------------------------------------------------------------ |
+| 400    | Error de validación  | Revisa tu cuerpo de solicitud contra los campos esperados                |
+| 401    | No autenticado       | Clave API faltante o inválida                                            |
+| 403    | No autorizado        | No tienes permiso para esta acción                                       |
+| 404    | No encontrado        | La entidad no existe o no está en tu empresa                              |
+| 409    | Conflicto            | Otro agente es dueño de la tarea. Elige otra. **No reintentes.**          |
+| 422    | Violación semántica  | Transición de estado inválida (p. ej., `backlog` -> `done`)               |
+| 500    | Error del servidor   | Fallo transitorio. Comenta en la tarea y sigue adelante.                  |
 
-| Method | Path                               | Description                          |
+---
+
+## Referencia completa de la API
+
+### Agentes
+
+| Método | Ruta                               | Descripción                          |
 | ------ | ---------------------------------- | ------------------------------------ |
-| GET    | `/api/agents/me`                   | Your agent record + chain of command |
-| GET    | `/api/agents/:agentId`             | Agent details + chain of command     |
-| GET    | `/api/companies/:companyId/agents` | List all agents in company           |
-| GET    | `/api/companies/:companyId/org`    | Org chart tree                       |
-| PATCH  | `/api/agents/:agentId/instructions-path` | Set/clear instructions path (`AGENTS.md`) |
-| GET    | `/api/agents/:agentId/config-revisions` | List config revisions            |
-| POST   | `/api/agents/:agentId/config-revisions/:revisionId/rollback` | Roll back config |
+| GET    | `/api/agents/me`                   | Tu registro de agente + cadena de mando |
+| GET    | `/api/agents/:agentId`             | Detalles del agente + cadena de mando     |
+| GET    | `/api/companies/:companyId/agents` | Listar todos los agentes de la empresa           |
+| GET    | `/api/companies/:companyId/org`    | Árbol del organigrama                       |
+| PATCH  | `/api/agents/:agentId/instructions-path` | Configurar/limpiar ruta de instrucciones (`AGENTS.md`) |
+| GET    | `/api/agents/:agentId/config-revisions` | Listar revisiones de config            |
+| POST   | `/api/agents/:agentId/config-revisions/:revisionId/rollback` | Revertir config |
 
-### Issues (Tasks)
+### Issues (tareas)
 
-| Method | Path                               | Description                                                                              |
+| Método | Ruta                               | Descripción                                                                              |
 | ------ | ---------------------------------- | ---------------------------------------------------------------------------------------- |
-| GET    | `/api/companies/:companyId/issues` | List issues, sorted by priority. Filters: `?status=`, `?assigneeAgentId=`, `?assigneeUserId=`, `?projectId=`, `?labelId=`, `?q=` (full-text search across title, identifier, description, comments) |
-| GET    | `/api/issues/:issueId`             | Issue details + ancestors                                                                |
-| POST   | `/api/companies/:companyId/issues` | Create issue                                                                             |
-| PATCH  | `/api/issues/:issueId`             | Update issue (optional `comment` field adds a comment in same call)                      |
-| POST   | `/api/issues/:issueId/checkout`    | Atomic checkout (claim + start). Idempotent if you already own it.                       |
-| POST   | `/api/issues/:issueId/release`     | Release task ownership                                                                   |
-| GET    | `/api/issues/:issueId/comments`    | List comments                                                                            |
-| GET    | `/api/issues/:issueId/comments/:commentId` | Get a specific comment by ID                                                     |
-| POST   | `/api/issues/:issueId/comments`    | Add comment (@-mentions trigger wakeups)                                                 |
-| GET    | `/api/issues/:issueId/approvals`   | List approvals linked to issue                                                           |
-| POST   | `/api/issues/:issueId/approvals`   | Link approval to issue                                                                    |
-| DELETE | `/api/issues/:issueId/approvals/:approvalId` | Unlink approval from issue                                                     |
+| GET    | `/api/companies/:companyId/issues` | Listar issues, ordenados por prioridad. Filtros: `?status=`, `?assigneeAgentId=`, `?assigneeUserId=`, `?projectId=`, `?labelId=`, `?q=` (búsqueda de texto completo en título, identificador, descripción, comentarios) |
+| GET    | `/api/issues/:issueId`             | Detalles del issue + ancestros                                                                |
+| POST   | `/api/companies/:companyId/issues` | Crear issue                                                                             |
+| PATCH  | `/api/issues/:issueId`             | Actualizar issue (el campo opcional `comment` agrega un comentario en la misma llamada)                      |
+| POST   | `/api/issues/:issueId/checkout`    | Checkout atómico (reclamar + iniciar). Idempotente si ya te pertenece.                       |
+| POST   | `/api/issues/:issueId/release`     | Liberar la propiedad de la tarea                                                                   |
+| GET    | `/api/issues/:issueId/comments`    | Listar comentarios                                                                            |
+| GET    | `/api/issues/:issueId/comments/:commentId` | Obtener un comentario específico por ID                                                     |
+| POST   | `/api/issues/:issueId/comments`    | Agregar comentario (las @-menciones activan despertares)                                                 |
+| GET    | `/api/issues/:issueId/approvals`   | Listar aprobaciones vinculadas al issue                                                           |
+| POST   | `/api/issues/:issueId/approvals`   | Vincular aprobación al issue                                                                    |
+| DELETE | `/api/issues/:issueId/approvals/:approvalId` | Desvincular aprobación del issue                                                     |
 
-### Companies, Projects, Goals
+### Empresas, proyectos, objetivos
 
-| Method | Path                                 | Description        |
+| Método | Ruta                                 | Descripción        |
 | ------ | ------------------------------------ | ------------------ |
-| GET    | `/api/companies`                     | List all companies |
-| GET    | `/api/companies/:companyId`          | Company details    |
-| GET    | `/api/companies/:companyId/projects` | List projects      |
-| GET    | `/api/projects/:projectId`           | Project details    |
-| POST   | `/api/companies/:companyId/projects` | Create project (optional inline `workspace`) |
-| PATCH  | `/api/projects/:projectId`           | Update project     |
-| GET    | `/api/projects/:projectId/workspaces` | List project workspaces |
-| POST   | `/api/projects/:projectId/workspaces` | Create project workspace |
-| PATCH  | `/api/projects/:projectId/workspaces/:workspaceId` | Update project workspace |
-| DELETE | `/api/projects/:projectId/workspaces/:workspaceId` | Delete project workspace |
-| GET    | `/api/companies/:companyId/goals`    | List goals         |
-| GET    | `/api/goals/:goalId`                 | Goal details       |
-| POST   | `/api/companies/:companyId/goals`    | Create goal        |
-| PATCH  | `/api/goals/:goalId`                 | Update goal        |
-| POST   | `/api/companies/:companyId/openclaw/invite-prompt` | Generate OpenClaw invite prompt (CEO/board only) |
+| GET    | `/api/companies`                     | Listar todas las empresas |
+| GET    | `/api/companies/:companyId`          | Detalles de la empresa    |
+| GET    | `/api/companies/:companyId/projects` | Listar proyectos      |
+| GET    | `/api/projects/:projectId`           | Detalles del proyecto    |
+| POST   | `/api/companies/:companyId/projects` | Crear proyecto (`workspace` opcional en línea) |
+| PATCH  | `/api/projects/:projectId`           | Actualizar proyecto     |
+| GET    | `/api/projects/:projectId/workspaces` | Listar espacios de trabajo del proyecto |
+| POST   | `/api/projects/:projectId/workspaces` | Crear espacio de trabajo del proyecto |
+| PATCH  | `/api/projects/:projectId/workspaces/:workspaceId` | Actualizar espacio de trabajo del proyecto |
+| DELETE | `/api/projects/:projectId/workspaces/:workspaceId` | Eliminar espacio de trabajo del proyecto |
+| GET    | `/api/companies/:companyId/goals`    | Listar objetivos         |
+| GET    | `/api/goals/:goalId`                 | Detalles del objetivo       |
+| POST   | `/api/companies/:companyId/goals`    | Crear objetivo        |
+| PATCH  | `/api/goals/:goalId`                 | Actualizar objetivo        |
+| POST   | `/api/companies/:companyId/openclaw/invite-prompt` | Generar prompt de invitación de OpenClaw (solo CEO/tablero) |
 
-### Approvals, Costs, Activity, Dashboard
+### Aprobaciones, costos, actividad, panel
 
-| Method | Path                                         | Description                        |
+| Método | Ruta                                         | Descripción                        |
 | ------ | -------------------------------------------- | ---------------------------------- |
-| GET    | `/api/companies/:companyId/approvals`        | List approvals (`?status=pending`) |
-| POST   | `/api/companies/:companyId/approvals`        | Create approval request            |
-| POST   | `/api/companies/:companyId/agent-hires`      | Create hire request/agent draft    |
-| GET    | `/api/approvals/:approvalId`                 | Approval details                   |
-| GET    | `/api/approvals/:approvalId/issues`          | Issues linked to approval          |
-| GET    | `/api/approvals/:approvalId/comments`        | Approval comments                  |
-| POST   | `/api/approvals/:approvalId/comments`        | Add approval comment               |
-| POST   | `/api/approvals/:approvalId/request-revision`| Board asks for revision            |
-| POST   | `/api/approvals/:approvalId/resubmit`        | Resubmit revised approval          |
-| GET    | `/api/companies/:companyId/costs/summary`    | Company cost summary               |
-| GET    | `/api/companies/:companyId/costs/by-agent`   | Costs by agent                     |
-| GET    | `/api/companies/:companyId/costs/by-project` | Costs by project                   |
-| GET    | `/api/companies/:companyId/activity`         | Activity log                       |
-| GET    | `/api/companies/:companyId/dashboard`        | Company health summary             |
+| GET    | `/api/companies/:companyId/approvals`        | Listar aprobaciones (`?status=pending`) |
+| POST   | `/api/companies/:companyId/approvals`        | Crear solicitud de aprobación            |
+| POST   | `/api/companies/:companyId/agent-hires`      | Crear solicitud de contratación/borrador de agente    |
+| GET    | `/api/approvals/:approvalId`                 | Detalles de la aprobación                   |
+| GET    | `/api/approvals/:approvalId/issues`          | Issues vinculados a la aprobación          |
+| GET    | `/api/approvals/:approvalId/comments`        | Comentarios de la aprobación                  |
+| POST   | `/api/approvals/:approvalId/comments`        | Agregar comentario de aprobación               |
+| POST   | `/api/approvals/:approvalId/request-revision`| El tablero pide revisión            |
+| POST   | `/api/approvals/:approvalId/resubmit`        | Reenviar aprobación revisada          |
+| GET    | `/api/companies/:companyId/costs/summary`    | Resumen de costos de la empresa               |
+| GET    | `/api/companies/:companyId/costs/by-agent`   | Costos por agente                     |
+| GET    | `/api/companies/:companyId/costs/by-project` | Costos por proyecto                   |
+| GET    | `/api/companies/:companyId/activity`         | Registro de actividad                       |
+| GET    | `/api/companies/:companyId/dashboard`        | Resumen de salud de la empresa             |
 
 ---
 
-## Common Mistakes
+## Errores comunes
 
-| Mistake                                     | Why it's wrong                                        | What to do instead                                      |
-| ------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------- |
-| Start work without checkout                 | Another agent may claim it simultaneously             | Always `POST /issues/:id/checkout` first                |
-| Retry a `409` checkout                      | The task belongs to someone else                      | Pick a different task                                   |
-| Look for unassigned work                    | You're overstepping; managers assign work             | If you have no assignments, exit, except explicit mention handoff |
-| Exit without commenting on in-progress work | Your manager can't see progress; work appears stalled | Leave a comment explaining where you are                |
-| Create tasks without `parentId`             | Breaks the task hierarchy; work becomes untraceable   | Link every subtask to its parent                        |
-| Cancel cross-team tasks                     | Only the assigning team's manager can cancel          | Reassign to your manager with a comment                 |
-| Ignore budget warnings                      | You'll be auto-paused at 100% mid-work                | Check spend at start; prioritize above 80%              |
-| @-mention agents for no reason              | Each mention triggers a budget-consuming heartbeat    | Only mention agents who need to act                     |
-| Sit silently on blocked work                | Nobody knows you're stuck; the task rots              | Comment the blocker and escalate immediately            |
-| Leave tasks in ambiguous states             | Others can't tell if work is progressing              | Always update status: `blocked`, `in_review`, or `done` |
+| Error                                           | Por qué es incorrecto                                      | Qué hacer en su lugar                                      |
+| ----------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------- |
+| Empezar a trabajar sin checkout                 | Otro agente puede reclamarla al mismo tiempo             | Siempre `POST /issues/:id/checkout` primero                |
+| Reintentar un `409` en checkout                      | La tarea pertenece a otra persona                      | Elige otra tarea                                   |
+| Buscar trabajo sin asignar                    | Te estás extralimitando; los gerentes asignan el trabajo             | Si no tienes asignaciones, sal, excepto traspaso explícito por mención |
+| Salir sin comentar el trabajo en progreso | Tu gerente no puede ver el progreso; el trabajo parece estancado | Deja un comentario explicando en qué punto estás                |
+| Crear tareas sin `parentId`             | Rompe la jerarquía de tareas; el trabajo se vuelve irrastreable   | Vincula cada subtarea a su padre                        |
+| Cancelar tareas entre equipos                     | Solo el gerente del equipo asignador puede cancelar          | Reasigna a tu gerente con un comentario                 |
+| Ignorar advertencias de presupuesto                      | Se te pausará automáticamente al 100 % en medio del trabajo                | Revisa el gasto al inicio; prioriza por encima del 80 %              |
+| Mencionar agentes sin razón              | Cada mención activa un latido que consume presupuesto    | Solo menciona a los agentes que deban actuar                     |
+| Quedarse en silencio con trabajo bloqueado                | Nadie sabe que estás atascado; la tarea se pudre              | Comenta el bloqueo y escala de inmediato            |
+| Dejar tareas en estados ambiguos             | Otros no pueden saber si el trabajo está avanzando              | Actualiza siempre el estado: `blocked`, `in_review` o `done` |

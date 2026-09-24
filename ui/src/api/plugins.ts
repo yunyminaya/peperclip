@@ -1,13 +1,13 @@
 /**
- * @fileoverview Frontend API client for the Paperclip plugin system.
+ * @fileoverview Cliente API de frontend para el sistema de plugins de Paperclip.
  *
- * All functions in `pluginsApi` map 1:1 to REST endpoints on
- * `server/src/routes/plugins.ts`. Call sites should consume these functions
- * through React Query hooks (`useQuery` / `useMutation`) and reference cache
- * keys from `queryKeys.plugins.*`.
+ * Todas las funciones de `pluginsApi` corresponden 1:1 a endpoints REST en
+ * `server/src/routes/plugins.ts`. Los sitios de llamada deben consumir estas funciones
+ * a través de hooks de React Query (`useQuery` / `useMutation`) y referenciar las claves
+ * de caché desde `queryKeys.plugins.*`.
  *
- * @see ui/src/lib/queryKeys.ts for cache key definitions.
- * @see server/src/routes/plugins.ts for endpoint implementation details.
+ * @see ui/src/lib/queryKeys.ts para las definiciones de claves de caché.
+ * @see server/src/routes/plugins.ts para detalles de implementación de endpoints.
  */
 
 import type {
@@ -21,11 +21,11 @@ import type {
 import { api } from "./client";
 
 /**
- * Normalized UI contribution record returned by `GET /api/plugins/ui-contributions`.
+ * Registro normalizado de contribución de UI devuelto por `GET /api/plugins/ui-contributions`.
  *
- * Only populated for plugins in `ready` state that declare at least one UI slot
- * or launcher. The `slots` array is sourced from `manifest.ui.slots`. The
- * `launchers` array aggregates both legacy `manifest.launchers` and
+ * Solo se puebla para plugins en estado `ready` que declaran al menos un slot de UI
+ * o launcher. El arreglo `slots` proviene de `manifest.ui.slots`. El
+ * arreglo `launchers` agrega tanto los `manifest.launchers` heredados como
  * `manifest.ui.launchers`.
  */
 export type PluginUiContribution = {
@@ -35,8 +35,8 @@ export type PluginUiContribution = {
   version: string;
   updatedAt?: string;
   /**
-   * Relative filename of the UI entry module within the plugin's UI directory.
-   * The host constructs the full import URL as
+   * Nombre de archivo relativo del módulo de entrada de UI dentro del directorio de UI del plugin.
+   * El host construye la URL completa de importación como
    * `/_plugins/${pluginId}/ui/${uiEntryFile}`.
    */
   uiEntryFile: string;
@@ -45,30 +45,31 @@ export type PluginUiContribution = {
 };
 
 /**
- * Health check result returned by `GET /api/plugins/:pluginId/health`.
+ * Resultado del chequeo de salud devuelto por `GET /api/plugins/:pluginId/health`.
  *
- * The `healthy` flag summarises whether all checks passed. Individual check
- * results are available in `checks` for detailed diagnostics display.
+ * La bandera `healthy` resume si todos los chequeos pasaron. Los resultados
+ * individuales de chequeo están disponibles en `checks` para mostrar diagnósticos
+ * detallados.
  */
 export interface PluginHealthCheckResult {
   pluginId: string;
-  /** The plugin's current lifecycle status at time of check. */
+  /** El estado actual del ciclo de vida del plugin al momento del chequeo. */
   status: string;
-  /** True if all health checks passed. */
+  /** True si todos los chequeos de salud pasaron. */
   healthy: boolean;
-  /** Individual diagnostic check results. */
+  /** Resultados individuales de chequeos de diagnóstico. */
   checks: Array<{
     name: string;
     passed: boolean;
-    /** Human-readable description of a failure, if any. */
+    /** Descripción legible del fallo, si lo hay. */
     message?: string;
   }>;
-  /** The most recent error message if the plugin is in `error` state. */
+  /** El mensaje de error más reciente si el plugin está en estado `error`. */
   lastError?: string;
 }
 
 /**
- * Worker diagnostics returned as part of the dashboard response.
+ * Diagnósticos del worker devueltos como parte de la respuesta del panel.
  */
 export interface PluginWorkerDiagnostics {
   status: string;
@@ -82,7 +83,7 @@ export interface PluginWorkerDiagnostics {
 }
 
 /**
- * A recent job run entry returned in the dashboard response.
+ * Una entrada reciente de ejecución de trabajo devuelta en la respuesta del panel.
  */
 export interface PluginDashboardJobRun {
   id: string;
@@ -98,7 +99,7 @@ export interface PluginDashboardJobRun {
 }
 
 /**
- * A recent webhook delivery entry returned in the dashboard response.
+ * Una entrada reciente de entrega de webhook devuelta en la respuesta del panel.
  */
 export interface PluginDashboardWebhookDelivery {
   id: string;
@@ -112,22 +113,23 @@ export interface PluginDashboardWebhookDelivery {
 }
 
 /**
- * Aggregated health dashboard data returned by `GET /api/plugins/:pluginId/dashboard`.
+ * Datos agregados del panel de salud devueltos por `GET /api/plugins/:pluginId/dashboard`.
  *
- * Contains worker diagnostics, recent job runs, recent webhook deliveries,
- * and the current health check result — all in a single response.
+ * Contiene diagnósticos del worker, ejecuciones recientes de trabajos, entregas
+ * recientes de webhooks y el resultado actual del chequeo de salud — todo en
+ * una sola respuesta.
  */
 export interface PluginDashboardData {
   pluginId: string;
-  /** Worker process diagnostics, or null if no worker is registered. */
+  /** Diagnósticos del proceso worker, o null si no hay worker registrado. */
   worker: PluginWorkerDiagnostics | null;
-  /** Recent job execution history (newest first, max 10). */
+  /** Historial reciente de ejecuciones de trabajos (más recientes primero, máx 10). */
   recentJobRuns: PluginDashboardJobRun[];
-  /** Recent inbound webhook deliveries (newest first, max 10). */
+  /** Entregas recientes de webhooks entrantes (más recientes primero, máx 10). */
   recentWebhookDeliveries: PluginDashboardWebhookDelivery[];
-  /** Current health check results. */
+  /** Resultados actuales del chequeo de salud. */
   health: PluginHealthCheckResult;
-  /** ISO 8601 timestamp when the dashboard data was generated. */
+  /** Timestamp ISO 8601 de cuando se generaron los datos del panel. */
   checkedAt: string;
 }
 
@@ -141,10 +143,10 @@ export interface AvailablePluginExample {
 }
 
 /**
- * Plugin management API client.
+ * Cliente API de gestión de plugins.
  *
- * All methods are thin wrappers around the `api` base client. They return
- * promises that resolve to typed JSON responses or throw on HTTP errors.
+ * Todos los métodos son envolturas delgadas del cliente base `api`. Devuelven
+ * promesas que se resuelven a respuestas JSON tipadas o lanzan en errores HTTP.
  *
  * @example
  * ```tsx
@@ -157,100 +159,100 @@ export interface AvailablePluginExample {
  */
 export const pluginsApi = {
   /**
-   * List all installed plugins, optionally filtered by lifecycle status.
+   * Lista todos los plugins instalados, opcionalmente filtrados por estado de ciclo de vida.
    *
-   * @param status - Optional filter; must be a valid `PluginStatus` value.
-   *   Invalid values are rejected by the server with HTTP 400.
+   * @param status - Filtro opcional; debe ser un valor válido de `PluginStatus`.
+   *   Los valores inválidos son rechazados por el servidor con HTTP 400.
    */
   list: (status?: PluginStatus) =>
     api.get<PluginRecord[]>(`/plugins${status ? `?status=${status}` : ""}`),
 
   /**
-   * List bundled example plugins available from the current repo checkout.
+   * Lista los plugins de ejemplo incluidos disponibles desde el checkout actual del repo.
    */
   listExamples: () =>
     api.get<AvailablePluginExample[]>("/plugins/examples"),
 
   /**
-   * Fetch a single plugin record by its UUID or plugin key.
+   * Obtiene un registro de plugin por su UUID o clave de plugin.
    *
-   * @param pluginId - The plugin's UUID (from `PluginRecord.id`) or plugin key.
+   * @param pluginId - El UUID del plugin (de `PluginRecord.id`) o su clave.
    */
   get: (pluginId: string) =>
     api.get<PluginRecord>(`/plugins/${pluginId}`),
 
   /**
-   * Install a plugin from npm or a local path.
+   * Instala un plugin desde npm o una ruta local.
    *
-   * On success, the plugin is registered in the database and transitioned to
-   * `ready` state. The response is the newly created `PluginRecord`.
+   * En éxito, el plugin se registra en la base de datos y transiciona a
+   * estado `ready`. La respuesta es el `PluginRecord` recién creado.
    *
-   * @param params.packageName - npm package name (e.g. `@paperclip/plugin-linear`)
-   *   or a filesystem path when `isLocalPath` is `true`.
-   * @param params.version - Target npm version tag/range (optional; defaults to latest).
-   * @param params.isLocalPath - Set to `true` when `packageName` is a local path.
+   * @param params.packageName - nombre de paquete npm (p. ej. `@paperclip/plugin-linear`)
+   *   o una ruta del sistema de archivos cuando `isLocalPath` es `true`.
+   * @param params.version - Etiqueta/rango de versión npm objetivo (opcional; por defecto latest).
+   * @param params.isLocalPath - Poner en `true` cuando `packageName` es una ruta local.
    */
   install: (params: { packageName: string; version?: string; isLocalPath?: boolean }) =>
     api.post<PluginRecord>("/plugins/install", params),
 
   /**
-   * Uninstall a plugin.
+   * Desinstala un plugin.
    *
-   * @param pluginId - UUID of the plugin to remove.
-   * @param purge - If `true`, permanently delete all plugin data (hard delete).
-   *   Otherwise the plugin is soft-deleted with a 30-day data retention window.
+   * @param pluginId - UUID del plugin a eliminar.
+   * @param purge - Si es `true`, elimina permanentemente todos los datos del plugin (borrado duro).
+   *   Si no, el plugin se borra suavemente con una ventana de retención de datos de 30 días.
    */
   uninstall: (pluginId: string, purge?: boolean) =>
     api.delete<{ ok: boolean }>(`/plugins/${pluginId}${purge ? "?purge=true" : ""}`),
 
   /**
-   * Transition a plugin from `error` state back to `ready`.
-   * No-ops if the plugin is already enabled.
+   * Transiciona un plugin del estado `error` de vuelta a `ready`.
+   * No hace nada si el plugin ya está habilitado.
    *
-   * @param pluginId - UUID of the plugin to enable.
+   * @param pluginId - UUID del plugin a habilitar.
    */
   enable: (pluginId: string) =>
     api.post<{ ok: boolean }>(`/plugins/${pluginId}/enable`, {}),
 
   /**
-   * Disable a plugin (transition to `error` state with an operator sentinel).
-   * The plugin's worker is stopped; it will not process events until re-enabled.
+   * Deshabilita un plugin (transiciona a estado `error` con un centinela de operador).
+   * El worker del plugin se detiene; no procesará eventos hasta que se re-habilite.
    *
-   * @param pluginId - UUID of the plugin to disable.
-   * @param reason - Optional human-readable reason stored in `lastError`.
+   * @param pluginId - UUID del plugin a deshabilitar.
+   * @param reason - Motivo legible opcional guardado en `lastError`.
    */
   disable: (pluginId: string, reason?: string) =>
     api.post<{ ok: boolean }>(`/plugins/${pluginId}/disable`, reason ? { reason } : {}),
 
   /**
-   * Run health diagnostics for a plugin.
+   * Ejecuta diagnósticos de salud para un plugin.
    *
-   * Only meaningful for plugins in `ready` state. Returns the result of all
-   * registered health checks. Called on a 30-second polling interval by
-   * {@link PluginSettings}.
+   * Solo tiene sentido para plugins en estado `ready`. Devuelve el resultado de todos
+   * los chequeos de salud registrados. Se llama en un intervalo de polling de 30 segundos
+   * por {@link PluginSettings}.
    *
-   * @param pluginId - UUID of the plugin to health-check.
+   * @param pluginId - UUID del plugin a chequear.
    */
   health: (pluginId: string) =>
     api.get<PluginHealthCheckResult>(`/plugins/${pluginId}/health`),
 
   /**
-   * Fetch aggregated health dashboard data for a plugin.
+   * Obtiene los datos agregados del panel de salud para un plugin.
    *
-   * Returns worker diagnostics, recent job runs, recent webhook deliveries,
-   * and the current health check result in a single request. Used by the
-   * {@link PluginSettings} page to render the runtime dashboard section.
+   * Devuelve diagnósticos del worker, ejecuciones recientes de trabajos, entregas
+   * recientes de webhooks y el resultado actual del chequeo de salud en una sola petición.
+   * Usado por la página {@link PluginSettings} para renderizar la sección del panel de runtime.
    *
-   * @param pluginId - UUID of the plugin.
+   * @param pluginId - UUID del plugin.
    */
   dashboard: (pluginId: string) =>
     api.get<PluginDashboardData>(`/plugins/${pluginId}/dashboard`),
 
   /**
-   * Fetch recent log entries for a plugin.
+   * Obtiene las entradas recientes de logs para un plugin.
    *
-   * @param pluginId - UUID of the plugin.
-   * @param options - Optional filters: limit, level, since.
+   * @param pluginId - UUID del plugin.
+   * @param options - Filtros opcionales: limit, level, since.
    */
   logs: (pluginId: string, options?: { limit?: number; level?: string; since?: string }) => {
     const params = new URLSearchParams();
@@ -264,25 +266,25 @@ export const pluginsApi = {
   },
 
   /**
-   * Upgrade a plugin to a newer version.
+   * Actualiza un plugin a una versión más nueva.
    *
-   * If the new version declares additional capabilities, the plugin is
-   * transitioned to `upgrade_pending` state awaiting operator approval.
+   * Si la nueva versión declara capacidades adicionales, el plugin
+   * transiciona al estado `upgrade_pending` esperando aprobación del operador.
    *
-   * @param pluginId - UUID of the plugin to upgrade.
-   * @param version - Target version (optional; defaults to latest published).
+   * @param pluginId - UUID del plugin a actualizar.
+   * @param version - Versión objetivo (opcional; por defecto la última publicada).
    */
   upgrade: (pluginId: string, version?: string) =>
     api.post<{ ok: boolean }>(`/plugins/${pluginId}/upgrade`, version ? { version } : {}),
 
   /**
-   * Returns normalized UI contribution declarations for ready plugins.
-   * Used by the slot host runtime and launcher discovery surfaces.
+   * Devuelve declaraciones normalizadas de contribuciones de UI para plugins listos.
+   * Usado por el runtime del host de slots y las superficies de descubrimiento de launchers.
    *
-   * Response shape:
-   * - `slots`: concrete React mount declarations from `manifest.ui.slots`
-   * - `launchers`: host-owned entry points from `manifest.ui.launchers` plus
-   *   the legacy top-level `manifest.launchers`
+   * Forma de la respuesta:
+   * - `slots`: declaraciones concretas de montaje de React desde `manifest.ui.slots`
+   * - `launchers`: puntos de entrada propios del host desde `manifest.ui.launchers` más
+   *   los `manifest.launchers` heredados de nivel superior
    *
    * @example
    * ```ts
@@ -296,74 +298,74 @@ export const pluginsApi = {
     api.get<PluginUiContribution[]>("/plugins/ui-contributions"),
 
   // ===========================================================================
-  // Plugin configuration endpoints
+  // Endpoints de configuración de plugins
   // ===========================================================================
 
   /**
-   * Fetch the current configuration for a plugin.
+   * Obtiene la configuración actual de un plugin.
    *
-   * Returns the `PluginConfig` record if one exists, or `null` if the plugin
-   * has not yet been configured.
+   * Devuelve el registro `PluginConfig` si existe, o `null` si el plugin
+   * aún no se ha configurado.
    *
-   * @param pluginId - UUID of the plugin.
+   * @param pluginId - UUID del plugin.
    */
   getConfig: (pluginId: string) =>
     api.get<PluginConfig | null>(`/plugins/${pluginId}/config`),
 
   /**
-   * Save (create or update) the configuration for a plugin.
+   * Guarda (crea o actualiza) la configuración de un plugin.
    *
-   * The server validates `configJson` against the plugin's `instanceConfigSchema`
-   * and returns the persisted `PluginConfig` record on success.
+   * El servidor valida `configJson` contra el `instanceConfigSchema` del plugin
+   * y devuelve el registro `PluginConfig` persistido en éxito.
    *
-   * @param pluginId - UUID of the plugin.
-   * @param configJson - Configuration values matching the plugin's `instanceConfigSchema`.
+   * @param pluginId - UUID del plugin.
+   * @param configJson - Valores de configuración que coinciden con el `instanceConfigSchema` del plugin.
    */
   saveConfig: (pluginId: string, configJson: Record<string, unknown>) =>
     api.post<PluginConfig>(`/plugins/${pluginId}/config`, { configJson }),
 
   /**
-   * Call the plugin's `validateConfig` RPC method to test the configuration
-   * without persisting it.
+   * Llama al método RPC `validateConfig` del plugin para probar la configuración
+   * sin persistirla.
    *
-   * Returns `{ valid: true }` on success, or `{ valid: false, message: string }`
-   * when the plugin reports a validation failure.
+   * Devuelve `{ valid: true }` en éxito, o `{ valid: false, message: string }`
+   * cuando el plugin reporta un fallo de validación.
    *
-   * Only available when the plugin declares a `validateConfig` RPC handler.
+   * Solo disponible cuando el plugin declara un manejador RPC `validateConfig`.
    *
-   * @param pluginId - UUID of the plugin.
-   * @param configJson - Configuration values to validate.
+   * @param pluginId - UUID del plugin.
+   * @param configJson - Valores de configuración a validar.
    */
   testConfig: (pluginId: string, configJson: Record<string, unknown>) =>
     api.post<{ valid: boolean; message?: string }>(`/plugins/${pluginId}/config/test`, { configJson }),
 
   // ===========================================================================
-  // Bridge proxy endpoints — used by the plugin UI bridge runtime
+  // Endpoints proxy del bridge — usados por el runtime del bridge de UI de plugins
   // ===========================================================================
 
   /**
-   * Proxy a `getData` call from a plugin UI component to its worker backend.
+   * Proxea una llamada `getData` desde un componente de UI de plugin hacia su worker backend.
    *
-   * This is the HTTP transport for `usePluginData(key, params)`. The bridge
-   * runtime calls this method and maps the response into `PluginDataResult<T>`.
+   * Este es el transporte HTTP para `usePluginData(key, params)`. El runtime del
+   * bridge llama este método y mapea la respuesta a `PluginDataResult<T>`.
    *
-   * On success, the response is `{ data: T }`.
-   * On failure, the response body is a `PluginBridgeError`-shaped object
-   * with `code`, `message`, and optional `details`.
+   * En éxito, la respuesta es `{ data: T }`.
+   * En fallo, el cuerpo de la respuesta es un objeto con forma `PluginBridgeError`
+   * con `code`, `message` y `details` opcional.
    *
-   * @param pluginId - UUID of the plugin whose worker should handle the request
-   * @param key - Plugin-defined data key (e.g. `"sync-health"`)
-   * @param params - Optional query parameters forwarded to the worker handler
-   * @param companyId - Optional company scope used for board/company access checks.
-   * @param renderEnvironment - Optional launcher/page snapshot forwarded for
-   *   launcher-backed UI so workers can distinguish modal, drawer, popover, and
-   *   page execution.
+   * @param pluginId - UUID del plugin cuyo worker debe atender la petición
+   * @param key - Clave de datos definida por el plugin (p. ej. `"sync-health"`)
+   * @param params - Parámetros de consulta opcionales reenviados al manejador del worker
+   * @param companyId - Alcance de empresa opcional usado para chequeos de acceso de tablero/empresa.
+   * @param renderEnvironment - Snapshot opcional de launcher/página reenviado para
+   *   UI respaldada por launcher, para que los workers puedan distinguir la ejecución
+   *   en modal, drawer, popover y página.
    *
-   * Error responses:
-   * - `401`/`403` when auth or company access checks fail
-   * - `404` when the plugin or handler key does not exist
-   * - `409` when the plugin is not in a callable runtime state
-   * - `5xx` with a `PluginBridgeError`-shaped body when the worker throws
+   * Respuestas de error:
+   * - `401`/`403` cuando fallan los chequeos de auth o acceso de empresa
+   * - `404` cuando el plugin o la clave del manejador no existen
+   * - `409` cuando el plugin no está en un estado de runtime invocable
+   * - `5xx` con un cuerpo con forma `PluginBridgeError` cuando el worker lanza
    *
    * @see PLUGIN_SPEC.md §13.8 — `getData`
    * @see PLUGIN_SPEC.md §19.7 — Error Propagation Through The Bridge
@@ -382,28 +384,28 @@ export const pluginsApi = {
     }),
 
   /**
-   * Proxy a `performAction` call from a plugin UI component to its worker backend.
+   * Proxea una llamada `performAction` desde un componente de UI de plugin hacia su worker backend.
    *
-   * This is the HTTP transport for `usePluginAction(key)`. The bridge runtime
-   * calls this method when the action function is invoked.
+   * Este es el transporte HTTP para `usePluginAction(key)`. El runtime del bridge
+   * llama este método cuando se invoca la función de acción.
    *
-   * On success, the response is `{ data: T }`.
-   * On failure, the response body is a `PluginBridgeError`-shaped object
-   * with `code`, `message`, and optional `details`.
+   * En éxito, la respuesta es `{ data: T }`.
+   * En fallo, el cuerpo de la respuesta es un objeto con forma `PluginBridgeError`
+   * con `code`, `message` y `details` opcional.
    *
-   * @param pluginId - UUID of the plugin whose worker should handle the request
-   * @param key - Plugin-defined action key (e.g. `"resync"`)
-   * @param params - Optional parameters forwarded to the worker handler
-   * @param companyId - Optional company scope used for board/company access checks.
-   * @param renderEnvironment - Optional launcher/page snapshot forwarded for
-   *   launcher-backed UI so workers can distinguish modal, drawer, popover, and
-   *   page execution.
+   * @param pluginId - UUID del plugin cuyo worker debe atender la petición
+   * @param key - Clave de acción definida por el plugin (p. ej. `"resync"`)
+   * @param params - Parámetros opcionales reenviados al manejador del worker
+   * @param companyId - Alcance de empresa opcional usado para chequeos de acceso de tablero/empresa.
+   * @param renderEnvironment - Snapshot opcional de launcher/página reenviado para
+   *   UI respaldada por launcher, para que los workers puedan distinguir la ejecución
+   *   en modal, drawer, popover y página.
    *
-   * Error responses:
-   * - `401`/`403` when auth or company access checks fail
-   * - `404` when the plugin or handler key does not exist
-   * - `409` when the plugin is not in a callable runtime state
-   * - `5xx` with a `PluginBridgeError`-shaped body when the worker throws
+   * Respuestas de error:
+   * - `401`/`403` cuando fallan los chequeos de auth o acceso de empresa
+   * - `404` cuando el plugin o la clave del manejador no existen
+   * - `409` cuando el plugin no está en un estado de runtime invocable
+   * - `5xx` con un cuerpo con forma `PluginBridgeError` cuando el worker lanza
    *
    * @see PLUGIN_SPEC.md §13.9 — `performAction`
    * @see PLUGIN_SPEC.md §19.7 — Error Propagation Through The Bridge

@@ -100,7 +100,7 @@ function extractClaudeErrorMessages(parsed: Record<string, unknown>): string[] {
     try {
       messages.push(JSON.stringify(obj));
     } catch {
-      // skip non-serializable entry
+      // omitir entrada no serializable
     }
   }
 
@@ -148,7 +148,7 @@ export function describeClaudeFailure(parsed: Record<string, unknown>): string |
     detail = errors[0] ?? "";
   }
 
-  const parts = ["Claude run failed"];
+  const parts = ["La ejecución de Claude falló"];
   if (subtype) parts.push(`subtype=${subtype}`);
   if (detail) parts.push(detail);
   return parts.length > 1 ? parts.join(": ") : null;

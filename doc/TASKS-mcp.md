@@ -1,12 +1,12 @@
-# Task Management MCP Interface
+# Interfaz MCP de gestión de tareas
 
-Function contracts for the Paperclip task management system. Defines the
-operations available to agents (and external tools) via MCP. Refer to
-[TASKS.md](./TASKS.md) for the underlying data model.
+Contratos de funciones para el sistema de gestión de tareas de Paperclip. Define las
+operaciones disponibles para los agentes (y herramientas externas) vía MCP. Consulta
+[TASKS.md](./TASKS.md) para el modelo de datos subyacente.
 
-All operations return JSON. IDs are UUIDs. Timestamps are ISO 8601.
-Issue identifiers (e.g. `ENG-123`) are accepted anywhere an issue `id` is
-expected.
+Todas las operaciones devuelven JSON. Los ID son UUID. Las marcas de tiempo son ISO 8601.
+Los identificadores de issues (p. ej. `ENG-123`) se aceptan en cualquier lugar donde se
+espere un `id` de issue.
 
 ---
 
@@ -14,221 +14,221 @@ expected.
 
 ### `list_issues`
 
-List and filter issues in the workspace.
+Lista y filtra issues en el workspace.
 
 | Parameter         | Type     | Required | Notes                                                                                           |
 | ----------------- | -------- | -------- | ----------------------------------------------------------------------------------------------- |
-| `query`           | string   | no       | Free-text search across title and description                                                   |
-| `teamId`          | string   | no       | Filter by team                                                                                  |
-| `status`         | string   | no       | Filter by specific workflow state                                                               |
-| `stateType`       | string   | no       | Filter by state category: `triage`, `backlog`, `unstarted`, `started`, `completed`, `cancelled` |
-| `assigneeId`      | string   | no       | Filter by assignee (agent id)                                                                   |
-| `projectId`       | string   | no       | Filter by project                                                                               |
-| `parentId`        | string   | no       | Filter by parent issue (returns sub-issues)                                                     |
-| `labelIds`        | string[] | no       | Filter to issues with ALL of these labels                                                       |
-| `priority`        | number   | no       | Filter by priority (0-4)                                                                        |
-| `includeArchived` | boolean  | no       | Include archived issues. Default: false                                                         |
-| `orderBy`         | string   | no       | `created`, `updated`, `priority`, `due_date`. Default: `created`                                |
-| `limit`           | number   | no       | Max results. Default: 50                                                                        |
-| `after`           | string   | no       | Cursor for forward pagination                                                                   |
-| `before`          | string   | no       | Cursor for backward pagination                                                                  |
+| `query`           | string   | no       | Búsqueda de texto libre en título y descripción                                                  |
+| `teamId`          | string   | no       | Filtrar por equipo                                                                              |
+| `status`         | string   | no       | Filtrar por estado de flujo de trabajo específico                                               |
+| `stateType`       | string   | no       | Filtrar por categoría de estado: `triage`, `backlog`, `unstarted`, `started`, `completed`, `cancelled` |
+| `assigneeId`      | string   | no       | Filtrar por asignado (id de agente)                                                             |
+| `projectId`       | string   | no       | Filtrar por proyecto                                                                           |
+| `parentId`        | string   | no       | Filtrar por issue padre (devuelve sub-issues)                                                   |
+| `labelIds`        | string[] | no       | Filtrar a issues con TODAS estas etiquetas                                                     |
+| `priority`        | number   | no       | Filtrar por prioridad (0-4)                                                                     |
+| `includeArchived` | boolean  | no       | Incluir issues archivados. Por defecto: false                                                   |
+| `orderBy`         | string   | no       | `created`, `updated`, `priority`, `due_date`. Por defecto: `created`                             |
+| `limit`           | number   | no       | Máximo de resultados. Por defecto: 50                                                           |
+| `after`           | string   | no       | Cursor para paginación hacia adelante                                                           |
+| `before`          | string   | no       | Cursor para paginación hacia atrás                                                              |
 
-**Returns:** `{ issues: Issue[], pageInfo: { hasNextPage, endCursor, hasPreviousPage, startCursor } }`
+**Devuelve:** `{ issues: Issue[], pageInfo: { hasNextPage, endCursor, hasPreviousPage, startCursor } }`
 
 ---
 
 ### `get_issue`
 
-Retrieve a single issue by ID or identifier, with all relations expanded.
+Recupera un solo issue por ID o identificador, con todas las relaciones expandidas.
 
 | Parameter | Type   | Required | Notes                                              |
 | --------- | ------ | -------- | -------------------------------------------------- |
-| `id`      | string | yes      | UUID or human-readable identifier (e.g. `ENG-123`) |
+| `id`      | string | yes      | UUID o identificador legible para humanos (p. ej. `ENG-123`) |
 
-**Returns:** Full `Issue` object including:
+**Devuelve:** objeto `Issue` completo que incluye:
 
-- `state` (expanded WorkflowState)
-- `assignee` (expanded Agent, if set)
-- `labels` (expanded Label[])
-- `relations` (IssueRelation[] with expanded related issues)
-- `children` (sub-issue summaries: id, identifier, title, state, assignee)
-- `parent` (summary, if this is a sub-issue)
-- `comments` (Comment[], most recent first)
+- `state` (WorkflowState expandido)
+- `assignee` (Agente expandido, si está establecido)
+- `labels` (Label[] expandido)
+- `relations` (IssueRelation[] con los issues relacionados expandidos)
+- `children` (resúmenes de sub-issues: id, identifier, title, state, assignee)
+- `parent` (resumen, si este es un sub-issue)
+- `comments` (Comment[], los más recientes primero)
 
 ---
 
 ### `create_issue`
 
-Create a new issue.
+Crea un nuevo issue.
 
 | Parameter     | Type     | Required | Notes                                         |
 | ------------- | -------- | -------- | --------------------------------------------- |
 | `title`       | string   | yes      |                                               |
-| `teamId`      | string   | yes      | Team the issue belongs to                     |
+| `teamId`      | string   | yes      | Equipo al que pertenece el issue              |
 | `description` | string   | no       | Markdown                                      |
-| `status`     | string   | no       | Workflow state. Default: team's default state |
-| `priority`    | number   | no       | 0-4. Default: 0 (none)                        |
-| `estimate`    | number   | no       | Point estimate                                |
-| `dueDate`     | string   | no       | ISO date                                      |
-| `assigneeId`  | string   | no       | Agent to assign                               |
-| `projectId`   | string   | no       | Project to associate with                     |
-| `milestoneId` | string   | no       | Milestone within the project                  |
-| `parentId`    | string   | no       | Parent issue (makes this a sub-issue)         |
-| `goalId`      | string   | no       | Linked goal/objective                         |
-| `labelIds`    | string[] | no       | Labels to apply                               |
-| `sortOrder`   | number   | no       | Ordering within views                         |
+| `status`     | string   | no       | Estado de flujo de trabajo. Por defecto: el estado predeterminado del equipo |
+| `priority`    | number   | no       | 0-4. Por defecto: 0 (ninguna)                 |
+| `estimate`    | number   | no       | Estimación en puntos                          |
+| `dueDate`     | string   | no       | Fecha ISO                                     |
+| `assigneeId`  | string   | no       | Agente a asignar                              |
+| `projectId`   | string   | no       | Proyecto a asociar                            |
+| `milestoneId` | string   | no       | Hito dentro del proyecto                      |
+| `parentId`    | string   | no       | Issue padre (lo convierte en sub-issue)       |
+| `goalId`      | string   | no       | Objetivo vinculado                            |
+| `labelIds`    | string[] | no       | Etiquetas a aplicar                           |
+| `sortOrder`   | number   | no       | Orden dentro de las vistas                    |
 
-**Returns:** Created `Issue` object with computed fields (`identifier`, `createdAt`, etc.)
+**Devuelve:** objeto `Issue` creado con los campos calculados (`identifier`, `createdAt`, etc.)
 
-**Side effects:**
+**Efectos secundarios:**
 
-- If `parentId` is set, inherits `projectId` from parent (unless explicitly provided)
-- `identifier` is auto-generated from team key + next sequence number
+- Si se establece `parentId`, hereda `projectId` del padre (salvo que se proporcione explícitamente)
+- `identifier` se genera automáticamente a partir de la clave del equipo + el siguiente número de secuencia
 
 ---
 
 ### `update_issue`
 
-Update an existing issue.
+Actualiza un issue existente.
 
 | Parameter     | Type     | Required | Notes                                        |
 | ------------- | -------- | -------- | -------------------------------------------- |
-| `id`          | string   | yes      | UUID or identifier                           |
+| `id`          | string   | yes      | UUID o identificador                          |
 | `title`       | string   | no       |                                              |
 | `description` | string   | no       |                                              |
-| `status`     | string   | no       | Transition to a new workflow state           |
+| `status`     | string   | no       | Transición a un nuevo estado de flujo de trabajo |
 | `priority`    | number   | no       | 0-4                                          |
 | `estimate`    | number   | no       |                                              |
-| `dueDate`     | string   | no       | ISO date, or `null` to clear                 |
-| `assigneeId`  | string   | no       | Agent id, or `null` to unassign              |
-| `projectId`   | string   | no       | Project id, or `null` to remove from project |
-| `milestoneId` | string   | no       | Milestone id, or `null` to clear             |
-| `parentId`    | string   | no       | Reparent, or `null` to promote to standalone |
-| `goalId`      | string   | no       | Goal id, or `null` to unlink                 |
-| `labelIds`    | string[] | no       | **Replaces** all labels (not additive)       |
-| `teamId`      | string   | no       | Move to a different team                     |
-| `sortOrder`   | number   | no       | Ordering within views                        |
+| `dueDate`     | string   | no       | Fecha ISO, o `null` para borrar              |
+| `assigneeId`  | string   | no       | Id de agente, o `null` para desasignar        |
+| `projectId`   | string   | no       | Id de proyecto, o `null` para quitarlo del proyecto |
+| `milestoneId` | string   | no       | Id de hito, o `null` para borrar             |
+| `parentId`    | string   | no       | Cambiar de padre, o `null` para promover a independiente |
+| `goalId`      | string   | no       | Id de objetivo, o `null` para desvincular    |
+| `labelIds`    | string[] | no       | **Reemplaza** todas las etiquetas (no es aditivo) |
+| `teamId`      | string   | no       | Mover a un equipo diferente                  |
+| `sortOrder`   | number   | no       | Orden dentro de las vistas                   |
 
-**Returns:** Updated `Issue` object.
+**Devuelve:** objeto `Issue` actualizado.
 
-**Side effects:**
+**Efectos secundarios:**
 
-- Changing `status` to a state with category `started` sets `startedAt` (if not already set)
-- Changing `status` to `completed` sets `completedAt`
-- Changing `status` to `cancelled` sets `cancelledAt`
-- Moving to `completed`/`cancelled` with sub-issue auto-close enabled completes open sub-issues
-- Changing `teamId` re-assigns the identifier (e.g. `ENG-42` → `DES-18`); old identifier preserved in `previousIdentifiers`
+- Cambiar `status` a un estado con categoría `started` establece `startedAt` (si aún no está establecido)
+- Cambiar `status` a `completed` establece `completedAt`
+- Cambiar `status` a `cancelled` establece `cancelledAt`
+- Mover a `completed`/`cancelled` con el cierre automático de sub-issues habilitado completa los sub-issues abiertos
+- Cambiar `teamId` reasigna el identificador (p. ej. `ENG-42` → `DES-18`); el identificador anterior se conserva en `previousIdentifiers`
 
 ---
 
 ### `archive_issue`
 
-Soft-archive an issue. Sets `archivedAt`. Does not delete.
+Archiva suavemente un issue. Establece `archivedAt`. No elimina.
 
 | Parameter | Type   | Required |
 | --------- | ------ | -------- |
 | `id`      | string | yes      |
 
-**Returns:** `{ success: true }`
+**Devuelve:** `{ success: true }`
 
 ---
 
 ### `list_my_issues`
 
-List issues assigned to a specific agent. Convenience wrapper around
-`list_issues` with `assigneeId` pre-filled.
+Lista los issues asignados a un agente específico. Envoltorio conveniente de
+`list_issues` con `assigneeId` preestablecido.
 
-| Parameter   | Type   | Required | Notes                          |
-| ----------- | ------ | -------- | ------------------------------ |
-| `agentId`   | string | yes      | The agent whose issues to list |
-| `stateType` | string | no       | Filter by state category       |
-| `orderBy`   | string | no       | Default: `priority`            |
-| `limit`     | number | no       | Default: 50                    |
+| Parameter   | Type   | Required | Notes                             |
+| ----------- | ------ | -------- | --------------------------------- |
+| `agentId`   | string | yes      | El agente cuyos issues se listan   |
+| `stateType` | string | no       | Filtrar por categoría de estado   |
+| `orderBy`   | string | no       | Por defecto: `priority`           |
+| `limit`     | number | no       | Por defecto: 50                   |
 
-**Returns:** Same shape as `list_issues`.
+**Devuelve:** Misma forma que `list_issues`.
 
 ---
 
-## Workflow States
+## Estados de flujo de trabajo
 
 ### `list_workflow_states`
 
-List workflow states for a team, grouped by category.
+Lista los estados de flujo de trabajo de un equipo, agrupados por categoría.
 
 | Parameter | Type   | Required |
 | --------- | ------ | -------- |
 | `teamId`  | string | yes      |
 
-**Returns:** `{ states: WorkflowState[] }` -- ordered by category (triage, backlog, unstarted, started, completed, cancelled), then by `position` within each category.
+**Devuelve:** `{ states: WorkflowState[] }` — ordenado por categoría (triage, backlog, unstarted, started, completed, cancelled), luego por `position` dentro de cada categoría.
 
 ---
 
 ### `get_workflow_state`
 
-Look up a workflow state by name or ID.
+Busca un estado de flujo de trabajo por nombre o ID.
 
 | Parameter | Type   | Required | Notes              |
 | --------- | ------ | -------- | ------------------ |
 | `teamId`  | string | yes      |                    |
-| `query`   | string | yes      | State name or UUID |
+| `query`   | string | yes      | Nombre de estado o UUID |
 
-**Returns:** Single `WorkflowState` object.
+**Devuelve:** Un solo objeto `WorkflowState`.
 
 ---
 
-## Teams
+## Equipos
 
 ### `list_teams`
 
-List all teams in the workspace.
+Lista todos los equipos en el workspace.
 
-| Parameter | Type   | Required |
+| Parameter | Type   | Required | Notes                  |
 | --------- | ------ | -------- | -------------- |
-| `query`   | string | no       | Filter by name |
+| `query`   | string | no       | Filtrar por nombre     |
 
-**Returns:** `{ teams: Team[] }`
+**Devuelve:** `{ teams: Team[] }`
 
 ---
 
 ### `get_team`
 
-Get a team by name, key, or ID.
+Obtiene un equipo por nombre, clave o ID.
 
 | Parameter | Type   | Required | Notes                   |
 | --------- | ------ | -------- | ----------------------- |
-| `query`   | string | yes      | Team name, key, or UUID |
+| `query`   | string | yes      | Nombre, clave o UUID del equipo |
 
-**Returns:** Single `Team` object.
+**Devuelve:** Un solo objeto `Team`.
 
 ---
 
-## Projects
+## Proyectos
 
 ### `list_projects`
 
-List projects in the workspace.
+Lista los proyectos en el workspace.
 
 | Parameter         | Type    | Required | Notes                                                                           |
 | ----------------- | ------- | -------- | ------------------------------------------------------------------------------- |
-| `teamId`          | string  | no       | Filter to projects containing issues from this team                             |
-| `status`          | string  | no       | Filter by status: `backlog`, `planned`, `in_progress`, `completed`, `cancelled` |
-| `includeArchived` | boolean | no       | Default: false                                                                  |
-| `limit`           | number  | no       | Default: 50                                                                     |
+| `teamId`          | string  | no       | Filtrar a proyectos que contengan issues de este equipo                         |
+| `status`          | string  | no       | Filtrar por estado: `backlog`, `planned`, `in_progress`, `completed`, `cancelled` |
+| `includeArchived` | boolean | no       | Por defecto: false                                                              |
+| `limit`           | number  | no       | Por defecto: 50                                                                 |
 | `after`           | string  | no       | Cursor                                                                          |
 
-**Returns:** `{ projects: Project[], pageInfo }`
+**Devuelve:** `{ projects: Project[], pageInfo }`
 
 ---
 
 ### `get_project`
 
-Get a project by name or ID.
+Obtiene un proyecto por nombre o ID.
 
 | Parameter | Type   | Required |
 | --------- | ------ | -------- |
 | `query`   | string | yes      |
 
-**Returns:** Single `Project` object including `milestones[]` and issue count by state category.
+**Devuelve:** Un solo objeto `Project` que incluye `milestones[]` y conteo de issues por categoría de estado.
 
 ---
 
@@ -243,7 +243,7 @@ Get a project by name or ID.
 | `startDate`   | string | no       |
 | `targetDate`  | string | no       |
 
-**Returns:** Created `Project` object. Status defaults to `backlog`.
+**Devuelve:** objeto `Project` creado. El estado usa `backlog` por defecto.
 
 ---
 
@@ -260,23 +260,23 @@ Get a project by name or ID.
 | `startDate`   | string | no       |
 | `targetDate`  | string | no       |
 
-**Returns:** Updated `Project` object.
+**Devuelve:** objeto `Project` actualizado.
 
 ---
 
 ### `archive_project`
 
-Soft-archive a project. Sets `archivedAt`. Does not delete.
+Archiva suavemente un proyecto. Establece `archivedAt`. No elimina.
 
 | Parameter | Type   | Required |
 | --------- | ------ | -------- |
 | `id`      | string | yes      |
 
-**Returns:** `{ success: true }`
+**Devuelve:** `{ success: true }`
 
 ---
 
-## Milestones
+## Hitos
 
 ### `list_milestones`
 
@@ -284,19 +284,19 @@ Soft-archive a project. Sets `archivedAt`. Does not delete.
 | ----------- | ------ | -------- |
 | `projectId` | string | yes      |
 
-**Returns:** `{ milestones: Milestone[] }` -- ordered by `sortOrder`.
+**Devuelve:** `{ milestones: Milestone[] }` — ordenado por `sortOrder`.
 
 ---
 
 ### `get_milestone`
 
-Get a milestone by ID.
+Obtiene un hito por ID.
 
 | Parameter | Type   | Required |
 | --------- | ------ | -------- |
 | `id`      | string | yes      |
 
-**Returns:** Single `Milestone` object with issue count by state category.
+**Devuelve:** Un solo objeto `Milestone` con conteo de issues por categoría de estado.
 
 ---
 
@@ -308,9 +308,9 @@ Get a milestone by ID.
 | `name`        | string | yes      |
 | `description` | string | no       |
 | `targetDate`  | string | no       |
-| `sortOrder`   | number | no       | Ordering within the project |
+| `sortOrder`   | number | no       | Orden dentro del proyecto |
 
-**Returns:** Created `Milestone` object.
+**Devuelve:** objeto `Milestone` creado.
 
 ---
 
@@ -322,35 +322,35 @@ Get a milestone by ID.
 | `name`        | string | no       |
 | `description` | string | no       |
 | `targetDate`  | string | no       |
-| `sortOrder`   | number | no       | Ordering within the project |
+| `sortOrder`   | number | no       | Orden dentro del proyecto |
 
-**Returns:** Updated `Milestone` object.
+**Devuelve:** objeto `Milestone` actualizado.
 
 ---
 
-## Labels
+## Etiquetas
 
 ### `list_labels`
 
-List labels available for a team (includes workspace-level labels).
+Lista las etiquetas disponibles para un equipo (incluye etiquetas a nivel de workspace).
 
 | Parameter | Type   | Required | Notes                                     |
 | --------- | ------ | -------- | ----------------------------------------- |
-| `teamId`  | string | no       | If omitted, returns only workspace labels |
+| `teamId`  | string | no       | Si se omite, devuelve solo etiquetas de workspace |
 
-**Returns:** `{ labels: Label[] }` -- grouped by label group, ungrouped labels listed separately.
+**Devuelve:** `{ labels: Label[] }` — agrupadas por grupo de etiquetas, las etiquetas sin grupo se listan por separado.
 
 ---
 
 ### `get_label`
 
-Get a label by name or ID.
+Obtiene una etiqueta por nombre o ID.
 
 | Parameter | Type   | Required | Notes              |
 | --------- | ------ | -------- | ------------------ |
-| `query`   | string | yes      | Label name or UUID |
+| `query`   | string | yes      | Nombre de etiqueta o UUID |
 
-**Returns:** Single `Label` object.
+**Devuelve:** Un solo objeto `Label`.
 
 ---
 
@@ -359,12 +359,12 @@ Get a label by name or ID.
 | Parameter     | Type   | Required | Notes                               |
 | ------------- | ------ | -------- | ----------------------------------- |
 | `name`        | string | yes      |                                     |
-| `color`       | string | no       | Hex color. Auto-assigned if omitted |
+| `color`       | string | no       | Color hexadecimal. Se asigna automáticamente si se omite |
 | `description` | string | no       |                                     |
-| `teamId`      | string | no       | Omit for workspace-level label      |
-| `groupId`     | string | no       | Parent label group                  |
+| `teamId`      | string | no       | Omitir para etiqueta a nivel de workspace |
+| `groupId`     | string | no       | Grupo de etiquetas padre          |
 
-**Returns:** Created `Label` object.
+**Devuelve:** objeto `Label` creado.
 
 ---
 
@@ -377,120 +377,120 @@ Get a label by name or ID.
 | `color`       | string | no       |
 | `description` | string | no       |
 
-**Returns:** Updated `Label` object.
+**Devuelve:** objeto `Label` actualizado.
 
 ---
 
-## Issue Relations
+## Relaciones de issues
 
 ### `list_issue_relations`
 
-List all relations for an issue.
+Lista todas las relaciones de un issue.
 
 | Parameter | Type   | Required |
 | --------- | ------ | -------- |
 | `issueId` | string | yes      |
 
-**Returns:** `{ relations: IssueRelation[] }` -- each with expanded `relatedIssue` summary (id, identifier, title, state).
+**Devuelve:** `{ relations: IssueRelation[] }` — cada una con el `relatedIssue` expandido (resumen: id, identifier, title, state).
 
 ---
 
 ### `create_issue_relation`
 
-Create a relation between two issues.
+Crea una relación entre dos issues.
 
 | Parameter        | Type   | Required | Notes                                          |
 | ---------------- | ------ | -------- | ---------------------------------------------- |
-| `issueId`        | string | yes      | Source issue                                   |
-| `relatedIssueId` | string | yes      | Target issue                                   |
+| `issueId`        | string | yes      | Issue origen                                   |
+| `relatedIssueId` | string | yes      | Issue destino                                  |
 | `type`           | string | yes      | `related`, `blocks`, `blocked_by`, `duplicate` |
 
-**Returns:** Created `IssueRelation` object.
+**Devuelve:** objeto `IssueRelation` creado.
 
-**Side effects:**
+**Efectos secundarios:**
 
-- `duplicate` auto-transitions the source issue to a cancelled state
-- Creating `blocks` from A->B implicitly means B is `blocked_by` A (both
-  directions visible when querying either issue)
+- `duplicate` transiciona automáticamente el issue origen a un estado cancelado
+- Crear `blocks` de A->B implica implícitamente que B está `blocked_by` A (ambas
+  direcciones son visibles al consultar cualquiera de los issues)
 
 ---
 
 ### `delete_issue_relation`
 
-Remove a relation between two issues.
+Elimina una relación entre dos issues.
 
 | Parameter | Type   | Required |
 | --------- | ------ | -------- |
 | `id`      | string | yes      |
 
-**Returns:** `{ success: true }`
+**Devuelve:** `{ success: true }`
 
 ---
 
-## Comments
+## Comentarios
 
 ### `list_comments`
 
-List comments on an issue.
+Lista los comentarios de un issue.
 
 | Parameter | Type   | Required | Notes       |
 | --------- | ------ | -------- | ----------- |
 | `issueId` | string | yes      |             |
-| `limit`   | number | no       | Default: 50 |
+| `limit`   | number | no       | Por defecto: 50 |
 
-**Returns:** `{ comments: Comment[] }` -- threaded (top-level comments with nested `children`).
+**Devuelve:** `{ comments: Comment[] }` — en hilo (comentarios de nivel superior con `children` anidados).
 
 ---
 
 ### `create_comment`
 
-Add a comment to an issue.
+Agrega un comentario a un issue.
 
 | Parameter  | Type   | Required | Notes                                 |
 | ---------- | ------ | -------- | ------------------------------------- |
 | `issueId`  | string | yes      |                                       |
 | `body`     | string | yes      | Markdown                              |
-| `parentId` | string | no       | Reply to an existing comment (thread) |
+| `parentId` | string | no       | Responder a un comentario existente (hilo) |
 
-**Returns:** Created `Comment` object.
+**Devuelve:** objeto `Comment` creado.
 
 ---
 
 ### `update_comment`
 
-Update a comment's body.
+Actualiza el cuerpo de un comentario.
 
 | Parameter | Type   | Required |
 | --------- | ------ | -------- |
 | `id`      | string | yes      |
-| `body`    | string | yes      |
+| `body`     | string | yes      |
 
-**Returns:** Updated `Comment` object.
+**Devuelve:** objeto `Comment` actualizado.
 
 ---
 
 ### `resolve_comment`
 
-Mark a comment thread as resolved.
+Marca un hilo de comentarios como resuelto.
 
 | Parameter | Type   | Required |
 | --------- | ------ | -------- |
 | `id`      | string | yes      |
 
-**Returns:** Updated `Comment` with `resolvedAt` set.
+**Devuelve:** `Comment` actualizado con `resolvedAt` establecido.
 
 ---
 
-## Initiatives
+## Iniciativas
 
 ### `list_initiatives`
 
 | Parameter | Type   | Required | Notes                            |
 | --------- | ------ | -------- | -------------------------------- |
 | `status`  | string | no       | `planned`, `active`, `completed` |
-| `limit`   | number | no       | Default: 50                      |
+| `limit`   | number | no       | Por defecto: 50                  |
 
-**Returns:** `{ initiatives: Initiative[] }`
+**Devuelve:** `{ initiatives: Initiative[] }`
 
 ---
 
@@ -500,53 +500,53 @@ Mark a comment thread as resolved.
 | --------- | ------ | -------- |
 | `query`   | string | yes      |
 
-**Returns:** Single `Initiative` object with expanded `projects[]` (summaries with status and issue count).
+**Devuelve:** Un solo objeto `Initiative` con `projects[]` expandidos (resúmenes con estado y conteo de issues).
 
 ---
 
 ### `create_initiative`
 
-| Parameter     | Type     | Required |
-| ------------- | -------- | -------- |
-| `name`        | string   | yes      |
-| `description` | string   | no       |
-| `ownerId`     | string   | no       |
-| `targetDate`  | string   | no       |
+| Parameter     | Type   | Required |
+| ------------- | ------ | -------- |
+| `name`        | string | yes      |
+| `description` | string | no       |
+| `ownerId`     | string | no       |
+| `targetDate`  | string | no       |
 | `projectIds`  | string[] | no       |
 
-**Returns:** Created `Initiative` object. Status defaults to `planned`.
+**Devuelve:** objeto `Initiative` creado. El estado usa `planned` por defecto.
 
 ---
 
 ### `update_initiative`
 
-| Parameter     | Type     | Required |
-| ------------- | -------- | -------- |
-| `id`          | string   | yes      |
-| `name`        | string   | no       |
-| `description` | string   | no       |
-| `status`      | string   | no       |
-| `ownerId`     | string   | no       |
-| `targetDate`  | string   | no       |
+| Parameter     | Type   | Required |
+| ------------- | ------ | -------- |
+| `id`          | string | yes      |
+| `name`        | string | no       |
+| `description` | string | no       |
+| `status`      | string | no       |
+| `ownerId`     | string | no       |
+| `targetDate`  | string | no       |
 | `projectIds`  | string[] | no       |
 
-**Returns:** Updated `Initiative` object.
+**Devuelve:** objeto `Initiative` actualizado.
 
 ---
 
 ### `archive_initiative`
 
-Soft-archive an initiative. Sets `archivedAt`. Does not delete.
+Archiva suavemente una iniciativa. Establece `archivedAt`. No elimina.
 
 | Parameter | Type   | Required |
 | --------- | ------ | -------- |
 | `id`      | string | yes      |
 
-**Returns:** `{ success: true }`
+**Devuelve:** `{ success: true }`
 
 ---
 
-## Summary
+## Resumen
 
 | Entity        | list | get | create | update | delete/archive |
 | ------------- | ---- | --- | ------ | ------ | -------------- |
@@ -560,8 +560,8 @@ Soft-archive an initiative. Sets `archivedAt`. Does not delete.
 | Comment       | x    | --  | x      | x      | resolve        |
 | Initiative    | x    | x   | x      | x      | archive        |
 
-**Total: 35 operations**
+**Total: 35 operaciones**
 
-Workflow states and teams are admin-configured, not created through the MCP.
-The MCP is primarily for agents to manage their work: create issues, update
-status, coordinate via relations and comments, and understand project context.
+Los estados de flujo de trabajo y los equipos se configuran como administrador, no se crean vía el MCP.
+El MCP es principalmente para que los agentes gestionen su trabajo: crear issues, actualizar
+el estado, coordinarse vía relaciones y comentarios, y entender el contexto del proyecto.

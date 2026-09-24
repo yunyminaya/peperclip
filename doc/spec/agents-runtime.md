@@ -1,172 +1,172 @@
-# Agent Runtime Guide
+# Guía de runtime de agentes
 
-Status: User-facing guide  
-Last updated: 2026-02-17  
-Audience: Operators setting up and running agents in Paperclip
+Estado: Guía orientada al usuario
+Última actualización: 2026-02-17
+Audiencia: Operadores que configuran y ejecutan agentes en Paperclip
 
-## 1. What this system does
+## 1. Qué hace este sistema
 
-Agents in Paperclip do not run continuously.  
-They run in **heartbeats**: short execution windows triggered by a wakeup.
+Los agentes en Paperclip no corren continuamente.
+Se ejecutan en **latidos**: ventanas cortas de ejecución activadas por un despertar.
 
-Each heartbeat:
+Cada latido:
 
-1. Starts the configured agent adapter (for example, Claude CLI or Codex CLI)
-2. Gives it the current prompt/context
-3. Lets it work until it exits, times out, or is cancelled
-4. Stores results (status, token usage, errors, logs)
-5. Updates the UI live
+1. Inicia el adaptador de agente configurado (por ejemplo, el CLI de Claude o el CLI de Codex)
+2. Le entrega el prompt/contexto actual
+3. Lo deja trabajar hasta que sale, expira el timeout o se cancela
+4. Almacena los resultados (estado, uso de tokens, errores, logs)
+5. Actualiza la UI en vivo
 
-## 2. When an agent wakes up
+## 2. Cuándo se despierta un agente
 
-An agent can be woken up in four ways:
+Un agente puede despertarse de cuatro formas:
 
-- `timer`: scheduled interval (for example every 5 minutes)
-- `assignment`: when work is assigned/checked out to that agent
-- `on_demand`: manual wakeup (button/API)
-- `automation`: system-triggered wakeup for future automations
+- `timer`: intervalo programado (por ejemplo cada 5 minutos)
+- `assignment`: cuando se le asigna/asigna trabajo a ese agente
+- `on_demand`: despertar manual (botón/API)
+- `automation`: despertar activado por el sistema para futuras automatizaciones
 
-If an agent is already running, new wakeups are merged (coalesced) instead of launching duplicate runs.
+Si un agente ya está en ejecución, los nuevos despertares se combinan (se coalescan) en lugar de lanzar ejecuciones duplicadas.
 
-## 3. What to configure per agent
+## 3. Qué configurar por agente
 
-## 3.1 Adapter choice
+## 3.1 Elección del adaptador
 
-Common choices:
+Opciones comunes:
 
-- `claude_local`: runs your local `claude` CLI
-- `codex_local`: runs your local `codex` CLI
-- `process`: generic shell command adapter
-- `http`: calls an external HTTP endpoint
+- `claude_local`: ejecuta tu CLI `claude` local
+- `codex_local`: ejecuta tu CLI `codex` local
+- `process`: adaptador genérico de comando shell
+- `http`: llama a un endpoint HTTP externo
 
-For `claude_local` and `codex_local`, Paperclip assumes the CLI is already installed and authenticated on the host machine.
+Para `claude_local` y `codex_local`, Paperclip asume que el CLI ya está instalado y autenticado en la máquina anfitriona.
 
-## 3.2 Runtime behavior
+## 3.2 Comportamiento de runtime
 
-In agent runtime settings, configure heartbeat policy:
+En los ajustes de runtime del agente, configura la política de latido:
 
-- `enabled`: allow scheduled heartbeats
-- `intervalSec`: timer interval (0 = disabled)
-- `wakeOnAssignment`: wake when assigned work
-- `wakeOnOnDemand`: allow ping-style on-demand wakeups
-- `wakeOnAutomation`: allow system automation wakeups
+- `enabled`: permitir latidos programados
+- `intervalSec`: intervalo del temporizador (0 = deshabilitado)
+- `wakeOnAssignment`: despertar cuando se le asigne trabajo
+- `wakeOnOnDemand`: permitir despertares bajo demanda estilo ping
+- `wakeOnAutomation`: permitir despertares de automatización del sistema
 
-## 3.3 Working directory and execution limits
+## 3.3 Directorio de trabajo y límites de ejecución
 
-For local adapters, set:
+Para adaptadores locales, establece:
 
-- `cwd` (working directory)
-- `timeoutSec` (max runtime per heartbeat)
-- `graceSec` (time before force-kill after timeout/cancel)
-- optional env vars and extra CLI args
+- `cwd` (directorio de trabajo)
+- `timeoutSec` (runtime máximo por latido)
+- `graceSec` (tiempo antes de forzar la terminación después de timeout/cancelación)
+- variables de entorno opcionales y args extra del CLI
 
-## 3.4 Prompt templates
+## 3.4 Plantillas de prompt
 
-You can set:
+Puedes establecer:
 
-- `promptTemplate`: used for every run (first run and resumed sessions)
+- `promptTemplate`: usado para cada ejecución (primera ejecución y sesiones reanudadas)
 
-Templates support variables like `{{agent.id}}`, `{{agent.name}}`, and run context values.
+Las plantillas admiten variables como `{{agent.id}}`, `{{agent.name}}` y valores de contexto de la ejecución.
 
-## 4. Session resume behavior
+## 4. Comportamiento de reanudación de sesión
 
-Paperclip stores resumable session state per `(agent, taskKey, adapterType)`.
-`taskKey` is derived from wakeup context (`taskKey`, `taskId`, or `issueId`).
+Paperclip almacena el estado de sesión resumible por `(agent, taskKey, adapterType)`.
+`taskKey` se deriva del contexto de despertar (`taskKey`, `taskId` o `issueId`).
 
-- A heartbeat for the same task key reuses the previous session for that task.
-- Different task keys for the same agent keep separate session state.
-- If restore fails, adapters should retry once with a fresh session and continue.
-- You can reset all sessions for an agent or reset one task session by task key.
+- Un latido para la misma clave de tarea reutiliza la sesión anterior de esa tarea.
+- Diferentes claves de tarea para el mismo agente mantienen estado de sesión separado.
+- Si la restauración falla, los adaptadores deben reintentar una vez con una sesión fresca y continuar.
+- Puedes restablecer todas las sesiones de un agente o restablecer una sesión de tarea por clave de tarea.
 
-Use session reset when:
+Usa el restablecimiento de sesión cuando:
 
-- you significantly changed prompt strategy
-- the agent is stuck in a bad loop
-- you want a clean restart
+- cambiaste significativamente la estrategia de prompt
+- el agente está atascado en un bucle malo
+- quieres un reinicio limpio
 
-## 5. Logs, status, and run history
+## 5. Logs, estado e historial de ejecuciones
 
-For each heartbeat run you get:
+Para cada ejecución de latido obtienes:
 
-- run status (`queued`, `running`, `succeeded`, `failed`, `timed_out`, `cancelled`)
-- error text and stderr/stdout excerpts
-- token usage/cost when available from the adapter
-- full logs (stored outside core run rows, optimized for large output)
+- estado de la ejecución (`queued`, `running`, `succeeded`, `failed`, `timed_out`, `cancelled`)
+- texto de error y extractos de stderr/stdout
+- uso de tokens/costo cuando el adaptador lo provee
+- logs completos (almacenados fuera de las filas principales de ejecución, optimizados para salida grande)
 
-In local/dev setups, full logs are stored on disk under the configured run-log path.
+En configuraciones locales/dev, los logs completos se almacenan en disco bajo la ruta de logs de ejecución configurada.
 
-## 6. Live updates in the UI
+## 6. Actualizaciones en vivo en la UI
 
-Paperclip pushes runtime/activity updates to the browser in real time.
+Paperclip envía actualizaciones de runtime/actividad al navegador en tiempo real.
 
-You should see live changes for:
+Deberías ver cambios en vivo para:
 
-- agent status
-- heartbeat run status
-- task/activity updates caused by agent work
-- dashboard/cost/activity panels as relevant
+- estado del agente
+- estado de la ejecución del latido
+- actualizaciones de tareas/actividad causadas por el trabajo del agente
+- paneles de panel/costo/actividad según corresponda
 
-If the connection drops, the UI reconnects automatically.
+Si la conexión se cae, la UI se reconecta automáticamente.
 
-## 7. Common operating patterns
+## 7. Patrones operativos comunes
 
-## 7.1 Simple autonomous loop
+## 7.1 Bucle autónomo simple
 
-1. Enable timer wakeups (for example every 300s)
-2. Keep assignment wakeups on
-3. Use a focused prompt template
-4. Watch run logs and adjust prompt/config over time
+1. Habilita despertares por temporizador (por ejemplo cada 300s)
+2. Mantén los despertares por asignación encendidos
+3. Usa una plantilla de prompt enfocada
+4. Observa los logs de ejecución y ajusta el prompt/config con el tiempo
 
-## 7.2 Event-driven loop (less constant polling)
+## 7.2 Bucle dirigido por eventos (menos polling constante)
 
-1. Disable timer or set a long interval
-2. Keep wake-on-assignment enabled
-3. Use on-demand wakeups for manual nudges
+1. Deshabilita el temporizador o establece un intervalo largo
+2. Mantén habilitado el despertar al asignar
+3. Usa despertares bajo demanda para empujes manuales
 
-## 7.3 Safety-first loop
+## 7.3 Bucle con seguridad primero
 
-1. Short timeout
-2. Conservative prompt
-3. Monitor errors + cancel quickly when needed
-4. Reset sessions when drift appears
+1. Timeout corto
+2. Prompt conservador
+3. Monitorea errores + cancela rápido cuando sea necesario
+4. Restablece sesiones cuando aparezca deriva
 
-## 8. Troubleshooting
+## 8. Solución de problemas
 
-If runs fail repeatedly:
+Si las ejecuciones fallan repetidamente:
 
-1. Check adapter command availability (`claude`/`codex` installed and logged in).
-2. Verify `cwd` exists and is accessible.
-3. Inspect run error + stderr excerpt, then full log.
-4. Confirm timeout is not too low.
-5. Reset session and retry.
-6. Pause agent if it is causing repeated bad updates.
+1. Comprueba la disponibilidad del comando del adaptador (`claude`/`codex` instalado e iniciado sesión).
+2. Verifica que `cwd` exista y sea accesible.
+3. Inspecciona el error de la ejecución + el extracto de stderr, luego el log completo.
+4. Confirma que el timeout no sea demasiado bajo.
+5. Restablece la sesión y reintenta.
+6. Pausa el agente si está causando actualizaciones malas repetidas.
 
-Typical failure causes:
+Causas típicas de fallo:
 
-- CLI not installed/authenticated
-- bad working directory
-- malformed adapter args/env
-- prompt too broad or missing constraints
-- process timeout
+- CLI no instalado/autenticado
+- directorio de trabajo incorrecto
+- args/env del adaptador malformados
+- prompt demasiado amplio o sin restricciones
+- timeout del proceso
 
-## 9. Security and risk notes
+## 9. Notas de seguridad y riesgo
 
-Local CLI adapters run unsandboxed on the host machine.
+Los adaptadores CLI locales corren sin sandbox en la máquina anfitriona.
 
-That means:
+Eso significa:
 
-- prompt instructions matter
-- configured credentials/env vars are sensitive
-- working directory permissions matter
+- las instrucciones del prompt importan
+- las credenciales/variables de entorno configuradas son sensibles
+- los permisos del directorio de trabajo importan
 
-Start with least privilege where possible, and avoid exposing secrets in broad reusable prompts unless intentionally required.
+Empieza con el menor privilegio posible donde sea factible, y evita exponer secretos en prompts amplios reutilizables salvo que sea intencionalmente requerido.
 
-## 10. Minimal setup checklist
+## 10. Lista de verificación de configuración mínima
 
-1. Choose adapter (`claude_local` or `codex_local`).
-2. Set `cwd` to the target workspace.
-3. Add bootstrap + normal prompt templates.
-4. Configure heartbeat policy (timer and/or assignment wakeups).
-5. Trigger a manual wakeup.
-6. Confirm run succeeds and session/token usage is recorded.
-7. Watch live updates and iterate prompt/config.
+1. Elige el adaptador (`claude_local` o `codex_local`).
+2. Establece `cwd` al workspace objetivo.
+3. Agrega las plantillas de prompt de arranque + normal.
+4. Configura la política de latido (despertares por temporizador y/o asignación).
+5. Activa un despertar manual.
+6. Confirma que la ejecución tiene éxito y que se registra el uso de sesión/tokens.
+7. Observa las actualizaciones en vivo e itera el prompt/config.

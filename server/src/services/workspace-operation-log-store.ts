@@ -45,7 +45,7 @@ function resolveWithin(basePath: string, relativePath: string) {
   const resolved = path.resolve(basePath, relativePath);
   const base = path.resolve(basePath) + path.sep;
   if (!resolved.startsWith(base) && resolved !== path.resolve(basePath)) {
-    throw new Error("Invalid log path");
+    throw new Error("Ruta de log inválida");
   }
   return resolved;
 }
@@ -58,7 +58,7 @@ function createLocalFileWorkspaceOperationLogStore(basePath: string): WorkspaceO
 
   async function readFileRange(filePath: string, offset: number, limitBytes: number): Promise<WorkspaceOperationLogReadResult> {
     const stat = await fs.stat(filePath).catch(() => null);
-    if (!stat) throw notFound("Workspace operation log not found");
+    if (!stat) throw notFound("Log de operación de workspace no encontrado");
 
     const start = Math.max(0, Math.min(offset, stat.size));
     const end = Math.max(start, Math.min(start + limitBytes - 1, stat.size - 1));
@@ -123,7 +123,7 @@ function createLocalFileWorkspaceOperationLogStore(basePath: string): WorkspaceO
       }
       const absPath = resolveWithin(basePath, handle.logRef);
       const stat = await fs.stat(absPath).catch(() => null);
-      if (!stat) throw notFound("Workspace operation log not found");
+      if (!stat) throw notFound("Log de operación de workspace no encontrado");
 
       const hash = await sha256File(absPath);
       return {
@@ -135,7 +135,7 @@ function createLocalFileWorkspaceOperationLogStore(basePath: string): WorkspaceO
 
     async read(handle, opts) {
       if (handle.store !== "local_file") {
-        throw notFound("Workspace operation log not found");
+        throw notFound("Log de operación de workspace no encontrado");
       }
       const absPath = resolveWithin(basePath, handle.logRef);
       const offset = opts?.offset ?? 0;

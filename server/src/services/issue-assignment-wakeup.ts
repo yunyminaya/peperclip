@@ -41,7 +41,7 @@ export function queueIssueAssignmentWakeup(input: {
       contextSnapshot: { issueId: input.issue.id, source: input.contextSource },
     })
     .catch((err) => {
-      logger.warn({ err, issueId: input.issue.id }, "failed to wake assignee on issue assignment");
+      logger.warn({ err, issueId: input.issue.id }, "no se pudo despertar al asignado al asignar el issue");
       if (input.rethrowOnError) throw err;
       return null;
     });

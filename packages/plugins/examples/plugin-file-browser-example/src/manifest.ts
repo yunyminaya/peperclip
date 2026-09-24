@@ -10,8 +10,8 @@ const manifest: PaperclipPluginManifestV1 = {
   id: PLUGIN_ID,
   apiVersion: 1,
   version: "0.2.0",
-  displayName: "File Browser (Example)",
-  description: "Example plugin that adds a Files link under each project in the sidebar, a file browser + editor tab on the project detail page, and per-comment file link annotations with a context menu action to open referenced files.",
+  displayName: "Explorador de archivos (Ejemplo)",
+  description: "Plugin de ejemplo que agrega un enlace Archivos bajo cada proyecto en la barra lateral, una pesta\u00f1a de explorador de archivos + editor en la p\u00e1gina de detalle del proyecto, y anotaciones de enlaces de archivo por comentario con una acci\u00f3n de men\u00fa contextual para abrir los archivos referenciados.",
   author: "Paperclip",
   categories: ["workspace", "ui"],
   capabilities: [
@@ -29,16 +29,16 @@ const manifest: PaperclipPluginManifestV1 = {
     properties: {
       showFilesInSidebar: {
         type: "boolean",
-        title: "Show Files in Sidebar",
+        title: "Mostrar archivos en la barra lateral",
         default: false,
-        description: "Adds the Files link under each project in the sidebar.",
+        description: "Agrega el enlace Archivos bajo cada proyecto en la barra lateral.",
       },
       commentAnnotationMode: {
         type: "string",
-        title: "Comment File Links",
+        title: "Enlaces de archivo en comentarios",
         enum: ["annotation", "contextMenu", "both", "none"],
         default: "both",
-        description: "Controls which comment extensions are active: 'annotation' shows file links below each comment, 'contextMenu' adds an \"Open in Files\" action to the comment menu, 'both' enables both, 'none' disables comment features.",
+        description: "Controla qu\u00e9 extensiones de comentario est\u00e1n activas: 'annotation' muestra enlaces de archivo debajo de cada comentario, 'contextMenu' agrega una acci\u00f3n \"Abrir en archivos\" al men\u00fa del comentario, 'both' habilita ambas, 'none' deshabilita las funciones de comentario.",
       },
     },
   },
@@ -51,7 +51,7 @@ const manifest: PaperclipPluginManifestV1 = {
       {
         type: "projectSidebarItem",
         id: FILES_SIDEBAR_SLOT_ID,
-        displayName: "Files",
+        displayName: "Archivos",
         exportName: "FilesLink",
         entityTypes: ["project"],
         order: 10,
@@ -59,7 +59,7 @@ const manifest: PaperclipPluginManifestV1 = {
       {
         type: "detailTab",
         id: FILES_TAB_SLOT_ID,
-        displayName: "Files",
+        displayName: "Archivos",
         exportName: "FilesTab",
         entityTypes: ["project"],
         order: 10,
@@ -67,14 +67,14 @@ const manifest: PaperclipPluginManifestV1 = {
       {
         type: "commentAnnotation",
         id: COMMENT_FILE_LINKS_SLOT_ID,
-        displayName: "File Links",
+        displayName: "Enlaces de archivo",
         exportName: "CommentFileLinks",
         entityTypes: ["comment"],
       },
       {
         type: "commentContextMenuItem",
         id: COMMENT_OPEN_FILES_SLOT_ID,
-        displayName: "Open in Files",
+        displayName: "Abrir en archivos",
         exportName: "CommentOpenFiles",
         entityTypes: ["comment"],
       },

@@ -1,146 +1,146 @@
-# Paperclip — Product Definition
+# Paperclip — Definición de producto
 
-## What It Is
+## Qué es
 
-Paperclip is the control plane for autonomous AI companies. One instance of Paperclip can run multiple companies. A **company** is a first-order object.
+Paperclip es el plano de control para empresas de IA autónomas. Una instancia de Paperclip puede operar varias empresas. Una **empresa** es un objeto de primer orden.
 
-## Core Concepts
+## Conceptos centrales
 
-### Company
+### Empresa
 
-A company has:
+Una empresa tiene:
 
-- A **goal** — the reason it exists ("Create the #1 AI note-taking app that does $1M MRR within 3 months")
-- **Employees** — every employee is an AI agent
-- **Org structure** — who reports to whom
-- **Revenue & expenses** — tracked at the company level
-- **Task hierarchy** — all work traces back to the company goal
+- Un **objetivo** — la razón de su existencia ("Crear la app #1 de notas con IA que haga $1M de MRR en 3 meses")
+- **Empleados** — cada empleado es un agente de IA
+- **Estructura de org** — quién reporta a quién
+- **Ingresos y gastos** — seguidos a nivel de empresa
+- **Jerarquía de tareas** — todo el trabajo se remonta al objetivo de la empresa
 
-### Employees & Agents
+### Empleados y agentes
 
-Every employee is an agent. When you create a company, you start by defining the CEO, then build out from there.
+Cada empleado es un agente. Cuando creas una empresa, empiezas definiendo al CEO, y luego construyes desde ahí.
 
-Each employee has:
+Cada empleado tiene:
 
-- **Adapter type + config** — how this agent runs and what defines its identity/behavior. This is adapter-specific (e.g., an OpenClaw agent might use SOUL.md and HEARTBEAT.md files; a Claude Code agent might use CLAUDE.md; a bare script might use CLI args). Paperclip doesn't prescribe the format — the adapter does.
-- **Role & reporting** — their title, who they report to, who reports to them
-- **Capabilities description** — a short paragraph on what this agent does and when they're relevant (helps other agents discover who can help with what)
+- **Tipo de adaptador + configuración** — cómo se ejecuta este agente y qué define su identidad/comportamiento. Esto es específico del adaptador (p. ej., un agente OpenClaw podría usar archivos SOUL.md y HEARTBEAT.md; un agente Claude Code podría usar CLAUDE.md; un script simple podría usar argumentos de CLI). Paperclip no prescribe el formato — el adaptador lo hace.
+- **Rol y reporte** — su título, a quién reporta, quién le reporta
+- **Descripción de capacidades** — un párrafo corto sobre lo que hace este agente y cuándo es relevante (ayuda a otros agentes a descubrir quién puede ayudar con qué)
 
-Example: A CEO agent's adapter config tells it to "review what your executives are doing, check company metrics, reprioritize if needed, assign new strategic initiatives" on each heartbeat. An engineer's config tells it to "check assigned tasks, pick the highest priority, and work it."
+Ejemplo: la configuración de adaptador de un agente CEO le dice "revisa lo que están haciendo tus ejecutivos, verifica las métricas de la empresa, reprioriza si es necesario, asigna nuevas iniciativas estratégicas" en cada latido. La configuración de un ingeniero le dice "revisa las tareas asignadas, elige la de mayor prioridad y trabájala".
 
-Then you define who reports to the CEO: a CTO managing programmers, a CMO managing the marketing team, and so on. Every agent in the tree gets their own adapter configuration.
+Luego defines quién reporta al CEO: un CTO gestionando programadores, un CMO gestionando el equipo de marketing, y así sucesivamente. Cada agente en el árbol recibe su propia configuración de adaptador.
 
-### Agent Execution
+### Ejecución de agentes
 
-There are two fundamental modes for running an agent's heartbeat:
+Hay dos modos fundamentales para ejecutar el latido de un agente:
 
-1. **Run a command** — Paperclip kicks off a process (shell command, Python script, etc.) and tracks it. The heartbeat is "execute this and monitor it."
-2. **Fire and forget a request** — Paperclip sends a webhook/API call to an externally running agent. The heartbeat is "notify this agent to wake up." (OpenClaw hooks work this way.)
+1. **Ejecutar un comando** — Paperclip lanza un proceso (comando shell, script Python, etc.) y lo monitorea. El latido es "ejecuta esto y monitorea".
+2. **Disparar y olvidar una solicitud** — Paperclip envía un webhook/llamada API a un agente que se ejecuta externamente. El latido es "notifica a este agente para que despierte". (Los hooks de OpenClaw funcionan así).
 
-We provide sensible defaults — a default agent that shells out to Claude Code or Codex with your configuration, remembers session IDs, runs basic scripts. But you can plug in anything.
+Proveemos valores por defecto sensatos — un agente por defecto que llama a Claude Code o Codex con tu configuración, recuerda IDs de sesión, ejecuta scripts básicos. Pero puedes conectar cualquier cosa.
 
-### Task Management
+### Gestión de tareas
 
-Task management is hierarchical. At any moment, every piece of work must trace back to the company's top-level goal through a chain of parent tasks:
+La gestión de tareas es jerárquica. En cualquier momento, cada pieza de trabajo debe remontarse al objetivo de nivel superior de la empresa a través de una cadena de tareas padre:
 
 ```
-I am researching the Facebook ads Granola uses (current task)
-  because → I need to create Facebook ads for our software (parent)
-    because → I need to grow new signups by 100 users (parent)
-      because → I need to get revenue to $2,000 this week (parent)
-        because → ...
-          because → We're building the #1 AI note-taking app to $1M MRR in 3 months
+Estoy investigando los anuncios de Facebook que usa Granola (tarea actual)
+  porque → Necesito crear anuncios de Facebook para nuestro software (padre)
+    porque → Necesito aumentar nuevos registros en 100 usuarios (padre)
+      porque → Necesito llevar los ingresos a $2,000 esta semana (padre)
+        porque → ...
+          porque → Estamos construyendo la app #1 de notas con IA hasta $1M de MRR en 3 meses
 ```
 
-Tasks have parentage. Every task exists in service of a parent task, all the way up to the company goal. This is what keeps autonomous agents aligned — they can always answer "why am I doing this?"
+Las tareas tienen ascendencia. Cada tarea existe al servicio de una tarea padre, hasta llegar al objetivo de la empresa. Esto es lo que mantiene alineados a los agentes autónomos — siempre pueden responder "¿por qué estoy haciendo esto?"
 
-More detailed task structure TBD.
+Estructura de tareas más detallada por definir (TBD).
 
-## Principles
+## Principios
 
-1. **Unopinionated about how you run your agents.** Your agents could be OpenClaw bots, Python scripts, Node scripts, Claude Code sessions, Codex instances — we don't care. Paperclip defines the control plane for communication and provides utility infrastructure for heartbeats. It does not mandate an agent runtime.
+1. **Sin opiniones sobre cómo ejecutas tus agentes.** Tus agentes podrían ser bots OpenClaw, scripts Python, scripts Node, sesiones Claude Code, instancias Codex — no nos importa. Paperclip define el plano de control para la comunicación y provee infraestructura utilitaria para latidos. No impone un runtime de agentes.
 
-2. **Company is the unit of organization.** Everything lives under a company. One Paperclip instance, many companies.
+2. **La empresa es la unidad de organización.** Todo vive bajo una empresa. Una instancia de Paperclip, muchas empresas.
 
-3. **Adapter config defines the agent.** Every agent has an adapter type and configuration that controls its identity and behavior. The minimum contract is just "be callable."
+3. **La configuración del adaptador define al agente.** Cada agente tiene un tipo de adaptador y una configuración que controla su identidad y comportamiento. El contrato mínimo es solo "ser invocable".
 
-4. **All work traces to the goal.** Hierarchical task management means nothing exists in isolation. If you can't explain why a task matters to the company goal, it shouldn't exist.
+4. **Todo el trabajo se remonta al objetivo.** La gestión jerárquica de tareas significa que nada existe aislado. Si no puedes explicar por qué una tarea importa para el objetivo de la empresa, no debería existir.
 
-5. **Control plane, not execution plane.** Paperclip orchestrates. Agents run wherever they run and phone home.
+5. **Plano de control, no plano de ejecución.** Paperclip orquesta. Los agentes se ejecutan donde se ejecuten y llaman a casa.
 
-## User Flow (Dream Scenario)
+## Flujo de usuario (escenario ideal)
 
-1. Open Paperclip, create a new company
-2. Define the company's goal: "Create the #1 AI note-taking app, $1M MRR in 3 months"
-3. Create the CEO
-   - Choose an adapter (e.g., process adapter for Claude Code, HTTP adapter for OpenClaw)
-   - Configure the adapter (agent identity, loop behavior, execution settings)
-   - CEO proposes strategic breakdown → board approves
-4. Define the CEO's reports: CTO, CMO, CFO, etc.
-   - Each gets their own adapter config and role definition
-5. Define their reports: engineers under CTO, marketers under CMO, etc.
-6. Set budgets, define initial strategic tasks
-7. Hit go — agents start their heartbeats and the company runs
+1. Abre Paperclip, crea una nueva empresa
+2. Define el objetivo de la empresa: "Crear la app #1 de notas con IA, $1M de MRR en 3 meses"
+3. Crea al CEO
+   - Elige un adaptador (p. ej., adaptador de proceso para Claude Code, adaptador HTTP para OpenClaw)
+   - Configura el adaptador (identidad del agente, comportamiento del bucle, ajustes de ejecución)
+   - El CEO propone el desglose estratégico → el tablero aprueba
+4. Define los reportes del CEO: CTO, CMO, CFO, etc.
+   - Cada uno recibe su propia configuración de adaptador y definición de rol
+5. Define sus reportes: ingenieros bajo el CTO, marketers bajo el CMO, etc.
+6. Define presupuestos, define tareas estratégicas iniciales
+7. Ponlo en marcha — los agentes inician sus latidos y la empresa opera
 
-## Guidelines
+## Guías
 
-There are two runtime modes Paperclip must support:
+Hay dos modos de runtime que Paperclip debe soportar:
 
-- `local_trusted` (default): single-user local trusted deployment with no login friction
-- `authenticated`: login-required mode that supports both private-network and public deployment exposure policies
+- `local_trusted` (por defecto): despliegue local confiable de un solo usuario sin fricción de login
+- `authenticated`: modo que requiere login y soporta políticas de exposición en red privada y pública
 
-Canonical mode design and command expectations live in `doc/DEPLOYMENT-MODES.md`.
+El diseño canónico de modos y las expectativas de comandos viven en `doc/DEPLOYMENT-MODES.md`.
 
-## Further Detail
+## Más detalle
 
-See [SPEC.md](./SPEC.md) for the full technical specification and [TASKS.md](./TASKS.md) for the task management data model.
+Consulta [SPEC.md](./SPEC.md) para la especificación técnica completa y [TASKS.md](./TASKS.md) para el modelo de datos de gestión de tareas.
 
 ---
 
-Paperclip’s core identity is a **control plane for autonomous AI companies**, centered on **companies, org charts, goals, issues/comments, heartbeats, budgets, approvals, and board governance**. The public docs are also explicit about the current boundaries: **tasks/comments are the built-in communication model**, Paperclip is **not a chatbot**, and it is **not a code review tool**. The roadmap already points toward **easier onboarding, cloud agents, easier agent configuration, plugins, better docs, and ClipMart/ClipHub-style reusable companies/templates**.
+La identidad central de Paperclip es un **plano de control para empresas de IA autónomas**, centrado en **empresas, organigramas, objetivos, issues/comentarios, latidos, presupuestos, aprobaciones y gobernanza del tablero**. Los documentos públicos también son explícitos sobre los límites actuales: **las tareas/comentarios son el modelo de comunicación integrado**, Paperclip **no es un chatbot** y **no es una herramienta de revisión de código**. El roadmap ya apunta hacia **incorporación más fácil, agentes en la nube, configuración de agentes más fácil, plugins, mejores documentos y empresas/plantillas reutilizables estilo ClipMart/ClipHub**.
 
-## What Paperclip should do vs. not do
+## Qué debería hacer Paperclip vs. qué no
 
-**Do**
+**Sí**
 
-- Stay **board-level and company-level**. Users should manage goals, orgs, budgets, approvals, and outputs.
-- Make the first five minutes feel magical: install, answer a few questions, see a CEO do something real.
-- Keep work anchored to **issues/comments/projects/goals**, even if the surface feels conversational.
-- Treat **agency / internal team / startup** as the same underlying abstraction with different templates and labels.
-- Make outputs first-class: files, docs, reports, previews, links, screenshots.
-- Provide **hooks into engineering workflows**: worktrees, preview servers, PR links, external review tools.
-- Use **plugins** for edge cases like rich chat, knowledge bases, doc editors, custom tracing.
+- Mantente a **nivel del tablero y nivel de empresa**. Los usuarios deben gestionar objetivos, orgs, presupuestos, aprobaciones y resultados.
+- Haz que los primeros cinco minutos se sientan mágicos: instala, responde unas preguntas, ve a un CEO hacer algo real.
+- Mantén el trabajo anclado a **issues/comentarios/proyectos/objetivos**, incluso si la superficie se siente conversacional.
+- Trata **agencia / equipo interno / startup** como la misma abstracción subyacente con distintas plantillas y etiquetas.
+- Haz que los resultados sean de primera clase: archivos, documentos, reportes, vistas previas, enlaces, capturas de pantalla.
+- Provee **hooks hacia flujos de trabajo de ingeniería**: worktrees, servidores de vista previa, enlaces de PR, herramientas externas de revisión.
+- Usa **plugins** para casos límite como chat enriquecido, bases de conocimiento, editores de documentos, trazado personalizado.
 
-**Do not**
+**No**
 
-- Do not make the core product a general chat app. The current product definition is explicitly task/comment-centric and “not a chatbot,” and that boundary is valuable.
-- Do not build a complete Jira/GitHub replacement. The repo/docs already position Paperclip as organization orchestration, not focused on pull-request review.
-- Do not build enterprise-grade RBAC first. The current V1 spec still treats multi-board governance and fine-grained human permissions as out of scope, so the first multi-user version should be coarse and company-scoped.
-- Do not lead with raw bash logs and transcripts. Default view should be human-readable intent/progress, with raw detail beneath.
-- Do not force users to understand provider/API-key plumbing unless absolutely necessary. There are active onboarding/auth issues already; friction here is clearly real.
+- No hagas del producto central una app de chat general. La definición actual del producto es explícitamente centrada en tareas/comentarios y "no es un chatbot", y ese límite es valioso.
+- No construyas un reemplazo completo de Jira/GitHub. El repo/documentos ya posicionan a Paperclip como orquestación de organizaciones, no enfocado en revisión de pull requests.
+- No construyas primero RBAC de nivel empresarial. La especificación actual de V1 aún trata la gobernanza multi-tablero y los permisos humanos granulares como fuera de alcance, así que la primera versión multiusuario debe ser gruesa y con alcance de empresa.
+- No lideres con logs bash crudos y transcripciones. La vista por defecto debe ser intención/progreso legible por humanos, con el detalle crudo debajo.
+- No obligues a los usuarios a entender el plomería de proveedores/API keys a menos que sea absolutamente necesario. Ya hay issues activos de incorporación/autenticación; la fricción aquí es claramente real.
 
-## Specific design goals
+## Objetivos de diseño específicos
 
-1. **Time-to-first-success under 5 minutes**
-   A fresh user should go from install to “my CEO completed a first task” in one sitting.
+1. **Tiempo hasta el primer éxito menor a 5 minutos**
+   Un usuario nuevo debe pasar de instalar a "mi CEO completó una primera tarea" en una sesión.
 
-2. **Board-level abstraction always wins**
-   The default UI should answer: what is the company doing, who is doing it, why does it matter, what did it cost, and what needs my approval.
+2. **La abstracción a nivel del tablero siempre gana**
+   La UI por defecto debe responder: qué está haciendo la empresa, quién lo está haciendo, por qué importa, cuánto costó y qué necesita mi aprobación.
 
-3. **Conversation stays attached to work objects**
-   “Chat with CEO” should still resolve to strategy threads, decisions, tasks, or approvals.
+3. **La conversación permanece adjunta a objetos de trabajo**
+   "Chatear con el CEO" debe resolverse igual en hilos de estrategia, decisiones, tareas o aprobaciones.
 
-4. **Progressive disclosure**
-   Top layer: human-readable summary. Middle layer: checklist/steps/artifacts. Bottom layer: raw logs/tool calls/transcript.
+4. **Divulgación progresiva**
+   Capa superior: resumen legible por humanos. Capa intermedia: checklist/pasos/artefactos. Capa inferior: logs crudos/llamadas a herramientas/transcripción.
 
-5. **Output-first**
-   Work is not done until the user can see the result: file, document, preview link, screenshot, plan, or PR.
+5. **Resultados primero**
+   El trabajo no está terminado hasta que el usuario pueda ver el resultado: archivo, documento, enlace de vista previa, captura de pantalla, plan o PR.
 
-6. **Local-first, cloud-ready**
-   The mental model should not change between local solo use and shared/private or public/cloud deployment.
+6. **Local primero, listo para la nube**
+   El modelo mental no debe cambiar entre uso local en solitario y despliegue compartido/privado o público/en la nube.
 
-7. **Safe autonomy**
-   Auto mode is allowed; hidden token burn is not.
+7. **Autonomía segura**
+   El modo auto está permitido; la quema oculta de tokens no.
 
-8. **Thin core, rich edges**
-   Put optional chat, knowledge, and special surfaces into plugins/extensions rather than bloating the control plane.
+8. **Núcleo delgado, bordes ricos**
+   Pon el chat opcional, el conocimiento y las superficies especiales en plugins/extensiones en lugar de inflar el plano de control.

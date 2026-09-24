@@ -1,120 +1,120 @@
-# Deployment Modes
+# Modos de despliegue
 
-Status: Canonical deployment and auth mode model  
-Date: 2026-02-23
+Estado: Modelo canónico de modos de despliegue y autenticación  
+Fecha: 2026-02-23
 
-## 1. Purpose
+## 1. Propósito
 
-Paperclip supports two runtime modes:
+Paperclip soporta dos modos de runtime:
 
 1. `local_trusted`
 2. `authenticated`
 
-`authenticated` supports two exposure policies:
+`authenticated` soporta dos políticas de exposición:
 
 1. `private`
 2. `public`
 
-This keeps one authenticated auth stack while still separating low-friction private-network defaults from internet-facing hardening requirements.
+Esto mantiene una sola pila de autenticación autenticada mientras separa los valores por defecto de bajo fricción de red privada de los requisitos de endurecimiento con exposición a internet.
 
-## 2. Canonical Model
+## 2. Modelo canónico
 
-| Runtime Mode | Exposure | Human auth | Primary use |
+| Modo de runtime | Exposición | Autenticación humana | Uso principal |
 |---|---|---|---|
-| `local_trusted` | n/a | No login required | Single-operator local machine workflow |
-| `authenticated` | `private` | Login required | Private-network access (for example Tailscale/VPN/LAN) |
-| `authenticated` | `public` | Login required | Internet-facing/cloud deployment |
+| `local_trusted` | n/a | No requiere login | Flujo de máquina local de un solo operador |
+| `authenticated` | `private` | Login requerido | Acceso en red privada (por ejemplo Tailscale/VPN/LAN) |
+| `authenticated` | `public` | Login requerido | Despliegue en la nube/con exposición a internet |
 
-## 3. Security Policy
+## 3. Política de seguridad
 
 ## `local_trusted`
 
-- loopback-only host binding
-- no human login flow
-- optimized for fastest local startup
+- binding de host solo loopback
+- sin flujo de login humano
+- optimizado para el arranque local más rápido
 
 ## `authenticated + private`
 
-- login required
-- low-friction URL handling (`auto` base URL mode)
-- private-host trust policy required
+- login requerido
+- manejo de URL de baja fricción (modo de URL base `auto`)
+- política de confianza de host privado requerida
 
 ## `authenticated + public`
 
-- login required
-- explicit public URL required
-- stricter deployment checks and failures in doctor
+- login requerido
+- URL pública explícita requerida
+- chequeos de despliegue más estrictos y fallas en doctor
 
-## 4. Onboarding UX Contract
+## 4. Contrato de UX de incorporación
 
-Default onboarding remains interactive and flagless:
+La incorporación por defecto sigue siendo interactiva y sin flags:
 
 ```sh
 pnpm paperclipai onboard
 ```
 
-Server prompt behavior:
+Comportamiento del prompt del servidor:
 
-1. ask mode, default `local_trusted`
-2. option copy:
-- `local_trusted`: "Easiest for local setup (no login, localhost-only)"
-- `authenticated`: "Login required; use for private network or public hosting"
-3. if `authenticated`, ask exposure:
-- `private`: "Private network access (for example Tailscale), lower setup friction"
-- `public`: "Internet-facing deployment, stricter security requirements"
-4. ask explicit public URL only for `authenticated + public`
+1. preguntar modo, por defecto `local_trusted`
+2. texto de opción:
+- `local_trusted`: "Más fácil para configuración local (sin login, solo localhost)"
+- `authenticated`: "Login requerido; usar para red privada o hosting público"
+3. si es `authenticated`, preguntar exposición:
+- `private`: "Acceso en red privada (por ejemplo Tailscale), menor fricción de configuración"
+- `public`: "Despliegue con exposición a internet, requisitos de seguridad más estrictos"
+4. preguntar URL pública explícita solo para `authenticated + public`
 
-`configure --section server` follows the same interactive behavior.
+`configure --section server` sigue el mismo comportamiento interactivo.
 
-## 5. Doctor UX Contract
+## 5. Contrato de UX de Doctor
 
-Default doctor remains flagless:
+El doctor por defecto sigue sin flags:
 
 ```sh
 pnpm paperclipai doctor
 ```
 
-Doctor reads configured mode/exposure and applies mode-aware checks. Optional override flags are secondary.
+Doctor lee el modo/exposición configurados y aplica chequeos conscientes del modo. Los flags opcionales de override son secundarios.
 
-## 6. Board/User Integration Contract
+## 6. Contrato de integración de tablero/usuario
 
-Board identity must be represented by a real DB user principal for user-based features to work consistently.
+La identidad del tablero debe estar representada por un principal de usuario real en la BD para que las funciones basadas en usuario funcionen consistentemente.
 
-Required integration points:
+Puntos de integración requeridos:
 
-- real user row in `authUsers` for Board identity
-- `instance_user_roles` entry for Board admin authority
-- `company_memberships` integration for user-level task assignment and access
+- fila de usuario real en `authUsers` para la identidad del Tablero
+- entrada de `instance_user_roles` para la autoridad de admin del Tablero
+- integración de `company_memberships` para asignación de tareas a nivel de usuario y acceso
 
-This is required because user assignment paths validate active membership for `assigneeUserId`.
+Esto es requerido porque las rutas de asignación de usuario validan membresía activa para `assigneeUserId`.
 
-## 7. Local Trusted -> Authenticated Claim Flow
+## 7. Flujo de reclamo Local Trusted -> Authenticated
 
-When running `authenticated` mode, if the only instance admin is `local-board`, Paperclip emits a startup warning with a one-time high-entropy claim URL.
+Al ejecutar en modo `authenticated`, si el único admin de la instancia es `local-board`, Paperclip emite una advertencia de arranque con una URL de reclamo única de alta entropía.
 
-- URL format: `/board-claim/<token>?code=<code>`
-- intended use: signed-in human claims board ownership
-- claim action:
-  - promotes current signed-in user to `instance_admin`
-  - demotes `local-board` admin role
-  - ensures active owner membership for the claiming user across existing companies
+- Formato de URL: `/board-claim/<token>?code=<code>`
+- uso previsto: un humano con sesión iniciada reclama la propiedad del tablero
+- acción de reclamo:
+  - promueve al usuario actual con sesión iniciada a `instance_admin`
+  - degrada el rol de admin de `local-board`
+  - asegura membresía de propietario activa para el usuario reclamante en las empresas existentes
 
-This prevents lockout when a user migrates from long-running local trusted usage to authenticated mode.
+Esto evita el bloqueo cuando un usuario migra de un uso local trusted de larga duración a modo autenticado.
 
-## 8. Current Code Reality (As Of 2026-02-23)
+## 8. Realidad actual del código (al 2026-02-23)
 
-- runtime values are `local_trusted | authenticated`
-- `authenticated` uses Better Auth sessions and bootstrap invite flow
-- `local_trusted` ensures a real local Board user principal in `authUsers` with `instance_user_roles` admin access
-- company creation ensures creator membership in `company_memberships` so user assignment/access flows remain consistent
+- los valores de runtime son `local_trusted | authenticated`
+- `authenticated` usa sesiones de Better Auth y flujo de invitación bootstrap
+- `local_trusted` asegura un principal de usuario de Tablero local real en `authUsers` con acceso de admin en `instance_user_roles`
+- la creación de empresas asegura membresía del creador en `company_memberships` para que los flujos de asignación/acceso de usuario sigan consistentes
 
-## 9. Naming and Compatibility Policy
+## 9. Política de nombres y compatibilidad
 
-- canonical naming is `local_trusted` and `authenticated` with `private/public` exposure
-- no long-term compatibility alias layer for discarded naming variants
+- el nombrado canónico es `local_trusted` y `authenticated` con exposición `private/public`
+- sin capa de alias de compatibilidad a largo plazo para variantes de nombres descartadas
 
-## 10. Relationship to Other Docs
+## 10. Relación con otros documentos
 
-- implementation plan: `doc/plans/deployment-auth-mode-consolidation.md`
-- V1 contract: `doc/SPEC-implementation.md`
-- operator workflows: `doc/DEVELOPING.md` and `doc/CLI.md`
+- plan de implementación: `doc/plans/deployment-auth-mode-consolidation.md`
+- contrato V1: `doc/SPEC-implementation.md`
+- flujos de trabajo de operador: `doc/DEVELOPING.md` y `doc/CLI.md`

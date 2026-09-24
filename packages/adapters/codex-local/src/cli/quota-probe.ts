@@ -29,7 +29,7 @@ function stringifyError(error: unknown): string {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.rpcOnly && args.whamOnly) {
-    throw new Error("Choose either --rpc-only or --wham-only, not both.");
+    throw new Error("Elige --rpc-only o --wham-only, no ambos.");
   }
 
   const auth = await readCodexAuthInfo();
@@ -60,7 +60,7 @@ async function main() {
     if (!token) {
       result.wham = {
         ok: false,
-        error: "No local Codex auth token found in ~/.codex/auth.json.",
+        error: "No se encontró ningún token de autenticación local de Codex en ~/.codex/auth.json.",
         windows: [],
       };
     } else {

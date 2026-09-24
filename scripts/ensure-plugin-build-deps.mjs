@@ -23,7 +23,7 @@ const buildTargets = [
 ];
 
 if (!fs.existsSync(tscCliPath)) {
-  throw new Error(`TypeScript CLI not found at ${tscCliPath}`);
+  throw new Error(`CLI de TypeScript no encontrada en ${tscCliPath}`);
 }
 
 for (const target of buildTargets) {

@@ -30,7 +30,7 @@ function secretName(agentId: string, key: string) {
 async function main() {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
-    console.error("DATABASE_URL is required");
+    console.error("Se requiere DATABASE_URL");
     process.exit(1);
   }
 
@@ -76,7 +76,7 @@ async function main() {
               name,
               provider: "local_encrypted",
               value: plain,
-              description: `Migrated from agent ${agent.id} env ${key}`,
+              description: `Migrado desde env ${key} del agente ${agent.id}`,
             },
             { userId: "migration", agentId: null },
           );
@@ -111,13 +111,13 @@ async function main() {
   }
 
   if (!apply) {
-    console.log(`Dry run: ${changedAgents} agents would be updated`);
-    console.log("Re-run with --apply to persist changes");
+    console.log(`Simulación (dry run): se actualizarían ${changedAgents} agentes`);
+    console.log("Vuelve a ejecutar con --apply para guardar los cambios");
     process.exit(0);
   }
 
   console.log(
-    `Updated ${changedAgents} agents, created ${createdSecrets} secrets, rotated ${rotatedSecrets} secrets`,
+    `Se actualizaron ${changedAgents} agentes, se crearon ${createdSecrets} secretos, se rotaron ${rotatedSecrets} secretos`,
   );
   process.exit(0);
 }

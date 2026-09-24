@@ -28,8 +28,8 @@ function distanceFromBottom(target: ReturnType<typeof resolveScrollTarget>) {
 }
 
 /**
- * Floating scroll-to-bottom button that follows the active page scroller.
- * On desktop that is `#main-content`; on mobile it falls back to window/page scroll.
+ * Botón flotante para ir al final que sigue el scroller activo de la página.
+ * En escritorio es `#main-content`; en móvil recurre al scroll de la ventana/página.
  */
 export function ScrollToBottom() {
   const [visible, setVisible] = useState(false);
@@ -71,7 +71,7 @@ export function ScrollToBottom() {
     <button
       onClick={scroll}
       className="fixed bottom-[calc(1.5rem+5rem+env(safe-area-inset-bottom))] right-6 z-40 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background shadow-md hover:bg-accent transition-colors md:bottom-6"
-      aria-label="Scroll to bottom"
+      aria-label="Desplazar hacia abajo"
     >
       <ArrowDown className="h-4 w-4" />
     </button>

@@ -14,17 +14,17 @@ export function deploymentAuthCheck(config: PaperclipConfig): CheckResult {
   if (mode === "local_trusted") {
     if (!isLoopbackHost(config.server.host)) {
       return {
-        name: "Deployment/auth mode",
+        name: "Modo de despliegue/autenticación",
         status: "fail",
-        message: `local_trusted requires loopback host binding (found ${config.server.host})`,
+        message: `local_trusted requiere enlace a host de loopback (se encontró ${config.server.host})`,
         canRepair: false,
-        repairHint: "Run `paperclipai configure --section server` and set host to 127.0.0.1",
+        repairHint: "Ejecuta `paperclipai configure --section server` y establece el host en 127.0.0.1",
       };
     }
     return {
-      name: "Deployment/auth mode",
+      name: "Modo de despliegue/autenticación",
       status: "pass",
-      message: "local_trusted mode is configured for loopback-only access",
+      message: "El modo local_trusted está configurado para acceso solo por loopback",
     };
   }
 
@@ -33,59 +33,59 @@ export function deploymentAuthCheck(config: PaperclipConfig): CheckResult {
     process.env.PAPERCLIP_AGENT_JWT_SECRET?.trim();
   if (!secret) {
     return {
-      name: "Deployment/auth mode",
+      name: "Modo de despliegue/autenticación",
       status: "fail",
-      message: "authenticated mode requires BETTER_AUTH_SECRET (or PAPERCLIP_AGENT_JWT_SECRET)",
+      message: "El modo authenticated requiere BETTER_AUTH_SECRET (o PAPERCLIP_AGENT_JWT_SECRET)",
       canRepair: false,
-      repairHint: "Set BETTER_AUTH_SECRET before starting Paperclip",
+      repairHint: "Establece BETTER_AUTH_SECRET antes de iniciar Paperclip",
     };
   }
 
   if (auth.baseUrlMode === "explicit" && !auth.publicBaseUrl) {
     return {
-      name: "Deployment/auth mode",
+      name: "Modo de despliegue/autenticación",
       status: "fail",
-      message: "auth.baseUrlMode=explicit requires auth.publicBaseUrl",
+      message: "auth.baseUrlMode=explicit requiere auth.publicBaseUrl",
       canRepair: false,
-      repairHint: "Run `paperclipai configure --section server` and provide a base URL",
+      repairHint: "Ejecuta `paperclipai configure --section server` e indica una URL base",
     };
   }
 
   if (exposure === "public") {
     if (auth.baseUrlMode !== "explicit" || !auth.publicBaseUrl) {
       return {
-        name: "Deployment/auth mode",
+        name: "Modo de despliegue/autenticación",
         status: "fail",
-        message: "authenticated/public requires explicit auth.publicBaseUrl",
+        message: "authenticated/public requiere auth.publicBaseUrl explícito",
         canRepair: false,
-        repairHint: "Run `paperclipai configure --section server` and select public exposure",
+        repairHint: "Ejecuta `paperclipai configure --section server` y selecciona exposición pública",
       };
     }
     try {
       const url = new URL(auth.publicBaseUrl);
       if (url.protocol !== "https:") {
         return {
-          name: "Deployment/auth mode",
+          name: "Modo de despliegue/autenticación",
           status: "warn",
-          message: "Public exposure should use an https:// auth.publicBaseUrl",
+          message: "La exposición pública debería usar un auth.publicBaseUrl con https://",
           canRepair: false,
-          repairHint: "Use HTTPS in production for secure session cookies",
+          repairHint: "Usa HTTPS en producción para cookies de sesión seguras",
         };
       }
     } catch {
       return {
-        name: "Deployment/auth mode",
+        name: "Modo de despliegue/autenticación",
         status: "fail",
-        message: "auth.publicBaseUrl is not a valid URL",
+        message: "auth.publicBaseUrl no es una URL válida",
         canRepair: false,
-        repairHint: "Run `paperclipai configure --section server` and provide a valid URL",
+        repairHint: "Ejecuta `paperclipai configure --section server` e indica una URL válida",
       };
     }
   }
 
   return {
-    name: "Deployment/auth mode",
+    name: "Modo de despliegue/autenticación",
     status: "pass",
-    message: `Mode ${mode}/${exposure} with auth URL mode ${auth.baseUrlMode}`,
+    message: `Modo ${mode}/${exposure} con modo de URL de autenticación ${auth.baseUrlMode}`,
   };
 }

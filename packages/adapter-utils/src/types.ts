@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Minimal adapter-facing interfaces (no drizzle dependency)
+// Interfaces mínimas orientadas a adaptadores (sin dependencia de drizzle)
 // ---------------------------------------------------------------------------
 
 export interface AdapterAgent {
@@ -12,7 +12,7 @@ export interface AdapterAgent {
 
 export interface AdapterRuntime {
   /**
-   * Legacy single session id view. Prefer `sessionParams` + `sessionDisplayId`.
+   * Vista heredada del id de sesión único. Preferir `sessionParams` + `sessionDisplayId`.
    */
   sessionId: string | null;
   sessionParams: Record<string, unknown> | null;
@@ -21,7 +21,7 @@ export interface AdapterRuntime {
 }
 
 // ---------------------------------------------------------------------------
-// Execution types (moved from server/src/adapters/types.ts)
+// Tipos de ejecución (movidos desde server/src/adapters/types.ts)
 // ---------------------------------------------------------------------------
 
 export interface UsageSummary {
@@ -70,7 +70,7 @@ export interface AdapterExecutionResult {
   errorMeta?: Record<string, unknown>;
   usage?: UsageSummary;
   /**
-   * Legacy single session id output. Prefer `sessionParams` + `sessionDisplayId`.
+   * Salida heredada del id de sesión único. Preferir `sessionParams` + `sessionDisplayId`.
    */
   sessionId?: string | null;
   sessionParams?: Record<string, unknown> | null;
@@ -209,7 +209,7 @@ export interface AdapterEnvironmentTestContext {
   };
 }
 
-/** Payload for the onHireApproved adapter lifecycle hook (e.g. join-request or hire_agent approval). */
+/** Carga útil del hook de ciclo de vida onHireApproved del adaptador (p. ej., solicitud de unión o aprobación hire_agent). */
 export interface HireApprovedPayload {
   companyId: string;
   agentId: string;
@@ -219,11 +219,11 @@ export interface HireApprovedPayload {
   source: "join_request" | "approval";
   sourceId: string;
   approvedAt: string;
-  /** Canonical operator-facing message for cloud adapters to show the user. */
+  /** Mensaje canónico dirigido al operador para que los adaptadores en la nube lo muestren al usuario. */
   message: string;
 }
 
-/** Result of onHireApproved hook; failures are non-fatal to the approval flow. */
+/** Resultado del hook onHireApproved; los fallos no son fatales para el flujo de aprobación. */
 export interface HireApprovedHookResult {
   ok: boolean;
   error?: string;
@@ -231,32 +231,32 @@ export interface HireApprovedHookResult {
 }
 
 // ---------------------------------------------------------------------------
-// Quota window types — used by adapters that can report provider quota/rate-limit state
+// Tipos de ventana de cuota — usados por adaptadores que pueden reportar el estado de cuota/límite de tasa del proveedor
 // ---------------------------------------------------------------------------
 
-/** a single rate-limit or usage window returned by a provider quota API */
+/** una sola ventana de límite de tasa o uso devuelta por la API de cuota de un proveedor */
 export interface QuotaWindow {
-  /** human label, e.g. "5h", "7d", "Sonnet 7d", "Credits" */
+  /** etiqueta legible, p. ej., "5h", "7d", "Sonnet 7d", "Credits" */
   label: string;
-  /** percent of the window already consumed (0-100), null when not reported */
+  /** porcentaje de la ventana ya consumido (0-100), null cuando no se reporta */
   usedPercent: number | null;
-  /** iso timestamp when this window resets, null when not reported */
+  /** marca de tiempo ISO cuando esta ventana se reinicia, null cuando no se reporta */
   resetsAt: string | null;
-  /** free-form value label for credit-style windows, e.g. "$4.20 remaining" */
+  /** etiqueta de valor de formato libre para ventanas de tipo crédito, p. ej., "$4.20 remaining" */
   valueLabel: string | null;
-  /** optional supporting text, e.g. reset details or provider-specific notes */
+  /** texto de apoyo opcional, p. ej., detalles de reinicio o notas específicas del proveedor */
   detail?: string | null;
 }
 
-/** result for one provider from getQuotaWindows() */
+/** resultado de un proveedor de getQuotaWindows() */
 export interface ProviderQuotaResult {
-  /** provider slug, e.g. "anthropic", "openai" */
+  /** slug del proveedor, p. ej., "anthropic", "openai" */
   provider: string;
-  /** source label when the provider reports where the quota data came from */
+  /** etiqueta de origen cuando el proveedor reporta de dónde vinieron los datos de cuota */
   source?: string | null;
-  /** true when the fetch succeeded and windows is populated */
+  /** true cuando la obtención tuvo éxito y windows está poblado */
   ok: boolean;
-  /** error message when ok is false */
+  /** mensaje de error cuando ok es false */
   error?: string;
   windows: QuotaWindow[];
 }
@@ -274,23 +274,24 @@ export interface ServerAdapterModule {
   listModels?: () => Promise<AdapterModel[]>;
   agentConfigurationDoc?: string;
   /**
-   * Optional lifecycle hook when an agent is approved/hired (join-request or hire_agent approval).
-   * adapterConfig is the agent's adapter config so the adapter can e.g. send a callback to a configured URL.
+   * Hook de ciclo de vida opcional cuando un agente es aprobado/contratado (solicitud de unión o aprobación hire_agent).
+   * adapterConfig es la configuración del adaptador del agente para que el adaptador pueda,
+   * p. ej., enviar una devolución de llamada a una URL configurada.
    */
   onHireApproved?: (
     payload: HireApprovedPayload,
     adapterConfig: Record<string, unknown>,
   ) => Promise<HireApprovedHookResult>;
   /**
-   * Optional: fetch live provider quota/rate-limit windows for this adapter.
-   * Returns a ProviderQuotaResult so the server can aggregate across adapters
-   * without knowing provider-specific credential paths or API shapes.
+   * Opcional: obtiene las ventanas de cuota/límite de tasa en vivo del proveedor para este adaptador.
+   * Devuelve un ProviderQuotaResult para que el servidor pueda agregar entre adaptadores
+   * sin conocer las rutas de credenciales ni los formatos de API específicos del proveedor.
    */
   getQuotaWindows?: () => Promise<ProviderQuotaResult>;
 }
 
 // ---------------------------------------------------------------------------
-// UI types (moved from ui/src/adapters/types.ts)
+// Tipos de UI (movidos desde ui/src/adapters/types.ts)
 // ---------------------------------------------------------------------------
 
 export type TranscriptEntry =
@@ -308,7 +309,7 @@ export type TranscriptEntry =
 export type StdoutLineParser = (line: string, ts: string) => TranscriptEntry[];
 
 // ---------------------------------------------------------------------------
-// CLI types (moved from cli/src/adapters/types.ts)
+// Tipos de CLI (movidos desde cli/src/adapters/types.ts)
 // ---------------------------------------------------------------------------
 
 export interface CLIAdapterModule {
@@ -317,7 +318,7 @@ export interface CLIAdapterModule {
 }
 
 // ---------------------------------------------------------------------------
-// UI config form values (moved from ui/src/components/AgentConfigForm.tsx)
+// Valores del formulario de configuración de UI (movidos desde ui/src/components/AgentConfigForm.tsx)
 // ---------------------------------------------------------------------------
 
 export interface CreateConfigValues {

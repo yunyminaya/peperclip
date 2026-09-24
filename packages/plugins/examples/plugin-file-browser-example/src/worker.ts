@@ -28,20 +28,20 @@ function resolveWorkspace(workspacePath: string, requestedPath?: string): string
 }
 
 /**
- * Regex that matches file-path-like tokens in comment text.
- * Captures tokens that either start with `.` `/` `~` or contain a `/`
- * (directory separator), plus bare words that could be filenames with
- * extensions (e.g. `README.md`).  The file-extension check in
- * `extractFilePaths` filters out non-file matches.
+ * Regex que coincide con tokens tipo ruta de archivo en el texto del comentario.
+ * Captura tokens que comienzan con `.` `/` `~` o contienen un `/`
+ * (separador de directorio), m\u00e1s palabras simples que podr\u00edan ser nombres de archivo con
+ * extensiones (p. ej. `README.md`). La verificaci\u00f3n de extensi\u00f3n de archivo en
+ * `extractFilePaths` filtra las coincidencias que no son archivos.
  */
 const FILE_PATH_REGEX = /(?:^|[\s(`"'])([^\s,;)}`"'>\]]*\/[^\s,;)}`"'>\]]+|[.\/~][^\s,;)}`"'>\]]+|[a-zA-Z0-9_-]+\.[a-zA-Z0-9]{1,10}(?:\/[^\s,;)}`"'>\]]+)?)/g;
 
-/** Common file extensions to recognise path-like tokens as actual file references. */
+/** Extensiones de archivo comunes para reconocer tokens tipo ruta como referencias reales de archivo. */
 const FILE_EXTENSION_REGEX = /\.[a-zA-Z0-9]{1,10}$/;
 
 /**
- * Tokens that look like paths but are almost certainly URL route segments
- * (e.g. `/projects/abc`, `/settings`, `/dashboard`).
+ * Tokens que parecen rutas pero casi con seguridad son segmentos de ruta URL
+ * (p. ej. `/projects/abc`, `/settings`, `/dashboard`).
  */
 const URL_ROUTE_PATTERN = /^\/(?:projects|issues|agents|settings|dashboard|plugins|api|auth|admin)\b/i;
 
@@ -49,12 +49,12 @@ function extractFilePaths(body: string): string[] {
   const paths = new Set<string>();
   for (const match of body.matchAll(FILE_PATH_REGEX)) {
     const raw = match[1];
-    // Strip trailing punctuation that isn't part of a path
+    // Quitar puntuaci\u00f3n final que no sea parte de una ruta
     const cleaned = raw.replace(/[.:,;!?)]+$/, "");
     if (cleaned.length <= 1) continue;
-    // Must have a file extension (e.g. .ts, .json, .md)
+    // Debe tener una extensi\u00f3n de archivo (p. ej. .ts, .json, .md)
     if (!FILE_EXTENSION_REGEX.test(cleaned)) continue;
-    // Skip things that look like URL routes
+    // Omitir cosas que parezcan rutas URL
     if (URL_ROUTE_PATTERN.test(cleaned)) continue;
     paths.add(cleaned);
   }
@@ -63,10 +63,10 @@ function extractFilePaths(body: string): string[] {
 
 const plugin = definePlugin({
   async setup(ctx) {
-    ctx.logger.info(`${PLUGIN_NAME} plugin setup`);
+    ctx.logger.info(`${PLUGIN_NAME}: configuraci\u00f3n del plugin`);
 
-    // Expose the current plugin config so UI components can read operator
-    // settings from the canonical instance config store.
+    // Exponer la configuraci\u00f3n actual del plugin para que los componentes de interfaz
+    // lean los ajustes del operador desde el almac\u00e9n can\u00f3nico de configuraci\u00f3n de instancia.
     ctx.data.register("plugin-config", async () => {
       const config = await ctx.config.get();
       return {
@@ -75,7 +75,7 @@ const plugin = definePlugin({
       };
     });
 
-    // Fetch a comment by ID and extract file-path-like tokens from its body.
+    // Obtener un comentario por ID y extraer tokens tipo ruta de archivo de su cuerpo.
     ctx.data.register("comment-file-links", async (params: Record<string, unknown>) => {
       const commentId = typeof params.commentId === "string" ? params.commentId : "";
       const issueId = typeof params.issueId === "string" ? params.issueId : "";
@@ -87,7 +87,7 @@ const plugin = definePlugin({
         if (!comment?.body) return { links: [] };
         return { links: extractFilePaths(comment.body) };
       } catch (err) {
-        ctx.logger.warn("Failed to fetch comment for file link extraction", { commentId, error: String(err) });
+        ctx.logger.warn("No se pudo obtener el comentario para la extracci\u00f3n de enlaces de archivo", { commentId, error: String(err) });
         return { links: [] };
       }
     });
@@ -152,16 +152,16 @@ const plugin = definePlugin({
         const workspaceId = params.workspaceId as string;
         const filePath = params.filePath as string;
         if (!projectId || !companyId || !workspaceId || !filePath) {
-          return { content: null, error: "Missing file context" };
+          return { content: null, error: "Falta el contexto del archivo" };
         }
         const workspaces = await ctx.projects.listWorkspaces(projectId, companyId);
         const workspace = workspaces.find((w) => w.id === workspaceId);
-        if (!workspace) return { content: null, error: "Workspace not found" };
+        if (!workspace) return { content: null, error: "Workspace no encontrado" };
         const workspacePath = sanitizeWorkspacePath(workspace.path);
-        if (!workspacePath) return { content: null, error: "Workspace has no path" };
+        if (!workspacePath) return { content: null, error: "El workspace no tiene ruta" };
         const fullPath = resolveWorkspace(workspacePath, filePath);
         if (!fullPath) {
-          return { content: null, error: "Path outside workspace" };
+          return { content: null, error: "Ruta fuera del workspace" };
         }
         try {
           const content = fs.readFileSync(fullPath, "utf-8");
@@ -181,31 +181,31 @@ const plugin = definePlugin({
         const workspaceId = params.workspaceId as string;
         const filePath = typeof params.filePath === "string" ? params.filePath.trim() : "";
         if (!filePath) {
-          throw new Error("filePath must be a non-empty string");
+          throw new Error("filePath debe ser una cadena no vac\u00eda");
         }
         const content = typeof params.content === "string" ? params.content : null;
         if (!projectId || !companyId || !workspaceId) {
-          throw new Error("Missing workspace context");
+          throw new Error("Falta el contexto del workspace");
         }
         const workspaces = await ctx.projects.listWorkspaces(projectId, companyId);
         const workspace = workspaces.find((w) => w.id === workspaceId);
         if (!workspace) {
-          throw new Error("Workspace not found");
+          throw new Error("Workspace no encontrado");
         }
         const workspacePath = sanitizeWorkspacePath(workspace.path);
         if (!workspacePath) {
-          throw new Error("Workspace has no path");
+          throw new Error("El workspace no tiene ruta");
         }
         if (content === null) {
-          throw new Error("Missing file content");
+          throw new Error("Falta el contenido del archivo");
         }
         const fullPath = resolveWorkspace(workspacePath, filePath);
         if (!fullPath) {
-          throw new Error("Path outside workspace");
+          throw new Error("Ruta fuera del workspace");
         }
         const stat = fs.statSync(fullPath);
         if (!stat.isFile()) {
-          throw new Error("Selected path is not a file");
+          throw new Error("La ruta seleccionada no es un archivo");
         }
         fs.writeFileSync(fullPath, content, "utf-8");
         return {
@@ -218,7 +218,7 @@ const plugin = definePlugin({
   },
 
   async onHealth() {
-    return { status: "ok", message: `${PLUGIN_NAME} ready` };
+    return { status: "ok", message: `${PLUGIN_NAME} listo` };
   },
 });
 

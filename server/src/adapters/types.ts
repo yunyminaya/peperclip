@@ -1,6 +1,7 @@
-// Re-export all types from the shared adapter-utils package.
-// This file is kept as a convenience shim so existing in-tree
-// imports (process/, http/, heartbeat.ts) don't need rewriting.
+// Reexportar todos los tipos del paquete compartido adapter-utils.
+// Este archivo se mantiene como un shim de conveniencia para que los
+// imports existentes dentro del árbol (process/, http/, heartbeat.ts)
+// no necesiten reescribirse.
 export type {
   AdapterAgent,
   AdapterSessionManagement,

@@ -9,10 +9,11 @@ function parseArg(flag: string): string | undefined {
 }
 
 /**
- * CLI entrypoint for the local plugin UI preview server.
+ * Punto de entrada CLI para el servidor local de vista previa de interfaz de plugin.
  *
- * This is intentionally minimal and delegates all serving behavior to
- * `startPluginDevServer` so tests and programmatic usage share one path.
+ * Es intencionalmente mínimo y delega todo el comportamiento de servicio a
+ * `startPluginDevServer` para que las pruebas y el uso programático compartan
+ * una sola ruta.
  */
 async function main() {
   const rootDir = parseArg("--root") ?? process.cwd();
@@ -21,7 +22,7 @@ async function main() {
   const rawPort = parseArg("--port") ?? "4177";
   const port = Number.parseInt(rawPort, 10);
   if (!Number.isFinite(port) || port <= 0 || port > 65535) {
-    throw new Error(`Invalid --port value: ${rawPort}`);
+    throw new Error(`Valor de --port inválido: ${rawPort}`);
   }
 
   const server = await startPluginDevServer({
@@ -32,7 +33,7 @@ async function main() {
   });
 
   // eslint-disable-next-line no-console
-  console.log(`Paperclip plugin dev server listening at ${server.url}`);
+  console.log(`Servidor dev de plugin de Paperclip escuchando en ${server.url}`);
 
   const shutdown = async () => {
     await server.close();

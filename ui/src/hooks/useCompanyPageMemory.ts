@@ -27,8 +27,8 @@ function saveCompanyPath(companyId: string, path: string) {
 }
 
 /**
- * Remembers the last visited page per company and navigates to it on company switch.
- * Falls back to /dashboard if no page was previously visited for a company.
+ * Recuerda la última página visitada por empresa y navega a ella al cambiar de empresa.
+ * Vuelve a /dashboard si no se visitó ninguna página antes para una empresa.
  */
 export function useCompanyPageMemory() {
   const { companies, selectedCompanyId, selectedCompany, selectionSource } = useCompany();
@@ -45,9 +45,9 @@ export function useCompanyPageMemory() {
     [companies, location.pathname],
   );
 
-  // Save current path for current company on every location change.
-  // Uses prevCompanyId ref so we save under the correct company even
-  // during the render where selectedCompanyId has already changed.
+  // Guarda la ruta actual para la empresa actual en cada cambio de ubicación.
+  // Usa la referencia prevCompanyId para guardar bajo la empresa correcta incluso
+  // durante el render en el que selectedCompanyId ya cambió.
   const fullPath = location.pathname + location.search;
   useEffect(() => {
     const companyId = rememberedPathOwnerCompanyId;
@@ -57,7 +57,7 @@ export function useCompanyPageMemory() {
     }
   }, [fullPath, rememberedPathOwnerCompanyId]);
 
-  // Navigate to saved path when company changes
+  // Navegar a la ruta guardada cuando cambia la empresa
   useEffect(() => {
     if (!selectedCompanyId) return;
 

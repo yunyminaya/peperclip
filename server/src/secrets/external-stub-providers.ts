@@ -13,10 +13,10 @@ function unavailableProvider(
       requiresExternalRef: true,
     },
     async createVersion() {
-      throw unprocessable(`${id} provider is not configured in this deployment`);
+      throw unprocessable(`El proveedor ${id} no está configurado en este despliegue`);
     },
     async resolveVersion() {
-      throw unprocessable(`${id} provider is not configured in this deployment`);
+      throw unprocessable(`El proveedor ${id} no está configurado en este despliegue`);
     },
   };
 }

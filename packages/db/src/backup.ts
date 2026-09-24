@@ -30,7 +30,7 @@ function resolvePaperclipHomeDir(): string {
 function resolvePaperclipInstanceId(): string {
   const raw = process.env.PAPERCLIP_INSTANCE_ID?.trim() || "default";
   if (!/^[a-zA-Z0-9_-]+$/.test(raw)) {
-    throw new Error(`Invalid PAPERCLIP_INSTANCE_ID '${raw}'.`);
+    throw new Error(`PAPERCLIP_INSTANCE_ID '${raw}' no válido.`);
   }
   return raw;
 }
@@ -95,9 +95,9 @@ async function main() {
   const backupDir = resolveBackupDir(config);
   const retentionDays = resolveRetentionDays(config);
 
-  console.log(`Config path: ${configPath}`);
-  console.log(`Backing up database to: ${backupDir}`);
-  console.log(`Retention window: ${retentionDays} day(s)`);
+  console.log(`Ruta de configuración: ${configPath}`);
+  console.log(`Respaldando la base de datos en: ${backupDir}`);
+  console.log(`Ventana de retención: ${retentionDays} día(s)`);
 
   try {
     const result = await runDatabaseBackup({
@@ -107,9 +107,9 @@ async function main() {
       filenamePrefix: "paperclip",
     });
 
-    console.log(`Backup saved: ${formatDatabaseBackupResult(result)}`);
+    console.log(`Respaldo guardado: ${formatDatabaseBackupResult(result)}`);
   } catch (err) {
-    console.error("Backup failed.");
+    console.error("Respaldo fallido.");
     if (err instanceof Error) {
       console.error(err.message);
     } else {

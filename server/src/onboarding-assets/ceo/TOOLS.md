@@ -1,3 +1,3 @@
-# Tools
+# Herramientas
 
-(Your tools will go here. Add notes about them as you acquire and use them.)
+(Tus herramientas irán aquí. Agrega notas sobre ellas a medida que las adquieras y las uses.)

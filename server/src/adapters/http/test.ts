@@ -28,8 +28,8 @@ export async function testEnvironment(
     checks.push({
       code: "http_url_missing",
       level: "error",
-      message: "HTTP adapter requires a URL.",
-      hint: "Set adapterConfig.url to an absolute http(s) endpoint.",
+      message: "El adaptador HTTP requiere una URL.",
+      hint: "Configura adapterConfig.url con un endpoint http(s) absoluto.",
     });
     return {
       adapterType: ctx.adapterType,
@@ -46,7 +46,7 @@ export async function testEnvironment(
     checks.push({
       code: "http_url_invalid",
       level: "error",
-      message: `Invalid URL: ${urlValue}`,
+      message: `URL inválida: ${urlValue}`,
     });
   }
 
@@ -54,8 +54,8 @@ export async function testEnvironment(
     checks.push({
       code: "http_url_protocol_invalid",
       level: "error",
-      message: `Unsupported URL protocol: ${url.protocol}`,
-      hint: "Use an http:// or https:// endpoint.",
+      message: `Protocolo de URL no soportado: ${url.protocol}`,
+      hint: "Usa un endpoint http:// o https://.",
     });
   }
 
@@ -63,14 +63,14 @@ export async function testEnvironment(
     checks.push({
       code: "http_url_valid",
       level: "info",
-      message: `Configured endpoint: ${url.toString()}`,
+      message: `Endpoint configurado: ${url.toString()}`,
     });
   }
 
   checks.push({
     code: "http_method_configured",
     level: "info",
-    message: `Configured method: ${method}`,
+    message: `Método configurado: ${method}`,
   });
 
   if (url && (url.protocol === "http:" || url.protocol === "https:")) {
@@ -85,22 +85,22 @@ export async function testEnvironment(
         checks.push({
           code: "http_endpoint_probe_unexpected_status",
           level: "warn",
-          message: `Endpoint probe returned HTTP ${response.status}.`,
-          hint: "Verify the endpoint is reachable from the Paperclip server host.",
+          message: `La prueba del endpoint devolvió HTTP ${response.status}.`,
+          hint: "Verifica que el endpoint sea accesible desde el host del servidor Paperclip.",
         });
       } else {
         checks.push({
           code: "http_endpoint_probe_ok",
           level: "info",
-          message: "Endpoint responded to a HEAD probe.",
+          message: "El endpoint respondió a una prueba HEAD.",
         });
       }
     } catch (err) {
       checks.push({
         code: "http_endpoint_probe_failed",
         level: "warn",
-        message: err instanceof Error ? err.message : "Endpoint probe failed",
-        hint: "This may be expected in restricted networks; verify connectivity when invoking runs.",
+        message: err instanceof Error ? err.message : "Falló la prueba del endpoint",
+        hint: "Esto puede ser normal en redes restringidas; verifica la conectividad al invocar las ejecuciones.",
       });
     } finally {
       clearTimeout(timeout);

@@ -11,25 +11,25 @@ import type { PluginStateScopeKind } from "@paperclipai/shared";
 import { plugins } from "./plugins.js";
 
 /**
- * `plugin_state` table — scoped key-value storage for plugin workers.
+ * Tabla `plugin_state`: almacenamiento de clave-valor con alcance para workers de plugins.
  *
- * Each row stores a single JSON value identified by
- * `(plugin_id, scope_kind, scope_id, namespace, state_key)`. Plugins use
- * this table through `ctx.state.get()`, `ctx.state.set()`, and
- * `ctx.state.delete()` in the SDK.
+ * Cada fila almacena un único valor JSON identificado por
+ * `(plugin_id, scope_kind, scope_id, namespace, state_key)`. Los plugins usan
+ * esta tabla mediante `ctx.state.get()`, `ctx.state.set()` y
+ * `ctx.state.delete()` en el SDK.
  *
- * Scope kinds determine the granularity of isolation:
- * - `instance` — one value shared across the whole Paperclip instance
- * - `company` — one value per company
- * - `project` — one value per project
- * - `project_workspace` — one value per project workspace
- * - `agent` — one value per agent
- * - `issue` — one value per issue
- * - `goal` — one value per goal
- * - `run` — one value per agent run
+ * Los tipos de alcance determinan la granularidad del aislamiento:
+ * - `instance`: un valor compartido en toda la instancia de Paperclip
+ * - `company`: un valor por empresa
+ * - `project`: un valor por proyecto
+ * - `project_workspace`: un valor por espacio de trabajo del proyecto
+ * - `agent`: un valor por agente
+ * - `issue`: un valor por issue
+ * - `goal`: un valor por objetivo
+ * - `run`: un valor por ejecución de agente
  *
- * The `namespace` column defaults to `"default"` and can be used to
- * logically group keys without polluting the root namespace.
+ * La columna `namespace` tiene el valor predeterminado `"default"` y se puede usar para
+ * agrupar claves lógicamente sin contaminar el espacio de nombres raíz.
  *
  * @see PLUGIN_SPEC.md §21.3 — `plugin_state`
  */
@@ -37,40 +37,40 @@ export const pluginState = pgTable(
   "plugin_state",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    /** FK to the owning plugin. Cascades on delete. */
+    /** FK al plugin propietario. Se propaga al eliminar. */
     pluginId: uuid("plugin_id")
       .notNull()
       .references(() => plugins.id, { onDelete: "cascade" }),
-    /** Granularity of the scope (e.g. `"instance"`, `"project"`, `"issue"`). */
+    /** Granularidad del alcance (p. ej. `"instance"`, `"project"`, `"issue"`). */
     scopeKind: text("scope_kind").$type<PluginStateScopeKind>().notNull(),
     /**
-     * UUID or text identifier for the scoped object.
-     * Null for `instance` scope (which has no associated entity).
+     * Identificador UUID o de texto para el objeto con alcance.
+     * Nulo para el alcance `instance` (que no tiene entidad asociada).
      */
     scopeId: text("scope_id"),
     /**
-     * Sub-namespace to avoid key collisions within a scope.
-     * Defaults to `"default"` if the plugin does not specify one.
+     * Sub-espacio de nombres para evitar colisiones de claves dentro de un alcance.
+     * Tiene el valor predeterminado `"default"` si el plugin no especifica uno.
      */
     namespace: text("namespace").notNull().default("default"),
-    /** The key identifying this state entry within the namespace. */
+    /** La clave que identifica esta entrada de estado dentro del espacio de nombres. */
     stateKey: text("state_key").notNull(),
-    /** JSON-serializable value stored by the plugin. */
+    /** Valor serializable como JSON almacenado por el plugin. */
     valueJson: jsonb("value_json").notNull(),
-    /** Timestamp of the most recent write. */
+    /** Marca de tiempo de la escritura más reciente. */
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
     /**
-     * Unique constraint enforces that there is at most one value per
-     * (plugin, scope kind, scope id, namespace, key) tuple.
+     * La restricción única garantiza que haya como máximo un valor por
+     * tupla (plugin, tipo de alcance, id de alcance, espacio de nombres, clave).
      *
-     * `nullsNotDistinct()` is required so that `scope_id IS NULL` entries
-     * (used by `instance` scope) are treated as equal by PostgreSQL rather
-     * than as distinct nulls — otherwise the upsert target in `set()` would
-     * fail to match existing rows and create duplicates.
+     * `nullsNotDistinct()` es necesario para que las entradas con `scope_id IS NULL`
+     * (usadas por el alcance `instance`) PostgreSQL las trate como iguales y no
+     * como nulos distintos; de lo contrario, el objetivo del upsert en `set()`
+     * no coincidiría con las filas existentes y crearía duplicados.
      *
-     * Requires PostgreSQL 15+.
+     * Requiere PostgreSQL 15+.
      */
     uniqueEntry: unique("plugin_state_unique_entry_idx")
       .on(
@@ -81,7 +81,7 @@ export const pluginState = pgTable(
         table.stateKey,
       )
       .nullsNotDistinct(),
-    /** Speed up lookups by plugin + scope kind (most common access pattern). */
+    /** Acelera las búsquedas por plugin + tipo de alcance (patrón de acceso más común). */
     pluginScopeIdx: index("plugin_state_plugin_scope_idx").on(
       table.pluginId,
       table.scopeKind,

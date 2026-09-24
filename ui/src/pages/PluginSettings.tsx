@@ -27,33 +27,33 @@ import {
 } from "@/components/JsonSchemaForm";
 
 /**
- * PluginSettings page component.
+ * Componente de la página de ajustes del plugin.
  *
- * Detailed settings and diagnostics page for a single installed plugin.
- * Navigated to from {@link PluginManager} via the Settings gear icon.
+ * Página de ajustes y diagnósticos para un plugin instalado.
+ * Se navega desde {@link PluginManager} vía el ícono de engranaje de ajustes.
  *
- * Displays:
- * - Plugin identity: display name, id, version, description, categories.
- * - Manifest-declared capabilities (what data and features the plugin can access).
- * - Health check results (only for `ready` plugins; polled every 30 seconds).
- * - Runtime dashboard: worker status/uptime, recent job runs, webhook deliveries.
- * - Auto-generated config form from `instanceConfigSchema` (when no custom settings page).
- * - Plugin-contributed settings UI via `<PluginSlotOutlet type="settingsPage" />`.
+ * Muestra:
+ * - Identidad del plugin: nombre visible, ID, versión, descripción, categorías.
+ * - Capacidades declaradas en el manifiesto (a qué datos y funciones puede acceder el plugin).
+ * - Resultados de la comprobación de salud (solo para plugins `ready`; sondeo cada 30 segundos).
+ * - Panel de runtime: estado/tiempo activo del worker, ejecuciones recientes de jobs, entregas de webhooks.
+ * - Formulario de configuración autogenerado desde `instanceConfigSchema` (cuando no hay página de ajustes personalizada).
+ * - UI de ajustes contribuida por el plugin vía `<PluginSlotOutlet type="settingsPage" />`.
  *
- * Data flow:
- * - `GET /api/plugins/:pluginId` — plugin record (refreshes on mount).
- * - `GET /api/plugins/:pluginId/health` — health diagnostics (polling).
- *   Only fetched when `plugin.status === "ready"`.
- * - `GET /api/plugins/:pluginId/dashboard` — aggregated runtime dashboard data (polling).
- * - `GET /api/plugins/:pluginId/config` — current config values.
- * - `POST /api/plugins/:pluginId/config` — save config values.
- * - `POST /api/plugins/:pluginId/config/test` — test configuration.
+ * Flujo de datos:
+ * - `GET /api/plugins/:pluginId` — registro del plugin (se actualiza al montar).
+ * - `GET /api/plugins/:pluginId/health` — diagnósticos de salud (sondeo).
+ *   Solo se obtiene cuando `plugin.status === "ready"`.
+ * - `GET /api/plugins/:pluginId/dashboard` — datos agregados del panel de runtime (sondeo).
+ * - `GET /api/plugins/:pluginId/config` — valores actuales de configuración.
+ * - `POST /api/plugins/:pluginId/config` — guardar valores de configuración.
+ * - `POST /api/plugins/:pluginId/config/test` — probar la configuración.
  *
- * URL params:
- * - `companyPrefix` — the company slug (for breadcrumb links).
- * - `pluginId` — UUID of the plugin to display.
+ * Parámetros de la URL:
+ * - `companyPrefix` — el slug de la empresa (para los enlaces de navegación).
+ * - `pluginId` — UUID del plugin a mostrar.
  *
- * @see PluginManager — parent list page.
+ * @see PluginManager — página de lista padre.
  * @see doc/plugins/PLUGIN_SPEC.md §13 — Plugin Health Checks.
  * @see doc/plugins/PLUGIN_SPEC.md §19.8 — Plugin Settings UI.
  */
@@ -90,7 +90,7 @@ export function PluginSettings() {
     refetchInterval: 30000,
   });
 
-  // Fetch existing config for the plugin
+  // Obtener la configuración existente del plugin
   const configSchema = plugin?.manifestJson?.instanceConfigSchema as JsonSchemaNode | undefined;
   const hasConfigSchema = configSchema && configSchema.properties && Object.keys(configSchema.properties).length > 0;
 
@@ -106,18 +106,18 @@ export function PluginSettings() {
     enabled: !!selectedCompanyId,
   });
 
-  // Filter slots to only show settings pages for this specific plugin
+  // Filtrar los slots para mostrar solo las páginas de ajustes de este plugin específico
   const pluginSlots = slots.filter((slot) => slot.pluginId === pluginId);
 
-  // If the plugin has a custom settingsPage slot, prefer that over auto-generated form
+  // Si el plugin tiene un slot settingsPage personalizado, preferirlo sobre el formulario autogenerado
   const hasCustomSettingsPage = pluginSlots.length > 0;
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: selectedCompany?.name ?? "Company", href: "/dashboard" },
-      { label: "Settings", href: "/instance/settings/heartbeats" },
+      { label: selectedCompany?.name ?? "Empresa", href: "/dashboard" },
+      { label: "Ajustes", href: "/instance/settings/heartbeats" },
       { label: "Plugins", href: "/instance/settings/plugins" },
-      { label: plugin?.manifestJson?.displayName ?? plugin?.packageName ?? "Plugin Details" },
+      { label: plugin?.manifestJson?.displayName ?? plugin?.packageName ?? "Detalles del plugin" },
     ]);
   }, [selectedCompany?.name, setBreadcrumbs, companyPrefix, plugin]);
 
@@ -126,21 +126,21 @@ export function PluginSettings() {
   }, [pluginId]);
 
   if (pluginLoading) {
-    return <div className="p-4 text-sm text-muted-foreground">Loading plugin details...</div>;
+    return <div className="p-4 text-sm text-muted-foreground">Cargando detalles del plugin…</div>;
   }
 
   if (!plugin) {
     return <Navigate to="/instance/settings/plugins" replace />;
   }
 
-  const displayStatus = plugin.status;
+  const displayStatus = formatStatusLabel(plugin.status);
   const statusVariant =
     plugin.status === "ready"
       ? "default"
       : plugin.status === "error"
         ? "destructive"
         : "secondary";
-  const pluginDescription = plugin.manifestJson.description || "No description provided.";
+  const pluginDescription = plugin.manifestJson.description || "Sin descripción proporcionada.";
   const pluginCapabilities = plugin.manifestJson.capabilities ?? [];
 
   return (
@@ -167,8 +167,8 @@ export function PluginSettings() {
         <PageTabBar
           align="start"
           items={[
-            { value: "configuration", label: "Configuration" },
-            { value: "status", label: "Status" },
+            { value: "configuration", label: "Configuración" },
+            { value: "status", label: "Estado" },
           ]}
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as "configuration" | "status")}
@@ -177,19 +177,19 @@ export function PluginSettings() {
         <TabsContent value="configuration" className="space-y-6">
           <div className="space-y-8">
             <section className="space-y-5">
-              <h2 className="text-base font-semibold">About</h2>
+              <h2 className="text-base font-semibold">Acerca de</h2>
               <div className="grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(220px,0.8fr)]">
                 <div className="space-y-2">
-                  <h3 className="text-sm font-medium text-muted-foreground">Description</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground">Descripción</h3>
                   <p className="text-sm leading-6 text-foreground/90">{pluginDescription}</p>
                 </div>
                 <div className="space-y-4 text-sm">
                   <div className="space-y-1.5">
-                    <h3 className="font-medium text-muted-foreground">Author</h3>
+                    <h3 className="font-medium text-muted-foreground">Autor</h3>
                     <p className="text-foreground">{plugin.manifestJson.author}</p>
                   </div>
                   <div className="space-y-2">
-                    <h3 className="font-medium text-muted-foreground">Categories</h3>
+                    <h3 className="font-medium text-muted-foreground">Categorías</h3>
                     <div className="flex flex-wrap gap-2">
                       {plugin.categories.length > 0 ? (
                         plugin.categories.map((category) => (
@@ -198,7 +198,7 @@ export function PluginSettings() {
                           </Badge>
                         ))
                       ) : (
-                        <span className="text-foreground">None</span>
+                        <span className="text-foreground">Ninguna</span>
                       )}
                     </div>
                   </div>
@@ -210,7 +210,7 @@ export function PluginSettings() {
 
             <section className="space-y-4">
               <div className="space-y-1">
-                <h2 className="text-base font-semibold">Settings</h2>
+                <h2 className="text-base font-semibold">Ajustes</h2>
               </div>
               {hasCustomSettingsPage ? (
                 <div className="space-y-3">
@@ -237,7 +237,7 @@ export function PluginSettings() {
                 />
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  This plugin does not require any settings.
+                  Este plugin no requiere ningún ajuste.
                 </p>
               )}
             </section>
@@ -251,10 +251,10 @@ export function PluginSettings() {
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-1.5">
                     <Cpu className="h-4 w-4" />
-                    Runtime Dashboard
+                    Panel de runtime
                   </CardTitle>
                   <CardDescription>
-                    Worker process, scheduled jobs, and webhook deliveries
+                    Proceso del worker, jobs programados y entregas de webhooks
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -263,14 +263,14 @@ export function PluginSettings() {
                       <div>
                         <h3 className="text-sm font-medium mb-3 flex items-center gap-1.5">
                           <Cpu className="h-3.5 w-3.5 text-muted-foreground" />
-                          Worker Process
+                          Worker
                         </h3>
                         {dashboardData.worker ? (
                           <div className="grid grid-cols-2 gap-3 text-sm">
                             <div className="flex justify-between">
-                              <span className="text-muted-foreground">Status</span>
+                              <span className="text-muted-foreground">Estado</span>
                               <Badge variant={dashboardData.worker.status === "running" ? "default" : "secondary"}>
-                                {dashboardData.worker.status}
+                                {formatStatusLabel(dashboardData.worker.status)}
                               </Badge>
                             </div>
                             <div className="flex justify-between">
@@ -278,11 +278,11 @@ export function PluginSettings() {
                               <span className="font-mono text-xs">{dashboardData.worker.pid ?? "—"}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-muted-foreground">Uptime</span>
+                              <span className="text-muted-foreground">Tiempo activo</span>
                               <span className="text-xs">{formatUptime(dashboardData.worker.uptime)}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-muted-foreground">Pending RPCs</span>
+                              <span className="text-muted-foreground">RPCs pendientes</span>
                               <span className="text-xs">{dashboardData.worker.pendingRequests}</span>
                             </div>
                             {dashboardData.worker.totalCrashes > 0 && (
@@ -290,15 +290,15 @@ export function PluginSettings() {
                                 <div className="flex justify-between col-span-2">
                                   <span className="text-muted-foreground flex items-center gap-1">
                                     <AlertTriangle className="h-3 w-3 text-amber-500" />
-                                    Crashes
+                                    Fallos
                                   </span>
                                   <span className="text-xs">
-                                    {dashboardData.worker.consecutiveCrashes} consecutive / {dashboardData.worker.totalCrashes} total
+                                    {dashboardData.worker.consecutiveCrashes} consecutivos / {dashboardData.worker.totalCrashes} en total
                                   </span>
                                 </div>
                                 {dashboardData.worker.lastCrashAt && (
                                   <div className="flex justify-between col-span-2">
-                                    <span className="text-muted-foreground">Last Crash</span>
+                                    <span className="text-muted-foreground">Último fallo</span>
                                     <span className="text-xs">{formatTimestamp(dashboardData.worker.lastCrashAt)}</span>
                                   </div>
                                 )}
@@ -306,7 +306,7 @@ export function PluginSettings() {
                             )}
                           </div>
                         ) : (
-                          <p className="text-sm text-muted-foreground italic">No worker process registered.</p>
+                          <p className="text-sm text-muted-foreground italic">No hay proceso de worker registrado.</p>
                         )}
                       </div>
 
@@ -315,7 +315,7 @@ export function PluginSettings() {
                       <div>
                         <h3 className="text-sm font-medium mb-3 flex items-center gap-1.5">
                           <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
-                          Recent Job Runs
+                          Ejecuciones recientes de jobs
                         </h3>
                         {dashboardData.recentJobRuns.length > 0 ? (
                           <div className="space-y-2">
@@ -341,7 +341,7 @@ export function PluginSettings() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm text-muted-foreground italic">No job runs recorded yet.</p>
+                          <p className="text-sm text-muted-foreground italic">Aún no hay ejecuciones de jobs registradas.</p>
                         )}
                       </div>
 
@@ -350,7 +350,7 @@ export function PluginSettings() {
                       <div>
                         <h3 className="text-sm font-medium mb-3 flex items-center gap-1.5">
                           <Webhook className="h-3.5 w-3.5 text-muted-foreground" />
-                          Recent Webhook Deliveries
+                          Entregas recientes de webhooks
                         </h3>
                         {dashboardData.recentWebhookDeliveries.length > 0 ? (
                           <div className="space-y-2">
@@ -373,18 +373,18 @@ export function PluginSettings() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm text-muted-foreground italic">No webhook deliveries recorded yet.</p>
+                          <p className="text-sm text-muted-foreground italic">Aún no hay entregas de webhooks registradas.</p>
                         )}
                       </div>
 
                       <div className="flex items-center gap-1.5 border-t border-border/50 pt-2 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        Last checked: {new Date(dashboardData.checkedAt).toLocaleTimeString()}
+                        Última revisión: {new Date(dashboardData.checkedAt).toLocaleTimeString()}
                       </div>
                     </>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      Runtime diagnostics are unavailable right now.
+                      Los diagnósticos de runtime no están disponibles ahora mismo.
                     </p>
                   )}
                 </CardContent>
@@ -395,9 +395,9 @@ export function PluginSettings() {
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-1.5">
                       <ActivitySquare className="h-4 w-4" />
-                      Recent Logs
+                      Registros recientes
                     </CardTitle>
-                    <CardDescription>Last {recentLogs.length} log entries</CardDescription>
+                    <CardDescription>Últimas {recentLogs.length} entradas de registro</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="max-h-64 space-y-1 overflow-y-auto font-mono text-xs">
@@ -430,18 +430,18 @@ export function PluginSettings() {
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-1.5">
                     <ActivitySquare className="h-4 w-4" />
-                    Health Status
+                    Estado de salud
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {healthLoading ? (
-                    <p className="text-sm text-muted-foreground">Checking health...</p>
+                    <p className="text-sm text-muted-foreground">Comprobando salud…</p>
                   ) : healthData ? (
                     <div className="space-y-4 text-sm">
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Overall</span>
+                        <span className="text-muted-foreground">General</span>
                         <Badge variant={healthData.healthy ? "default" : "destructive"}>
-                          {healthData.status}
+                          {formatStatusLabel(healthData.status)}
                         </Badge>
                       </div>
 
@@ -471,10 +471,10 @@ export function PluginSettings() {
                   ) : (
                     <div className="space-y-3 text-sm text-muted-foreground">
                       <div className="flex items-center justify-between">
-                        <span>Lifecycle</span>
+                        <span>Ciclo de vida</span>
                         <Badge variant={statusVariant}>{displayStatus}</Badge>
                       </div>
-                      <p>Health checks run once the plugin is ready.</p>
+                      <p>Las comprobaciones de salud se ejecutan cuando el plugin está listo.</p>
                       {plugin.lastError ? (
                         <div className="break-words rounded border border-destructive/20 bg-destructive/10 p-2 text-xs text-destructive">
                           {plugin.lastError}
@@ -487,25 +487,25 @@ export function PluginSettings() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Details</CardTitle>
+                  <CardTitle className="text-base">Detalles</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm text-muted-foreground">
                   <div className="flex justify-between gap-3">
-                    <span>Plugin ID</span>
+                    <span>ID del plugin</span>
                     <span className="font-mono text-xs text-right">{plugin.id}</span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span>Plugin Key</span>
+                    <span>Clave del plugin</span>
                     <span className="font-mono text-xs text-right">{plugin.pluginKey}</span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span>NPM Package</span>
+                    <span>Paquete NPM</span>
                     <span className="max-w-[170px] truncate text-right text-xs" title={plugin.packageName}>
                       {plugin.packageName}
                     </span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span>Version</span>
+                    <span>Versión</span>
                     <span className="text-right text-foreground">v{plugin.manifestJson.version ?? plugin.version}</span>
                   </div>
                 </CardContent>
@@ -515,7 +515,7 @@ export function PluginSettings() {
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-1.5">
                     <ShieldAlert className="h-4 w-4" />
-                    Permissions
+                    Permisos
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -528,7 +528,7 @@ export function PluginSettings() {
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-sm text-muted-foreground italic">No special permissions requested.</p>
+                    <p className="text-sm text-muted-foreground italic">No se solicitaron permisos especiales.</p>
                   )}
                 </CardContent>
               </Card>
@@ -541,7 +541,7 @@ export function PluginSettings() {
 }
 
 // ---------------------------------------------------------------------------
-// PluginConfigForm — auto-generated form for instanceConfigSchema
+// PluginConfigForm — formulario autogenerado para instanceConfigSchema
 // ---------------------------------------------------------------------------
 
 interface PluginConfigFormProps {
@@ -549,31 +549,30 @@ interface PluginConfigFormProps {
   schema: JsonSchemaNode;
   initialValues?: Record<string, unknown>;
   isLoading?: boolean;
-  /** Current plugin lifecycle status — "Test Configuration" only available when `ready`. */
+  /** Estado actual del ciclo de vida del plugin — "Probar configuración" solo disponible cuando es `ready`. */
   pluginStatus?: string;
-  /** Whether the plugin worker implements `validateConfig`. */
+  /** Si el worker del plugin implementa `validateConfig`. */
   supportsConfigTest?: boolean;
 }
 
 /**
- * Inner component that manages form state, validation, save, and "Test Configuration"
- * for the auto-generated plugin config form.
+ * Componente interno que gestiona el estado del formulario, la validación, el guardado y "Probar configuración"
+ * para el formulario de configuración del plugin autogenerado.
  *
- * Separated from PluginSettings to isolate re-render scope — only the form
- * re-renders on field changes, not the entire page.
+ * Separado de PluginSettings para aislar el alcance del re-renderizado — solo el formulario
+ * se re-renderiza cuando cambian los campos, no toda la página.
  */
 function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginStatus, supportsConfigTest }: PluginConfigFormProps) {
   const queryClient = useQueryClient();
 
-  // Form values: start with saved values, fall back to schema defaults
+  // Valores del formulario: empezar con los valores guardados, con respaldo en los valores por defecto del esquema
   const [values, setValues] = useState<Record<string, unknown>>(() => ({
     ...getDefaultValues(schema),
     ...(initialValues ?? {}),
   }));
 
-  // Sync when saved config loads asynchronously — only on first load so we
-  // don't overwrite in-progress user edits if the query refetches (e.g. on
-  // window focus).
+  // Sincronizar cuando la configuración guardada se carga de forma asíncrona — solo en la primera carga para no
+  // sobrescribir las ediciones del usuario en curso si la consulta se actualiza (p. ej., al cambiar el foco de la ventana).
   const hasHydratedRef = useRef(false);
   useEffect(() => {
     if (initialValues && !hasHydratedRef.current) {
@@ -589,53 +588,53 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [testResult, setTestResult] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Dirty tracking: compare against initial values
+  // Seguimiento de cambios: comparar con los valores iniciales
   const isDirty = JSON.stringify(values) !== JSON.stringify({
     ...getDefaultValues(schema),
     ...(initialValues ?? {}),
   });
 
-  // Save mutation
+  // Mutación de guardado
   const saveMutation = useMutation({
     mutationFn: (configJson: Record<string, unknown>) =>
       pluginsApi.saveConfig(pluginId, configJson),
     onSuccess: () => {
-      setSaveMessage({ type: "success", text: "Configuration saved." });
+      setSaveMessage({ type: "success", text: "Configuración guardada." });
       setTestResult(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.plugins.config(pluginId) });
-      // Clear success message after 3s
+      // Limpiar el mensaje de éxito después de 3s
       setTimeout(() => setSaveMessage(null), 3000);
     },
     onError: (err: Error) => {
-      setSaveMessage({ type: "error", text: err.message || "Failed to save configuration." });
+      setSaveMessage({ type: "error", text: err.message || "No se pudo guardar la configuración." });
     },
   });
 
-  // Test configuration mutation
+  // Mutación de prueba de configuración
   const testMutation = useMutation({
     mutationFn: (configJson: Record<string, unknown>) =>
       pluginsApi.testConfig(pluginId, configJson),
     onSuccess: (result) => {
       if (result.valid) {
-        setTestResult({ type: "success", text: "Configuration test passed." });
+        setTestResult({ type: "success", text: "La prueba de configuración pasó." });
       } else {
-        setTestResult({ type: "error", text: result.message || "Configuration test failed." });
+        setTestResult({ type: "error", text: result.message || "La prueba de configuración falló." });
       }
     },
     onError: (err: Error) => {
-      setTestResult({ type: "error", text: err.message || "Configuration test failed." });
+      setTestResult({ type: "error", text: err.message || "La prueba de configuración falló." });
     },
   });
 
   const handleChange = useCallback((newValues: Record<string, unknown>) => {
     setValues(newValues);
-    // Clear field-level errors as the user types
+    // Limpiar errores a nivel de campo mientras el usuario escribe
     setErrors({});
     setSaveMessage(null);
   }, []);
 
   const handleSave = useCallback(() => {
-    // Validate before saving
+    // Validar antes de guardar
     const validationErrors = validateJsonSchemaForm(schema, values);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -646,7 +645,7 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
   }, [schema, values, saveMutation]);
 
   const handleTestConnection = useCallback(() => {
-    // Validate before testing
+    // Validar antes de probar
     const validationErrors = validateJsonSchemaForm(schema, values);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -661,7 +660,7 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Loading configuration...
+        Cargando configuración…
       </div>
     );
   }
@@ -676,7 +675,7 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
         disabled={saveMutation.isPending}
       />
 
-      {/* Status messages */}
+      {/* Mensajes de estado */}
       {saveMessage && (
         <div
           className={`text-sm p-2 rounded border ${
@@ -701,7 +700,7 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
         </div>
       )}
 
-      {/* Action buttons */}
+      {/* Botones de acción */}
       <div className="flex items-center gap-2 pt-2">
         <Button
           onClick={handleSave}
@@ -711,10 +710,10 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
           {saveMutation.isPending ? (
             <>
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Saving...
+              Guardando…
             </>
           ) : (
-            "Save Configuration"
+            "Guardar configuración"
           )}
         </Button>
         {pluginStatus === "ready" && supportsConfigTest && (
@@ -727,10 +726,10 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
             {testMutation.isPending ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Testing...
+                Probando…
               </>
             ) : (
-              "Test Configuration"
+              "Probar configuración"
             )}
           </Button>
         )}
@@ -740,11 +739,41 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
 }
 
 // ---------------------------------------------------------------------------
-// Dashboard helper components and formatting utilities
+// Componentes auxiliares del panel y utilidades de formato
 // ---------------------------------------------------------------------------
 
 /**
- * Format an uptime value (in milliseconds) to a human-readable string.
+ * Etiqueta de presentación en español para un valor de estado interno.
+ * Los valores del enum no se modifican; solo cambia lo que se muestra.
+ */
+function formatStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    installed: "Instalado",
+    ready: "Listo",
+    disabled: "Deshabilitado",
+    error: "Error",
+    upgrade_pending: "Actualización pendiente",
+    uninstalled: "Desinstalado",
+    starting: "Iniciando",
+    running: "En ejecución",
+    stopped: "Detenido",
+    stopped_by_user: "Detenido por el usuario",
+    failed: "Fallido",
+    success: "Exitoso",
+    succeeded: "Exitoso",
+    cancelled: "Cancelado",
+    processed: "Procesado",
+    received: "Recibido",
+    queued: "En cola",
+    pending: "Pendiente",
+    healthy: "Saludable",
+    unhealthy: "No saludable",
+  };
+  return labels[status] ?? status;
+}
+
+/**
+ * Formatea un valor de tiempo activo (en milisegundos) a una cadena legible.
  */
 function formatUptime(uptimeMs: number | null): string {
   if (uptimeMs == null) return "—";
@@ -759,7 +788,7 @@ function formatUptime(uptimeMs: number | null): string {
 }
 
 /**
- * Format a duration in milliseconds to a compact display string.
+ * Formatea una duración en milisegundos a una cadena de visualización compacta.
  */
 function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
@@ -768,33 +797,33 @@ function formatDuration(ms: number): string {
 }
 
 /**
- * Format an ISO timestamp to a relative time string (e.g., "2m ago").
+ * Formatea una marca de tiempo ISO a una cadena de tiempo relativo (p. ej., "hace 2 min").
  */
 function formatRelativeTime(isoString: string): string {
   const now = Date.now();
   const then = new Date(isoString).getTime();
   const diffMs = now - then;
 
-  if (diffMs < 0) return "just now";
+  if (diffMs < 0) return "ahora mismo";
   const seconds = Math.floor(diffMs / 1000);
-  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 60) return `hace ${seconds} s`;
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) return `hace ${minutes} min`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return `hace ${hours} h`;
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return `hace ${days} d`;
 }
 
 /**
- * Format a unix timestamp (ms since epoch) to a locale string.
+ * Formatea una marca de tiempo unix (ms desde la época) a una cadena local.
  */
 function formatTimestamp(epochMs: number): string {
   return new Date(epochMs).toLocaleString();
 }
 
 /**
- * Status indicator dot for job run statuses.
+ * Punto indicador de estado para los estados de ejecución de jobs.
  */
 function JobStatusDot({ status }: { status: string }) {
   const colorClass =
@@ -806,17 +835,17 @@ function JobStatusDot({ status }: { status: string }) {
           ? "bg-blue-500 animate-pulse"
           : status === "cancelled"
             ? "bg-gray-400"
-            : "bg-amber-500"; // queued, pending
+            : "bg-amber-500"; // en cola, pendiente
   return (
     <span
       className={`inline-block h-2 w-2 rounded-full shrink-0 ${colorClass}`}
-      title={status}
+      title={formatStatusLabel(status)}
     />
   );
 }
 
 /**
- * Status indicator dot for webhook delivery statuses.
+ * Punto indicador de estado para los estados de entrega de webhooks.
  */
 function DeliveryStatusDot({ status }: { status: string }) {
   const colorClass =
@@ -826,11 +855,11 @@ function DeliveryStatusDot({ status }: { status: string }) {
         ? "bg-red-500"
         : status === "received"
           ? "bg-blue-500"
-          : "bg-amber-500"; // pending
+          : "bg-amber-500"; // pendiente
   return (
     <span
       className={`inline-block h-2 w-2 rounded-full shrink-0 ${colorClass}`}
-      title={status}
+      title={formatStatusLabel(status)}
     />
   );
 }

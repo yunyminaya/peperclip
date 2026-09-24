@@ -14,10 +14,10 @@ const PLUGIN_EVENT_SET: ReadonlySet<string> = new Set(PLUGIN_EVENT_TYPES);
 
 let _pluginEventBus: PluginEventBus | null = null;
 
-/** Wire the plugin event bus so domain events are forwarded to plugins. */
+/** Conecta el bus de eventos de plugins para que los eventos de dominio se reenvíen a los plugins. */
 export function setPluginEventBus(bus: PluginEventBus): void {
   if (_pluginEventBus) {
-    logger.warn("setPluginEventBus called more than once, replacing existing bus");
+    logger.warn("setPluginEventBus se llamó más de una vez; se reemplaza el bus existente");
   }
   _pluginEventBus = bus;
 }
@@ -87,7 +87,7 @@ export async function logActivity(db: Db, input: LogActivityInput) {
     };
     void _pluginEventBus.emit(event).then(({ errors }) => {
       for (const { pluginId, error } of errors) {
-        logger.warn({ pluginId, eventType: event.eventType, err: error }, "plugin event handler failed");
+        logger.warn({ pluginId, eventType: event.eventType, err: error }, "Falló el controlador de eventos del plugin");
       }
     }).catch(() => {});
   }

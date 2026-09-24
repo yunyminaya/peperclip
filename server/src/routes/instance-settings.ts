@@ -13,7 +13,7 @@ function assertCanManageInstanceSettings(req: Request) {
   if (req.actor.source === "local_implicit" || req.actor.isInstanceAdmin) {
     return;
   }
-  throw forbidden("Instance admin access required");
+  throw forbidden("Se requiere acceso de administrador de instancia");
 }
 
 export function instanceSettingsRoutes(db: Db) {

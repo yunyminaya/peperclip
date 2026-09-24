@@ -13,13 +13,13 @@ interface DashboardGetOptions extends BaseClientOptions {
 }
 
 export function registerDashboardCommands(program: Command): void {
-  const dashboard = program.command("dashboard").description("Dashboard summary operations");
+  const dashboard = program.command("dashboard").description("Operaciones de resumen del panel");
 
   addCommonClientOptions(
     dashboard
       .command("get")
-      .description("Get dashboard summary for a company")
-      .requiredOption("-C, --company-id <id>", "Company ID")
+      .description("Obtener el resumen del panel de una empresa")
+      .requiredOption("-C, --company-id <id>", "ID de empresa")
       .action(async (opts: DashboardGetOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });

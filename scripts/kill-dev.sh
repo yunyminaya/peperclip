@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# Kill all local Paperclip dev server processes (across all worktrees).
+# Termina todos los procesos locales del servidor de desarrollo de Paperclip (en todos los worktrees).
 #
-# Usage:
-#   scripts/kill-dev.sh        # kill all paperclip dev processes
-#   scripts/kill-dev.sh --dry  # preview what would be killed
+# Uso:
+#   scripts/kill-dev.sh        # termina todos los procesos de desarrollo de paperclip
+#   scripts/kill-dev.sh --dry  # muestra lo que se terminaría sin hacerlo
 #
 
 set -euo pipefail
@@ -14,15 +14,15 @@ if [[ "${1:-}" == "--dry" || "${1:-}" == "--dry-run" || "${1:-}" == "-n" ]]; the
   DRY_RUN=true
 fi
 
-# Collect PIDs of node processes running from any paperclip directory.
-# Matches paths like /Users/*/paperclip/... or /Users/*/paperclip-*/...
-# Excludes postgres-related processes.
+# Recopila los PID de los procesos de node ejecutados desde cualquier directorio de paperclip.
+# Coincide con rutas como /Users/*/paperclip/... o /Users/*/paperclip-*/...
+# Excluye procesos relacionados con postgres.
 pids=()
 lines=()
 
 while IFS= read -r line; do
   [[ -z "$line" ]] && continue
-  # skip postgres processes
+  # omite procesos de postgres
   [[ "$line" == *postgres* ]] && continue
   pid=$(echo "$line" | awk '{print $2}')
   pids+=("$pid")
@@ -30,11 +30,11 @@ while IFS= read -r line; do
 done < <(ps aux | grep -E '/paperclip(-[^/]+)?/' | grep node | grep -v grep || true)
 
 if [[ ${#pids[@]} -eq 0 ]]; then
-  echo "No Paperclip dev processes found."
+  echo "No se encontraron procesos de desarrollo de Paperclip."
   exit 0
 fi
 
-echo "Found ${#pids[@]} Paperclip dev process(es):"
+echo "Se encontraron ${#pids[@]} proceso(s) de desarrollo de Paperclip:"
 echo ""
 
 for i in "${!pids[@]}"; do
@@ -42,30 +42,30 @@ for i in "${!pids[@]}"; do
   pid=$(echo "$line" | awk '{print $2}')
   start=$(echo "$line" | awk '{print $9}')
   cmd=$(echo "$line" | awk '{for(i=11;i<=NF;i++) printf "%s ", $i; print ""}')
-  # Shorten the command for readability
+  # Acorta el comando para que sea legible
   cmd=$(echo "$cmd" | sed "s|$HOME/||g")
-  printf "  PID %-7s  started %-10s  %s\n" "$pid" "$start" "$cmd"
+  printf "  PID %-7s  iniciado %-10s  %s\n" "$pid" "$start" "$cmd"
 done
 
 echo ""
 
 if [[ "$DRY_RUN" == true ]]; then
-  echo "Dry run — re-run without --dry to kill these processes."
+  echo "Simulación: vuelve a ejecutar sin --dry para terminar estos procesos."
   exit 0
 fi
 
-echo "Sending SIGTERM..."
+echo "Enviando SIGTERM..."
 for pid in "${pids[@]}"; do
-  kill "$pid" 2>/dev/null && echo "  killed $pid" || echo "  $pid already gone"
+  kill "$pid" 2>/dev/null && echo "  $pid terminado" || echo "  $pid ya no existe"
 done
 
-# Give processes a moment to exit, then SIGKILL any stragglers
+# Da un momento a los procesos para salir y luego envía SIGKILL a los que queden
 sleep 2
 for pid in "${pids[@]}"; do
   if kill -0 "$pid" 2>/dev/null; then
-    echo "  $pid still alive, sending SIGKILL..."
+    echo "  $pid sigue activo, enviando SIGKILL..."
     kill -9 "$pid" 2>/dev/null || true
   fi
 done
 
-echo "Done."
+echo "Listo."

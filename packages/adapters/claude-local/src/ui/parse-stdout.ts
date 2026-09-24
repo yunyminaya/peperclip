@@ -113,7 +113,7 @@ export function parseClaudeStdoutLine(line: string, ts: string): TranscriptEntry
       }
     }
     if (entries.length > 0) return entries;
-    // fall through to stdout for user messages without recognized blocks
+    // continuar con stdout para mensajes de usuario sin bloques reconocidos
   }
 
   if (type === "result") {

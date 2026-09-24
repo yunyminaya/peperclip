@@ -58,7 +58,7 @@ export type CreateIssue = z.infer<typeof createIssueSchema>;
 
 export const createIssueLabelSchema = z.object({
   name: z.string().trim().min(1).max(48),
-  color: z.string().regex(/^#(?:[0-9a-fA-F]{6})$/, "Color must be a 6-digit hex value"),
+  color: z.string().regex(/^#(?:[0-9a-fA-F]{6})$/, "El color debe ser un valor hexadecimal de 6 dígitos"),
 });
 
 export type CreateIssueLabel = z.infer<typeof createIssueLabelSchema>;
@@ -108,7 +108,7 @@ export const issueDocumentKeySchema = z
   .trim()
   .min(1)
   .max(64)
-  .regex(/^[a-z0-9][a-z0-9_-]*$/, "Document key must be lowercase letters, numbers, _ or -");
+  .regex(/^[a-z0-9][a-z0-9_-]*$/, "La clave del documento debe ser letras minúsculas, números, _ o -");
 
 export const upsertIssueDocumentSchema = z.object({
   title: z.string().trim().max(200).nullable().optional(),

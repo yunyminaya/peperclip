@@ -11,23 +11,23 @@ import { plugins } from "./plugins.js";
 import type { PluginWebhookDeliveryStatus } from "@paperclipai/shared";
 
 /**
- * `plugin_webhook_deliveries` table — inbound webhook delivery history for plugins.
+ * Tabla `plugin_webhook_deliveries`: historial de entregas de webhooks entrantes para plugins.
  *
- * When an external system sends an HTTP POST to a plugin's registered webhook
- * endpoint (e.g. `/api/plugins/:pluginKey/webhooks/:webhookKey`), the server
- * creates a row in this table before dispatching the payload to the plugin
- * worker. This provides an auditable log of every delivery attempt.
+ * Cuando un sistema externo envía un POST HTTP al endpoint de webhook registrado de un plugin
+ * (p. ej. `/api/plugins/:pluginKey/webhooks/:webhookKey`), el servidor
+ * crea una fila en esta tabla antes de enviar la carga útil al worker
+ * del plugin. Esto proporciona un registro auditable de cada intento de entrega.
  *
- * The `webhook_key` matches the key declared in the plugin manifest's
- * `webhooks` array. `external_id` is an optional identifier supplied by the
- * remote system (e.g. a GitHub delivery GUID) that can be used to detect
- * and reject duplicate deliveries.
+ * La `webhook_key` coincide con la clave declarada en el arreglo
+ * `webhooks` del manifiesto del plugin. `external_id` es un identificador opcional proporcionado por el
+ * sistema remoto (p. ej. un GUID de entrega de GitHub) que se puede usar para detectar
+ * y rechazar entregas duplicadas.
  *
- * Status values:
- * - `pending` — received but not yet dispatched to the worker
- * - `processing` — currently being handled by the plugin worker
- * - `succeeded` — worker processed the payload successfully
- * - `failed` — worker returned an error or timed out
+ * Valores de estado:
+ * - `pending`: recibido pero aún no enviado al worker
+ * - `processing`: siendo manejado por el worker del plugin
+ * - `succeeded`: el worker procesó la carga útil correctamente
+ * - `failed`: el worker devolvió un error o agotó el tiempo de espera
  *
  * @see PLUGIN_SPEC.md §21.3 — `plugin_webhook_deliveries`
  */
@@ -35,23 +35,23 @@ export const pluginWebhookDeliveries = pgTable(
   "plugin_webhook_deliveries",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    /** FK to the owning plugin. Cascades on delete. */
+    /** FK al plugin propietario. Se propaga al eliminar. */
     pluginId: uuid("plugin_id")
       .notNull()
       .references(() => plugins.id, { onDelete: "cascade" }),
-    /** Identifier matching the key in the plugin manifest's `webhooks` array. */
+    /** Identificador que coincide con la clave en el arreglo `webhooks` del manifiesto del plugin. */
     webhookKey: text("webhook_key").notNull(),
-    /** Optional de-duplication ID provided by the external system. */
+    /** ID opcional de deduplicación proporcionado por el sistema externo. */
     externalId: text("external_id"),
-    /** Current delivery state. */
+    /** Estado actual de la entrega. */
     status: text("status").$type<PluginWebhookDeliveryStatus>().notNull().default("pending"),
-    /** Wall-clock processing duration in milliseconds. Null until delivery finishes. */
+    /** Duración del procesamiento en milisegundos según el reloj del sistema. Nula hasta que la entrega termine. */
     durationMs: integer("duration_ms"),
-    /** Error message if `status === "failed"`. */
+    /** Mensaje de error si `status === "failed"`. */
     error: text("error"),
-    /** Raw JSON body of the inbound HTTP request. */
+    /** Cuerpo JSON crudo de la solicitud HTTP entrante. */
     payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
-    /** Relevant HTTP headers from the inbound request (e.g. signature headers). */
+    /** Encabezados HTTP relevantes de la solicitud entrante (p. ej. encabezados de firma). */
     headers: jsonb("headers").$type<Record<string, string>>().notNull().default({}),
     startedAt: timestamp("started_at", { withTimezone: true }),
     finishedAt: timestamp("finished_at", { withTimezone: true }),

@@ -10,18 +10,18 @@ version=""
 
 usage() {
   cat <<'EOF'
-Usage:
+Uso:
   ./scripts/create-github-release.sh <version> [--dry-run]
 
-Examples:
+Ejemplos:
   ./scripts/create-github-release.sh 2026.318.0
   ./scripts/create-github-release.sh 2026.318.0 --dry-run
 
-Notes:
-  - Run this after pushing the stable tag.
-  - Resolves the git remote automatically.
-  - In GitHub Actions, origin is used explicitly.
-  - If the release already exists, this script updates its title and notes.
+Notas:
+  - Ejecuta esto después de subir el tag estable.
+  - Resuelve el remoto de git automáticamente.
+  - En GitHub Actions, se usa origin explícitamente.
+  - Si la versión ya existe, este script actualiza su título y notas.
 EOF
 }
 
@@ -34,7 +34,7 @@ while [ $# -gt 0 ]; do
       ;;
     *)
       if [ -n "$version" ]; then
-        echo "Error: only one version may be provided." >&2
+        echo "Error: solo se puede proporcionar una versión." >&2
         exit 1
       fi
       version="$1"
@@ -49,7 +49,7 @@ if [ -z "$version" ]; then
 fi
 
 if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Error: version must be a stable calendar version like 2026.318.0." >&2
+  echo "Error: la versión debe ser una versión de calendario estable como 2026.318.0." >&2
   exit 1
 fi
 
@@ -60,23 +60,23 @@ if [ "${GITHUB_ACTIONS:-}" = "true" ] && [ -z "${PUBLISH_REMOTE:-}" ] && git_rem
 fi
 PUBLISH_REMOTE="$(resolve_release_remote)"
 if ! command -v gh >/dev/null 2>&1; then
-  echo "Error: gh CLI is required to create GitHub releases." >&2
+  echo "Error: se requiere la CLI gh para crear versiones de GitHub." >&2
   exit 1
 fi
 
 GITHUB_REPO="$(github_repo_from_remote "$PUBLISH_REMOTE" || true)"
 if [ -z "$GITHUB_REPO" ]; then
-  echo "Error: could not determine GitHub repository from remote $PUBLISH_REMOTE." >&2
+  echo "Error: no se pudo determinar el repositorio de GitHub desde el remoto $PUBLISH_REMOTE." >&2
   exit 1
 fi
 
 if [ ! -f "$notes_file" ]; then
-  echo "Error: release notes file not found at $notes_file." >&2
+  echo "Error: archivo de notas de la versión no encontrado en $notes_file." >&2
   exit 1
 fi
 
 if ! git -C "$REPO_ROOT" rev-parse "$tag" >/dev/null 2>&1; then
-  echo "Error: local git tag $tag does not exist." >&2
+  echo "Error: el tag local de git $tag no existe." >&2
   exit 1
 fi
 
@@ -86,14 +86,14 @@ if [ "$dry_run" = true ]; then
 fi
 
 if ! git -C "$REPO_ROOT" ls-remote --exit-code --tags "$PUBLISH_REMOTE" "refs/tags/$tag" >/dev/null 2>&1; then
-  echo "Error: remote tag $tag was not found on $PUBLISH_REMOTE. Push the release commit and tag first." >&2
+  echo "Error: el tag remoto $tag no se encontró en $PUBLISH_REMOTE. Sube primero el commit y el tag de la versión." >&2
   exit 1
 fi
 
 if gh release view "$tag" -R "$GITHUB_REPO" >/dev/null 2>&1; then
   gh release edit "$tag" -R "$GITHUB_REPO" --title "$tag" --notes-file "$notes_file"
-  echo "Updated GitHub Release $tag"
+  echo "Versión de GitHub $tag actualizada"
 else
   gh release create "$tag" -R "$GITHUB_REPO" --title "$tag" --notes-file "$notes_file"
-  echo "Created GitHub Release $tag"
+  echo "Versión de GitHub $tag creada"
 fi

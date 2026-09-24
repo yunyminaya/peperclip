@@ -1,21 +1,22 @@
 /**
- * PluginWorkerManager — spawns and manages out-of-process plugin worker child
- * processes, routes JSON-RPC 2.0 calls over stdio, and handles lifecycle
- * management including crash recovery with exponential backoff.
+ * PluginWorkerManager — genera y gestiona procesos hijos de workers de
+ * plugins fuera del proceso, enruta llamadas JSON-RPC 2.0 sobre stdio, y
+ * maneja la gestión del ciclo de vida incluyendo recuperación de fallos con
+ * backoff exponencial.
  *
- * Each installed plugin gets one dedicated worker process. The host sends
- * JSON-RPC requests over the child's stdin and reads responses from stdout.
- * Worker stderr is captured and forwarded to the host logger.
+ * Cada plugin instalado obtiene un proceso worker dedicado. El host envía
+ * solicitudes JSON-RPC sobre el stdin del hijo y lee respuestas desde
+ * stdout. El stderr del worker se captura y reenvía al logger del host.
  *
- * Process Model (from PLUGIN_SPEC.md §12):
- * - One worker process per installed plugin
- * - Failure isolation: plugin crashes do not affect the host
- * - Graceful shutdown: 10-second drain, then SIGTERM, then SIGKILL
- * - Automatic restart with exponential backoff on unexpected exits
+ * Modelo de proceso (de PLUGIN_SPEC.md §12):
+ * - Un proceso worker por plugin instalado
+ * - Aislamiento de fallos: los fallos de plugins no afectan al host
+ * - Apagado gracioso: drenaje de 10 segundos, luego SIGTERM, luego SIGKILL
+ * - Reinicio automático con backoff exponencial en salidas inesperadas
  *
- * @see PLUGIN_SPEC.md §12 — Process Model
- * @see PLUGIN_SPEC.md §12.5 — Graceful Shutdown Policy
- * @see PLUGIN_SPEC.md §13 — Host-Worker Protocol
+ * @see PLUGIN_SPEC.md §12 — Modelo de proceso
+ * @see PLUGIN_SPEC.md §12.5 — Política de apagado gracioso
+ * @see PLUGIN_SPEC.md §13 — Protocolo host-worker
  */
 
 import { fork, type ChildProcess } from "node:child_process";
@@ -54,37 +55,37 @@ import { logger } from "../middleware/logger.js";
 // Constants
 // ---------------------------------------------------------------------------
 
-/** Default timeout for RPC calls in milliseconds. */
+/** Timeout predeterminado para llamadas RPC en milisegundos. */
 const DEFAULT_RPC_TIMEOUT_MS = 30_000;
 
-/** Hard upper bound for any RPC timeout (5 minutes). Prevents unbounded waits. */
+/** Límite superior duro para cualquier timeout RPC (5 minutos). Evita esperas ilimitadas. */
 const MAX_RPC_TIMEOUT_MS = 5 * 60 * 1_000;
 
-/** Timeout for the initialize RPC call. */
+/** Timeout para la llamada RPC initialize. */
 const INITIALIZE_TIMEOUT_MS = 15_000;
 
-/** Timeout for the shutdown RPC call before escalating to SIGTERM. */
+/** Timeout para la llamada RPC shutdown antes de escalar a SIGTERM. */
 const SHUTDOWN_DRAIN_MS = 10_000;
 
-/** Time to wait after SIGTERM before sending SIGKILL. */
+/** Tiempo a esperar tras SIGTERM antes de enviar SIGKILL. */
 const SIGTERM_GRACE_MS = 5_000;
 
-/** Minimum backoff delay for crash recovery (1 second). */
+/** Retardo mínimo de backoff para recuperación de fallos (1 segundo). */
 const MIN_BACKOFF_MS = 1_000;
 
-/** Maximum backoff delay for crash recovery (5 minutes). */
+/** Retardo máximo de backoff para recuperación de fallos (5 minutos). */
 const MAX_BACKOFF_MS = 5 * 60 * 1_000;
 
-/** Backoff multiplier on each consecutive crash. */
+/** Multiplicador de backoff en cada fallo consecutivo. */
 const BACKOFF_MULTIPLIER = 2;
 
-/** Maximum number of consecutive crashes before giving up on auto-restart. */
+/** Número máximo de fallos consecutivos antes de rendirse con el auto-reinicio. */
 const MAX_CONSECUTIVE_CRASHES = 10;
 
-/** Time window in which crashes are considered consecutive (10 minutes). */
+/** Ventana de tiempo en la que los fallos se consideran consecutivos (10 minutos). */
 const CRASH_WINDOW_MS = 10 * 60 * 1_000;
 
-/** Maximum number of stderr characters retained for worker failure context. */
+/** Número máximo de caracteres de stderr retenidos para contexto de fallo del worker. */
 const MAX_STDERR_EXCERPT_CHARS = 8_000;
 
 // ---------------------------------------------------------------------------
@@ -92,7 +93,7 @@ const MAX_STDERR_EXCERPT_CHARS = 8_000;
 // ---------------------------------------------------------------------------
 
 /**
- * Status of a managed worker process.
+ * Estado de un proceso worker gestionado.
  */
 export type WorkerStatus =
   | "stopped"
@@ -103,33 +104,35 @@ export type WorkerStatus =
   | "backoff";
 
 /**
- * Worker-to-host method handler. The host registers these to service calls
- * that the plugin worker makes back to the host (e.g. state.get, events.emit).
+ * Manejador de método worker-a-host. El host registra estos para atender
+ * llamadas que el worker del plugin hace de vuelta al host (p. ej.
+ * state.get, events.emit).
  */
 export type WorkerToHostHandler<M extends WorkerToHostMethodName> = (
   params: WorkerToHostMethods[M][0],
 ) => Promise<WorkerToHostMethods[M][1]>;
 
 /**
- * A map of all worker-to-host method handlers provided by the host.
+ * Un mapa de todos los manejadores de métodos worker-a-host provistos por el
+ * host.
  */
 export type WorkerToHostHandlers = {
   [M in WorkerToHostMethodName]?: WorkerToHostHandler<M>;
 };
 
 /**
- * Events emitted by a PluginWorkerHandle.
+ * Eventos emitidos por un PluginWorkerHandle.
  */
 export interface WorkerHandleEvents {
-  /** Worker process started and is ready (initialize succeeded). */
+  /** El proceso worker arrancó y está listo (initialize tuvo éxito). */
   "ready": { pluginId: string };
-  /** Worker process exited. */
+  /** El proceso worker salió. */
   "exit": { pluginId: string; code: number | null; signal: NodeJS.Signals | null };
-  /** Worker process crashed unexpectedly. */
+  /** El proceso worker falló inesperadamente. */
   "crash": { pluginId: string; code: number | null; signal: NodeJS.Signals | null; willRestart: boolean };
-  /** Worker process errored (e.g. spawn failure). */
+  /** El proceso worker tuvo un error (p. ej. fallo de spawn). */
   "error": { pluginId: string; error: Error };
-  /** Worker status changed. */
+  /** El estado del worker cambió. */
   "status": { pluginId: string; status: WorkerStatus; previousStatus: WorkerStatus };
 }
 
@@ -146,56 +149,56 @@ export function formatWorkerFailureMessage(message: string, stderrExcerpt: strin
   const excerpt = stderrExcerpt.trim();
   if (!excerpt) return message;
   if (message.includes(excerpt)) return message;
-  return `${message}\n\nWorker stderr:\n${excerpt}`;
+  return `${message}\n\nstderr del worker:\n${excerpt}`;
 }
 
 /**
- * Options for starting a worker process.
+ * Opciones para arrancar un proceso worker.
  */
 export interface WorkerStartOptions {
-  /** Absolute path to the plugin worker entrypoint (CJS bundle). */
+  /** Ruta absoluta al entrypoint del worker del plugin (bundle CJS). */
   entrypointPath: string;
-  /** Plugin manifest. */
+  /** Manifiesto del plugin. */
   manifest: PaperclipPluginManifestV1;
-  /** Resolved plugin configuration. */
+  /** Configuración resuelta del plugin. */
   config: Record<string, unknown>;
-  /** Host instance information for the initialize call. */
+  /** Información de la instancia host para la llamada initialize. */
   instanceInfo: {
     instanceId: string;
     hostVersion: string;
   };
-  /** Host API version. */
+  /** Versión de la API host. */
   apiVersion: number;
-  /** Handlers for worker→host RPC calls. */
+  /** Manejadores para llamadas RPC worker→host. */
   hostHandlers: WorkerToHostHandlers;
-  /** Default timeout for RPC calls (ms). Defaults to 30s. */
+  /** Timeout predeterminado para llamadas RPC (ms). Por defecto 30s. */
   rpcTimeoutMs?: number;
-  /** Whether to auto-restart on crash. Defaults to true. */
+  /** Si reintentar automáticamente en fallo. Por defecto true. */
   autoRestart?: boolean;
-  /** Node.js execArgv passed to the child process. */
+  /** Node.js execArgv pasado al proceso hijo. */
   execArgv?: string[];
-  /** Environment variables passed to the child process. */
+  /** Variables de entorno pasadas al proceso hijo. */
   env?: Record<string, string>;
   /**
-   * Callback for stream notifications from the worker (streams.open/emit/close).
-   * The host wires this to the PluginStreamBus to fan out events to SSE clients.
+   * Callback para notificaciones de stream del worker (streams.open/emit/close).
+   * El host lo conecta al PluginStreamBus para distribuir eventos a clientes SSE.
    */
   onStreamNotification?: (method: string, params: Record<string, unknown>) => void;
 }
 
 /**
- * A pending RPC call waiting for a response from the worker.
+ * Una llamada RPC pendiente esperando respuesta del worker.
  */
 interface PendingRequest {
-  /** The request ID. */
+  /** El ID de la solicitud. */
   id: JsonRpcId;
-  /** Method name (for logging). */
+  /** Nombre del método (para logging). */
   method: string;
-  /** Resolve the promise with the response. */
+  /** Resuelve la promesa con la respuesta. */
   resolve: (response: JsonRpcResponse) => void;
-  /** Timeout timer handle. */
+  /** Manejador del timer de timeout. */
   timer: ReturnType<typeof setTimeout>;
-  /** Timestamp when the request was sent. */
+  /** Timestamp de cuándo se envió la solicitud. */
   sentAt: number;
 }
 
@@ -204,44 +207,46 @@ interface PendingRequest {
 // ---------------------------------------------------------------------------
 
 /**
- * Handle for a single plugin worker process.
+ * Manejador para un solo proceso worker de plugin.
  *
- * Callers use `start()` to spawn the worker, `call()` to send RPC requests,
- * and `stop()` to gracefully shut down. The handle manages crash recovery
- * with exponential backoff automatically when `autoRestart` is enabled.
+ * Los llamadores usan `start()` para generar el worker, `call()` para enviar
+ * solicitudes RPC, y `stop()` para apagar graciosamente. El manejador gestiona
+ * la recuperación de fallos con backoff exponencial automáticamente cuando
+ * `autoRestart` está activado.
  */
 export interface PluginWorkerHandle {
-  /** The plugin ID this worker serves. */
+  /** El ID del plugin que este worker sirve. */
   readonly pluginId: string;
 
-  /** Current worker status. */
+  /** Estado actual del worker. */
   readonly status: WorkerStatus;
 
-  /** Start the worker process. Resolves when initialize completes. */
+  /** Arranca el proceso worker. Resuelve cuando initialize completa. */
   start(): Promise<void>;
 
   /**
-   * Stop the worker process gracefully.
+   * Detiene el proceso worker graciosamente.
    *
-   * Sends a `shutdown` RPC call, waits up to 10 seconds for the worker to
-   * exit, then escalates to SIGTERM, and finally SIGKILL if needed.
+   * Envía una llamada RPC `shutdown`, espera hasta 10 segundos a que el
+   * worker salga, luego escala a SIGTERM, y finalmente SIGKILL si se
+   * necesita.
    */
   stop(): Promise<void>;
 
   /**
-   * Restart the worker process (stop + start).
+   * Reinicia el proceso worker (stop + start).
    */
   restart(): Promise<void>;
 
   /**
-   * Send a typed host→worker RPC call.
+   * Envía una llamada RPC tipada host→worker.
    *
-   * @param method - The RPC method name
-   * @param params - Method parameters
-   * @param timeoutMs - Optional per-call timeout override
-   * @returns The method result
-   * @throws {JsonRpcCallError} if the worker returns an error response
-   * @throws {Error} if the worker is not running or the call times out
+   * @param method - El nombre del método RPC
+   * @param params - Parámetros del método
+   * @param timeoutMs - Override opcional de timeout por llamada
+   * @returns El resultado del método
+   * @throws {JsonRpcCallError} si el worker devuelve una respuesta de error
+   * @throws {Error} si el worker no está corriendo o la llamada expira
    */
   call<M extends HostToWorkerMethodName>(
     method: M,
@@ -250,31 +255,31 @@ export interface PluginWorkerHandle {
   ): Promise<HostToWorkerMethods[M][1]>;
 
   /**
-   * Send a fire-and-forget notification to the worker (no response expected).
+   * Envía una notificación fire-and-forget al worker (no se espera respuesta).
    */
   notify(method: string, params: unknown): void;
 
-  /** Subscribe to worker events. */
+  /** Se suscribe a eventos del worker. */
   on<K extends WorkerHandleEventName>(
     event: K,
     listener: (payload: WorkerHandleEvents[K]) => void,
   ): void;
 
-  /** Unsubscribe from worker events. */
+  /** Se desuscribe de eventos del worker. */
   off<K extends WorkerHandleEventName>(
     event: K,
     listener: (payload: WorkerHandleEvents[K]) => void,
   ): void;
 
-  /** Optional methods the worker reported during initialization. */
+  /** Métodos opcionales que el worker reportó durante la inicialización. */
   readonly supportedMethods: string[];
 
-  /** Get diagnostic info about the worker. */
+  /** Obtiene info de diagnóstico sobre el worker. */
   diagnostics(): WorkerDiagnostics;
 }
 
 /**
- * Diagnostic information about a worker process.
+ * Información de diagnóstico sobre un proceso worker.
  */
 export interface WorkerDiagnostics {
   pluginId: string;
@@ -293,49 +298,52 @@ export interface WorkerDiagnostics {
 // ---------------------------------------------------------------------------
 
 /**
- * The top-level manager that holds all plugin worker handles.
+ * El manager de nivel superior que retiene todos los manejadores de workers
+ * de plugins.
  *
- * Provides a registry of workers keyed by plugin ID, with convenience methods
- * for starting/stopping all workers and routing RPC calls.
+ * Provee un registro de workers indexado por ID de plugin, con métodos de
+ * conveniencia para arrancar/detener todos los workers y enrutar llamadas
+ * RPC.
  */
 export interface PluginWorkerManager {
   /**
-   * Register and start a worker for a plugin.
+   * Registra y arranca un worker para un plugin.
    *
-   * @returns The worker handle
-   * @throws if a worker is already registered for this plugin
+   * @returns El manejador del worker
+   * @throws si ya hay un worker registrado para este plugin
    */
   startWorker(pluginId: string, options: WorkerStartOptions): Promise<PluginWorkerHandle>;
 
   /**
-   * Stop and unregister a specific plugin worker.
+   * Detiene y desregistra un worker de plugin específico.
    */
   stopWorker(pluginId: string): Promise<void>;
 
   /**
-   * Get the worker handle for a plugin.
+   * Obtiene el manejador del worker para un plugin.
    */
   getWorker(pluginId: string): PluginWorkerHandle | undefined;
 
   /**
-   * Check if a worker is registered and running for a plugin.
+   * Comprueba si un worker está registrado y corriendo para un plugin.
    */
   isRunning(pluginId: string): boolean;
 
   /**
-   * Stop all managed workers. Called during server shutdown.
+   * Detiene todos los workers gestionados. Se llama durante el apagado del
+   * servidor.
    */
   stopAll(): Promise<void>;
 
   /**
-   * Get diagnostic info for all workers.
+   * Obtiene info de diagnóstico para todos los workers.
    */
   diagnostics(): WorkerDiagnostics[];
 
   /**
-   * Send an RPC call to a specific plugin worker.
+   * Envía una llamada RPC a un worker de plugin específico.
    *
-   * @throws if the worker is not running
+   * @throws si el worker no está corriendo
    */
   call<M extends HostToWorkerMethodName>(
     pluginId: string,
@@ -350,9 +358,10 @@ export interface PluginWorkerManager {
 // ---------------------------------------------------------------------------
 
 /**
- * Create a handle for a single plugin worker process.
+ * Crea un manejador para un solo proceso worker de plugin.
  *
- * @internal Exported for testing; consumers should use `createPluginWorkerManager`.
+ * @internal Exportado para pruebas; los consumidores deben usar
+ * `createPluginWorkerManager`.
  */
 export function createPluginWorkerHandle(
   pluginId: string,
@@ -361,12 +370,13 @@ export function createPluginWorkerHandle(
   const log = logger.child({ service: "plugin-worker", pluginId });
   const emitter = new EventEmitter();
   /**
-   * Higher than default (10) to accommodate multiple subscribers to
-   * crash/ready/exit events during integration tests and runtime monitoring.
+   * Más alto que el predeterminado (10) para acomodar múltiples suscriptores
+   * a eventos crash/ready/exit durante pruebas de integración y monitoreo
+   * en runtime.
    */
   emitter.setMaxListeners(50);
 
-  // Worker process state
+  // Estado del proceso worker
   let childProcess: ChildProcess | null = null;
   let readline: ReadlineInterface | null = null;
   let stderrReadline: ReadlineInterface | null = null;
@@ -374,56 +384,56 @@ export function createPluginWorkerHandle(
   let startedAt: number | null = null;
   let stderrExcerpt = "";
 
-  // Pending RPC requests awaiting a response
+  // Solicitudes RPC pendientes esperando respuesta
   const pendingRequests = new Map<string | number, PendingRequest>();
   let nextRequestId = 1;
 
-  // Optional methods reported by the worker during initialization
+  // Métodos opcionales reportados por el worker durante la inicialización
   let supportedMethods: string[] = [];
 
-  // Crash tracking for exponential backoff
+  // Rastreo de fallos para backoff exponencial
   let consecutiveCrashes = 0;
   let totalCrashes = 0;
   let lastCrashAt: number | null = null;
   let backoffTimer: ReturnType<typeof setTimeout> | null = null;
   let nextRestartAt: number | null = null;
 
-  // Track open stream channels so we can emit synthetic close on crash.
-  // Maps channel → companyId.
+  // Rastrea canales de stream abiertos para poder emitir close sintético en fallo.
+  // Mapea channel → companyId.
   const openStreamChannels = new Map<string, string>();
 
-  // Shutdown coordination
+  // Coordinación de apagado
   let intentionalStop = false;
 
   const rpcTimeoutMs = options.rpcTimeoutMs ?? DEFAULT_RPC_TIMEOUT_MS;
   const autoRestart = options.autoRestart ?? true;
 
   // -----------------------------------------------------------------------
-  // Status management
+  // Gestión de estado
   // -----------------------------------------------------------------------
 
   function setStatus(newStatus: WorkerStatus): void {
     const prev = status;
     if (prev === newStatus) return;
     status = newStatus;
-    log.debug({ from: prev, to: newStatus }, "worker status change");
+    log.debug({ from: prev, to: newStatus }, "cambio de estado del worker");
     emitter.emit("status", { pluginId, status: newStatus, previousStatus: prev });
   }
 
   // -----------------------------------------------------------------------
-  // JSON-RPC message sending
+  // Envío de mensajes JSON-RPC
   // -----------------------------------------------------------------------
 
   function sendMessage(message: unknown): void {
     if (!childProcess?.stdin?.writable) {
-      throw new Error(`Worker process for plugin "${pluginId}" is not writable`);
+      throw new Error(`El proceso worker para el plugin "${pluginId}" no es escribible`);
     }
     const serialized = serializeMessage(message as any);
     childProcess.stdin.write(serialized);
   }
 
   // -----------------------------------------------------------------------
-  // Incoming message handling
+  // Manejo de mensajes entrantes
   // -----------------------------------------------------------------------
 
   function handleLine(line: string): void {
@@ -434,9 +444,9 @@ export function createPluginWorkerHandle(
       message = parseMessage(line);
     } catch (err) {
       if (err instanceof JsonRpcParseError) {
-        log.warn({ rawLine: line.slice(0, 200) }, "unparseable message from worker");
+        log.warn({ rawLine: line.slice(0, 200) }, "mensaje no parseable del worker");
       } else {
-        log.warn({ err }, "error parsing worker message");
+        log.warn({ err }, "error parseando mensaje del worker");
       }
       return;
     }
@@ -448,23 +458,24 @@ export function createPluginWorkerHandle(
     } else if (isJsonRpcNotification(message)) {
       handleWorkerNotification(message as JsonRpcNotification);
     } else {
-      log.warn("unknown message type from worker");
+      log.warn("tipo de mensaje desconocido del worker");
     }
   }
 
   /**
-   * Handle a JSON-RPC response from the worker (matching a pending request).
+   * Maneja una respuesta JSON-RPC del worker (coincidiendo con una solicitud
+   * pendiente).
    */
   function handleResponse(response: JsonRpcResponse): void {
     const id = response.id;
     if (id === null || id === undefined) {
-      log.warn("received response with null/undefined id");
+      log.warn("respuesta recibida con id null/undefined");
       return;
     }
 
     const pending = pendingRequests.get(id);
     if (!pending) {
-      log.warn({ id }, "received response for unknown request id");
+      log.warn({ id }, "respuesta recibida para id de solicitud desconocido");
       return;
     }
 
@@ -474,7 +485,7 @@ export function createPluginWorkerHandle(
   }
 
   /**
-   * Handle a JSON-RPC request from the worker (worker→host call).
+   * Maneja una solicitud JSON-RPC del worker (llamada worker→host).
    */
   async function handleWorkerRequest(request: JsonRpcRequest): Promise<void> {
     const method = request.method as WorkerToHostMethodName;
@@ -483,17 +494,17 @@ export function createPluginWorkerHandle(
       | undefined;
 
     if (!handler) {
-      log.warn({ method }, "worker called unregistered host method");
+      log.warn({ method }, "el worker llamó un método host no registrado");
       try {
         sendMessage(
           createErrorResponse(
             request.id,
             JSONRPC_ERROR_CODES.METHOD_NOT_FOUND,
-            `Host does not handle method "${method}"`,
+            `El host no maneja el método "${method}"`,
           ),
         );
       } catch {
-        // Worker may have exited, ignore send error
+        // El worker puede haber salido, ignorar error de envío
       }
       return;
     }
@@ -507,7 +518,7 @@ export function createPluginWorkerHandle(
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      log.error({ method, err: errorMessage }, "host handler error");
+      log.error({ method, err: errorMessage }, "error del manejador host");
       try {
         sendMessage(
           createErrorResponse(
@@ -517,17 +528,18 @@ export function createPluginWorkerHandle(
           ),
         );
       } catch {
-        // Worker may have exited, ignore send error
+        // El worker puede haber salido, ignorar error de envío
       }
     }
   }
 
   /**
-   * Handle a JSON-RPC notification from the worker (fire-and-forget).
+   * Maneja una notificación JSON-RPC del worker (fire-and-forget).
    *
-   * The `log` notification is the primary case — worker `ctx.logger` calls
-   * arrive here. We append structured plugin context (pluginId, timestamp,
-   * level) so that every log entry is queryable per the spec (§26.1).
+   * La notificación `log` es el caso primario — las llamadas `ctx.logger`
+   * del worker llegan aquí. Agregamos contexto estructurado del plugin
+   * (pluginId, timestamp, level) para que cada entrada de log sea
+   * consultable según la spec (§26.1).
    */
   function handleWorkerNotification(notification: JsonRpcNotification): void {
     if (notification.method === "log") {
@@ -540,11 +552,12 @@ export function createPluginWorkerHandle(
       const msg = params?.message ?? "";
       const meta = params?.meta;
 
-      // Build a structured log object that includes the plugin context fields
-      // required by §26.1: pluginId, timestamp, level, message, and metadata.
-      // The child logger already carries `pluginId` in its bindings, but we
-      // add explicit `pluginLogLevel` and `pluginTimestamp` so downstream
-      // consumers (log storage, UI queries) can filter without parsing.
+      // Construye un objeto de log estructurado que incluye los campos de
+      // contexto del plugin requeridos por §26.1: pluginId, timestamp, level,
+      // message y metadata. El child logger ya porta `pluginId` en sus
+      // bindings, pero agregamos `pluginLogLevel` y `pluginTimestamp`
+      // explícitos para que consumidores downstream (almacenamiento de logs,
+      // consultas UI) puedan filtrar sin parsear.
       const logFields: Record<string, unknown> = {
         ...meta,
         pluginLogLevel: level,
@@ -563,7 +576,7 @@ export function createPluginWorkerHandle(
       return;
     }
 
-    // Stream notifications: forward to the stream bus via callback
+    // Notificaciones de stream: reenvía al stream bus vía callback
     if (
       notification.method === "streams.open" ||
       notification.method === "streams.emit" ||
@@ -571,7 +584,7 @@ export function createPluginWorkerHandle(
     ) {
       const params = (notification.params ?? {}) as Record<string, unknown>;
 
-      // Track open channels so we can emit synthetic close on crash
+      // Rastrea canales abiertos para poder emitir close sintético en fallo
       if (notification.method === "streams.open") {
         const ch = String(params.channel ?? "");
         const co = String(params.companyId ?? "");
@@ -589,24 +602,24 @@ export function createPluginWorkerHandle(
               method: notification.method,
               err: err instanceof Error ? err.message : String(err),
             },
-            "stream notification handler failed",
+            "falló el manejador de notificación de stream",
           );
         }
       }
       return;
     }
 
-    log.debug({ method: notification.method }, "received notification from worker");
+    log.debug({ method: notification.method }, "notificación recibida del worker");
   }
 
   // -----------------------------------------------------------------------
-  // Process lifecycle
+  // Ciclo de vida del proceso
   // -----------------------------------------------------------------------
 
   function spawnProcess(): ChildProcess {
-    // Security: Do NOT spread process.env into the worker. Plugins should only
-    // receive a minimal, controlled environment to prevent leaking host
-    // secrets (like DATABASE_URL, internal API keys, etc.).
+    // Seguridad: NO esparzas process.env en el worker. Los plugins solo
+    // deben recibir un entorno mínimo y controlado para evitar filtrar
+    // secretos del host (como DATABASE_URL, claves API internas, etc.).
     const workerEnv: Record<string, string> = {
       ...options.env,
       PATH: process.env.PATH ?? "",
@@ -620,7 +633,7 @@ export function createPluginWorkerHandle(
       stdio: ["pipe", "pipe", "pipe", "ipc"],
       execArgv: options.execArgv ?? [],
       env: workerEnv,
-      // Don't let the child keep the parent alive
+      // No dejes que el hijo mantenga vivo al padre
       detached: false,
     });
 
@@ -628,13 +641,13 @@ export function createPluginWorkerHandle(
   }
 
   function attachStdioHandlers(child: ChildProcess): void {
-    // Read NDJSON from stdout
+    // Lee NDJSON desde stdout
     if (child.stdout) {
       readline = createInterface({ input: child.stdout });
       readline.on("line", handleLine);
     }
 
-    // Capture stderr for logging
+    // Captura stderr para logging
     if (child.stderr) {
       stderrReadline = createInterface({ input: child.stderr });
       stderrReadline.on("line", (line: string) => {
@@ -643,20 +656,20 @@ export function createPluginWorkerHandle(
       });
     }
 
-    // Handle process exit
+    // Maneja la salida del proceso
     child.on("exit", (code, signal) => {
       handleProcessExit(code, signal);
     });
 
-    // Handle process errors (e.g. spawn failure)
+    // Maneja errores del proceso (p. ej. fallo de spawn)
     child.on("error", (err) => {
-      log.error({ err: err.message }, "worker process error");
+      log.error({ err: err.message }, "error del proceso worker");
       emitter.emit("error", { pluginId, error: err });
       if (status === "starting") {
         setStatus("crashed");
         rejectAllPending(
           new Error(formatWorkerFailureMessage(
-            `Worker process failed to start: ${err.message}`,
+            `El proceso worker falló al arrancar: ${err.message}`,
             stderrExcerpt,
           )),
         );
@@ -670,7 +683,7 @@ export function createPluginWorkerHandle(
   ): void {
     const wasIntentional = intentionalStop;
 
-    // Clean up readline interfaces
+    // Limpia las interfaces readline
     if (readline) {
       readline.close();
       readline = null;
@@ -682,22 +695,22 @@ export function createPluginWorkerHandle(
     childProcess = null;
     startedAt = null;
 
-    // Reject all pending requests
+    // Rechaza todas las solicitudes pendientes
     rejectAllPending(
       new Error(formatWorkerFailureMessage(
-        `Worker process exited (code=${code}, signal=${signal})`,
+        `El proceso worker salió (code=${code}, signal=${signal})`,
         stderrExcerpt,
       )),
     );
 
-    // Emit synthetic close for any orphaned stream channels so SSE clients
-    // are notified instead of hanging indefinitely.
+    // Emite close sintético para cualquier canal de stream huérfano para que
+    // los clientes SSE sean notificados en vez de colgar indefinidamente.
     if (openStreamChannels.size > 0 && options.onStreamNotification) {
       for (const [channel, companyId] of openStreamChannels) {
         try {
           options.onStreamNotification("streams.close", { channel, companyId });
         } catch {
-          // Best-effort cleanup — don't let it interfere with exit handling
+          // Limpieza best-effort — no debe interferir con el manejo de salida
         }
       }
       openStreamChannels.clear();
@@ -706,17 +719,17 @@ export function createPluginWorkerHandle(
     emitter.emit("exit", { pluginId, code, signal });
 
     if (wasIntentional) {
-      // Graceful stop — status is already "stopping" or will be set to "stopped"
+      // Detención graciosa — el estado ya es "stopping" o se fijará a "stopped"
       setStatus("stopped");
-      log.info({ code, signal }, "worker process stopped");
+      log.info({ code, signal }, "proceso worker detenido");
       return;
     }
 
-    // Unexpected exit — crash recovery
+    // Salida inesperada — recuperación de fallo
     totalCrashes++;
     const now = Date.now();
 
-    // Reset consecutive crash counter if enough time passed
+    // Resetea el contador de fallos consecutivos si pasó suficiente tiempo
     if (lastCrashAt !== null && now - lastCrashAt > CRASH_WINDOW_MS) {
       consecutiveCrashes = 0;
     }
@@ -725,7 +738,7 @@ export function createPluginWorkerHandle(
 
     log.error(
       { code, signal, consecutiveCrashes, totalCrashes },
-      "worker process crashed",
+      "el proceso worker falló",
     );
 
     const willRestart =
@@ -739,7 +752,7 @@ export function createPluginWorkerHandle(
     } else {
       log.error(
         { consecutiveCrashes, maxCrashes: MAX_CONSECUTIVE_CRASHES },
-        "max consecutive crashes reached, not restarting",
+        "máximo de fallos consecutivos alcanzado, no se reiniciará",
       );
     }
   }
@@ -759,14 +772,14 @@ export function createPluginWorkerHandle(
   }
 
   // -----------------------------------------------------------------------
-  // Crash recovery with exponential backoff
+  // Recuperación de fallos con backoff exponencial
   // -----------------------------------------------------------------------
 
   function computeBackoffMs(): number {
-    // Exponential backoff: MIN_BACKOFF * MULTIPLIER^(consecutiveCrashes - 1)
+    // Backoff exponencial: MIN_BACKOFF * MULTIPLIER^(consecutiveCrashes - 1)
     const delay =
       MIN_BACKOFF_MS * Math.pow(BACKOFF_MULTIPLIER, consecutiveCrashes - 1);
-    // Add jitter: ±25%
+    // Agrega jitter: ±25%
     const jitter = delay * 0.25 * (Math.random() * 2 - 1);
     return Math.min(Math.round(delay + jitter), MAX_BACKOFF_MS);
   }
@@ -779,7 +792,7 @@ export function createPluginWorkerHandle(
 
     log.info(
       { delayMs: delay, consecutiveCrashes },
-      "scheduling restart with backoff",
+      "programando reinicio con backoff",
     );
 
     backoffTimer = setTimeout(async () => {
@@ -790,7 +803,7 @@ export function createPluginWorkerHandle(
       } catch (err) {
         log.error(
           { err: err instanceof Error ? err.message : String(err) },
-          "restart after backoff failed",
+          "el reinicio tras backoff falló",
         );
       }
     }, delay);
@@ -805,12 +818,12 @@ export function createPluginWorkerHandle(
   }
 
   // -----------------------------------------------------------------------
-  // Start / Stop
+  // Arranque / Detención
   // -----------------------------------------------------------------------
 
   async function startInternal(): Promise<void> {
     if (status === "running" || status === "starting") {
-      throw new Error(`Worker for plugin "${pluginId}" is already ${status}`);
+      throw new Error(`El worker para el plugin "${pluginId}" ya está ${status}`);
     }
 
     intentionalStop = false;
@@ -822,7 +835,7 @@ export function createPluginWorkerHandle(
     attachStdioHandlers(child);
     startedAt = Date.now();
 
-    // Send the initialize RPC call
+    // Envía la llamada RPC initialize
     const initParams: InitializeParams = {
       manifest: options.manifest,
       config: options.config,
@@ -837,23 +850,23 @@ export function createPluginWorkerHandle(
         INITIALIZE_TIMEOUT_MS,
       ) as { ok?: boolean; supportedMethods?: string[] } | undefined;
       if (!result || !result.ok) {
-        throw new Error("Worker initialize returned ok=false");
+        throw new Error("Worker initialize devolvió ok=false");
       }
       supportedMethods = result.supportedMethods ?? [];
     } catch (err) {
-      // Initialize failed — kill the process and propagate
+      // Initialize falló — mata el proceso y propaga
       const msg = err instanceof Error ? err.message : String(err);
-      log.error({ err: msg }, "worker initialize failed");
+      log.error({ err: msg }, "falló el initialize del worker");
       await killProcess();
       setStatus("crashed");
-      throw new Error(`Worker initialize failed for "${pluginId}": ${msg}`);
+      throw new Error(`El initialize del worker falló para "${pluginId}": ${msg}`);
     }
 
-    // Reset crash counter on successful start
+    // Resetea el contador de fallos en arranque exitoso
     consecutiveCrashes = 0;
     setStatus("running");
     emitter.emit("ready", { pluginId });
-    log.info({ pid: child.pid }, "worker process started and initialized");
+    log.info({ pid: child.pid }, "proceso worker arrancado e inicializado");
   }
 
   async function stopInternal(): Promise<void> {
@@ -871,32 +884,33 @@ export function createPluginWorkerHandle(
       return;
     }
 
-    // Step 1: Send shutdown RPC and wait for the worker to exit gracefully.
-    // We race the shutdown call against a timeout. The worker should process
-    // the shutdown and exit on its own within the drain period.
+    // Paso 1: Envía el RPC shutdown y espera a que el worker salga
+    // graciosamente. Corremos la llamada shutdown contra un timeout. El
+    // worker debería procesar el shutdown y salir por sí solo dentro del
+    // período de drenaje.
     try {
       await Promise.race([
         callInternal("shutdown", {} as Record<string, never>, SHUTDOWN_DRAIN_MS),
         waitForExit(SHUTDOWN_DRAIN_MS),
       ]);
     } catch {
-      // Shutdown call failed or timed out — proceed to kill
-      log.warn("shutdown RPC failed or timed out, escalating to SIGTERM");
+      // La llamada shutdown falló o expiró — procede a matar
+      log.warn("el RPC shutdown falló o expiró, escalando a SIGTERM");
     }
 
-    // Give the process a brief moment to exit after the shutdown response
+    // Da al proceso un breve momento para salir tras la respuesta de shutdown
     if (childProcess) {
       await waitForExit(500);
     }
 
-    // Check if process already exited
+    // Comprueba si el proceso ya salió
     if (!childProcess) {
       setStatus("stopped");
       return;
     }
 
-    // Step 2: Send SIGTERM and wait
-    log.info("worker did not exit after shutdown RPC, sending SIGTERM");
+    // Paso 2: Envía SIGTERM y espera
+    log.info("el worker no salió tras el RPC shutdown, enviando SIGTERM");
     await killWithSignal("SIGTERM", SIGTERM_GRACE_MS);
 
     if (!childProcess) {
@@ -904,20 +918,20 @@ export function createPluginWorkerHandle(
       return;
     }
 
-    // Step 3: Forcefully kill with SIGKILL
-    log.warn("worker did not exit after SIGTERM, sending SIGKILL");
+    // Paso 3: Mata forzosamente con SIGKILL
+    log.warn("el worker no salió tras SIGTERM, enviando SIGKILL");
     await killWithSignal("SIGKILL", 2_000);
 
     if (childProcess) {
-      log.error("worker process still alive after SIGKILL — this should not happen");
+      log.error("el proceso worker sigue vivo tras SIGKILL — esto no debería pasar");
     }
 
     setStatus("stopped");
   }
 
   /**
-   * Wait for the child process to exit, up to `timeoutMs`.
-   * Resolves immediately if the process is already gone.
+   * Espera a que el proceso hijo salga, hasta `timeoutMs`.
+   * Resuelve inmediatamente si el proceso ya desapareció.
    */
   function waitForExit(timeoutMs: number): Promise<void> {
     return new Promise<void>((resolve) => {
@@ -978,7 +992,7 @@ export function createPluginWorkerHandle(
     } catch {
       // Process may already be dead
     }
-    // Wait briefly for exit event
+    // Espera brevemente el evento de salida
     await new Promise<void>((resolve) => {
       if (!childProcess) {
         resolve();
@@ -995,7 +1009,7 @@ export function createPluginWorkerHandle(
   }
 
   // -----------------------------------------------------------------------
-  // RPC call implementation
+  // Implementación de llamada RPC
   // -----------------------------------------------------------------------
 
   function callInternal<M extends HostToWorkerMethodName>(
@@ -1007,7 +1021,7 @@ export function createPluginWorkerHandle(
       if (!childProcess?.stdin?.writable) {
         reject(
           new Error(
-            `Cannot call "${method}" — worker for "${pluginId}" is not running`,
+            `No se puede llamar "${method}" — el worker para "${pluginId}" no está corriendo`,
           ),
         );
         return;
@@ -1016,10 +1030,11 @@ export function createPluginWorkerHandle(
       const id = nextRequestId++;
       const timeout = Math.min(timeoutMs ?? rpcTimeoutMs, MAX_RPC_TIMEOUT_MS);
 
-      // Guard against double-settlement. When a process exits all pending
-      // requests are rejected via rejectAllPending(), but the timeout timer
-      // may still be running. Without this guard the timer's reject fires on
-      // an already-settled promise, producing an unhandled rejection.
+      // Protege contra doble resolución. Cuando un proceso sale, todas las
+      // solicitudes pendientes se rechazan vía rejectAllPending(), pero el
+      // timer de timeout puede seguir corriendo. Sin esta protección el
+      // reject del timer dispara sobre una promesa ya resuelta, produciendo
+      // un rechazo no manejado.
       let settled = false;
 
       const settle = <T>(fn: (value: T) => void, value: T): void => {
@@ -1035,7 +1050,7 @@ export function createPluginWorkerHandle(
           reject,
           new JsonRpcCallError({
             code: PLUGIN_RPC_ERROR_CODES.TIMEOUT,
-            message: `RPC call "${method}" timed out after ${timeout}ms`,
+            message: `La llamada RPC "${method}" expiró tras ${timeout}ms`,
           }),
         );
       }, timeout);
@@ -1049,7 +1064,7 @@ export function createPluginWorkerHandle(
           } else if ("error" in response && response.error) {
             settle(reject, new JsonRpcCallError(response.error));
           } else {
-            settle(reject, new Error(`Unexpected response format for "${method}"`));
+            settle(reject, new Error(`Formato de respuesta inesperado para "${method}"`));
           }
         },
         timer,
@@ -1066,7 +1081,7 @@ export function createPluginWorkerHandle(
         pendingRequests.delete(id);
         reject(
           new Error(
-            `Failed to send "${method}" to worker: ${
+            `Falló el envío de "${method}" al worker: ${
               err instanceof Error ? err.message : String(err)
             }`,
           ),
@@ -1113,7 +1128,7 @@ export function createPluginWorkerHandle(
       if (status !== "running" && status !== "starting") {
         return Promise.reject(
           new Error(
-            `Cannot call "${method}" — worker for "${pluginId}" is ${status}`,
+            `No se puede llamar "${method}" — el worker para "${pluginId}" está ${status}`,
           ),
         );
       }
@@ -1129,7 +1144,7 @@ export function createPluginWorkerHandle(
           params,
         });
       } catch {
-        log.warn({ method }, "failed to send notification to worker");
+        log.warn({ method }, "falló el envío de notificación al worker");
       }
     },
 
@@ -1173,12 +1188,13 @@ export function createPluginWorkerHandle(
 // ---------------------------------------------------------------------------
 
 /**
- * Options for creating a PluginWorkerManager.
+ * Opciones para crear un PluginWorkerManager.
  */
 export interface PluginWorkerManagerOptions {
   /**
-   * Optional callback invoked when a worker emits a lifecycle event
-   * (crash, restart). Used by the server to publish global live events.
+   * Callback opcional invocado cuando un worker emite un evento de ciclo de
+   * vida (fallo, reinicio). Usado por el servidor para publicar eventos en
+   * vivo globales.
    */
   onWorkerEvent?: (event: {
     type: "plugin.worker.crashed" | "plugin.worker.restarted";
@@ -1190,10 +1206,11 @@ export interface PluginWorkerManagerOptions {
 }
 
 /**
- * Create a new PluginWorkerManager.
+ * Crea un nuevo PluginWorkerManager.
  *
- * The manager holds all plugin worker handles and provides a unified API for
- * starting, stopping, and communicating with plugin workers.
+ * El manager retiene todos los manejadores de workers de plugins y provee
+ * una API unificada para arrancar, detener y comunicarse con workers de
+ * plugins.
  *
  * @example
  * ```ts
@@ -1208,10 +1225,10 @@ export interface PluginWorkerManagerOptions {
  *   hostHandlers: { "config.get": async () => resolvedConfig, ... },
  * });
  *
- * // Send RPC call to the worker
+ * // Envía una llamada RPC al worker
  * const health = await manager.call("acme.linear", "health", {});
  *
- * // Shutdown all workers on server exit
+ * // Apaga todos los workers al salir del servidor
  * await manager.stopAll();
  * ```
  */
@@ -1220,7 +1237,7 @@ export function createPluginWorkerManager(
 ): PluginWorkerManager {
   const log = logger.child({ service: "plugin-worker-manager" });
   const workers = new Map<string, PluginWorkerHandle>();
-  /** Per-plugin startup locks to prevent concurrent spawn races. */
+  /** Locks de arranque por plugin para evitar carreras de spawn concurrentes. */
   const startupLocks = new Map<string, Promise<PluginWorkerHandle>>();
 
   return {
@@ -1228,24 +1245,24 @@ export function createPluginWorkerManager(
       pluginId: string,
       options: WorkerStartOptions,
     ): Promise<PluginWorkerHandle> {
-      // Mutex: if a start is already in-flight for this plugin, wait for it
+      // Mutex: si ya hay un arranque en vuelo para este plugin, espéralo
       const inFlight = startupLocks.get(pluginId);
       if (inFlight) {
-        log.warn({ pluginId }, "concurrent startWorker call — waiting for in-flight start");
+        log.warn({ pluginId }, "llamada startWorker concurrente — esperando el arranque en vuelo");
         return inFlight;
       }
 
       const existing = workers.get(pluginId);
       if (existing && existing.status !== "stopped") {
         throw new Error(
-          `Worker already registered for plugin "${pluginId}" (status: ${existing.status})`,
+          `El worker ya está registrado para el plugin "${pluginId}" (estado: ${existing.status})`,
         );
       }
 
       const handle = createPluginWorkerHandle(pluginId, options);
       workers.set(pluginId, handle);
 
-      // Subscribe to crash/ready events for live event forwarding
+      // Suscribe a eventos crash/ready para reenvío de eventos en vivo
       if (managerOptions?.onWorkerEvent) {
         const notify = managerOptions.onWorkerEvent;
         handle.on("crash", (payload) => {
@@ -1258,7 +1275,7 @@ export function createPluginWorkerManager(
           });
         });
         handle.on("ready", (payload) => {
-          // Only emit restarted if this was a crash recovery (totalCrashes > 0)
+          // Solo emite restarted si esto fue una recuperación de fallo (totalCrashes > 0)
           const diag = handle.diagnostics();
           if (diag.totalCrashes > 0) {
             notify({
@@ -1269,9 +1286,9 @@ export function createPluginWorkerManager(
         });
       }
 
-      log.info({ pluginId }, "starting plugin worker");
+      log.info({ pluginId }, "arrancando worker de plugin");
 
-      // Set the lock before awaiting start() to prevent concurrent spawns
+      // Fija el lock antes de esperar start() para evitar spawns concurrentes
       const startPromise = handle.start().then(() => handle).finally(() => {
         startupLocks.delete(pluginId);
       });
@@ -1283,11 +1300,11 @@ export function createPluginWorkerManager(
     async stopWorker(pluginId: string): Promise<void> {
       const handle = workers.get(pluginId);
       if (!handle) {
-        log.warn({ pluginId }, "no worker registered for plugin, nothing to stop");
+        log.warn({ pluginId }, "no hay worker registrado para el plugin, nada que detener");
         return;
       }
 
-      log.info({ pluginId }, "stopping plugin worker");
+      log.info({ pluginId }, "deteniendo worker de plugin");
       await handle.stop();
       workers.delete(pluginId);
     },
@@ -1302,7 +1319,7 @@ export function createPluginWorkerManager(
     },
 
     async stopAll(): Promise<void> {
-      log.info({ count: workers.size }, "stopping all plugin workers");
+      log.info({ count: workers.size }, "deteniendo todos los workers de plugins");
       const promises = Array.from(workers.values()).map(async (handle) => {
         try {
           await handle.stop();
@@ -1312,7 +1329,7 @@ export function createPluginWorkerManager(
               pluginId: handle.pluginId,
               err: err instanceof Error ? err.message : String(err),
             },
-            "error stopping worker during shutdown",
+            "error deteniendo el worker durante el apagado",
           );
         }
       });
@@ -1333,7 +1350,7 @@ export function createPluginWorkerManager(
       const handle = workers.get(pluginId);
       if (!handle) {
         return Promise.reject(
-          new Error(`No worker registered for plugin "${pluginId}"`),
+          new Error(`No hay worker registrado para el plugin "${pluginId}"`),
         );
       }
       return handle.call(method, params, timeoutMs);

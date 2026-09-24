@@ -1,26 +1,26 @@
-/** a single rate-limit or usage window returned by a provider quota API */
+/** una ventana de límite de frecuencia o uso devuelta por la API de cuota de un proveedor */
 export interface QuotaWindow {
-  /** human label, e.g. "5h", "7d", "Sonnet 7d", "Credits" */
+  /** etiqueta legible, p. ej. "5h", "7d", "Sonnet 7d", "Credits" */
   label: string;
-  /** percent of the window already consumed (0-100), null when not reported */
+  /** porcentaje de la ventana ya consumido (0-100), null cuando no se reporta */
   usedPercent: number | null;
-  /** iso timestamp when this window resets, null when not reported */
+  /** marca de tiempo iso cuando esta ventana se reinicia, null cuando no se reporta */
   resetsAt: string | null;
-  /** free-form value label for credit-style windows, e.g. "$4.20 remaining" */
+  /** etiqueta de valor de formato libre para ventanas tipo crédito, p. ej. "$4.20 remaining" */
   valueLabel: string | null;
-  /** optional supporting text, e.g. reset details or provider-specific notes */
+  /** texto de apoyo opcional, p. ej. detalles de reinicio o notas específicas del proveedor */
   detail?: string | null;
 }
 
-/** result for one provider from the quota-windows endpoint */
+/** resultado de un proveedor del endpoint quota-windows */
 export interface ProviderQuotaResult {
-  /** provider slug, e.g. "anthropic", "openai" */
+  /** slug del proveedor, p. ej. "anthropic", "openai" */
   provider: string;
-  /** source label when the provider reports where the quota data came from */
+  /** etiqueta de fuente cuando el proveedor reporta de dónde provienen los datos de cuota */
   source?: string | null;
-  /** true when the fetch succeeded and windows is populated */
+  /** true cuando la consulta tuvo éxito y windows tiene datos */
   ok: boolean;
-  /** error message when ok is false */
+  /** mensaje de error cuando ok es false */
   error?: string;
   windows: QuotaWindow[];
 }

@@ -1,7 +1,7 @@
 /**
- * Server-side SVG renderer for Paperclip org charts.
- * Supports 5 visual styles: monochrome, nebula, circuit, warmth, schematic.
- * Pure SVG output — no browser/Playwright needed. PNG via sharp.
+ * Renderizador SVG del lado del servidor para organigramas de Paperclip.
+ * Soporta 5 estilos visuales: monochrome, nebula, circuit, warmth, schematic.
+ * Salida SVG pura — no se necesita navegador/Playwright. PNG vía sharp.
  */
 
 export interface OrgNode {
@@ -10,7 +10,7 @@ export interface OrgNode {
   role: string;
   status: string;
   reports: OrgNode[];
-  /** Populated by collapseTree: the flattened list of hidden descendants for avatar grid rendering. */
+  /** Poblado por collapseTree: la lista aplanada de descendientes ocultos para renderizado de cuadrícula de avatares. */
   collapsedReports?: OrgNode[];
 }
 
@@ -27,7 +27,7 @@ interface LayoutNode {
   children: LayoutNode[];
 }
 
-// ── Style theme definitions ──────────────────────────────────────
+// ── Definiciones de temas de estilo ──────────────────────────────
 
 interface StyleTheme {
   bgColor: string;
@@ -41,36 +41,36 @@ interface StyleTheme {
   roleColor: string;
   font: string;
   watermarkColor: string;
-  /** Extra SVG defs (filters, patterns, gradients) */
+  /** defs SVG extra (filtros, patrones, degradados) */
   defs: (svgW: number, svgH: number) => string;
-  /** Extra background elements after the main bg rect */
+  /** Elementos de fondo extra después del rect principal de fondo */
   bgExtras: (svgW: number, svgH: number) => string;
-  /** Custom card renderer — if null, uses default avatar+name+role */
+  /** Renderizador de tarjeta personalizado — si es null, usa el avatar+nombre+rol por defecto */
   renderCard: ((ln: LayoutNode, theme: StyleTheme) => string) | null;
-  /** Per-card accent (top bar, border glow, etc.) */
+  /** Acento por tarjeta (barra superior, brillo de borde, etc.) */
   cardAccent: ((tag: string) => string) | null;
 }
 
-// ── Role config with Twemoji SVG inlines (viewBox 0 0 36 36) ─────
+// ── Config de roles con Twemoji SVG en línea (viewBox 0 0 36 36) ─────
 //
-// Each `emojiSvg` contains the inner SVG paths from Twemoji (CC-BY 4.0).
-// These render as colorful emoji-style icons inside the avatar circle,
-// without needing a browser or emoji font.
+// Cada `emojiSvg` contiene las rutas SVG internas de Twemoji (CC-BY 4.0).
+// Estas se renderizan como íconos coloridos estilo emoji dentro del círculo del avatar,
+// sin necesitar un navegador ni fuente de emoji.
 
 const ROLE_ICONS: Record<string, {
   bg: string;
   roleLabel: string;
   accentColor: string;
-  /** Twemoji inner SVG content (paths only, viewBox 0 0 36 36) */
+  /** Contenido SVG interno de Twemoji (solo rutas, viewBox 0 0 36 36) */
   emojiSvg: string;
-  /** Fallback monochrome icon path (16×16 viewBox) for minimal rendering */
+  /** Ruta de ícono monocromático de fallback (viewBox 16×16) para renderizado mínimo */
   iconPath: string;
   iconColor: string;
 }> = {
   ceo: {
     bg: "#fef3c7", roleLabel: "Chief Executive", accentColor: "#f0883e", iconColor: "#92400e",
     iconPath: "M8 1l2.2 4.5L15 6.2l-3.5 3.4.8 4.9L8 12.2 3.7 14.5l.8-4.9L1 6.2l4.8-.7z",
-    // 👑 Crown
+    // 👑 Corona
     emojiSvg: `<path fill="#F4900C" d="M14.174 17.075L6.75 7.594l-3.722 9.481z"/><path fill="#F4900C" d="M17.938 5.534l-6.563 12.389H24.5z"/><path fill="#F4900C" d="M21.826 17.075l7.424-9.481 3.722 9.481z"/><path fill="#FFCC4D" d="M28.669 15.19L23.887 3.523l-5.88 11.668-.007.003-.007-.004-5.88-11.668L7.331 15.19C4.197 10.833 1.28 8.042 1.28 8.042S3 20.75 3 33h30c0-12.25 1.72-24.958 1.72-24.958s-2.917 2.791-6.051 7.148z"/><circle fill="#5C913B" cx="17.957" cy="22" r="3.688"/><circle fill="#981CEB" cx="26.463" cy="22" r="2.412"/><circle fill="#DD2E44" cx="32.852" cy="22" r="1.986"/><circle fill="#981CEB" cx="9.45" cy="22" r="2.412"/><circle fill="#DD2E44" cx="3.061" cy="22" r="1.986"/><path fill="#FFAC33" d="M33 34H3c-.552 0-1-.447-1-1s.448-1 1-1h30c.553 0 1 .447 1 1s-.447 1-1 1zm0-3.486H3c-.552 0-1-.447-1-1s.448-1 1-1h30c.553 0 1 .447 1 1s-.447 1-1 1z"/><circle fill="#FFCC4D" cx="1.447" cy="8.042" r="1.407"/><circle fill="#F4900C" cx="6.75" cy="7.594" r="1.192"/><circle fill="#FFCC4D" cx="12.113" cy="3.523" r="1.784"/><circle fill="#FFCC4D" cx="34.553" cy="8.042" r="1.407"/><circle fill="#F4900C" cx="29.25" cy="7.594" r="1.192"/><circle fill="#FFCC4D" cx="23.887" cy="3.523" r="1.784"/><circle fill="#F4900C" cx="17.938" cy="5.534" r="1.784"/>`,
   },
   cto: {
@@ -82,55 +82,55 @@ const ROLE_ICONS: Record<string, {
   cmo: {
     bg: "#dcfce7", roleLabel: "Marketing", accentColor: "#3fb950", iconColor: "#166534",
     iconPath: "M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM1 8h14M8 1c-2 2-3 4.5-3 7s1 5 3 7c2-2 3-4.5 3-7s-1-5-3-7z",
-    // 🌐 Globe with meridians
+    // 🌐 Globo con meridianos
     emojiSvg: `<path fill="#3B88C3" d="M18 0C8.059 0 0 8.059 0 18s8.059 18 18 18 18-8.059 18-18S27.941 0 18 0zM2.05 19h3.983c.092 2.506.522 4.871 1.229 7H4.158c-1.207-2.083-1.95-4.459-2.108-7zM19 8V2.081c2.747.436 5.162 2.655 6.799 5.919H19zm7.651 2c.754 2.083 1.219 4.46 1.317 7H19v-7h7.651zM17 2.081V8h-6.799C11.837 4.736 14.253 2.517 17 2.081zM17 10v7H8.032c.098-2.54.563-4.917 1.317-7H17zM6.034 17H2.05c.158-2.54.901-4.917 2.107-7h3.104c-.705 2.129-1.135 4.495-1.227 7zm1.998 2H17v7H9.349c-.754-2.083-1.219-4.459-1.317-7zM17 28v5.919c-2.747-.437-5.163-2.655-6.799-5.919H17zm2 5.919V28h6.8c-1.637 3.264-4.053 5.482-6.8 5.919zM19 26v-7h8.969c-.099 2.541-.563 4.917-1.317 7H19zm10.967-7h3.982c-.157 2.541-.9 4.917-2.107 7h-3.104c.706-2.129 1.136-4.494 1.229-7zm0-2c-.093-2.505-.523-4.871-1.229-7h3.104c1.207 2.083 1.95 4.46 2.107 7h-3.982zm.512-9h-2.503c-.717-1.604-1.606-3.015-2.619-4.199C27.346 4.833 29.089 6.267 30.479 8zM10.643 3.801C9.629 4.985 8.74 6.396 8.023 8H5.521c1.39-1.733 3.133-3.166 5.122-4.199zM5.521 28h2.503c.716 1.604 1.605 3.015 2.619 4.198C8.654 31.166 6.911 29.733 5.521 28zm19.836 4.198c1.014-1.184 1.902-2.594 2.619-4.198h2.503c-1.39 1.733-3.133 3.166-5.122 4.198z"/>`,
   },
   cfo: {
     bg: "#fef3c7", roleLabel: "Finance", accentColor: "#f0883e", iconColor: "#92400e",
     iconPath: "M8 1v14M5 4.5C5 3.1 6.3 2 8 2s3 1.1 3 2.5S9.7 7 8 7 5 8.1 5 9.5 6.3 12 8 12s3-1.1 3-2.5",
-    // 📊 Bar chart
+    // 📊 Gráfico de barras
     emojiSvg: `<path fill="#CCD6DD" d="M31 2H5C3.343 2 2 3.343 2 5v26c0 1.657 1.343 3 3 3h26c1.657 0 3-1.343 3-3V5c0-1.657-1.343-3-3-3z"/><path fill="#E1E8ED" d="M31 1H5C2.791 1 1 2.791 1 5v26c0 2.209 1.791 4 4 4h26c2.209 0 4-1.791 4-4V5c0-2.209-1.791-4-4-4zm0 2c1.103 0 2 .897 2 2v4h-6V3h4zm-4 16h6v6h-6v-6zm0-2v-6h6v6h-6zM25 3v6h-6V3h6zm-6 8h6v6h-6v-6zm0 8h6v6h-6v-6zM17 3v6h-6V3h6zm-6 8h6v6h-6v-6zm0 8h6v6h-6v-6zM3 5c0-1.103.897-2 2-2h4v6H3V5zm0 6h6v6H3v-6zm0 8h6v6H3v-6zm2 14c-1.103 0-2-.897-2-2v-4h6v6H5zm6 0v-6h6v6h-6zm8 0v-6h6v6h-6zm12 0h-4v-6h6v4c0 1.103-.897 2-2 2z"/><path fill="#5C913B" d="M13 33H7V16c0-1.104.896-2 2-2h2c1.104 0 2 .896 2 2v17z"/><path fill="#3B94D9" d="M29 33h-6V9c0-1.104.896-2 2-2h2c1.104 0 2 .896 2 2v24z"/><path fill="#DD2E44" d="M21 33h-6V23c0-1.104.896-2 2-2h2c1.104 0 2 .896 2 2v10z"/>`,
   },
   coo: {
     bg: "#e0f2fe", roleLabel: "Operations", accentColor: "#58a6ff", iconColor: "#075985",
     iconPath: "M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z",
-    // ⚙️ Gear
+    // ⚙️ Engranaje
     emojiSvg: `<path fill="#66757F" d="M34 15h-3.362c-.324-1.369-.864-2.651-1.582-3.814l2.379-2.379c.781-.781.781-2.048 0-2.829l-1.414-1.414c-.781-.781-2.047-.781-2.828 0l-2.379 2.379C23.65 6.225 22.369 5.686 21 5.362V2c0-1.104-.896-2-2-2h-2c-1.104 0-2 .896-2 2v3.362c-1.369.324-2.651.864-3.814 1.582L8.808 4.565c-.781-.781-2.048-.781-2.828 0L4.565 5.979c-.781.781-.781 2.048-.001 2.829l2.379 2.379C6.225 12.35 5.686 13.632 5.362 15H2c-1.104 0-2 .896-2 2v2c0 1.104.896 2 2 2h3.362c.324 1.368.864 2.65 1.582 3.813l-2.379 2.379c-.78.78-.78 2.048.001 2.829l1.414 1.414c.78.78 2.047.78 2.828 0l2.379-2.379c1.163.719 2.445 1.258 3.814 1.582V34c0 1.104.896 2 2 2h2c1.104 0 2-.896 2-2v-3.362c1.368-.324 2.65-.864 3.813-1.582l2.379 2.379c.781.781 2.047.781 2.828 0l1.414-1.414c.781-.781.781-2.048 0-2.829l-2.379-2.379c.719-1.163 1.258-2.445 1.582-3.814H34c1.104 0 2-.896 2-2v-2C36 15.896 35.104 15 34 15zM18 26c-4.418 0-8-3.582-8-8s3.582-8 8-8 8 3.582 8 8-3.582 8-8 8z"/>`,
   },
   engineer: {
     bg: "#f3e8ff", roleLabel: "Engineering", accentColor: "#bc8cff", iconColor: "#6b21a8",
     iconPath: "M5 3L1 8l4 5M11 3l4 5-4 5",
-    // ⌨️ Keyboard
+    // ⌨️ Teclado
     emojiSvg: `<path fill="#99AAB5" d="M36 28c0 1.104-.896 2-2 2H2c-1.104 0-2-.896-2-2V12c0-1.104.896-2 2-2h32c1.104 0 2 .896 2 2v16z"/><path d="M5.5 19c0 .553-.448 1-1 1h-1c-.552 0-1-.447-1-1v-1c0-.553.448-1 1-1h1c.552 0 1 .447 1 1v1zm4 0c0 .553-.448 1-1 1h-1c-.552 0-1-.447-1-1v-1c0-.553.448-1 1-1h1c.552 0 1 .447 1 1v1zm4 0c0 .553-.448 1-1 1h-1c-.552 0-1-.447-1-1v-1c0-.553.448-1 1-1h1c.552 0 1 .447 1 1v1zm4 0c0 .553-.448 1-1 1h-1c-.552 0-1-.447-1-1v-1c0-.553.448-1 1-1h1c.552 0 1 .447 1 1v1zm4 0c0 .553-.447 1-1 1h-1c-.553 0-1-.447-1-1v-1c0-.553.447-1 1-1h1c.553 0 1 .447 1 1v1zm4 0c0 .553-.447 1-1 1h-1c-.553 0-1-.447-1-1v-1c0-.553.447-1 1-1h1c.553 0 1 .447 1 1v1zm4 0c0 .553-.447 1-1 1h-1c-.553 0-1-.447-1-1v-1c0-.553.447-1 1-1h1c.553 0 1 .447 1 1v1zm4 0c0 .553-.447 1-1 1h-1c-.553 0-1-.447-1-1v-1c0-.553.447-1 1-1h1c.553 0 1 .447 1 1v1zm-26 4c0 .553-.448 1-1 1h-1c-.552 0-1-.447-1-1v-1c0-.553.448-1 1-1h1c.552 0 1 .447 1 1v1zm4 0c0 .553-.448 1-1 1h-1c-.552 0-1-.447-1-1v-1c0-.553.448-1 1-1h1c.552 0 1 .447 1 1v1zm4 0c0 .553-.448 1-1 1h-1c-.552 0-1-.447-1-1v-1c0-.553.448-1 1-1h1c.552 0 1 .447 1 1v1zm4 0c0 .553-.447 1-1 1h-1c-.552 0-1-.447-1-1v-1c0-.553.448-1 1-1h1c.553 0 1 .447 1 1v1zm4 0c0 .553-.447 1-1 1h-1c-.553 0-1-.447-1-1v-1c0-.553.447-1 1-1h1c.553 0 1 .447 1 1v1zm4 0c0 .553-.447 1-1 1h-1c-.553 0-1-.447-1-1v-1c0-.553.447-1 1-1h1c.553 0 1 .447 1 1v1zm4 0c0 .553-.447 1-1 1h-1c-.553 0-1-.447-1-1v-1c0-.553.447-1 1-1h1c.553 0 1 .447 1 1v1zM10 27c0 .553-.448 1-1 1H7c-.552 0-1-.447-1-1v-1c0-.553.448-1 1-1h2c.552 0 1 .447 1 1v1zm20 0c0 .553-.447 1-1 1h-2c-.553 0-1-.447-1-1v-1c0-.553.447-1 1-1h2c.553 0 1 .447 1 1v1zm-5 0c0 .553-.447 1-1 1H12c-.552 0-1-.447-1-1v-1c0-.553.448-1 1-1h12c.553 0 1 .447 1 1v1zM5.5 13.083c0 .552-.448 1-1 1h-1c-.552 0-1-.448-1-1s.448-1 1-1h1c.552 0 1 .448 1 1zm4 0c0 .552-.448 1-1 1h-1c-.552 0-1-.448-1-1s.448-1 1-1h1c.552 0 1 .448 1 1zm4 0c0 .552-.448 1-1 1h-1c-.552 0-1-.448-1-1s.448-1 1-1h1c.552 0 1 .448 1 1zm4 0c0 .552-.448 1-1 1h-1c-.552 0-1-.448-1-1s.448-1 1-1h1c.552 0 1 .448 1 1zm4 0c0 .552-.447 1-1 1h-1c-.553 0-1-.448-1-1s.447-1 1-1h1c.553 0 1 .448 1 1zm4 0c0 .552-.447 1-1 1h-1c-.553 0-1-.448-1-1s.447-1 1-1h1c.553 0 1 .448 1 1zm4 0c0 .552-.447 1-1 1h-1c-.553 0-1-.448-1-1s.447-1 1-1h1c.553 0 1 .448 1 1zm4 0c0 .552-.447 1-1 1h-1c-.553 0-1-.448-1-1s.447-1 1-1h1c.553 0 1 .448 1 1z" fill="#292F33"/>`,
   },
   quality: {
     bg: "#ffe4e6", roleLabel: "Quality", accentColor: "#f778ba", iconColor: "#9f1239",
     iconPath: "M4 8l3 3 5-6M8 1L2 4v4c0 3.5 2.6 6.8 6 8 3.4-1.2 6-4.5 6-8V4z",
-    // 🔬 Microscope
+    // 🔬 Microscopio
     emojiSvg: `<g fill="#66757F"><path d="M19.78 21.345l-6.341-6.342-.389 4.38 2.35 2.351z"/><path d="M15.4 22.233c-.132 0-.259-.053-.354-.146l-2.351-2.351c-.104-.104-.158-.25-.145-.397l.389-4.38c.017-.193.145-.359.327-.425.182-.067.388-.021.524.116l6.341 6.342c.138.138.183.342.116.524s-.232.31-.426.327l-4.379.389-.042.001zm-1.832-3.039l2.021 2.021 3.081-.273-4.828-4.828-.274 3.08z"/></g><path fill="#8899A6" d="M31 32h-3c0-3.314-2.63-6-5.875-6-3.244 0-5.875 2.686-5.875 6H8.73c0-1.104-.895-2-2-2-1.104 0-2 .896-2 2-1.104 0-2 .896-2 2s.896 2 2 2H31c1.104 0 2-.896 2-2s-.896-2-2-2z"/><path fill="#8899A6" d="M20 10v4c3.866 0 7 3.134 7 7s-3.134 7-7 7h-8.485c2.018 2.443 5.069 4 8.485 4 6.075 0 11-4.925 11-11s-4.925-11-11-11z"/><path fill="#67757F" d="M16.414 30.414c-.781.781-2.047.781-2.828 0l-9.899-9.9c-.781-.781-.781-2.047 0-2.828.781-.781 2.047-.781 2.829 0l9.899 9.9c.78.781.78 2.047-.001 2.828zm-7.225-1.786c.547-.077 1.052.304 1.129.851.077.547-.305 1.053-.851 1.129l-5.942.834c-.547.077-1.052-.305-1.129-.851-.077-.547.305-1.053.852-1.13l5.941-.833z"/><path fill="#66757F" d="M27.341 2.98l4.461 4.461-3.806 3.807-4.461-4.461z"/><path fill="#AAB8C2" d="M34.037 7.083c-.827.827-2.17.827-2.997 0l-3.339-3.34c-.827-.826-.827-2.169 0-2.996.827-.826 2.17-.826 2.995 0l3.342 3.34c.826.827.826 2.168-.001 2.996zm-14.56 15.026l-6.802-6.803c-.389-.389-.389-1.025 0-1.414l9.858-9.858c.389-.389 1.025-.389 1.414 0l6.801 6.803c.389.389.389 1.025 0 1.414l-9.858 9.858c-.388.389-1.024.389-1.413 0z"/><path fill="#E1E8ED" d="M13.766 12.8l1.638-1.637 8.216 8.216-1.638 1.637z"/>`,
   },
   design: {
     bg: "#fce7f3", roleLabel: "Design", accentColor: "#79c0ff", iconColor: "#9d174d",
     iconPath: "M12 2l2 2-9 9H3v-2zM9.5 4.5l2 2",
-    // 🪄 Magic wand
+    // 🪄 Varita mágica
     emojiSvg: `<path fill="#292F33" d="M3.651 29.852L29.926 3.576c.391-.391 2.888 2.107 2.497 2.497L6.148 32.349c-.39.391-2.888-2.107-2.497-2.497z"/><path fill="#66757F" d="M30.442 4.051L4.146 30.347l.883.883L31.325 4.934z"/><path fill="#E1E8ED" d="M34.546 2.537l-.412-.412-.671-.671c-.075-.075-.165-.123-.255-.169-.376-.194-.844-.146-1.159.169l-2.102 2.102.495.495.883.883 1.119 1.119 2.102-2.102c.391-.391.391-1.024 0-1.414zM5.029 31.23l-.883-.883-.495-.495-2.209 2.208c-.315.315-.363.783-.169 1.159.046.09.094.18.169.255l.671.671.412.412c.391.391 1.024.391 1.414 0l2.208-2.208-1.118-1.119z"/><path fill="#F5F8FA" d="M31.325 4.934l2.809-2.809-.671-.671c-.075-.075-.165-.123-.255-.169l-2.767 2.767.884.882zM4.146 30.347L1.273 33.22c.046.09.094.18.169.255l.671.671 2.916-2.916-.883-.883z"/><path d="M28.897 14.913l1.542-.571.6-2.2c.079-.29.343-.491.644-.491.3 0 .564.201.643.491l.6 2.2 1.542.571c.262.096.435.346.435.625s-.173.529-.435.625l-1.534.568-.605 2.415c-.074.296-.341.505-.646.505-.306 0-.573-.209-.647-.505l-.605-2.415-1.534-.568c-.262-.096-.435-.346-.435-.625 0-.278.173-.528.435-.625M11.961 5.285l2.61-.966.966-2.61c.16-.433.573-.72 1.035-.72.461 0 .874.287 1.035.72l.966 2.61 2.609.966c.434.161.721.573.721 1.035 0 .462-.287.874-.721 1.035l-2.609.966-.966 2.61c-.161.433-.574.72-1.035.72-.462 0-.875-.287-1.035-.72l-.966-2.61-2.61-.966c-.433-.161-.72-.573-.72-1.035.001-.462.288-.874.72-1.035M24.13 20.772l1.383-.512.512-1.382c.085-.229.304-.381.548-.381.244 0 .463.152.548.381l.512 1.382 1.382.512c.23.085.382.304.382.548 0 .245-.152.463-.382.548l-1.382.512-.512 1.382c-.085.229-.304.381-.548.381-.245 0-.463-.152-.548-.381l-.512-1.382-1.383-.512c-.229-.085-.381-.304-.381-.548 0-.245.152-.463.381-.548" fill="#FFAC33"/>`,
   },
   finance: {
     bg: "#fef3c7", roleLabel: "Finance", accentColor: "#f0883e", iconColor: "#92400e",
     iconPath: "M8 1v14M5 4.5C5 3.1 6.3 2 8 2s3 1.1 3 2.5S9.7 7 8 7 5 8.1 5 9.5 6.3 12 8 12s3-1.1 3-2.5",
-    // 📊 Bar chart (same as CFO)
+    // 📊 Gráfico de barras (igual que CFO)
     emojiSvg: `<path fill="#CCD6DD" d="M31 2H5C3.343 2 2 3.343 2 5v26c0 1.657 1.343 3 3 3h26c1.657 0 3-1.343 3-3V5c0-1.657-1.343-3-3-3z"/><path fill="#E1E8ED" d="M31 1H5C2.791 1 1 2.791 1 5v26c0 2.209 1.791 4 4 4h26c2.209 0 4-1.791 4-4V5c0-2.209-1.791-4-4-4zm0 2c1.103 0 2 .897 2 2v4h-6V3h4zm-4 16h6v6h-6v-6zm0-2v-6h6v6h-6zM25 3v6h-6V3h6zm-6 8h6v6h-6v-6zm0 8h6v6h-6v-6zM17 3v6h-6V3h6zm-6 8h6v6h-6v-6zm0 8h6v6h-6v-6zM3 5c0-1.103.897-2 2-2h4v6H3V5zm0 6h6v6H3v-6zm0 8h6v6H3v-6zm2 14c-1.103 0-2-.897-2-2v-4h6v6H5zm6 0v-6h6v6h-6zm8 0v-6h6v6h-6zm12 0h-4v-6h6v4c0 1.103-.897 2-2 2z"/><path fill="#5C913B" d="M13 33H7V16c0-1.104.896-2 2-2h2c1.104 0 2 .896 2 2v17z"/><path fill="#3B94D9" d="M29 33h-6V9c0-1.104.896-2 2-2h2c1.104 0 2 .896 2 2v24z"/><path fill="#DD2E44" d="M21 33h-6V23c0-1.104.896-2 2-2h2c1.104 0 2 .896 2 2v10z"/>`,
   },
   operations: {
     bg: "#e0f2fe", roleLabel: "Operations", accentColor: "#58a6ff", iconColor: "#075985",
     iconPath: "M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z",
-    // ⚙️ Gear (same as COO)
+    // ⚙️ Engranaje (igual que COO)
     emojiSvg: `<path fill="#66757F" d="M34 15h-3.362c-.324-1.369-.864-2.651-1.582-3.814l2.379-2.379c.781-.781.781-2.048 0-2.829l-1.414-1.414c-.781-.781-2.047-.781-2.828 0l-2.379 2.379C23.65 6.225 22.369 5.686 21 5.362V2c0-1.104-.896-2-2-2h-2c-1.104 0-2 .896-2 2v3.362c-1.369.324-2.651.864-3.814 1.582L8.808 4.565c-.781-.781-2.048-.781-2.828 0L4.565 5.979c-.781.781-.781 2.048-.001 2.829l2.379 2.379C6.225 12.35 5.686 13.632 5.362 15H2c-1.104 0-2 .896-2 2v2c0 1.104.896 2 2 2h3.362c.324 1.368.864 2.65 1.582 3.813l-2.379 2.379c-.78.78-.78 2.048.001 2.829l1.414 1.414c.78.78 2.047.78 2.828 0l2.379-2.379c1.163.719 2.445 1.258 3.814 1.582V34c0 1.104.896 2 2 2h2c1.104 0 2-.896 2-2v-3.362c1.368-.324 2.65-.864 3.813-1.582l2.379 2.379c.781.781 2.047.781 2.828 0l1.414-1.414c.781-.781.781-2.048 0-2.829l-2.379-2.379c.719-1.163 1.258-2.445 1.582-3.814H34c1.104 0 2-.896 2-2v-2C36 15.896 35.104 15 34 15zM18 26c-4.418 0-8-3.582-8-8s3.582-8 8-8 8 3.582 8 8-3.582 8-8 8z"/>`,
   },
   default: {
     bg: "#f3e8ff", roleLabel: "Agent", accentColor: "#bc8cff", iconColor: "#6b21a8",
     iconPath: "M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2 14c0-3.3 2.7-4 6-4s6 .7 6 4",
-    // 👤 Person silhouette
+    // 👤 Silueta de persona
     emojiSvg: `<path fill="#269" d="M24 26.799v-2.566c2-1.348 4.08-3.779 4.703-6.896.186.103.206.17.413.17.991 0 1.709-1.287 1.709-2.873 0-1.562-.823-2.827-1.794-2.865.187-.674.293-1.577.293-2.735C29.324 5.168 26 .527 18.541.527c-6.629 0-10.777 4.641-10.777 8.507 0 1.123.069 2.043.188 2.755-.911.137-1.629 1.352-1.629 2.845 0 1.587.804 2.873 1.796 2.873.206 0 .025-.067.209-.17C8.952 20.453 11 22.885 13 24.232v2.414c-5 .645-12 3.437-12 6.23v1.061C1 35 2.076 35 3.137 35h29.725C33.924 35 35 35 35 33.938v-1.061c0-2.615-6-5.225-11-6.078z"/>`,
   },
 };
@@ -156,10 +156,10 @@ function getRoleInfo(node: OrgNode) {
   return { tag, ...(ROLE_ICONS[tag] || ROLE_ICONS.default) };
 }
 
-// ── Style themes ─────────────────────────────────────────────────
+// ── Temas de estilo ──────────────────────────────────────────────
 
 const THEMES: Record<OrgChartStyle, StyleTheme> = {
-  // 01 — Monochrome (Vercel-inspired, dark minimal)
+  // 01 — Monochrome (inspirado en Vercel, oscuro minimalista)
   monochrome: {
     bgColor: "#18181b",
     cardBg: "#18181b",
@@ -178,7 +178,7 @@ const THEMES: Record<OrgChartStyle, StyleTheme> = {
     cardAccent: null,
   },
 
-  // 02 — Nebula (glassmorphism on cosmic gradient)
+  // 02 — Nebula (glassmorphism sobre degradado cósmico)
   nebula: {
     bgColor: "#0f0c29",
     cardBg: "rgba(255,255,255,0.07)",
@@ -213,7 +213,7 @@ const THEMES: Record<OrgChartStyle, StyleTheme> = {
     cardAccent: null,
   },
 
-  // 03 — Circuit (Linear/Raycast — indigo traces, amethyst CEO)
+  // 03 — Circuit (Linear/Raycast — trazas índigo, CEO amatista)
   circuit: {
     bgColor: "#0c0c0e",
     cardBg: "rgba(99,102,241,0.04)",
@@ -249,7 +249,7 @@ const THEMES: Record<OrgChartStyle, StyleTheme> = {
     cardAccent: null,
   },
 
-  // 04 — Warmth (Airbnb — light, colored avatars, soft shadows)
+  // 04 — Warmth (Airbnb — claro, avatares de colores, sombras suaves)
   warmth: {
     bgColor: "#fafaf9",
     cardBg: "#ffffff",
@@ -268,7 +268,7 @@ const THEMES: Record<OrgChartStyle, StyleTheme> = {
     cardAccent: null,
   },
 
-  // 05 — Schematic (Blueprint — grid bg, monospace, colored top-bars)
+  // 05 — Schematic (Blueprint — fondo de cuadrícula, monoespaciado, barras superiores de colores)
   schematic: {
     bgColor: "#0d1117",
     cardBg: "rgba(13,17,23,0.92)",
@@ -290,7 +290,7 @@ const THEMES: Record<OrgChartStyle, StyleTheme> = {
       const { tag, accentColor, emojiSvg } = getRoleInfo(ln.node);
       const cx = ln.x + ln.width / 2;
 
-      // Schematic uses monospace role labels
+      // Schematic usa etiquetas de rol monoespaciadas
       const schemaRoles: Record<string, string> = {
         ceo: "chief_executive", cto: "chief_technology", cmo: "chief_marketing",
         cfo: "chief_financial", coo: "chief_operating", engineer: "engineer",
@@ -315,7 +315,7 @@ const THEMES: Record<OrgChartStyle, StyleTheme> = {
   },
 };
 
-// ── Layout constants ─────────────────────────────────────────────
+// ── Constantes de layout ─────────────────────────────────────────
 
 const CARD_H = 96;
 const CARD_MIN_W = 150;
@@ -324,7 +324,7 @@ const AVATAR_SIZE = 34;
 const GAP_X = 24;
 const GAP_Y = 56;
 
-// ── Collapsed avatar grid constants ─────────────────────────────
+// ── Constantes de cuadrícula de avatares colapsada ──────────────
 const MINI_AVATAR_SIZE = 14;
 const MINI_AVATAR_GAP = 6;
 const MINI_AVATAR_PADDING = 10;
@@ -332,24 +332,24 @@ const MINI_AVATAR_MAX_COLS = 8; // max avatars per row in the grid
 const PADDING = 48;
 const LOGO_PADDING = 16;
 
-// ── Text measurement ─────────────────────────────────────────────
+// ── Medición de texto ────────────────────────────────────────────
 
 function measureText(text: string, fontSize: number): number {
   return text.length * fontSize * 0.58;
 }
 
-/** Calculate how many rows the avatar grid needs. */
+/** Calcula cuántas filas necesita la cuadrícula de avatares. */
 function avatarGridRows(count: number): number {
   return Math.ceil(count / MINI_AVATAR_MAX_COLS);
 }
 
-/** Width needed for the avatar grid. */
+/** Ancho necesario para la cuadrícula de avatares. */
 function avatarGridWidth(count: number): number {
   const cols = Math.min(count, MINI_AVATAR_MAX_COLS);
   return cols * (MINI_AVATAR_SIZE + MINI_AVATAR_GAP) - MINI_AVATAR_GAP + MINI_AVATAR_PADDING * 2;
 }
 
-/** Height of the avatar grid area. */
+/** Alto del área de la cuadrícula de avatares. */
 function avatarGridHeight(count: number): number {
   if (count === 0) return 0;
   const rows = avatarGridRows(count);
@@ -362,7 +362,7 @@ function cardWidth(node: OrgNode): number {
   const nameW = measureText(node.name, 14) + CARD_PAD_X * 2;
   const roleW = measureText(roleLabel, 11) + CARD_PAD_X * 2;
   let w = Math.max(CARD_MIN_W, Math.max(nameW, roleW));
-  // Widen for avatar grid if needed
+  // Ensancha para la cuadrícula de avatares si es necesario
   if (node.collapsedReports && node.collapsedReports.length > 0) {
     w = Math.max(w, avatarGridWidth(node.collapsedReports.length));
   }
@@ -376,7 +376,7 @@ function cardHeight(node: OrgNode): number {
   return CARD_H;
 }
 
-// ── Tree layout (top-down, centered) ─────────────────────────────
+// ── Layout de árbol (de arriba hacia abajo, centrado) ────────────
 
 function subtreeWidth(node: OrgNode): number {
   const cw = cardWidth(node);
@@ -417,13 +417,13 @@ function layoutTree(node: OrgNode, x: number, y: number): LayoutNode {
   return layoutNode;
 }
 
-// ── SVG rendering ────────────────────────────────────────────────
+// ── Renderizado SVG ──────────────────────────────────────────────
 
 function escapeXml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-/** Render a colorful Twemoji inside a circle at (cx, cy) with given radius */
+/** Renderiza un Twemoji colorido dentro de un círculo en (cx, cy) con el radio dado */
 function renderEmojiAvatar(cx: number, cy: number, radius: number, bgFill: string, emojiSvg: string, bgStroke?: string): string {
   const emojiSize = radius * 1.3; // emoji fills most of the circle
   const emojiX = cx - emojiSize / 2;
@@ -434,7 +434,7 @@ function renderEmojiAvatar(cx: number, cy: number, radius: number, bgFill: strin
 }
 
 function defaultRenderCard(ln: LayoutNode, theme: StyleTheme): string {
-  // Overflow placeholder card: just shows "+N more" text, no avatar
+  // Tarjeta placeholder de desbordamiento: solo muestra el texto "+N más", sin avatar
   if (ln.node.role === "overflow") {
     const cx = ln.x + ln.width / 2;
     const cy = ln.y + ln.height / 2;
@@ -445,7 +445,7 @@ function defaultRenderCard(ln: LayoutNode, theme: StyleTheme): string {
   }
 
   const { roleLabel: defaultRoleLabel, bg, emojiSvg } = getRoleInfo(ln.node);
-  // Use node.role directly when it's a collapse badge (e.g. "×15 reports")
+  // Usa node.role directamente cuando es un badge de colapso (p. ej. "×15 reportes")
   const roleLabel = ln.node.role.startsWith("×") ? ln.node.role : defaultRoleLabel;
   const cx = ln.x + ln.width / 2;
 
@@ -464,12 +464,12 @@ function defaultRenderCard(ln: LayoutNode, theme: StyleTheme): string {
       </filter>`
     : "";
 
-  // For dark themes without avatars, use a subtle circle
+  // Para temas oscuros sin avatares, usa un círculo sutil
   const isLight = theme.bgColor === "#fafaf9" || theme.bgColor === "#ffffff";
   const avatarBg = isLight ? bg : "rgba(255,255,255,0.06)";
   const avatarStroke = isLight ? undefined : "rgba(255,255,255,0.08)";
 
-  // Render collapsed avatar grid if this node has hidden reports
+  // Renderiza la cuadrícula de avatares colapsada si este nodo tiene reportes ocultos
   let avatarGridSvg = "";
   const collapsed = ln.node.collapsedReports;
   if (collapsed && collapsed.length > 0) {
@@ -555,7 +555,7 @@ function treeBounds(ln: LayoutNode): { minX: number; minY: number; maxX: number;
   return { minX, minY, maxX, maxY };
 }
 
-// Paperclip logo: scaled icon (~16px) + wordmark (13px), vertically centered
+// Logo de Paperclip: ícono escalado (~16px) + wordmark (13px), centrado verticalmente
 const PAPERCLIP_LOGO_SVG = `<g>
   <g transform="scale(0.72)" transform-origin="0 0">
     <path stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" d="m18 4-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/>
@@ -563,20 +563,20 @@ const PAPERCLIP_LOGO_SVG = `<g>
   <text x="22" y="11.5" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" fill="currentColor">Paperclip</text>
 </g>`;
 
-// ── Public API ───────────────────────────────────────────────────
+// ── API pública ──────────────────────────────────────────────────
 
-// GitHub recommended social media preview dimensions
+// Dimensiones recomendadas por GitHub para vista previa en redes sociales
 const TARGET_W = 1280;
 const TARGET_H = 640;
 
 export interface OrgChartOverlay {
-  /** Company name displayed top-left */
+  /** Nombre de la empresa mostrado arriba a la izquierda */
   companyName?: string;
-  /** Summary stats displayed bottom-right, e.g. "Agents: 5, Skills: 8" */
+  /** Estadísticas de resumen mostradas abajo a la derecha, p. ej. "Agents: 5, Skills: 8" */
   stats?: string;
 }
 
-/** Count total nodes in a tree. */
+/** Cuenta los nodos totales de un árbol. */
 function countNodes(nodes: OrgNode[]): number {
   let count = 0;
   for (const n of nodes) {
@@ -585,14 +585,14 @@ function countNodes(nodes: OrgNode[]): number {
   return count;
 }
 
-/** Threshold: auto-collapse orgs larger than this. */
+/** Umbral: auto-colapsa organigramas más grandes que esto. */
 const COLLAPSE_THRESHOLD = 20;
-/** Max cards that can fit across the 1280px image. */
+/** Máximo de tarjetas que caben a lo ancho de la imagen de 1280px. */
 const MAX_LEVEL_WIDTH = 8;
-/** Max children shown per parent before truncation with "and N more". */
+/** Máximo de hijos mostrados por padre antes de truncar con "y N más". */
 const MAX_CHILDREN_SHOWN = 6;
 
-/** Flatten all descendants of a node into a single list. */
+/** Aplana todos los descendientes de un nodo en una sola lista. */
 function flattenDescendants(nodes: OrgNode[]): OrgNode[] {
   const result: OrgNode[] = [];
   for (const n of nodes) {
@@ -602,7 +602,7 @@ function flattenDescendants(nodes: OrgNode[]): OrgNode[] {
   return result;
 }
 
-/** Collect all nodes at a given depth in the tree. */
+/** Recolecta todos los nodos a una profundidad dada en el árbol. */
 function nodesAtDepth(nodes: OrgNode[], depth: number): OrgNode[] {
   if (depth === 0) return nodes;
   const result: OrgNode[] = [];
@@ -613,8 +613,8 @@ function nodesAtDepth(nodes: OrgNode[], depth: number): OrgNode[] {
 }
 
 /**
- * Estimate how many cards would be shown at the next level if we expand,
- * considering truncation (each parent shows at most MAX_CHILDREN_SHOWN + 1 placeholder).
+ * Estima cuántas tarjetas se mostrarían en el siguiente nivel si expandimos,
+ * considerando la truncación (cada padre muestra como máximo MAX_CHILDREN_SHOWN + 1 placeholder).
  */
 function estimateNextLevelWidth(parentNodes: OrgNode[]): number {
   let total = 0;
@@ -627,22 +627,22 @@ function estimateNextLevelWidth(parentNodes: OrgNode[]): number {
 }
 
 /**
- * Collapse a node's children to avatar dots (for wide levels that can't expand).
+ * Colapsa los hijos de un nodo a puntos de avatar (para niveles anchos que no pueden expandirse).
  */
 function collapseToAvatars(node: OrgNode): OrgNode {
   const childCount = countNodes(node.reports ?? []);
   if (childCount === 0) return node;
   return {
     ...node,
-    role: `×${childCount} reports`,
+    role: `×${childCount} reportes`,
     collapsedReports: flattenDescendants(node.reports ?? []),
     reports: [],
   };
 }
 
 /**
- * Truncate a node's children: keep first MAX_CHILDREN_SHOWN, replace rest with
- * a summary "and N more" placeholder node (rendered as a count card).
+ * Trunca los hijos de un nodo: conserva los primeros MAX_CHILDREN_SHOWN, reemplaza el resto con
+ * un nodo placeholder de resumen "y N más" (renderizado como tarjeta de conteo).
  */
 function truncateChildren(node: OrgNode): OrgNode {
   const children = node.reports ?? [];
@@ -651,7 +651,7 @@ function truncateChildren(node: OrgNode): OrgNode {
   const hiddenCount = children.length - MAX_CHILDREN_SHOWN;
   const placeholder: OrgNode = {
     id: `${node.id}-more`,
-    name: `+${hiddenCount} more`,
+    name: `+${hiddenCount} más`,
     role: "overflow",
     status: "active",
     reports: [],
@@ -660,16 +660,16 @@ function truncateChildren(node: OrgNode): OrgNode {
 }
 
 /**
- * Adaptive collapse: expands levels as long as they fit, truncates or collapses
- * when a level is too wide.
+ * Colapso adaptativo: expande niveles mientras quepan, trunca o colapsa
+ * cuando un nivel es demasiado ancho.
  */
 function smartCollapseTree(roots: OrgNode[]): OrgNode[] {
-  // Deep clone so we can mutate
+  // Clon profundo para poder mutar
   const clone = (nodes: OrgNode[]): OrgNode[] =>
     nodes.map((n) => ({ ...n, reports: clone(n.reports ?? []) }));
   const tree = clone(roots);
 
-  // Walk levels from root down
+  // Recorre niveles desde la raíz hacia abajo
   for (let depth = 0; depth < 10; depth++) {
     const parents = nodesAtDepth(tree, depth);
     const parentsWithChildren = parents.filter((p) => (p.reports ?? []).length > 0);
@@ -677,7 +677,7 @@ function smartCollapseTree(roots: OrgNode[]): OrgNode[] {
 
     const nextWidth = estimateNextLevelWidth(parentsWithChildren);
     if (nextWidth <= MAX_LEVEL_WIDTH) {
-      // Next level fits with truncation — truncate oversized parents, then continue deeper
+  // El siguiente nivel cabe con truncación — trunca padres sobredimensionados, luego continúa más profundo
       for (const p of parentsWithChildren) {
         if ((p.reports ?? []).length > MAX_CHILDREN_SHOWN) {
           const truncated = truncateChildren(p);
@@ -687,7 +687,7 @@ function smartCollapseTree(roots: OrgNode[]): OrgNode[] {
       continue;
     }
 
-    // Next level is too wide — collapse all children at this level to avatars
+  // El siguiente nivel es demasiado ancho — colapsa todos los hijos de este nivel a avatares
     for (const p of parentsWithChildren) {
       const collapsed = collapseToAvatars(p);
       p.role = collapsed.role;
@@ -703,7 +703,7 @@ function smartCollapseTree(roots: OrgNode[]): OrgNode[] {
 export function renderOrgChartSvg(orgTree: OrgNode[], style: OrgChartStyle = "warmth", overlay?: OrgChartOverlay): string {
   const theme = THEMES[style] || THEMES.warmth;
 
-  // Auto-collapse large orgs to keep the chart readable
+  // Auto-colapsa organigramas grandes para mantener legible el gráfico
   const totalNodes = countNodes(orgTree);
   const effectiveTree = totalNodes > COLLAPSE_THRESHOLD ? smartCollapseTree(orgTree) : orgTree;
 
@@ -726,18 +726,18 @@ export function renderOrgChartSvg(orgTree: OrgNode[], style: OrgChartStyle = "wa
   const contentW = bounds.maxX + PADDING;
   const contentH = bounds.maxY + PADDING;
 
-  // Scale content to fit within the fixed target dimensions
+  // Escala el contenido para que quepa dentro de las dimensiones objetivo fijas
   const scale = Math.min(TARGET_W / contentW, TARGET_H / contentH, 1);
   const scaledW = contentW * scale;
   const scaledH = contentH * scale;
-  // Center the scaled content within the target frame
+  // Centra el contenido escalado dentro del marco objetivo
   const offsetX = (TARGET_W - scaledW) / 2;
   const offsetY = (TARGET_H - scaledH) / 2;
 
   const logoX = TARGET_W - 110 - LOGO_PADDING;
   const logoY = LOGO_PADDING;
 
-  // Optional overlay elements
+  // Elementos de overlay opcionales
   const overlayNameSvg = overlay?.companyName
     ? `<text x="${LOGO_PADDING}" y="${LOGO_PADDING + 16}" font-family="'Inter', -apple-system, BlinkMacSystemFont, sans-serif" font-size="22" font-weight="700" fill="${theme.nameColor}">${svgEscape(overlay.companyName)}</text>`
     : "";
@@ -769,7 +769,7 @@ export async function renderOrgChartPng(orgTree: OrgNode[], style: OrgChartStyle
   const svg = renderOrgChartSvg(orgTree, style, overlay);
   const sharpModule = await import("sharp");
   const sharp = sharpModule.default;
-  // Render at 2x density for retina quality, resize to exact target dimensions
+  // Renderiza a densidad 2x para calidad retina, redimensiona a las dimensiones objetivo exactas
   return sharp(Buffer.from(svg), { density: 144 })
     .resize(TARGET_W, TARGET_H)
     .png()

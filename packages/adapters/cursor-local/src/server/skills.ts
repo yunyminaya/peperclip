@@ -42,9 +42,9 @@ async function buildCursorSkillSnapshot(config: Record<string, unknown>): Promis
     installed,
     skillsHome,
     locationLabel: "~/.cursor/skills",
-    missingDetail: "Configured but not currently linked into the Cursor skills home.",
-    externalConflictDetail: "Skill name is occupied by an external installation.",
-    externalDetail: "Installed outside Paperclip management.",
+    missingDetail: "Configurada pero actualmente no enlazada en el directorio de habilidades de Cursor.",
+    externalConflictDetail: "El nombre de la habilidad está ocupado por una instalación externa.",
+    externalDetail: "Instalada fuera de la administración de Paperclip.",
   });
 }
 

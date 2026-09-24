@@ -1,219 +1,217 @@
-# Workspace Strategy and Git Worktrees
+# Estrategia de espacios de trabajo y git worktrees
 
-## Context
+## Contexto
 
-`PAP-447` asks how Paperclip should support worktree-driven coding workflows for local coding agents without turning that into a universal product requirement.
+`PAP-447` pregunta cómo Paperclip debería admitir flujos de codificación impulsados por worktrees para agentes de codificación locales sin convertir eso en un requisito universal de producto.
 
-The motivating use case is strong:
+El caso de uso motivador es fuerte:
 
-- when an issue starts, a local coding agent may want its own isolated checkout
-- the agent may need a dedicated branch and a predictable path to push later
-- the agent may need to start one or more long-lived workspace runtime services, discover reachable ports or URLs, and report them back into the issue
-- the workflow should reuse the same Paperclip instance and embedded database instead of creating a blank environment
-- local agent auth should remain low-friction
+- cuando inicia un issue, un agente de codificación local puede querer su propio checkout aislado
+- el agente puede necesitar una rama dedicada y una ruta predecible para hacer push más adelante
+- el agente puede necesitar iniciar uno o más servicios de tiempo de ejecución de espacio de trabajo de larga vida, descubrir puertos o URLs alcanzables, y reportarlos de vuelta en el issue
+- el flujo de trabajo debería reutilizar la misma instancia de Paperclip y base de datos embebida en lugar de crear un entorno en blanco
+- la autenticación de agentes locales debería seguir siendo de baja fricción
 
-At the same time, we do not want to hard-code "every agent uses git worktrees" into Paperclip:
+Al mismo tiempo, no queremos codificar rígidamente "cada agente usa git worktrees" en Paperclip:
 
-- some operators use Paperclip to manage Paperclip and want worktrees heavily
-- other operators will not want worktrees at all
-- not every adapter runs in a local git repository
-- not every adapter runs on the same machine as Paperclip
-- Claude and Codex expose different built-in affordances, so Paperclip should not overfit to one tool
+- algunos operadores usan Paperclip para gestionar Paperclip y quieren worktrees intensivamente
+- otros operadores no querrán worktrees en absoluto
+- no todo adaptador se ejecuta en un repositorio git local
+- no todo adaptador se ejecuta en la misma máquina que Paperclip
+- Claude y Codex exponen diferentes affordances integradas, así que Paperclip no debería sobreajustarse a una herramienta
 
-## Core Product Decision
+## Decisión central de producto
 
-Paperclip should model **execution workspaces**, not **worktrees**.
+Paperclip debería modelar **espacios de trabajo de ejecución**, no **worktrees**.
 
-More specifically:
+Más específicamente:
 
-- the durable anchor is the **project workspace** or repo checkout
-- an issue may derive a temporary **execution workspace** from that project workspace
-- one implementation of an execution workspace is a **git worktree**
-- adapters decide whether and how to use that derived workspace
+- el ancla durable es el **espacio de trabajo de proyecto** o checkout de repo
+- un issue puede derivar un **espacio de trabajo de ejecución** temporal de ese espacio de trabajo de proyecto
+- una implementación de un espacio de trabajo de ejecución es un **git worktree**
+- los adaptadores deciden si usar ese espacio de trabajo derivado y cómo
 
-This keeps the abstraction portable:
+Esto mantiene portable la abstracción:
 
-- `project workspace` is the repo/project-level concept
-- `execution workspace` is the runtime checkout/cwd for a run
-- `git worktree` is one strategy for creating that execution workspace
-- `workspace runtime services` are long-lived processes or previews attached to that workspace
+- `project workspace` es el concepto a nivel de repo/proyecto
+- `execution workspace` es el checkout/cwd de tiempo de ejecución para una ejecución
+- `git worktree` es una estrategia para crear ese espacio de trabajo de ejecución
+- `workspace runtime services` son procesos de larga vida o vistas previas adjuntos a ese espacio de trabajo
 
-This also keeps the abstraction valid for non-local adapters:
+Esto también mantiene válida la abstracción para adaptadores no locales:
 
-- local adapters may receive a real filesystem cwd produced by Paperclip
-- remote or cloud adapters may receive the same execution intent in structured form and realize it inside their own environment
-- Paperclip should not assume that every adapter can see or use a host filesystem path directly
+- los adaptadores locales pueden recibir un cwd real del sistema de archivos producido por Paperclip
+- los adaptadores remotos o en la nube pueden recibir la misma intención de ejecución en forma estructurada y realizarla dentro de su propio entorno
+- Paperclip no debería asumir que todo adaptador puede ver o usar directamente una ruta del sistema de archivos del host
 
-## Answer to the Main Framing Questions
+## Respuesta a las preguntas principales de encuadre
 
-### Are worktrees for agents or for repos/projects?
+### ¿Los worktrees son para agentes o para repos/proyectos?
 
-They should be treated as **repo/project-scoped infrastructure**, not agent identity.
+Deberían tratarse como **infraestructura con alcance de repo/proyecto**, no identidad de agente.
 
-The stable object is the project workspace. Agents come and go, ownership changes, and the same issue may be reassigned. A git worktree is a derived checkout of a repo workspace for a specific task or issue. The agent uses it, but should not own the abstraction.
+El objeto estable es el espacio de trabajo de proyecto. Los agentes van y vienen, la propiedad cambia, y el mismo issue puede reasignarse. Un git worktree es un checkout derivado de un espacio de trabajo de repo para una tarea o issue específico. El agente lo usa, pero no debería ser dueño de la abstracción.
 
-If Paperclip makes worktrees agent-first, it will blur:
+Si Paperclip hace los worktrees primero de agente, difuminará:
 
-- agent home directories
-- project repo roots
-- issue-specific branches/checkouts
+- directorios home de agentes
+- raíces de repo de proyecto
+- ramas/checkouts específicos de issue
 
-That makes reuse, reassignment, cleanup, and UI visibility harder.
+Eso hace más difíciles la reutilización, reasignación, limpieza y visibilidad de UI.
 
-### How do we preserve optionality?
+### ¿Cómo preservamos la opcionalidad?
 
-By making execution workspace strategy **opt-in at the adapter/config layer**, not a global invariant.
+Haciendo la estrategia de espacio de trabajo de ejecución **opt-in en la capa de adaptador/configuración**, no una invariante global.
 
-Defaults should remain:
+Los valores predeterminados deberían seguir siendo:
 
-- existing project workspace resolution
-- existing task-session resume
-- existing agent-home fallback
+- resolución existente de espacio de trabajo de proyecto
+- resume existente de sesión de tarea
+- fallback existente de home de agente
 
-Then local coding agents can opt into a strategy like `git_worktree`.
+Entonces los agentes de codificación locales pueden optar por una estrategia como `git_worktree`.
 
-### How do we make this portable and adapter-appropriate?
+### ¿Cómo lo hacemos portable y apropiado para el adaptador?
 
-By splitting responsibilities:
+Dividiendo responsabilidades:
 
-- Paperclip core resolves and records execution workspace state
-- a shared local runtime helper can implement git-based checkout strategies
-- each adapter launches its tool inside the resolved cwd using adapter-specific flags
+- el núcleo de Paperclip resuelve y registra el estado del espacio de trabajo de ejecución
+- un ayudante compartido de tiempo de ejecución local puede implementar estrategias de checkout basadas en git
+- cada adaptador lanza su herramienta dentro del cwd resuelto usando flags específicos del adaptador
 
-This avoids forcing a Claude-shaped or Codex-shaped model onto all adapters.
+Esto evita forzar un modelo con forma de Claude o con forma de Codex sobre todos los adaptadores.
 
-It also avoids forcing a host-filesystem model onto cloud agents. A cloud adapter may interpret the same requested strategy as:
+También evita forzar un modelo de sistema de archivos del host sobre agentes en la nube. Un adaptador en la nube puede interpretar la misma estrategia solicitada como:
 
-- create a fresh sandbox checkout from repo + ref
-- create an isolated branch/workspace inside the provider's remote environment
-- ignore local-only fields like host cwd while still honoring branch/ref/isolation intent
+- crear un checkout sandbox fresco desde repo + ref
+- crear una rama/espacio de trabajo aislado dentro del entorno remoto del proveedor
+- ignorar campos solo locales como el cwd del host mientras aún respeta la intención de rama/ref/aislamiento
+## Requisitos de producto y UX
 
-## Product and UX Requirements
+El modelo técnico actual es direccionalmente correcto, pero la superficie de producto necesita una separación más clara entre:
 
-The current technical model is directionally right, but the product surface needs clearer separation between:
+- el concepto genérico multi-adaptador de un **espacio de trabajo de ejecución**
+- el concepto de implementación git local visible al usuario de un **checkout de issue aislado**
+- el detalle específico de implementación git de un **git worktree**
 
-- the generic cross-adapter concept of an **execution workspace**
-- the user-visible local-git implementation concept of an **isolated issue checkout**
-- the specific git implementation detail of a **git worktree**
+Esos no deberían colapsarse en una etiqueta en la UI.
 
-Those should not be collapsed into one label in the UI.
+### Recomendación de terminología
 
-### Terminology recommendation
+Para el texto de producto/UI:
 
-For product/UI copy:
+- usar **espacio de trabajo de ejecución** para el concepto genérico multi-adaptador
+- usar **checkout de issue aislado** para la funcionalidad orientada al usuario cuando queremos decir "este issue obtiene su propia rama/checkout"
+- reservar **git worktree** para vistas avanzadas o de detalle de implementación
 
-- use **execution workspace** for the generic cross-adapter concept
-- use **isolated issue checkout** for the user-facing feature when we want to say "this issue gets its own branch/checkout"
-- reserve **git worktree** for advanced or implementation detail views
+Eso le da a Paperclip espacio para admitir:
 
-That gives Paperclip room to support:
+- git worktrees locales
+- checkouts de sandbox remoto
+- espacios de trabajo remotos gestionados por adaptador
 
-- local git worktrees
-- remote sandbox checkouts
-- adapter-managed remote workspaces
+sin enseñar a los usuarios que "espacio de trabajo" siempre significa "git worktree en mi máquina".
 
-without teaching users that "workspace" always means "git worktree on my machine".
+### Los valores predeterminados a nivel de proyecto deberían impulsar la funcionalidad
 
-### Project-level defaults should drive the feature
+El lugar principal donde esto debería configurarse es el **proyecto**, no el formulario del agente.
 
-The main place this should be configured is the **project**, not the agent form.
+Razonamiento:
 
-Reasoning:
+- si un repo/proyecto quiere checkouts de issue aislados es principalmente una decisión de flujo de trabajo de proyecto
+- la mayoría de los operadores no quieren configurar JSON de tiempo de ejecución por agente
+- los agentes deberían heredar la política de espacios de trabajo del proyecto a menos que haya una fuerte sobrescritura específica del adaptador
+- el tablero necesita un lugar para expresar valores predeterminados de flujo de trabajo de repo como branching, PRs, limpieza y ciclo de vida de vistas previas
 
-- whether a repo/project wants isolated issue checkouts is primarily a project workflow decision
-- most operators do not want to configure runtime JSON per agent
-- agents should inherit the project's workspace policy unless there is a strong adapter-specific override
-- the board needs a place to express repo workflow defaults such as branching, PRs, cleanup, and preview lifecycle
+Así que el proyecto debería ser dueño de un ajuste como:
 
-So the project should own a setting like:
+- `isolatedIssueCheckouts.enabled` o equivalente
 
-- `isolatedIssueCheckouts.enabled` or equivalent
+y ese debería ser el impulsor predeterminado para nuevos issues en ese proyecto.
 
-and that should be the default driver for new issues in that project.
+### El uso a nivel de issue debería seguir siendo opcional
 
-### Issue-level use should stay optional
+Incluso cuando un proyecto admite checkouts de issue aislados, no todo issue debería forzarse a uno.
 
-Even when a project supports isolated issue checkouts, not every issue should be forced into one.
+Ejemplos:
 
-Examples:
+- un arreglo pequeño puede estar bien en el espacio de trabajo principal del proyecto
+- un operador puede querer trabajar directamente en una rama de larga vida
+- un usuario del tablero puede querer crear una tarea sin pagar el overhead de configuración/limpieza
 
-- a small fix may be fine in the main project workspace
-- an operator may want to work directly on a long-lived branch
-- a board user may want to create a task without paying the setup/cleanup overhead
+Así que el modelo debería ser:
 
-So the model should be:
+- el proyecto define si los checkouts de issue aislados están disponibles y cuáles son los valores predeterminados
+- cada issue puede optar por entrar o salir al crearse
+- el valor predeterminado del issue puede heredarse del proyecto
 
-- project defines whether isolated issue checkouts are available and what the defaults are
-- each issue can opt in or out when created
-- the default issue value can be inherited from the project
+Esto no debería requerir mostrar configuración avanzada de adaptador en los flujos normales de creación de issues.
 
-This should not require showing advanced adapter config in normal issue creation flows.
+### Los servicios de tiempo de ejecución usualmente deberían estar ocultos del formulario del agente
 
-### Runtime services should usually be hidden from the agent form
+El JSON crudo actual de servicios de tiempo de ejecución es demasiado de bajo nivel como UI primaria para la mayoría de los agentes locales.
 
-The current raw runtime service JSON is too low-level as a primary UI for most local agents.
+Para `claude_local` y `codex_local`, el comportamiento probable deseado es:
 
-For `claude_local` and `codex_local`, the likely desired behavior is:
+- Paperclip maneja los servicios de tiempo de ejecución de espacios de trabajo bajo el capó usando política de proyecto/espacio de trabajo
+- los operadores no necesitan escribir a mano JSON genérico de tiempo de ejecución en el formulario del agente
+- si un adaptador específico de proveedor más adelante necesita configuración de tiempo de ejecución más rica, darle una UI construida a propósito en lugar de JSON genérico por defecto
 
-- Paperclip handles workspace runtime services under the hood using project/workspace policy
-- operators do not need to hand-author generic runtime JSON in the agent form
-- if a provider-specific adapter later needs richer runtime configuration, give it a purpose-built UI rather than generic JSON by default
+Así que la recomendación de UI es:
 
-So the UI recommendation is:
+- mantener el JSON de servicios de tiempo de ejecución fuera de la experiencia predeterminada de edición de agente local
+- permitirlo solo detrás de una sección avanzada o modo experto específico del adaptador
+- mover los ajustes comunes de flujo de trabajo a los ajustes de automatización de espacios de trabajo a nivel de proyecto
 
-- keep runtime service JSON out of the default local-agent editing experience
-- allow it only behind an advanced section or adapter-specific expert mode
-- move the common workflow settings up to project-level workspace automation settings
+### El flujo de trabajo de pull request necesita propiedad explícita y reglas de aprobación
 
-### Pull request workflow needs explicit ownership and approval rules
+Una vez que Paperclip está creando checkouts de issue aislados, implícitamente está tocando un flujo de trabajo mayor:
 
-Once Paperclip is creating isolated issue checkouts, it is implicitly touching a bigger workflow:
+- creación de ramas
+- inicio/detención de servicios de tiempo de ejecución
+- commit y push
+- creación de PR
+- limpieza después de merge o abandono
 
-- branch creation
-- runtime service start/stop
-- commit and push
-- PR creation
-- cleanup after merge or abandonment
+Eso significa que el producto necesita un modelo explícito de **quién es dueño de la creación de PR y la preparación para merge**.
 
-That means the product needs an explicit model for **who owns PR creation and merge readiness**.
+Como mínimo hay dos modos válidos:
 
-At minimum there are two valid modes:
+- creación de PR gestionada por el agente
+- creación de PR con aprobación requerida
 
-- agent-managed PR creation
-- approval-gated PR creation
+Y probablemente tres puntos de decisión distintos:
 
-And likely three distinct decision points:
+1. ¿debería el agente hacer commit automáticamente?
+2. ¿debería el agente abrir el PR automáticamente?
+3. ¿abrir o marcar listo requiere aprobación del tablero?
 
-1. should the agent commit automatically?
-2. should the agent open the PR automatically?
-3. does opening or marking-ready require board approval?
+Esos no deberían estar enterrados dentro de prompts de adaptador. Son política de flujo de trabajo.
 
-Those should not be buried inside adapter prompts. They are workflow policy.
+### Los flujos de trabajo de operadores humanos son diferentes de los flujos de trabajo de aislamiento de issue
 
-### Human operator workflows are different from issue-isolation workflows
+Un operador humano puede querer una rama de integración personal de larga vida como `dotta` y puede no querer que cada tarea cree un nuevo baile de rama/espacio de trabajo.
 
-A human operator may want a long-lived personal integration branch such as `dotta` and may not want every task to create a new branch/workspace dance.
+Ese es un flujo de trabajo legítimo y debería admitirse directamente.
 
-That is a legitimate workflow and should be supported directly.
+Así que Paperclip debería distinguir:
 
-So Paperclip should distinguish:
+- **flujos de trabajo de checkout de issue aislado**: optimizados para paralelismo de agentes y aislamiento con alcance de issue
+- **flujos de trabajo de rama personal**: optimizados para un humano u operador haciendo múltiples cambios relacionados en una rama de larga vida y creando PRs de vuelta a la rama principal cuando convenga
 
-- **isolated issue checkout workflows**: optimized for agent parallelism and issue-scoped isolation
-- **personal branch workflows**: optimized for a human or operator making multiple related changes on a long-lived branch and creating PRs back to the main branch when convenient
+Esto implica:
 
-This implies:
+- los checkouts de issue aislados deberían ser opcionales incluso cuando están disponibles
+- los ajustes de flujo de trabajo de proyecto deberían admitir una ruta de "usar la rama base directamente" o "usar la rama de operador preferida"
+- la política de PR no debería asumir que cada unidad de trabajo mapea 1:1 a una nueva rama o PR
+## Modelo de UX recomendado
 
-- isolated issue checkouts should be optional even when available
-- project workflow settings should support a "use base branch directly" or "use preferred operator branch" path
-- PR policy should not assume that every unit of work maps 1:1 to a new branch or PR
+### 1. Ajustes de "Execution Workspace" a nivel de proyecto
 
-## Recommended UX Model
+Los proyectos deberían tener un área de ajustes dedicada para automatización de espacios de trabajo.
 
-### 1. Project-level "Execution Workspace" settings
-
-Projects should have a dedicated settings area for workspace automation.
-
-Suggested structure:
+Estructura sugerida:
 
 - `Execution Workspaces`
   - `Enable isolated issue checkouts`
@@ -223,83 +221,83 @@ Suggested structure:
   - `Runtime services`
   - `Cleanup behavior`
 
-For a local git-backed project, the visible language can be more concrete:
+Para un proyecto local respaldado por git, el lenguaje visible puede ser más concreto:
 
 - `Enable isolated issue checkouts`
 - `Implementation: Git worktree`
 
-For remote or adapter-managed projects, the same section can instead say:
+Para proyectos remotos o gestionados por adaptador, la misma sección puede decir en su lugar:
 
 - `Implementation: Adapter-managed workspace`
 
-### 2. Issue creation should expose a simple opt-in
+### 2. La creación de issues debería exponer un opt-in simple
 
-When creating an issue inside a project with execution workspace support enabled:
+Al crear un issue dentro de un proyecto con soporte de espacios de trabajo de ejecución habilitado:
 
-- show a checkbox or toggle such as `Use isolated issue checkout`
-- default it from the project setting
-- hide advanced workspace controls unless the operator has expanded an advanced section
+- mostrar un checkbox o toggle como `Use isolated issue checkout`
+- valor predeterminado desde el ajuste de proyecto
+- ocultar controles avanzados de espacios de trabajo a menos que el operador haya expandido una sección avanzada
 
-If the project does not support execution workspaces, do not show the control at all.
+Si el proyecto no admite espacios de trabajo de ejecución, no mostrar el control en absoluto.
 
-This keeps the default UI light while preserving control.
+Esto mantiene la UI predeterminada ligera mientras preserva el control.
 
-### 3. Agent configuration should be mostly inheritance-based
+### 3. La configuración del agente debería ser mayormente basada en herencia
 
-The agent form should not be the primary place where operators assemble worktree/runtime policy for common local agents.
+El formulario del agente no debería ser el lugar principal donde los operadores ensamblan la política de worktree/tiempo de ejecución para agentes locales comunes.
 
-Instead:
+En su lugar:
 
-- local coding agents inherit the project's execution workspace policy
-- the agent form only exposes an override when truly necessary
-- raw JSON config is advanced-only
+- los agentes de codificación locales heredan la política de espacios de trabajo de ejecución del proyecto
+- el formulario del agente solo expone una sobrescritura cuando es verdaderamente necesario
+- la configuración JSON cruda es solo avanzada
 
-That means the common case becomes:
+Eso significa que el caso común se vuelve:
 
-- configure the project once
-- assign a local coding agent
-- create issues with optional isolated checkout behavior
+- configurar el proyecto una vez
+- asignar un agente de codificación local
+- crear issues con comportamiento opcional de checkout aislado
 
-### 4. Advanced implementation detail can still exist
+### 4. El detalle avanzado de implementación aún puede existir
 
-There should still be an advanced view for power users that shows:
+Aún debería haber una vista avanzada para usuarios avanzados que muestre:
 
-- execution workspace strategy payload
-- runtime service intent payload
-- adapter-specific overrides
+- payload de estrategia de espacio de trabajo de ejecución
+- payload de intención de servicios de tiempo de ejecución
+- sobrescrituras específicas del adaptador
 
-But that should be treated like an expert/debugging surface, not the default mental model.
+Pero eso debería tratarse como una superficie de experto/depuración, no el modelo mental predeterminado.
 
-## Recommended Workflow Policy Model
+## Modelo de política de flujo de trabajo recomendado
 
-### Workspace realization policy
+### Política de realización de espacios de trabajo
 
-Suggested policy values:
+Valores de política sugeridos:
 
 - `shared_project_workspace`
 - `isolated_issue_checkout`
 - `adapter_managed_isolated_workspace`
 
-For local git projects, `isolated_issue_checkout` may map to `git_worktree`.
+Para proyectos git locales, `isolated_issue_checkout` puede mapear a `git_worktree`.
 
-### Branch policy
+### Política de ramas
 
-Suggested project-level branch policy fields:
+Campos sugeridos de política de ramas a nivel de proyecto:
 
 - `baseBranch`
 - `branchMode`: `issue_scoped | operator_branch | project_primary`
-- `branchTemplate` for issue-scoped branches
-- `operatorPreferredBranch` for human/operator workflows
+- `branchTemplate` para ramas con alcance de issue
+- `operatorPreferredBranch` para flujos de trabajo humanos/de operador
 
-This allows:
+Esto permite:
 
-- strict issue branches for agents
-- long-lived personal branches for humans
-- direct use of the project primary workspace when desired
+- ramas estrictas de issue para agentes
+- ramas personales de larga vida para humanos
+- uso directo del espacio de trabajo primario del proyecto cuando se desee
 
-### Pull request policy
+### Política de pull request
 
-Suggested project-level PR policy fields:
+Campos sugeridos de política de PR a nivel de proyecto:
 
 - `prMode`: `none | agent_may_open | agent_auto_open | approval_required`
 - `autoPushOnDone`: boolean
@@ -307,11 +305,11 @@ Suggested project-level PR policy fields:
 - `requireApprovalBeforeReady`: boolean
 - `defaultBaseBranch`
 
-This keeps PR behavior explicit and governable.
+Esto mantiene explícito y gobernable el comportamiento de PR.
 
-### Cleanup policy
+### Política de limpieza
 
-Suggested project-level cleanup fields:
+Campos sugeridos de limpieza a nivel de proyecto:
 
 - `stopRuntimeServicesOnDone`
 - `removeIsolatedCheckoutOnDone`
@@ -319,63 +317,62 @@ Suggested project-level cleanup fields:
 - `deleteIssueBranchOnMerged`
 - `retainFailedWorkspaceForInspection`
 
-These matter because workspace automation is not just setup. The cleanup path is part of the product.
+Estos importan porque la automatización de espacios de trabajo no es solo configuración. La ruta de limpieza es parte del producto.
+## Recomendaciones de diseño para el problema actual de UI
 
-## Design Recommendations for the Current UI Problem
+Basado en las preocupaciones anteriores, la UI debería cambiar de estas maneras:
 
-Based on the concerns above, the UI should change in these ways:
+### UI de agente
 
-### Agent UI
+- eliminar el JSON genérico de servicios de tiempo de ejecución de la superficie predeterminada de configuración de agente local
+- mantener el JSON crudo de espacio de trabajo/tiempo de ejecución solo detrás de ajustes avanzados
+- preferir herencia desde ajustes de proyecto para `claude_local` y `codex_local`
+- solo agregar UI de tiempo de ejecución específica del adaptador cuando un adaptador verdaderamente necesite ajustes que Paperclip no puede inferir
 
-- remove generic runtime service JSON from the default local-agent configuration surface
-- keep raw workspace/runtime JSON behind advanced settings only
-- prefer inheritance from project settings for `claude_local` and `codex_local`
-- only add adapter-specific runtime UI when an adapter truly needs settings that Paperclip cannot infer
+### UI de proyecto
 
-### Project UI
+- agregar una sección de ajustes de espacios de trabajo de ejecución a nivel de proyecto
+- permitir habilitar checkouts de issue aislados para ese proyecto
+- almacenar allí el comportamiento predeterminado de issue
+- exponer allí los valores predeterminados de rama, PR, servicios de tiempo de ejecución y limpieza
 
-- add a project-level execution workspace settings section
-- allow enabling isolated issue checkouts for that project
-- store default issue behavior there
-- expose branch, PR, runtime service, and cleanup defaults there
+### UI de creación de issue
 
-### Issue creation UI
+- mostrar `Use isolated issue checkout` solo cuando el proyecto tiene soporte de espacios de trabajo de ejecución habilitado
+- mantenerlo como un opt-in/out a nivel de issue, con valor predeterminado del proyecto
+- ocultar detalles avanzados de espacios de trabajo de ejecución a menos que se soliciten
 
-- only show `Use isolated issue checkout` when the project has execution workspace support enabled
-- keep it as an issue-level opt-in/out, defaulted from the project
-- hide advanced execution workspace details unless requested
+## Consecuencias para la especificación
 
-## Consequences for the Spec
+Esto cambia el énfasis del plan de una manera útil:
 
-This changes the emphasis of the plan in a useful way:
+- el proyecto se convierte en el dueño principal de configuración de flujo de trabajo
+- el issue se convierte en la unidad de opt-in/out para comportamiento de checkout aislado
+- el agente se convierte en un ejecutor que usualmente hereda la política de flujo de trabajo
+- el JSON crudo de tiempo de ejecución se convierte en una representación avanzada/interna, no la UX principal
 
-- the project becomes the main workflow configuration owner
-- the issue becomes the unit of opt-in/out for isolated checkout behavior
-- the agent becomes an executor that usually inherits the workflow policy
-- raw runtime JSON becomes an advanced/internal representation, not the main UX
+También aclara que la creación de PR y la limpieza no son notas laterales opcionales. Son partes centrales de la superficie de producto de automatización de espacios de trabajo.
 
-It also clarifies that PR creation and cleanup are not optional side notes. They are core parts of the workspace automation product surface.
+## Lista de verificación concreta de integración
 
-## Concrete Integration Checklist
+Esta sección convierte los requisitos de producto anteriores en un plan de implementación concreto para la base de código actual.
 
-This section turns the product requirements above into a concrete implementation plan for the current codebase.
+### Regla guía de precedencia
 
-### Guiding precedence rule
+El orden de decisión de tiempo de ejecución debería volverse:
 
-The runtime decision order should become:
+1. sobrescritura de espacio de trabajo de ejecución a nivel de issue
+2. política de espacio de trabajo de ejecución a nivel de proyecto
+3. sobrescritura de adaptador a nivel de agente
+4. comportamiento predeterminado actual
 
-1. issue-level execution workspace override
-2. project-level execution workspace policy
-3. agent-level adapter override
-4. current default behavior
+Ese es el cambio arquitectónico clave. Hoy la implementación está demasiado centrada en configuración de agente para la UX deseada.
 
-That is the key architectural change. Today the implementation is too agent-config-centered for the desired UX.
+## Nombres de campos propuestos
 
-## Proposed Field Names
+### Campos a nivel de proyecto
 
-### Project-level fields
-
-Add a project-owned execution workspace policy object. Suggested shared shape:
+Agregar un objeto de política de espacio de trabajo de ejecución propiedad del proyecto. Forma compartida sugerida:
 
 ```ts
 type ProjectExecutionWorkspacePolicy = {
@@ -409,16 +406,16 @@ type ProjectExecutionWorkspacePolicy = {
 };
 ```
 
-Notes:
+Notas:
 
-- `enabled` controls whether the project exposes isolated issue checkout behavior at all
-- `defaultMode` controls issue creation defaults
-- `implementation` stays generic enough for local or remote adapters
-- runtime service config stays nested here, not in the default agent form
+- `enabled` controla si el proyecto expone en absoluto el comportamiento de checkout de issue aislado
+- `defaultMode` controla los valores predeterminados de creación de issue
+- `implementation` se mantiene lo suficientemente genérico para adaptadores locales o remotos
+- la configuración de servicios de tiempo de ejecución se mantiene anidada aquí, no en el formulario predeterminado del agente
 
-### Issue-level fields
+### Campos a nivel de issue
 
-Add issue-owned opt-in/override fields. Suggested shape:
+Agregar campos de opt-in/sobrescritura propiedad del issue. Forma sugerida:
 
 ```ts
 type IssueExecutionWorkspaceSettings = {
@@ -428,112 +425,111 @@ type IssueExecutionWorkspaceSettings = {
 };
 ```
 
-This should usually be hidden behind simple UI:
+Esto usualmente debería estar oculto detrás de UI simple:
 
-- a checkbox like `Use isolated issue checkout`
-- advanced controls only when needed
+- un checkbox como `Use isolated issue checkout`
+- controles avanzados solo cuando se necesiten
 
-### Agent-level fields
+### Campos a nivel de agente
 
-Keep agent-level workspace/runtime configuration, but reposition it as advanced override only.
+Mantener la configuración de espacio de trabajo/tiempo de ejecución a nivel de agente, pero reposicionarla como solo sobrescritura avanzada.
 
-Suggested semantics:
+Semántica sugerida:
 
-- if absent, inherit project + issue policy
-- if present, override only the implementation detail needed for that adapter
+- si está ausente, heredar política de proyecto + issue
+- si está presente, sobrescribir solo el detalle de implementación necesario para ese adaptador
+## Cambios de tipos y API compartidos
 
-## Shared Type and API Changes
+### 1. Tipos de proyecto compartidos
 
-### 1. Shared project types
-
-Files to change first:
+Archivos a cambiar primero:
 
 - `packages/shared/src/types/project.ts`
 - `packages/shared/src/validators/project.ts`
 
-Add:
+Agregar:
 
 - `executionWorkspacePolicy?: ProjectExecutionWorkspacePolicy | null`
 
-### 2. Shared issue types
+### 2. Tipos de issue compartidos
 
-Files to change:
+Archivos a cambiar:
 
 - `packages/shared/src/types/issue.ts`
 - `packages/shared/src/validators/issue.ts`
 
-Add:
+Agregar:
 
 - `executionWorkspaceSettings?: IssueExecutionWorkspaceSettings | null`
 
-### 3. DB schema
+### 3. Esquema de BD
 
-If we want these fields persisted directly on existing entities instead of living in opaque JSON:
+Si queremos que estos campos persistan directamente en entidades existentes en lugar de vivir en JSON opaco:
 
 - `packages/db/src/schema/projects.ts`
 - `packages/db/src/schema/issues.ts`
-- migration generation in `packages/db/src/migrations/`
+- generación de migración en `packages/db/src/migrations/`
 
-Recommended first cut:
+Primer corte recomendado:
 
-- store project policy as JSONB on `projects`
-- store issue setting override as JSONB on `issues`
+- almacenar la política de proyecto como JSONB en `projects`
+- almacenar la sobrescritura de ajuste de issue como JSONB en `issues`
 
-That minimizes schema churn while the product model is still moving.
+Eso minimiza el churn de esquema mientras el modelo de producto aún se mueve.
 
-Suggested columns:
+Columnas sugeridas:
 
 - `projects.execution_workspace_policy jsonb`
 - `issues.execution_workspace_settings jsonb`
 
-## Server-Side Resolution Changes
+## Cambios de resolución del lado del servidor
 
-### 4. Project service read/write path
+### 4. Ruta de lectura/escritura de servicio de proyecto
 
-Files:
+Archivos:
 
 - `server/src/services/projects.ts`
-- project routes in `server/src/routes/projects.ts`
+- rutas de proyecto en `server/src/routes/projects.ts`
 
-Tasks:
+Tareas:
 
-- accept and validate project execution workspace policy
-- return it from project API payloads
-- enforce company scoping as usual
+- aceptar y validar la política de espacio de trabajo de ejecución de proyecto
+- devolverla desde las cargas útiles de API de proyecto
+- aplicar el alcance de empresa como de costumbre
 
-### 5. Issue service create/update path
+### 5. Ruta de creación/actualización de servicio de issue
 
-Files:
+Archivos:
 
 - `server/src/services/issues.ts`
 - `server/src/routes/issues.ts`
 
-Tasks:
+Tareas:
 
-- accept issue-level `executionWorkspaceSettings`
-- when creating an issue in a project with execution workspaces enabled, default the issue setting from the project policy if not explicitly provided
-- keep issue payload simple for normal clients; advanced fields may be optional
+- aceptar `executionWorkspaceSettings` a nivel de issue
+- al crear un issue en un proyecto con espacios de trabajo de ejecución habilitados, usar como valor predeterminado el ajuste del issue desde la política de proyecto si no se proporciona explícitamente
+- mantener simple la carga útil del issue para clientes normales; los campos avanzados pueden ser opcionales
 
-### 6. Heartbeat and run resolution
+### 6. Resolución de latido y ejecución
 
-Primary file:
+Archivo principal:
 
 - `server/src/services/heartbeat.ts`
 
-Current behavior should be refactored so workspace resolution is based on:
+El comportamiento actual debería refactorizarse para que la resolución de espacios de trabajo se base en:
 
-- issue setting
-- then project policy
-- then adapter override
+- ajuste de issue
+- luego política de proyecto
+- luego sobrescritura de adaptador
 
-Specific technical work:
+Trabajo técnico específico:
 
-- load project execution workspace policy during run resolution
-- load issue execution workspace settings during run resolution
-- derive an effective execution workspace decision object before adapter launch
-- keep adapter config as override only
+- cargar la política de espacio de trabajo de ejecución de proyecto durante la resolución de ejecución
+- cargar los ajustes de espacio de trabajo de ejecución de issue durante la resolución de ejecución
+- derivar un objeto de decisión de espacio de trabajo de ejecución efectivo antes del lanzamiento del adaptador
+- mantener la configuración del adaptador solo como sobrescritura
 
-Suggested internal helper:
+Ayudante interno sugerido:
 
 ```ts
 type EffectiveExecutionWorkspaceDecision = {
@@ -546,316 +542,313 @@ type EffectiveExecutionWorkspaceDecision = {
 };
 ```
 
-## UI Changes
+## Cambios de UI
 
-### 7. Project settings UI
+### 7. UI de ajustes de proyecto
 
-Likely files:
+Archivos probables:
 
 - `ui/src/components/ProjectProperties.tsx`
-- project detail/settings pages under `ui/src/pages/`
-- project API client in `ui/src/api/projects.ts`
+- páginas de detalle/ajustes de proyecto bajo `ui/src/pages/`
+- cliente de API de proyecto en `ui/src/api/projects.ts`
 
-Add a project-owned section:
+Agregar una sección propiedad del proyecto:
 
 - `Execution Workspaces`
-  - enable isolated issue checkouts
-  - default for new issues
-  - implementation type
-  - branch settings
-  - PR settings
-  - cleanup settings
-  - runtime service defaults
+  - habilitar checkouts de issue aislados
+  - valor predeterminado para nuevos issues
+  - tipo de implementación
+  - ajustes de rama
+  - ajustes de PR
+  - ajustes de limpieza
+  - valores predeterminados de servicios de tiempo de ejecución
 
-Important UX rule:
+Regla importante de UX:
 
-- runtime service config should not default to raw JSON
-- if the first cut must use JSON internally, wrap it in a minimal structured form or advanced disclosure
+- la configuración de servicios de tiempo de ejecución no debería usar JSON crudo por defecto
+- si el primer corte debe usar JSON internamente, envolverlo en un formulario estructurado mínimo o divulgación avanzada
 
-### 8. Issue creation/edit UI
+### 8. UI de creación/edición de issue
 
-Likely files:
+Archivos probables:
 
-- issue create UI components and issue detail edit surfaces in `ui/src/pages/`
-- issue API client in `ui/src/api/issues.ts`
+- componentes de UI de creación de issue y superficies de edición de detalle de issue en `ui/src/pages/`
+- cliente de API de issue en `ui/src/api/issues.ts`
 
-Add:
+Agregar:
 
-- `Use isolated issue checkout` toggle, only when project policy enables it
-- advanced workspace behavior controls only when expanded
+- toggle `Use isolated issue checkout`, solo cuando la política de proyecto lo habilita
+- controles avanzados de comportamiento de espacio de trabajo solo cuando se expanden
 
-Do not show:
+No mostrar:
 
-- raw runtime service JSON
-- raw strategy payloads
+- JSON crudo de servicios de tiempo de ejecución
+- payloads crudos de estrategia
 
-in the default issue creation flow.
+en el flujo predeterminado de creación de issue.
 
-### 9. Agent UI cleanup
+### 9. Limpieza de UI de agente
 
-Files:
+Archivos:
 
 - `ui/src/adapters/local-workspace-runtime-fields.tsx`
 - `ui/src/adapters/codex-local/config-fields.tsx`
 - `ui/src/adapters/claude-local/config-fields.tsx`
 
-Technical direction:
+Dirección técnica:
 
-- keep the existing config surface as advanced override
-- remove it from the default form flow for local coding agents
-- add explanatory copy that project execution workspace policy is inherited unless overridden
+- mantener la superficie de configuración existente como sobrescritura avanzada
+- eliminarla del flujo de formulario predeterminado para agentes de codificación locales
+- agregar texto explicativo de que la política de espacio de trabajo de ejecución de proyecto se hereda a menos que se sobrescriba
 
-## Adapter and Orchestration Changes
+## Cambios de adaptador y orquestación
 
-### 10. Local adapter behavior
+### 10. Comportamiento de adaptador local
 
-Files:
+Archivos:
 
 - `packages/adapters/codex-local/src/ui/build-config.ts`
 - `packages/adapters/claude-local/src/ui/build-config.ts`
-- local adapter execute paths already consuming env/context
+- rutas de ejecución de adaptador local que ya consumen env/contexto
 
-Tasks:
+Tareas:
 
-- continue to accept resolved workspace/runtime context from heartbeat
-- stop assuming the agent config is the primary source of workspace policy
-- preserve adapter-specific override support
+- seguir aceptando contexto de espacio de trabajo/tiempo de ejecución resuelto desde el latido
+- dejar de asumir que la configuración del agente es la fuente primaria de política de espacios de trabajo
+- preservar el soporte de sobrescritura específica del adaptador
 
-### 11. Runtime service orchestration
+### 11. Orquestación de servicios de tiempo de ejecución
 
-Files:
-
-- `server/src/services/workspace-runtime.ts`
-
-Tasks:
-
-- accept runtime service defaults from the effective project/issue policy
-- keep adapter-config runtime service JSON as override-only
-- preserve portability for remote adapters
-
-## Pull Request and Cleanup Workflow
-
-### 12. PR policy execution
-
-This is not fully implemented today and should be treated as a separate orchestration layer.
-
-Likely files:
-
-- `server/src/services/heartbeat.ts`
-- future git/provider integration helpers
-
-Needed decisions:
-
-- when issue moves to done, should Paperclip auto-commit?
-- should it auto-push?
-- should it auto-open a PR?
-- should PR open/ready be approval-gated?
-
-Suggested approach:
-
-- store PR policy on project
-- resolve effective PR policy per issue/run
-- emit explicit workflow actions rather than relying on prompt text alone
-
-### 13. Cleanup policy execution
-
-Likely files:
+Archivos:
 
 - `server/src/services/workspace-runtime.ts`
+
+Tareas:
+
+- aceptar valores predeterminados de servicios de tiempo de ejecución desde la política efectiva de proyecto/issue
+- mantener el JSON de servicios de tiempo de ejecución de configuración de adaptador solo como sobrescritura
+- preservar la portabilidad para adaptadores remotos
+## Flujo de trabajo de pull request y limpieza
+
+### 12. Ejecución de política de PR
+
+Esto no está completamente implementado hoy y debería tratarse como una capa de orquestación separada.
+
+Archivos probables:
+
 - `server/src/services/heartbeat.ts`
-- any future merge-detection hooks
+- futuros ayudantes de integración git/proveedor
 
-Needed behaviors:
+Decisiones necesarias:
 
-- stop runtime services on done or merged
-- remove isolated checkout on done or merged
-- delete branch on merged if policy says so
-- optionally retain failed workspace for inspection
+- cuando el issue pasa a done, ¿debería Paperclip hacer auto-commit?
+- ¿debería hacer auto-push?
+- ¿debería abrir un PR automáticamente?
+- ¿la apertura/preparación de PR debería estar controlada por aprobación?
 
-## Recommended First Implementation Sequence
+Enfoque sugerido:
 
-To integrate these ideas without destabilizing the system, implement in this order:
+- almacenar la política de PR en el proyecto
+- resolver la política de PR efectiva por issue/ejecución
+- emitir acciones explícitas de flujo de trabajo en lugar de depender solo del texto del prompt
 
-1. Add project policy fields to shared types, validators, DB, services, routes, and project UI.
-2. Add issue-level execution workspace setting fields to shared types, validators, DB, services, routes, and issue create/edit UI.
-3. Refactor heartbeat to compute effective execution workspace policy from issue -> project -> agent override.
-4. Change local-agent UI so workspace/runtime JSON becomes advanced-only.
-5. Move default runtime service behavior to project settings.
-6. Add explicit PR policy storage and resolution.
-7. Add explicit cleanup policy storage and resolution.
+### 13. Ejecución de política de limpieza
 
-## Definition of Done for This Product Shift
+Archivos probables:
 
-This design shift is complete when all are true:
+- `server/src/services/workspace-runtime.ts`
+- `server/src/services/heartbeat.ts`
+- cualquier futuro hook de detección de merge
 
-- project settings own the default workspace policy
-- issue creation exposes a simple opt-in/out when available
-- local agent forms no longer require raw runtime JSON for common cases
-- heartbeat resolves effective workspace behavior from project + issue + override precedence
-- PR and cleanup behavior are modeled as explicit policy, not implied prompt behavior
-- the UI language distinguishes execution workspace from local git worktree implementation details
+Comportamientos necesarios:
 
-## What the Current Code Already Supports
+- detener servicios de tiempo de ejecución en done o merged
+- eliminar el checkout aislado en done o merged
+- eliminar la rama en merged si la política lo dice
+- opcionalmente retener el espacio de trabajo fallido para inspección
 
-Paperclip already has the right foundation for a project-first model.
+## Secuencia recomendada de primera implementación
 
-### Project workspace is already first-class
+Para integrar estas ideas sin desestabilizar el sistema, implementar en este orden:
 
-- `project_workspaces` already exists in `packages/db/src/schema/project_workspaces.ts`
-- the shared `ProjectWorkspace` type already includes `cwd`, `repoUrl`, and `repoRef` in `packages/shared/src/types/project.ts`
-- docs already state that agents use the project's primary workspace for project-scoped tasks in `docs/api/goals-and-projects.md`
+1. Agregar campos de política de proyecto a tipos compartidos, validadores, BD, servicios, rutas y UI de proyecto.
+2. Agregar campos de ajuste de espacio de trabajo de ejecución a nivel de issue a tipos compartidos, validadores, BD, servicios, rutas y UI de creación/edición de issue.
+3. Refactorizar el latido para computar la política efectiva de espacio de trabajo de ejecución desde issue -> proyecto -> sobrescritura de agente.
+4. Cambiar la UI de agente local para que el JSON de espacio de trabajo/tiempo de ejecución se vuelva solo avanzado.
+5. Mover el comportamiento predeterminado de servicios de tiempo de ejecución a ajustes de proyecto.
+6. Agregar almacenamiento y resolución explícitos de política de PR.
+7. Agregar almacenamiento y resolución explícitos de política de limpieza.
 
-### Heartbeat already resolves workspace in the right order
+## Definición de terminado para este cambio de producto
 
-Current run resolution already prefers:
+Este cambio de diseño está completo cuando todo es cierto:
 
-1. project workspace
-2. prior task session cwd
-3. agent-home fallback
+- los ajustes de proyecto son dueños de la política predeterminada de espacios de trabajo
+- la creación de issue expone un opt-in/out simple cuando está disponible
+- los formularios de agente local ya no requieren JSON crudo de tiempo de ejecución para casos comunes
+- el latido resuelve el comportamiento efectivo de espacio de trabajo desde precedencia de proyecto + issue + sobrescritura
+- el comportamiento de PR y limpieza se modela como política explícita, no comportamiento de prompt implícito
+- el lenguaje de UI distingue el espacio de trabajo de ejecución de los detalles de implementación de git worktree local
 
-See `server/src/services/heartbeat.ts`.
+## Lo que el código actual ya admite
 
-### Session resume is already cwd-aware
+Paperclip ya tiene la base correcta para un modelo primero de proyecto.
 
-Both local coding adapters treat session continuity as cwd-bound:
+### El espacio de trabajo de proyecto ya es de primera clase
+
+- `project_workspaces` ya existe en `packages/db/src/schema/project_workspaces.ts`
+- el tipo compartido `ProjectWorkspace` ya incluye `cwd`, `repoUrl` y `repoRef` en `packages/shared/src/types/project.ts`
+- los docs ya declaran que los agentes usan el espacio de trabajo primario del proyecto para tareas con alcance de proyecto en `docs/api/goals-and-projects.md`
+
+### El latido ya resuelve el espacio de trabajo en el orden correcto
+
+La resolución actual de ejecución ya prefiere:
+
+1. espacio de trabajo de proyecto
+2. cwd de sesión de tarea previa
+3. fallback de home de agente
+
+Ver `server/src/services/heartbeat.ts`.
+
+### El resume de sesión ya es consciente de cwd
+
+Ambos adaptadores de codificación locales tratan la continuidad de sesión como ligada a cwd:
 
 - Codex: `packages/adapters/codex-local/src/server/execute.ts`
 - Claude: `packages/adapters/claude-local/src/server/execute.ts`
 
-That means the clean insertion point is before adapter execution: resolve the final execution cwd first, then let the adapter run normally.
+Eso significa que el punto de inserción limpio es antes de la ejecución del adaptador: resolver primero el cwd final de ejecución, luego dejar que el adaptador se ejecute normalmente.
 
-### Server-spawned local auth already exists
+### La autenticación local generada por el servidor ya existe
 
-For server-spawned local adapters, Paperclip already injects a short-lived local JWT:
+Para adaptadores locales generados por el servidor, Paperclip ya inyecta un JWT local de corta vida:
 
-- JWT creation: `server/src/services/heartbeat.ts`
-- adapter env injection:
+- Creación de JWT: `server/src/services/heartbeat.ts`
+- inyección de env del adaptador:
   - `packages/adapters/codex-local/src/server/execute.ts`
   - `packages/adapters/claude-local/src/server/execute.ts`
 
-The manual-local bootstrap path is still weaker in authenticated mode, but that is a related auth ergonomics problem, not a reason to make worktrees a core invariant.
+La ruta manual-local de bootstrap aún es más débil en modo autenticado, pero ese es un problema relacionado de ergonomía de autenticación, no una razón para hacer de los worktrees una invariante central.
+## Observaciones de herramientas desde docs de proveedores
 
-## Tooling Observations from Vendor Docs
-
-The linked tool docs support a project-first, adapter-specific launch model.
+Los docs de herramientas enlazados admiten un modelo de lanzamiento primero de proyecto y específico del adaptador.
 
 ### Codex
 
-- Codex app has a native worktree concept for parallel tasks in git repos
-- Codex CLI documents running in a chosen working directory and resuming sessions from the current working directory
-- Codex CLI does not present a single first-class portable CLI worktree abstraction that Paperclip should mirror directly
+- La app Codex tiene un concepto nativo de worktree para tareas paralelas en repos git
+- Codex CLI documenta ejecutarse en un directorio de trabajo elegido y reanudar sesiones desde el directorio de trabajo actual
+- Codex CLI no presenta una sola abstracción portable de worktree CLI de primera clase que Paperclip debería replicar directamente
 
-Implication:
+Implicación:
 
-- for `codex_local`, Paperclip should usually create/select the checkout itself and then launch Codex inside that cwd
+- para `codex_local`, Paperclip usualmente debería crear/seleccionar el checkout por sí mismo y luego lanzar Codex dentro de ese cwd
 
 ### Claude
 
-- Claude documents explicit git worktree workflows for parallel sessions
-- Claude CLI supports `--worktree` / `-w`
-- Claude sessions also remain tied to directory context
+- Claude documenta flujos explícitos de git worktree para sesiones paralelas
+- Claude CLI admite `--worktree` / `-w`
+- las sesiones de Claude también siguen ligadas al contexto de directorio
 
-Implication:
+Implicación:
 
-- `claude_local` can optionally use native `--worktree`
-- but Paperclip should still treat that as an adapter optimization, not the canonical cross-adapter model
+- `claude_local` puede opcionalmente usar el `--worktree` nativo
+- pero Paperclip aún debería tratar eso como una optimización de adaptador, no el modelo canónico multi-adaptador
 
-## Local vs Remote Adapters
+## Adaptadores locales vs remotos
 
-This plan must explicitly account for the fact that many adapters are not local.
+Este plan debe tomar en cuenta explícitamente que muchos adaptadores no son locales.
 
-Examples:
+Ejemplos:
 
-- local CLI adapters such as `codex_local` and `claude_local`
-- cloud-hosted coding agents such as Cursor cloud agents
-- future hosted Codex or Claude agent modes
-- custom sandbox adapters built on E2B, Cloudflare, or similar environments
+- adaptadores CLI locales como `codex_local` y `claude_local`
+- agentes de codificación alojados en la nube como agentes cloud de Cursor
+- futuros modos de agente alojados de Codex o Claude
+- adaptadores sandbox personalizados construidos sobre E2B, Cloudflare o entornos similares
 
-These adapters do not all share the same capabilities:
+Estos adaptadores no todos comparten las mismas capacidades:
 
-- some can use host git worktrees directly
-- some can clone a repo and create branches remotely
-- some may expose a virtual workspace concept with no direct git worktree equivalent
-- some may not allow persistent filesystem state at all
+- algunos pueden usar git worktrees del host directamente
+- algunos pueden clonar un repo y crear ramas remotamente
+- algunos pueden exponer un concepto de espacio de trabajo virtual sin equivalente directo de git worktree
+- algunos pueden no permitir ningún estado de sistema de archivos persistente
 
-Because of that, Paperclip should separate:
+Por eso, Paperclip debería separar:
 
-- **execution workspace intent**: what isolation/branch/repo behavior we want
-- **adapter realization**: how a specific adapter implements that behavior
+- **intención de espacio de trabajo de ejecución**: qué comportamiento de aislamiento/rama/repo queremos
+- **realización del adaptador**: cómo un adaptador específico implementa ese comportamiento
 
-### Execution workspace intent
+### Intención de espacio de trabajo de ejecución
 
-Paperclip should be able to express intentions such as:
+Paperclip debería poder expresar intenciones como:
 
-- use the project's primary workspace directly
-- create an isolated issue-scoped checkout
-- base work on a given repo ref
-- derive a branch name from the issue
-- expose one or more reachable preview or service URLs if runtime services are started
+- usar directamente el espacio de trabajo primario del proyecto
+- crear un checkout aislado con alcance de issue
+- basar el trabajo en una ref de repo dada
+- derivar un nombre de rama desde el issue
+- exponer una o más URLs de vista previa o servicio alcanzables si se inician servicios de tiempo de ejecución
 
-### Adapter realization
+### Realización del adaptador
 
-Adapters should be free to map that intent into their own environment:
+Los adaptadores deberían ser libres de mapear esa intención a su propio entorno:
 
-- local adapter: create a host git worktree and run in that cwd
-- cloud sandbox adapter: clone repo into a sandbox, create a branch there, and return sandbox metadata
-- hosted remote coding agent: call provider APIs that create a remote workspace/thread bound to the requested branch/ref
+- adaptador local: crear un git worktree del host y ejecutarse en ese cwd
+- adaptador sandbox en la nube: clonar el repo en un sandbox, crear una rama allí, y devolver metadatos del sandbox
+- agente de codificación remoto alojado: llamar APIs del proveedor que crean un espacio de trabajo/hilo remoto ligado a la rama/ref solicitada
 
-The important constraint is that the adapter reports back the realized execution workspace metadata in a normalized shape, even if the underlying implementation is not a git worktree.
+La restricción importante es que el adaptador reporta de vuelta los metadatos de espacio de trabajo de ejecución realizado en una forma normalizada, incluso si la implementación subyacente no es un git worktree.
 
-## Proposed Model
+## Modelo propuesto
 
-Use three layers:
+Usar tres capas:
 
 1. `project workspace`
 2. `execution workspace`
 3. `workspace runtime services`
 4. `adapter session`
 
-### 1. Project workspace
+### 1. Espacio de trabajo de proyecto
 
-Long-lived repo anchor.
+Ancla de repo de larga vida.
 
-Examples:
+Ejemplos:
 
 - `./paperclip`
-- repo URL and base ref
-- primary checkout for a project
+- URL de repo y ref base
+- checkout primario para un proyecto
 
-### 2. Execution workspace
+### 2. Espacio de trabajo de ejecución
 
-Derived runtime checkout for a specific issue/run.
+Checkout de tiempo de ejecución derivado para un issue/ejecución específico.
 
-Examples:
+Ejemplos:
 
-- direct use of the project primary workspace
-- git worktree derived from the project workspace
-- remote sandbox checkout derived from repo URL + ref
-- custom checkout produced by an adapter-specific script
+- uso directo del espacio de trabajo primario del proyecto
+- git worktree derivado del espacio de trabajo de proyecto
+- checkout de sandbox remoto derivado de URL de repo + ref
+- checkout personalizado producido por un script específico del adaptador
 
-### 3. Adapter session
+### 3. Sesión de adaptador
 
-Long-lived or semi-long-lived processes associated with a workspace.
+Procesos de larga vida o semi-larga vida asociados con un espacio de trabajo.
 
-Examples:
+Ejemplos:
 
-- local web server
-- background worker
-- sandbox preview URL
-- test watcher
-- tunnel process
+- servidor web local
+- worker en segundo plano
+- URL de vista previa de sandbox
+- observador de pruebas
+- proceso de túnel
 
-These are not specific to Paperclip. They are a common property of working in a dev workspace, whether local or remote.
+Estos no son específicos de Paperclip. Son una propiedad común de trabajar en un espacio de trabajo de dev, sea local o remoto.
 
-### 4. Adapter session
+### 4. Sesión de adaptador
 
-Claude/Codex conversation continuity and runtime state, which remains cwd-aware and should follow the execution workspace rather than define it.
+Continuidad de conversación y estado de tiempo de ejecución de Claude/Codex, que sigue siendo consciente de cwd y debería seguir el espacio de trabajo de ejecución en lugar de definirlo.
+## Superficie de configuración recomendada
 
-## Recommended Configuration Surface
+Introducir una estrategia genérica de espacio de trabajo de ejecución en la configuración del adaptador.
 
-Introduce a generic execution workspace strategy in adapter config.
-
-Example shape:
+Forma de ejemplo:
 
 ```json
 {
@@ -865,7 +858,7 @@ Example shape:
 }
 ```
 
-Or:
+O:
 
 ```json
 {
@@ -882,7 +875,7 @@ Or:
 }
 ```
 
-Remote adapters may instead use shapes like:
+Los adaptadores remotos pueden usar en su lugar formas como:
 
 ```json
 {
@@ -895,15 +888,15 @@ Remote adapters may instead use shapes like:
 }
 ```
 
-The important point is that `git_worktree` is a strategy value for adapters that can use it, not the universal contract.
+El punto importante es que `git_worktree` es un valor de estrategia para adaptadores que pueden usarlo, no el contrato universal.
 
-### Workspace runtime services
+### Servicios de tiempo de ejecución de espacio de trabajo
 
-Do not model this as a Paperclip-specific `devServer` flag.
+No modelar esto como un flag `devServer` específico de Paperclip.
 
-Instead, model it as a generic list of workspace-attached runtime services.
+En su lugar, modelarlo como una lista genérica de servicios de tiempo de ejecución adjuntos al espacio de trabajo.
 
-Example shape:
+Forma de ejemplo:
 
 ```json
 {
@@ -940,121 +933,120 @@ Example shape:
 }
 ```
 
-This contract is intentionally generic:
+Este contrato es intencionalmente genérico:
 
-- `command` can start any workspace-attached process, not just a web server
-- database reuse is handled through env/config injection, not a product-specific special case
-- local and remote adapters can realize the same service intent differently
+- `command` puede iniciar cualquier proceso adjunto al espacio de trabajo, no solo un servidor web
+- la reutilización de base de datos se maneja a través de inyección de env/configuración, no un caso especial específico de producto
+- los adaptadores locales y remotos pueden realizar la misma intención de servicio de manera diferente
 
-### Service intent vs service realization
+### Intención de servicio vs realización de servicio
 
-Paperclip should distinguish between:
+Paperclip debería distinguir entre:
 
-- **service intent**: what kind of companion runtime the workspace wants
-- **service realization**: how a local or remote adapter actually starts and exposes it
+- **intención de servicio**: qué tipo de tiempo de ejecución compañero quiere el espacio de trabajo
+- **realización de servicio**: cómo un adaptador local o remoto realmente lo inicia y expone
 
-Examples:
+Ejemplos:
 
-- local adapter:
-  - starts `pnpm dev`
-  - allocates a free host port
-  - health-checks a localhost URL
-  - reports `{ pid, port, url }`
-- cloud sandbox adapter:
-  - starts a preview process inside the sandbox
-  - receives a provider preview URL
-  - reports `{ sandboxId, previewUrl }`
-- hosted remote coding agent:
-  - may ask the provider to create a preview environment
-  - reports provider-native workspace/service metadata
+- adaptador local:
+  - inicia `pnpm dev`
+  - asigna un puerto libre del host
+  - hace health-check a una URL localhost
+  - reporta `{ pid, port, url }`
+- adaptador sandbox en la nube:
+  - inicia un proceso de vista previa dentro del sandbox
+  - recibe una URL de vista previa del proveedor
+  - reporta `{ sandboxId, previewUrl }`
+- agente de codificación remoto alojado:
+  - puede pedir al proveedor que cree un entorno de vista previa
+  - reporta metadatos de espacio de trabajo/servicio nativos del proveedor
 
-Paperclip should normalize the reported metadata without requiring every adapter to look like a host-local process.
+Paperclip debería normalizar los metadatos reportados sin requerir que todo adaptador parezca un proceso local del host.
 
-Keep issue-level overrides possible through the existing `assigneeAdapterOverrides` shape in `packages/shared/src/types/issue.ts`.
+Mantener posibles las sobrescrituras a nivel de issue a través de la forma existente `assigneeAdapterOverrides` en `packages/shared/src/types/issue.ts`.
+## Responsabilidades por capa
 
-## Responsibilities by Layer
+### Núcleo de Paperclip
 
-### Paperclip Core
+El núcleo de Paperclip debería:
 
-Paperclip core should:
+- resolver el espacio de trabajo de proyecto base para el issue
+- resolver o solicitar un espacio de trabajo de ejecución
+- resolver o solicitar servicios de tiempo de ejecución de espacio de trabajo cuando están configurados
+- inyectar metadatos de espacio de trabajo de ejecución en el contexto de ejecución
+- persistir suficientes metadatos para visibilidad de tablero y limpieza
+- gestionar hooks de ciclo de vida alrededor de inicio/fin de ejecución donde se necesite
 
-- resolve the base project workspace for the issue
-- resolve or request an execution workspace
-- resolve or request workspace runtime services when configured
-- inject execution workspace metadata into run context
-- persist enough metadata for board visibility and cleanup
-- manage lifecycle hooks around run start/finish where needed
+El núcleo de Paperclip no debería:
 
-Paperclip core should not:
+- requerir worktrees para todos los agentes
+- asumir que todo adaptador es local y respaldado por git
+- asumir que todo servicio de tiempo de ejecución es un proceso localhost con un PID
+- codificar prompts de worktree específicos de herramienta como comportamiento central de producto
 
-- require worktrees for all agents
-- assume every adapter is local and git-backed
-- assume every runtime service is a localhost process with a PID
-- encode tool-specific worktree prompts as core product behavior
+### Ayudante compartido de tiempo de ejecución local
 
-### Shared Local Runtime Helper
+Un ayudante compartido del lado del servidor debería manejar la mecánica git local:
 
-A shared server-side helper should handle local git mechanics:
+- validar la raíz del repo
+- crear/seleccionar rama
+- crear/seleccionar git worktree
+- asignar un puerto libre
+- opcionalmente iniciar y rastrear un servidor de dev
+- devolver `{ cwd, branchName, url }`
 
-- validate repo root
-- create/select branch
-- create/select git worktree
-- allocate a free port
-- optionally start and track a dev server
-- return `{ cwd, branchName, url }`
-
-This helper can be reused by:
+Este ayudante puede ser reutilizado por:
 
 - `codex_local`
 - `claude_local`
-- future local adapters like Cursor/OpenCode equivalents
+- futuros adaptadores locales como equivalentes de Cursor/OpenCode
 
-This helper is intentionally for local adapters only. Remote adapters should not be forced through a host-local git helper.
+Este ayudante es intencionalmente solo para adaptadores locales. Los adaptadores remotos no deberían forzarse a través de un ayudante git local del host.
 
-### Shared Runtime Service Manager
+### Gestor compartido de servicios de tiempo de ejecución
 
-In addition to the local git helper, Paperclip should define a generic runtime service manager contract.
+Además del ayudante git local, Paperclip debería definir un contrato genérico de gestor de servicios de tiempo de ejecución.
 
-Its job is to:
+Su trabajo es:
 
-- decide whether a configured service should be reused or started fresh
-- allocate local ports when needed
-- start and monitor local processes when the adapter/runtime realization is host-local
-- record normalized service metadata for remote realizations
-- run readiness checks
-- surface service URLs and state to the board
-- apply shutdown policy
+- decidir si un servicio configurado debería reutilizarse o iniciarse fresco
+- asignar puertos locales cuando se necesite
+- iniciar y monitorear procesos locales cuando la realización de adaptador/tiempo de ejecución es local del host
+- registrar metadatos de servicio normalizados para realizaciones remotas
+- ejecutar chequeos de readiness
+- exponer URLs y estado de servicio al tablero
+- aplicar política de apagado
 
-This manager should not be hard-coded to "dev servers". It should work for any long-lived workspace companion process.
+Este gestor no debería estar codificado rígidamente a "servidores de dev". Debería funcionar para cualquier proceso compañero de espacio de trabajo de larga vida.
 
-### Adapter
+### Adaptador
 
-The adapter should:
+El adaptador debería:
 
-- accept the resolved execution cwd
-- or accept structured execution workspace intent when no host cwd is available
-- accept structured workspace runtime service intent when service orchestration is delegated to the adapter
-- launch its tool with adapter-specific flags
-- keep its own session continuity semantics
+- aceptar el cwd de ejecución resuelto
+- o aceptar la intención estructurada de espacio de trabajo de ejecución cuando no hay cwd de host disponible
+- aceptar la intención estructurada de servicios de tiempo de ejecución de espacio de trabajo cuando la orquestación de servicios se delega al adaptador
+- lanzar su herramienta con flags específicos del adaptador
+- mantener su propia semántica de continuidad de sesión
 
-For example:
+Por ejemplo:
 
-- `codex_local`: run inside cwd, likely with `--cd` or process cwd
-- `claude_local`: run inside cwd, optionally use `--worktree` when it helps
-- remote sandbox adapter: create its own isolated workspace from repo/ref/branch intent and report the realized remote workspace metadata back to Paperclip
+- `codex_local`: ejecutarse dentro de cwd, probablemente con `--cd` o cwd de proceso
+- `claude_local`: ejecutarse dentro de cwd, opcionalmente usar `--worktree` cuando ayude
+- adaptador sandbox remoto: crear su propio espacio de trabajo aislado desde la intención de repo/ref/rama y reportar de vuelta a Paperclip los metadatos de espacio de trabajo remoto realizado
 
-For runtime services:
+Para servicios de tiempo de ejecución:
 
-- local adapter or shared host manager: start the local process and return host-local metadata
-- remote adapter: create or reuse the remote preview/service and return normalized remote metadata
+- adaptador local o gestor de host compartido: iniciar el proceso local y devolver metadatos locales del host
+- adaptador remoto: crear o reutilizar la vista previa/servicio remoto y devolver metadatos remotos normalizados
 
-## Minimal Data Model Additions
+## Adiciones mínimas de modelo de datos
 
-Do not create a fully first-class `worktrees` table yet.
+No crear aún una tabla `worktrees` completamente de primera clase.
 
-Start smaller by recording derived execution workspace metadata on runs, issues, or both.
+Empezar más pequeño registrando metadatos derivados de espacio de trabajo de ejecución en ejecuciones, issues, o ambos.
 
-Suggested fields to introduce:
+Campos sugeridos a introducir:
 
 - `executionWorkspaceStrategy`
 - `executionWorkspaceCwd`
@@ -1063,9 +1055,9 @@ Suggested fields to introduce:
 - `executionServiceRefs`
 - `executionCleanupStatus`
 
-These can live first on `heartbeat_runs.context_snapshot` or adjacent run metadata, with an optional later move into a dedicated table if the UI and cleanup workflows justify it.
+Estos pueden vivir primero en `heartbeat_runs.context_snapshot` o metadatos de ejecución adyacentes, con un movimiento opcional posterior a una tabla dedicada si la UI y los flujos de trabajo de limpieza lo justifican.
 
-For runtime services specifically, Paperclip should eventually track normalized fields such as:
+Para servicios de tiempo de ejecución específicamente, Paperclip eventualmente debería rastrear campos normalizados como:
 
 - `serviceName`
 - `serviceKind`
@@ -1085,111 +1077,111 @@ For runtime services specifically, Paperclip should eventually track normalized 
 - `stopPolicy`
 - `healthStatus`
 
-The first implementation can keep this in run metadata if needed, but the long-term shape is a generic runtime service registry rather than one-off server URL fields.
+La primera implementación puede mantener esto en metadatos de ejecución si se necesita, pero la forma de largo plazo es un registro genérico de servicios de tiempo de ejecución en lugar de campos únicos de URL de servidor.
 
-## Concrete Implementation Plan
+## Plan de implementación concreto
 
-## Phase 1: Define Shared Contracts
+## Fase 1: Definir contratos compartidos
 
-1. Introduce a shared execution workspace strategy contract in `packages/shared`.
-2. Add adapter-config schema support for:
+1. Introducir un contrato compartido de estrategia de espacio de trabajo de ejecución en `packages/shared`.
+2. Agregar soporte de esquema de configuración de adaptador para:
    - `workspaceStrategy.type`
    - `baseRef`
    - `branchTemplate`
    - `worktreeParentDir`
    - `cleanupPolicy`
-   - optional workspace runtime service settings
-3. Keep the existing `useProjectWorkspace` flag working as a lower-level compatibility control.
-4. Distinguish local realization fields from generic intent fields so remote adapters are not forced to consume host cwd values.
-5. Define a generic `workspaceRuntime.services[]` contract with:
-   - service name
-   - command or provider-managed intent
-   - env overrides
-   - readiness checks
-   - exposure metadata
-   - reuse scope
-   - lifecycle
-   - stop policy
+   - ajustes opcionales de servicios de tiempo de ejecución de espacio de trabajo
+3. Mantener el flag existente `useProjectWorkspace` funcionando como un control de compatibilidad de nivel más bajo.
+4. Distinguir campos de realización local de campos de intención genéricos para que los adaptadores remotos no se vean forzados a consumir valores de cwd del host.
+5. Definir un contrato genérico `workspaceRuntime.services[]` con:
+   - nombre de servicio
+   - comando o intención gestionada por proveedor
+   - sobrescrituras de env
+   - chequeos de readiness
+   - metadatos de exposición
+   - alcance de reutilización
+   - ciclo de vida
+   - política de detención
 
-Acceptance:
+Aceptación:
 
-- adapter config can express `project_primary` and `git_worktree`
-- config remains optional and backwards-compatible
-- runtime services are expressed generically, not as Paperclip-only dev-server flags
+- la configuración del adaptador puede expresar `project_primary` y `git_worktree`
+- la configuración sigue siendo opcional y compatible hacia atrás
+- los servicios de tiempo de ejecución se expresan genéricamente, no como flags de servidor de dev solo de Paperclip
 
-## Phase 2: Resolve Execution Workspace in Heartbeat
+## Fase 2: Resolver espacio de trabajo de ejecución en el latido
 
-1. Extend heartbeat workspace resolution so it can return a richer execution workspace result.
-2. Keep current fallback order, but distinguish:
-   - base project workspace
-   - derived execution workspace
-3. Inject resolved execution workspace details into `context.paperclipWorkspace` for local adapters and into a generic execution-workspace intent payload for adapters that need structured remote realization.
-4. Resolve configured runtime service intent alongside the execution workspace so the adapter or host manager receives a complete workspace runtime contract.
+1. Extender la resolución de espacio de trabajo del latido para que pueda devolver un resultado de espacio de trabajo de ejecución más rico.
+2. Mantener el orden actual de fallback, pero distinguir:
+   - espacio de trabajo de proyecto base
+   - espacio de trabajo de ejecución derivado
+3. Inyectar detalles de espacio de trabajo de ejecución resueltos en `context.paperclipWorkspace` para adaptadores locales y en un payload genérico de intención de espacio de trabajo de ejecución para adaptadores que necesitan realización remota estructurada.
+4. Resolver la intención de servicios de tiempo de ejecución configurados junto al espacio de trabajo de ejecución para que el adaptador o gestor de host reciba un contrato completo de tiempo de ejecución de espacio de trabajo.
 
-Primary touchpoints:
+Puntos de contacto principales:
 
 - `server/src/services/heartbeat.ts`
 
-Acceptance:
+Aceptación:
 
-- runs still work unchanged when no strategy is configured
-- the resolved context clearly indicates which strategy produced the cwd
+- las ejecuciones siguen funcionando sin cambios cuando no hay estrategia configurada
+- el contexto resuelto indica claramente qué estrategia produjo el cwd
 
-## Phase 3: Add Shared Local Git Workspace Helper
+## Fase 3: Agregar ayudante compartido de espacio de trabajo git local
 
-1. Create a server-side helper module for local repo checkout strategies.
-2. Implement `git_worktree` strategy:
-   - validate git repo at base workspace cwd
-   - derive branch name from issue
-   - create or reuse a worktree path
-   - detect collisions cleanly
-3. Return structured metadata:
-   - final cwd
-   - branch name
-   - worktree path
-   - repo root
+1. Crear un módulo ayudante del lado del servidor para estrategias de checkout de repo local.
+2. Implementar la estrategia `git_worktree`:
+   - validar el repo git en el cwd del espacio de trabajo base
+   - derivar el nombre de rama desde el issue
+   - crear o reutilizar una ruta de worktree
+   - detectar colisiones limpiamente
+3. Devolver metadatos estructurados:
+   - cwd final
+   - nombre de rama
+   - ruta de worktree
+   - raíz del repo
 
-Acceptance:
+Aceptación:
 
-- helper is reusable outside a single adapter
-- worktree creation is deterministic for a given issue/config
-- remote adapters remain unaffected by this helper
+- el ayudante es reutilizable fuera de un solo adaptador
+- la creación de worktree es determinista para un issue/configuración dado
+- los adaptadores remotos no se ven afectados por este ayudante
 
-## Phase 4: Optional Dev Server Lifecycle
+## Fase 4: Ciclo de vida opcional de servidor de dev
 
-Rename this phase conceptually to **workspace runtime service lifecycle**.
+Renombrar esta fase conceptualmente a **ciclo de vida de servicios de tiempo de ejecución de espacio de trabajo**.
 
-1. Add optional runtime service startup on execution workspace creation.
-2. Support both:
-   - host-managed local services
-   - adapter-managed remote services
-3. For local services:
-   - allocate a free port before launch when required
-   - start the configured command in the correct cwd
-   - run readiness checks
-   - register the realized metadata
-4. For remote services:
-   - let the adapter return normalized service metadata after provisioning
-   - do not assume PID or localhost access
-5. Post or update issue-visible metadata with the service URLs and labels.
+1. Agregar inicio opcional de servicios de tiempo de ejecución en la creación de espacio de trabajo de ejecución.
+2. Admitir ambos:
+   - servicios locales gestionados por el host
+   - servicios remotos gestionados por el adaptador
+3. Para servicios locales:
+   - asignar un puerto libre antes del lanzamiento cuando se requiera
+   - iniciar el comando configurado en el cwd correcto
+   - ejecutar chequeos de readiness
+   - registrar los metadatos realizados
+4. Para servicios remotos:
+   - dejar que el adaptador devuelva metadatos de servicio normalizados después del aprovisionamiento
+   - no asumir PID ni acceso localhost
+5. Publicar o actualizar metadatos visibles del issue con las URLs y etiquetas de servicio.
 
-Acceptance:
+Aceptación:
 
-- runtime service startup remains opt-in
-- failures produce actionable run logs and issue comments
-- same embedded DB / Paperclip instance can be reused through env/config injection when appropriate
-- remote service realizations are represented without pretending to be local processes
+- el inicio de servicios de tiempo de ejecución sigue siendo opt-in
+- las fallas producen registros de ejecución accionables y comentarios de issue
+- la misma BD embebida / instancia de Paperclip puede reutilizarse a través de inyección de env/configuración cuando sea apropiado
+- las realizaciones de servicios remotos se representan sin pretender ser procesos locales
 
-## Phase 5: Runtime Service Reuse, Tracking, and Shutdown
+## Fase 5: Reutilización, seguimiento y apagado de servicios de tiempo de ejecución
 
-1. Introduce a generic runtime service registry.
-2. Each service should be tracked with:
+1. Introducir un registro genérico de servicios de tiempo de ejecución.
+2. Cada servicio debería rastrearse con:
    - `scopeType`: `project_workspace | execution_workspace | run | agent`
    - `scopeId`
    - `serviceName`
    - `status`
-   - `command` or provider metadata
-   - `cwd` if local
+   - `command` o metadatos de proveedor
+   - `cwd` si es local
    - `envFingerprint`
    - `port`
    - `url`
@@ -1198,138 +1190,138 @@ Acceptance:
    - `startedByRunId`
    - `lastUsedAt`
    - `stopPolicy`
-3. Introduce a deterministic `reuseKey`, for example:
+3. Introducir un `reuseKey` determinista, por ejemplo:
    - `projectWorkspaceId + serviceName + envFingerprint`
-4. Reuse policy:
-   - if a healthy service with the same reuse key exists, attach to it
-   - otherwise start a new service
-5. Distinguish lifecycle classes:
-   - `shared`: reusable across runs, usually scoped to `project_workspace`
-   - `ephemeral`: tied to `execution_workspace` or `run`
-6. Shutdown policy:
-   - `run` scope: stop when run ends
-   - `execution_workspace` scope: stop when workspace is cleaned up
-   - `project_workspace` scope: stop on idle timeout, explicit stop, or workspace removal
-   - `agent` scope: stop when ownership is transferred or agent policy requires it
-7. Health policy:
-   - readiness check at startup
-   - periodic or on-demand liveness checks
-   - mark unhealthy before killing when possible
+4. Política de reutilización:
+   - si existe un servicio saludable con la misma clave de reutilización, adjuntarse a él
+   - de otro modo iniciar un nuevo servicio
+5. Distinguir clases de ciclo de vida:
+   - `shared`: reutilizable entre ejecuciones, usualmente con alcance de `project_workspace`
+   - `ephemeral`: ligado a `execution_workspace` o `run`
+6. Política de apagado:
+   - alcance `run`: detener cuando termina la ejecución
+   - alcance `execution_workspace`: detener cuando el espacio de trabajo se limpia
+   - alcance `project_workspace`: detener en timeout de inactividad, detención explícita, o eliminación de espacio de trabajo
+   - alcance `agent`: detener cuando la propiedad se transfiere o la política del agente lo requiere
+7. Política de salud:
+   - chequeo de readiness al inicio
+   - chequeos de liveness periódicos o bajo demanda
+   - marcar no saludable antes de matar cuando sea posible
 
-Acceptance:
+Aceptación:
 
-- Paperclip can decide whether to reuse or start a fresh service deterministically
-- local and remote services share a normalized tracking model
-- shutdown is policy-driven instead of implicit
-- board can understand why a service was kept, reused, or stopped
+- Paperclip puede decidir si reutilizar o iniciar un servicio fresco deterministamente
+- los servicios locales y remotos comparten un modelo de seguimiento normalizado
+- el apagado es impulsado por política en lugar de implícito
+- el tablero puede entender por qué un servicio se mantuvo, reutilizó o detuvo
 
-## Phase 6: Adapter Integration
+## Fase 6: Integración de adaptador
 
-1. Update `codex_local` to consume resolved execution workspace cwd.
-2. Update `claude_local` to consume resolved execution workspace cwd.
-3. Define a normalized adapter contract for remote adapters that receive execution workspace intent instead of a host-local cwd.
-4. Optionally allow Claude-specific optimization paths using native `--worktree`, but keep the shared server-side checkout strategy as canonical for local adapters.
-5. Define how adapters return runtime service realizations:
-   - local host-managed service reference
-   - remote provider-managed service reference
+1. Actualizar `codex_local` para consumir el cwd de espacio de trabajo de ejecución resuelto.
+2. Actualizar `claude_local` para consumir el cwd de espacio de trabajo de ejecución resuelto.
+3. Definir un contrato normalizado de adaptador para adaptadores remotos que reciben intención de espacio de trabajo de ejecución en lugar de un cwd local del host.
+4. Opcionalmente permitir rutas de optimización específicas de Claude usando el `--worktree` nativo, pero mantener la estrategia compartida de checkout del lado del servidor como canónica para adaptadores locales.
+5. Definir cómo los adaptadores devuelven realizaciones de servicios de tiempo de ejecución:
+   - referencia de servicio local gestionada por el host
+   - referencia de servicio remota gestionada por el proveedor
 
-Acceptance:
+Aceptación:
 
-- adapter behavior remains unchanged when strategy is absent
-- session resume remains cwd-safe
-- no adapter is forced into git behavior
-- remote adapters can implement equivalent isolation without pretending to be local worktrees
-- adapters can report service URLs and lifecycle metadata in a normalized shape
+- el comportamiento del adaptador sigue sin cambios cuando la estrategia está ausente
+- el resume de sesión sigue siendo seguro respecto a cwd
+- ningún adaptador es forzado a comportamiento git
+- los adaptadores remotos pueden implementar aislamiento equivalente sin pretender ser worktrees locales
+- los adaptadores pueden reportar URLs de servicio y metadatos de ciclo de vida en una forma normalizada
 
-## Phase 7: Visibility and Issue Comments
+## Fase 7: Visibilidad y comentarios de issue
 
-1. Expose execution workspace metadata in run details and optionally issue detail UI:
-   - strategy
+1. Exponer metadatos de espacio de trabajo de ejecución en detalles de ejecución y opcionalmente en UI de detalle de issue:
+   - estrategia
    - cwd
-   - branch
-   - runtime service refs
-2. Expose runtime services with:
-   - service name
-   - status
+   - rama
+   - refs de servicios de tiempo de ejecución
+2. Exponer servicios de tiempo de ejecución con:
+   - nombre de servicio
+   - estado
    - URL
-   - scope
-   - owner
-   - health
-3. Add standard issue comment output when a worktree-backed or remotely isolated run starts:
-   - branch
-   - worktree path
-   - service URLs if present
+   - alcance
+   - propietario
+   - salud
+3. Agregar salida estándar de comentario de issue cuando inicia una ejecución respaldada por worktree o aislada remotamente:
+   - rama
+   - ruta de worktree
+   - URLs de servicio si están presentes
 
-Acceptance:
+Aceptación:
 
-- board can see where the agent is working
-- board can see what runtime services exist for that workspace
-- issue thread becomes the handoff surface for branch names and reachable URLs
+- el tablero puede ver dónde está trabajando el agente
+- el tablero puede ver qué servicios de tiempo de ejecución existen para ese espacio de trabajo
+- el hilo del issue se convierte en la superficie de traspaso para nombres de rama y URLs alcanzables
 
-## Phase 8: Cleanup Policies
+## Fase 8: Políticas de limpieza
 
-1. Implement cleanup policies:
+1. Implementar políticas de limpieza:
    - `manual`
    - `on_done`
    - `on_merged`
-2. For worktree cleanup:
-   - stop tracked runtime services if owned by the workspace lifecycle
-   - remove worktree
-   - optionally delete local branch after merge
-3. Start with conservative defaults:
-   - do not auto-delete anything unless explicitly configured
+2. Para limpieza de worktree:
+   - detener servicios de tiempo de ejecución rastreados si son propiedad del ciclo de vida del espacio de trabajo
+   - eliminar el worktree
+   - opcionalmente eliminar la rama local después del merge
+3. Empezar con valores predeterminados conservadores:
+   - no auto-eliminar nada a menos que esté configurado explícitamente
 
-Acceptance:
+Aceptación:
 
-- cleanup is safe and reversible by default
-- merge-based cleanup can be introduced after basic lifecycle is stable
+- la limpieza es segura y reversible por defecto
+- la limpieza basada en merge puede introducirse después de que el ciclo de vida básico sea estable
 
-## Phase 9: Auth Ergonomics Follow-Up
+## Fase 9: Seguimiento de ergonomía de autenticación
 
-This is related, but should be tracked separately from the workspace strategy work.
+Esto está relacionado, pero debería rastrearse por separado del trabajo de estrategia de espacios de trabajo.
 
-Needed improvement:
+Mejora necesaria:
 
-- make manual local agent bootstrap in authenticated/private mode easier, so operators can become `codexcoder` or `claudecoder` locally without depending on an already-established browser-auth CLI context
+- hacer más fácil el bootstrap manual de agente local en modo autenticado/privado, para que los operadores puedan convertirse en `codexcoder` o `claudecoder` localmente sin depender de un contexto CLI de autenticación de navegador ya establecido
 
-This should likely take the form of a local operator bootstrap flow, not a weakening of runtime auth boundaries.
+Esto probablemente debería tomar la forma de un flujo de bootstrap de operador local, no un debilitamiento de los límites de autenticación de tiempo de ejecución.
 
-## Rollout Strategy
+## Estrategia de despliegue
 
-1. Ship the shared config contract and no-op-compatible heartbeat changes first.
-2. Pilot with `codexcoder` and `claudecoder` only.
-3. Test against Paperclip-on-Paperclip workflows first.
-4. Keep `project_primary` as the default for all existing agents.
-5. Add UI exposure and cleanup only after the core runtime path is stable.
+1. Enviar primero el contrato de configuración compartido y los cambios de latido compatibles con no-op.
+2. Pilotar solo con `codexcoder` y `claudecoder`.
+3. Probar primero contra flujos de trabajo Paperclip-sobre-Paperclip.
+4. Mantener `project_primary` como valor predeterminado para todos los agentes existentes.
+5. Agregar exposición de UI y limpieza solo después de que la ruta central de tiempo de ejecución sea estable.
 
-## Acceptance Criteria
+## Criterios de aceptación
 
-1. Worktree behavior is optional, not a global requirement.
-2. Project workspaces remain the canonical repo anchor.
-3. Local coding agents can opt into isolated issue-scoped execution workspaces.
-4. The same model works for both `codex_local` and `claude_local` without forcing a tool-specific abstraction into core.
-5. Remote adapters can consume the same execution workspace intent without requiring host-local filesystem access.
-6. Session continuity remains correct because each adapter resumes relative to its realized execution workspace.
-7. Workspace runtime services are modeled generically, not as Paperclip-specific dev-server toggles.
-8. Board users can see branch/path/URL information for worktree-backed or remotely isolated runs.
-9. Service reuse and shutdown are deterministic and policy-driven.
-10. Cleanup is conservative by default.
+1. El comportamiento de worktree es opcional, no un requisito global.
+2. Los espacios de trabajo de proyecto siguen siendo el ancla canónica de repo.
+3. Los agentes de codificación locales pueden optar por espacios de trabajo de ejecución aislados con alcance de issue.
+4. El mismo modelo funciona tanto para `codex_local` como para `claude_local` sin forzar una abstracción específica de herramienta en el núcleo.
+5. Los adaptadores remotos pueden consumir la misma intención de espacio de trabajo de ejecución sin requerir acceso al sistema de archivos local del host.
+6. La continuidad de sesión sigue siendo correcta porque cada adaptador reanuda relativo a su espacio de trabajo de ejecución realizado.
+7. Los servicios de tiempo de ejecución de espacio de trabajo se modelan genéricamente, no como toggles de servidor de dev específicos de Paperclip.
+8. Los usuarios del tablero pueden ver información de rama/ruta/URL para ejecuciones respaldadas por worktree o aisladas remotamente.
+9. La reutilización y el apagado de servicios son deterministas e impulsados por política.
+10. La limpieza es conservadora por defecto.
 
-## Recommended Initial Scope
+## Alcance inicial recomendado
 
-To keep this tractable, the first implementation should:
+Para mantener esto manejable, la primera implementación debería:
 
-- support only local coding adapters
-- support only `project_primary` and `git_worktree`
-- avoid a new dedicated database table for worktrees
-- start with a single host-managed runtime service implementation path
-- postpone merge-driven cleanup automation until after basic start/run/visibility is proven
+- admitir solo adaptadores de codificación locales
+- admitir solo `project_primary` y `git_worktree`
+- evitar una nueva tabla de base de datos dedicada para worktrees
+- empezar con una sola ruta de implementación de servicio de tiempo de ejecución gestionada por el host
+- posponer la automatización de limpieza impulsada por merge hasta después de que inicio/ejecución/visibilidad básicos estén probados
 
-That is enough to validate the local product shape without prematurely freezing the wrong abstraction.
+Eso es suficiente para validar la forma local de producto sin congelar prematuramente la abstracción equivocada.
 
-Follow-up expansion after that validation:
+Expansión de seguimiento después de esa validación:
 
-- define the remote adapter contract for adapter-managed isolated checkouts
-- add one cloud/sandbox adapter implementation path
-- normalize realized metadata so local and remote execution workspaces appear similarly in the UI
-- expand the runtime service registry from local host-managed services to remote adapter-managed services
+- definir el contrato de adaptador remoto para checkouts aislados gestionados por adaptador
+- agregar una ruta de implementación de adaptador en la nube/sandbox
+- normalizar los metadatos realizados para que los espacios de trabajo de ejecución locales y remotos aparezcan similarmente en la UI
+- expandir el registro de servicios de tiempo de ejecución de servicios locales gestionados por el host a servicios remotos gestionados por el adaptador

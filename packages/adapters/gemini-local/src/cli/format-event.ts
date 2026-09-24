@@ -132,7 +132,7 @@ export function printGeminiStreamEvent(raw: string, _debug: boolean): void {
       const details = [sessionId ? `session: ${sessionId}` : "", model ? `model: ${model}` : ""]
         .filter(Boolean)
         .join(", ");
-      console.log(pc.blue(`Gemini init${details ? ` (${details})` : ""}`));
+      console.log(pc.blue(`Gemini iniciado${details ? ` (${details})` : ""}`));
       return;
     }
     if (subtype === "error") {

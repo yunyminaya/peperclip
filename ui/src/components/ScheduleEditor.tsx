@@ -7,13 +7,13 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 type SchedulePreset = "every_minute" | "every_hour" | "every_day" | "weekdays" | "weekly" | "monthly" | "custom";
 
 const PRESETS: { value: SchedulePreset; label: string }[] = [
-  { value: "every_minute", label: "Every minute" },
-  { value: "every_hour", label: "Every hour" },
-  { value: "every_day", label: "Every day" },
-  { value: "weekdays", label: "Weekdays" },
-  { value: "weekly", label: "Weekly" },
-  { value: "monthly", label: "Monthly" },
-  { value: "custom", label: "Custom (cron)" },
+  { value: "every_minute", label: "Cada minuto" },
+  { value: "every_hour", label: "Cada hora" },
+  { value: "every_day", label: "Todos los días" },
+  { value: "weekdays", label: "Días laborables" },
+  { value: "weekly", label: "Semanal" },
+  { value: "monthly", label: "Mensual" },
+  { value: "custom", label: "Personalizado (cron)" },
 ];
 
 const HOURS = Array.from({ length: 24 }, (_, i) => ({
@@ -27,13 +27,13 @@ const MINUTES = Array.from({ length: 12 }, (_, i) => ({
 }));
 
 const DAYS_OF_WEEK = [
-  { value: "1", label: "Mon" },
-  { value: "2", label: "Tue" },
-  { value: "3", label: "Wed" },
-  { value: "4", label: "Thu" },
-  { value: "5", label: "Fri" },
-  { value: "6", label: "Sat" },
-  { value: "0", label: "Sun" },
+  { value: "1", label: "lun" },
+  { value: "2", label: "mar" },
+  { value: "3", label: "mié" },
+  { value: "4", label: "jue" },
+  { value: "5", label: "vie" },
+  { value: "6", label: "sáb" },
+  { value: "0", label: "dom" },
 ];
 
 const DAYS_OF_MONTH = Array.from({ length: 31 }, (_, i) => ({
@@ -61,32 +61,32 @@ function parseCronToPreset(cron: string): {
 
   const [min, hr, dom, , dow] = parts;
 
-  // Every minute: "* * * * *"
+  // Cada minuto: "* * * * *"
   if (min === "*" && hr === "*" && dom === "*" && dow === "*") {
     return { preset: "every_minute", ...defaults };
   }
 
-  // Every hour: "0 * * * *"
+  // Cada hora: "0 * * * *"
   if (hr === "*" && dom === "*" && dow === "*") {
     return { preset: "every_hour", ...defaults, minute: min === "*" ? "0" : min };
   }
 
-  // Every day: "M H * * *"
+  // Todos los días: "M H * * *"
   if (dom === "*" && dow === "*" && hr !== "*") {
     return { preset: "every_day", ...defaults, hour: hr, minute: min === "*" ? "0" : min };
   }
 
-  // Weekdays: "M H * * 1-5"
+  // Días laborables: "M H * * 1-5"
   if (dom === "*" && dow === "1-5" && hr !== "*") {
     return { preset: "weekdays", ...defaults, hour: hr, minute: min === "*" ? "0" : min };
   }
 
-  // Weekly: "M H * * D" (single day)
+  // Semanal: "M H * * D" (un solo día)
   if (dom === "*" && /^\d$/.test(dow) && hr !== "*") {
     return { preset: "weekly", ...defaults, hour: hr, minute: min === "*" ? "0" : min, dayOfWeek: dow };
   }
 
-  // Monthly: "M H D * *"
+  // Mensual: "M H D * *"
   if (/^\d{1,2}$/.test(dom) && dow === "*" && hr !== "*") {
     return { preset: "monthly", ...defaults, hour: hr, minute: min === "*" ? "0" : min, dayOfMonth: dom };
   }
@@ -120,28 +120,22 @@ function describeSchedule(cron: string): string {
 
   switch (preset) {
     case "every_minute":
-      return "Every minute";
+      return "Cada minuto";
     case "every_hour":
-      return `Every hour at :${minute.padStart(2, "0")}`;
+      return `Cada hora (:${minute.padStart(2, "0")})`;
     case "every_day":
-      return `Every day at ${timeStr}`;
+      return `Todos los días a las ${timeStr}`;
     case "weekdays":
-      return `Weekdays at ${timeStr}`;
+      return `Días laborables a las ${timeStr}`;
     case "weekly": {
       const day = DAYS_OF_WEEK.find((d) => d.value === dayOfWeek)?.label ?? dayOfWeek;
-      return `Every ${day} at ${timeStr}`;
+      return `Cada ${day} a las ${timeStr}`;
     }
     case "monthly":
-      return `Monthly on the ${dayOfMonth}${ordinalSuffix(Number(dayOfMonth))} at ${timeStr}`;
+      return `Mensual el día ${dayOfMonth} a las ${timeStr}`;
     case "custom":
-      return cron || "No schedule set";
+      return cron || "Sin horario configurado";
   }
-}
-
-function ordinalSuffix(n: number): string {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return s[(v - 20) % 10] || s[v] || s[0];
 }
 
 export { describeSchedule };
@@ -161,7 +155,7 @@ export function ScheduleEditor({
   const [dayOfMonth, setDayOfMonth] = useState(parsed.dayOfMonth);
   const [customCron, setCustomCron] = useState(preset === "custom" ? value : "");
 
-  // Sync from external value changes
+  // Sincroniza con los cambios externos del valor
   useEffect(() => {
     const p = parseCronToPreset(value);
     setPreset(p.preset);
@@ -196,7 +190,7 @@ export function ScheduleEditor({
     <div className="space-y-3">
       <Select value={preset} onValueChange={(v) => handlePresetChange(v as SchedulePreset)}>
         <SelectTrigger className="w-full">
-          <SelectValue placeholder="Choose frequency..." />
+          <SelectValue placeholder="Elige la frecuencia…" />
         </SelectTrigger>
         <SelectContent>
           {PRESETS.map((p) => (
@@ -219,14 +213,14 @@ export function ScheduleEditor({
             className="font-mono text-sm"
           />
           <p className="text-xs text-muted-foreground">
-            Five fields: minute hour day-of-month month day-of-week
+            Cinco campos: minuto hora día-del-mes mes día-de-la-semana
           </p>
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-2">
           {preset !== "every_minute" && preset !== "every_hour" && (
             <>
-              <span className="text-sm text-muted-foreground">at</span>
+              <span className="text-sm text-muted-foreground">a las</span>
               <Select
                 value={hour}
                 onValueChange={(h) => {
@@ -269,7 +263,7 @@ export function ScheduleEditor({
 
           {preset === "every_hour" && (
             <>
-              <span className="text-sm text-muted-foreground">at minute</span>
+              <span className="text-sm text-muted-foreground">en el minuto</span>
               <Select
                 value={minute}
                 onValueChange={(m) => {
@@ -293,7 +287,7 @@ export function ScheduleEditor({
 
           {preset === "weekly" && (
             <>
-              <span className="text-sm text-muted-foreground">on</span>
+              <span className="text-sm text-muted-foreground">el</span>
               <div className="flex gap-1">
                 {DAYS_OF_WEEK.map((d) => (
                   <Button
@@ -316,7 +310,7 @@ export function ScheduleEditor({
 
           {preset === "monthly" && (
             <>
-              <span className="text-sm text-muted-foreground">on day</span>
+              <span className="text-sm text-muted-foreground">el día</span>
               <Select
                 value={dayOfMonth}
                 onValueChange={(dom) => {

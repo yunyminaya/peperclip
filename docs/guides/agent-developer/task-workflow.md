@@ -1,58 +1,58 @@
 ---
-title: Task Workflow
-summary: Checkout, work, update, and delegate patterns
+title: Flujo de trabajo de tareas
+summary: Patrones de reclamo, trabajo, actualización y delegación
 ---
 
-This guide covers the standard patterns for how agents work on tasks.
+Esta guía cubre los patrones estándar sobre cómo los agentes trabajan en las tareas.
 
-## Checkout Pattern
+## Patrón de reclamo (checkout)
 
-Before doing any work on a task, checkout is required:
+Antes de realizar cualquier trabajo en una tarea, el reclamo es obligatorio:
 
 ```
 POST /api/issues/{issueId}/checkout
 { "agentId": "{yourId}", "expectedStatuses": ["todo", "backlog", "blocked"] }
 ```
 
-This is an atomic operation. If two agents race to checkout the same task, exactly one succeeds and the other gets `409 Conflict`.
+Esta es una operación atómica. Si dos agentes compiten por reclamar la misma tarea, exactamente uno tiene éxito y el otro recibe `409 Conflict`.
 
-**Rules:**
-- Always checkout before working
-- Never retry a 409 — pick a different task
-- If you already own the task, checkout succeeds idempotently
+**Reglas:**
+- Reclama siempre la tarea antes de trabajar
+- Nunca reintentes un 409: elige otra tarea
+- Si ya eres dueño de la tarea, el reclamo tiene éxito de forma idempotente
 
-## Work-and-Update Pattern
+## Patrón de trabajo y actualización
 
-While working, keep the task updated:
+Mientras trabajas, mantén la tarea actualizada:
 
 ```
 PATCH /api/issues/{issueId}
 { "comment": "JWT signing done. Still need token refresh. Continuing next heartbeat." }
 ```
 
-When finished:
+Al terminar:
 
 ```
 PATCH /api/issues/{issueId}
 { "status": "done", "comment": "Implemented JWT signing and token refresh. All tests passing." }
 ```
 
-Always include the `X-Paperclip-Run-Id` header on state changes.
+Incluye siempre el encabezado `X-Paperclip-Run-Id` en los cambios de estado.
 
-## Blocked Pattern
+## Patrón de bloqueo
 
-If you can't make progress:
+Si no puedes avanzar:
 
 ```
 PATCH /api/issues/{issueId}
 { "status": "blocked", "comment": "Need DBA review for migration PR #38. Reassigning to @EngineeringLead." }
 ```
 
-Never sit silently on blocked work. Comment the blocker, update the status, and escalate.
+Nunca guardes silencio ante trabajo bloqueado. Comenta el bloqueo, actualiza el estado y escala.
 
-## Delegation Pattern
+## Patrón de delegación
 
-Managers break down work into subtasks:
+Los gerentes desglosan el trabajo en subtareas:
 
 ```
 POST /api/companies/{companyId}/issues
@@ -66,19 +66,19 @@ POST /api/companies/{companyId}/issues
 }
 ```
 
-Always set `parentId` to maintain the task hierarchy. Set `goalId` when applicable.
+Establece siempre `parentId` para mantener la jerarquía de tareas. Establece `goalId` cuando aplique.
 
-## Release Pattern
+## Patrón de liberación
 
-If you need to give up a task (e.g. you realize it should go to someone else):
+Si necesitas abandonar una tarea (p. ej. te das cuenta de que debería ir a otra persona):
 
 ```
 POST /api/issues/{issueId}/release
 ```
 
-This releases your ownership. Leave a comment explaining why.
+Esto libera tu propiedad. Deja un comentario explicando por qué.
 
-## Worked Example: IC Heartbeat
+## Ejemplo trabajado: latido de un IC
 
 ```
 GET /api/agents/me

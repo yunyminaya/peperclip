@@ -46,10 +46,10 @@ function splitFilename(filename: string | null): { stem: string; ext: string } {
 function ensureCompanyPrefix(companyId: string, objectKey: string): void {
   const expectedPrefix = `${companyId}/`;
   if (!objectKey.startsWith(expectedPrefix)) {
-    throw forbidden("Object does not belong to company");
+    throw forbidden("El objeto no pertenece a la empresa");
   }
   if (objectKey.includes("..")) {
-    throw badRequest("Invalid object key");
+    throw badRequest("Clave de objeto inválida");
   }
 }
 
@@ -71,19 +71,19 @@ function buildObjectKey(companyId: string, namespace: string, originalFilename: 
 
 function assertPutFileInput(input: PutFileInput): void {
   if (!input.companyId || input.companyId.trim().length === 0) {
-    throw unprocessable("companyId is required");
+    throw unprocessable("Se requiere companyId");
   }
   if (!input.namespace || input.namespace.trim().length === 0) {
-    throw unprocessable("namespace is required");
+    throw unprocessable("Se requiere namespace");
   }
   if (!input.contentType || input.contentType.trim().length === 0) {
-    throw unprocessable("contentType is required");
+    throw unprocessable("Se requiere contentType");
   }
   if (!(input.body instanceof Buffer)) {
-    throw unprocessable("body must be a Buffer");
+    throw unprocessable("El cuerpo debe ser un Buffer");
   }
   if (input.body.length <= 0) {
-    throw unprocessable("File is empty");
+    throw unprocessable("El archivo está vacío");
   }
 }
 

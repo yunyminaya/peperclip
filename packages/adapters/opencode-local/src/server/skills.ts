@@ -42,12 +42,12 @@ async function buildOpenCodeSkillSnapshot(config: Record<string, unknown>): Prom
     installed,
     skillsHome,
     locationLabel: "~/.claude/skills",
-    installedDetail: "Installed in the shared Claude/OpenCode skills home.",
-    missingDetail: "Configured but not currently linked into the shared Claude/OpenCode skills home.",
-    externalConflictDetail: "Skill name is occupied by an external installation in the shared skills home.",
-    externalDetail: "Installed outside Paperclip management in the shared skills home.",
+    installedDetail: "Instalada en el directorio de habilidades compartido de Claude/OpenCode.",
+    missingDetail: "Configurada, pero no enlazada actualmente en el directorio de habilidades compartido de Claude/OpenCode.",
+    externalConflictDetail: "El nombre de la habilidad está ocupado por una instalación externa en el directorio de habilidades compartido.",
+    externalDetail: "Instalada fuera de la gestión de Paperclip en el directorio de habilidades compartido.",
     warnings: [
-      "OpenCode currently uses the shared Claude skills home (~/.claude/skills).",
+      "OpenCode usa actualmente el directorio de habilidades compartido de Claude (~/.claude/skills).",
     ],
   });
 }

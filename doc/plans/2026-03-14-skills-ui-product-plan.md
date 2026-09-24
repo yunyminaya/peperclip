@@ -1,363 +1,363 @@
-# 2026-03-14 Skills UI Product Plan
+# Plan de producto de UI de habilidades 2026-03-14
 
-Status: Proposed
-Date: 2026-03-14
-Audience: Product and engineering
-Related:
+Estado: Propuesto
+Fecha: 2026-03-14
+Audiencia: Producto e ingeniería
+Relacionado:
 - `doc/plans/2026-03-13-company-import-export-v2.md`
 - `doc/plans/2026-03-14-adapter-skill-sync-rollout.md`
 - `docs/companies/companies-spec.md`
 - `ui/src/pages/AgentDetail.tsx`
 
-## 1. Purpose
+## 1. Propósito
 
-This document defines the product and UI plan for skill management in Paperclip.
+Este documento define el plan de producto y UI para la gestión de habilidades en Paperclip.
 
-The goal is to make skills understandable and manageable in the website without pretending that all adapters behave the same way.
+El objetivo es hacer las habilidades comprensibles y gestionables en el sitio web sin pretender que todos los adaptadores se comportan igual.
 
-This plan assumes:
+Este plan asume:
 
-- `SKILL.md` remains Agent Skills compatible
-- `skills.sh` compatibility is a V1 requirement
-- Paperclip company import/export can include skills as package content
-- adapters may support persistent skill sync, ephemeral skill mounting, read-only skill discovery, or no skill integration at all
+- `SKILL.md` sigue siendo compatible con Agent Skills
+- la compatibilidad con `skills.sh` es un requisito de V1
+- la importación/exportación de empresas de Paperclip puede incluir habilidades como contenido de paquete
+- los adaptadores pueden admitir sincronización persistente de habilidades, montaje efímero de habilidades, descubrimiento de habilidades de solo lectura, o ninguna integración de habilidades
 
-## 2. Current State
+## 2. Estado actual
 
-There is already a first-pass agent-level skill sync UI on `AgentDetail`.
+Ya existe una primera pasada de UI de sincronización de habilidades a nivel de agente en `AgentDetail`.
 
-Today it supports:
+Hoy admite:
 
-- loading adapter skill sync state
-- showing unsupported adapters clearly
-- showing managed skills as checkboxes
-- showing external skills separately
-- syncing desired skills for adapters that implement the new API
+- cargar el estado de sincronización de habilidades del adaptador
+- mostrar claramente adaptadores no admitidos
+- mostrar habilidades gestionadas como casillas de verificación
+- mostrar habilidades externas por separado
+- sincronizar habilidades deseadas para adaptadores que implementan la nueva API
 
-Current limitations:
+Limitaciones actuales:
 
-1. There is no company-level skill library UI.
-2. There is no package import flow for skills in the website.
-3. There is no distinction between skill package management and per-agent skill attachment.
-4. There is no multi-agent desired-vs-actual view.
-5. The current UI is adapter-sync-oriented, not package-oriented.
-6. Unsupported adapters degrade safely, but not elegantly.
+1. No hay UI de biblioteca de habilidades a nivel de empresa.
+2. No hay flujo de importación de paquetes para habilidades en el sitio web.
+3. No hay distinción entre gestión de paquetes de habilidades y adjunto de habilidades por agente.
+4. No hay vista de deseado vs real multiagente.
+5. La UI actual está orientada a sincronización de adaptador, no a paquetes.
+6. Los adaptadores no admitidos se degradan con seguridad, pero no con elegancia.
 
-## 2.1 V1 Decisions
+## 2.1 Decisiones V1
 
-For V1, this plan assumes the following product decisions are already made:
+Para V1, este plan asume que las siguientes decisiones de producto ya están tomadas:
 
-1. `skills.sh` compatibility is required.
-2. Agent-to-skill association in `AGENTS.md` is by shortname or slug.
-3. Company skills and agent skill attachments are separate concepts.
-4. Agent skills should move to their own tab rather than living inside configuration.
-5. Company import/export should eventually round-trip skill packages and agent skill attachments.
+1. La compatibilidad con `skills.sh` es requerida.
+2. La asociación de agente a habilidad en `AGENTS.md` es por nombre corto o slug.
+3. Las habilidades de empresa y los adjuntos de habilidades de agente son conceptos separados.
+4. Las habilidades de agente deberían moverse a su propia pestaña en lugar de vivir dentro de la configuración.
+5. La importación/exportación de empresas debería eventualmente hacer ida y vuelta de paquetes de habilidades y adjuntos de habilidades de agente.
 
-## 3. Product Principles
+## 3. Principios de producto
 
-1. Skills are company assets first, agent attachments second.
-2. Package management and adapter sync are different concerns and should not be conflated in one screen.
-3. The UI must always tell the truth about what Paperclip knows:
-   - desired state in Paperclip
-   - actual state reported by the adapter
-   - whether the adapter can reconcile the two
-4. Agent Skills compatibility must remain visible in the product model.
-5. Agent-to-skill associations should be human-readable and shortname-based wherever possible.
-6. Unsupported adapters should still have a useful UI, not just a dead end.
+1. Las habilidades son primero activos de la empresa, segundo adjuntos del agente.
+2. La gestión de paquetes y la sincronización del adaptador son preocupaciones diferentes y no deberían confundirse en una pantalla.
+3. La UI siempre debe decir la verdad sobre lo que Paperclip sabe:
+   - estado deseado en Paperclip
+   - estado real reportado por el adaptador
+   - si el adaptador puede conciliar ambos
+4. La compatibilidad con Agent Skills debe seguir siendo visible en el modelo de producto.
+5. Las asociaciones de agente a habilidad deberían ser legibles por humanos y basadas en nombre corto donde sea posible.
+6. Los adaptadores no admitidos aún deberían tener una UI útil, no solo un callejón sin salida.
 
-## 4. User Model
+## 4. Modelo de usuario
 
-Paperclip should treat skills at two scopes:
+Paperclip debería tratar las habilidades en dos alcances:
 
-### 4.1 Company skills
+### 4.1 Habilidades de empresa
 
-These are reusable skills known to the company.
+Estas son habilidades reutilizables conocidas por la empresa.
 
-Examples:
+Ejemplos:
 
-- imported from a GitHub repo
-- added from a local folder
-- installed from a `skills.sh`-compatible repo
-- created locally inside Paperclip later
+- importadas desde un repositorio de GitHub
+- agregadas desde una carpeta local
+- instaladas desde un repositorio compatible con `skills.sh`
+- creadas localmente dentro de Paperclip más adelante
 
-These should have:
+Estas deberían tener:
 
-- name
-- description
-- slug or package identity
-- source/provenance
-- trust level
-- compatibility status
+- nombre
+- descripción
+- slug o identidad de paquete
+- fuente/procedencia
+- nivel de confianza
+- estado de compatibilidad
 
-### 4.2 Agent skills
+### 4.2 Habilidades de agente
 
-These are skill attachments for a specific agent.
+Estos son adjuntos de habilidades para un agente específico.
 
-Each attachment should have:
+Cada adjunto debería tener:
 
-- shortname
-- desired state in Paperclip
-- actual state in the adapter when readable
-- sync status
-- origin
+- nombre corto
+- estado deseado en Paperclip
+- estado real en el adaptador cuando sea legible
+- estado de sincronización
+- origen
 
-Agent attachments should normally reference skills by shortname or slug, for example:
+Los adjuntos de agente normalmente deberían referenciar habilidades por nombre corto o slug, por ejemplo:
 
 - `review`
 - `react-best-practices`
 
-not by noisy relative file path.
+no por ruta de archivo relativa ruidosa.
 
-## 4.3 Primary user jobs
+## 4.3 Trabajos principales del usuario
 
-The UI should support these jobs cleanly:
+La UI debería admitir estos trabajos limpiamente:
 
-1. “Show me what skills this company has.”
-2. “Import a skill from GitHub or a local folder.”
-3. “See whether a skill is safe, compatible, and who uses it.”
-4. “Attach skills to an agent.”
-5. “See whether the adapter actually has those skills.”
-6. “Reconcile desired vs actual skill state.”
-7. “Understand what Paperclip knows vs what the adapter knows.”
+1. "Muéstrame qué habilidades tiene esta empresa".
+2. "Importar una habilidad desde GitHub o una carpeta local".
+3. "Ver si una habilidad es segura, compatible y quién la usa".
+4. "Adjuntar habilidades a un agente".
+5. "Ver si el adaptador realmente tiene esas habilidades".
+6. "Conciliar el estado deseado vs real de habilidades".
+7. "Entender qué sabe Paperclip vs qué sabe el adaptador".
 
-## 5. Core UI Surfaces
+## 5. Superficies centrales de UI
 
-The product should have two primary skill surfaces.
+El producto debería tener dos superficies principales de habilidades.
 
-### 5.1 Company Skills page
+### 5.1 Página de habilidades de empresa
 
-Add a company-level page, likely:
-
-- `/companies/:companyId/skills`
-
-Purpose:
-
-- manage the company skill library
-- import and inspect skill packages
-- understand provenance and trust
-- see which agents use which skills
-
-#### Route
+Agregar una página a nivel de empresa, probablemente:
 
 - `/companies/:companyId/skills`
 
-#### Primary actions
+Propósito:
 
-- import skill
-- inspect skill
-- attach to agents
-- detach from agents
-- export selected skills later
+- gestionar la biblioteca de habilidades de la empresa
+- importar e inspeccionar paquetes de habilidades
+- entender procedencia y confianza
+- ver qué agentes usan qué habilidades
 
-#### Empty state
+#### Ruta
 
-When the company has no managed skills:
+- `/companies/:companyId/skills`
 
-- explain what skills are
-- explain `skills.sh` / Agent Skills compatibility
-- offer `Import from GitHub` and `Import from folder`
-- optionally show adapter-discovered skills as a secondary “not managed yet” section
+#### Acciones principales
 
-#### A. Skill library list
+- importar habilidad
+- inspeccionar habilidad
+- adjuntar a agentes
+- desadjuntar de agentes
+- exportar habilidades seleccionadas más adelante
 
-Each skill row should show:
+#### Estado vacío
 
-- name
-- short description
-- source badge
-- trust badge
-- compatibility badge
-- number of attached agents
+Cuando la empresa no tiene habilidades gestionadas:
 
-Suggested source states:
+- explicar qué son las habilidades
+- explicar la compatibilidad con `skills.sh` / Agent Skills
+- ofrecer `Import from GitHub` e `Import from folder`
+- opcionalmente mostrar habilidades descubiertas por el adaptador como una sección secundaria de "aún no gestionadas"
+
+#### A. Lista de biblioteca de habilidades
+
+Cada fila de habilidad debería mostrar:
+
+- nombre
+- descripción corta
+- insignia de fuente
+- insignia de confianza
+- insignia de compatibilidad
+- número de agentes adjuntos
+
+Estados de fuente sugeridos:
 
 - local
 - github
-- imported package
-- external reference
-- adapter-discovered only
+- paquete importado
+- referencia externa
+- solo descubierta por adaptador
 
-Suggested compatibility states:
+Estados de compatibilidad sugeridos:
 
 - compatible
-- paperclip-extension
-- unknown
-- invalid
+- extensión de paperclip
+- desconocido
+- inválido
 
-Suggested trust states:
+Estados de confianza sugeridos:
 
-- markdown-only
-- assets
-- scripts/executables
+- solo markdown
+- recursos
+- scripts/ejecutables
 
-Suggested list affordances:
+Affordances de lista sugeridas:
 
-- search by name or slug
-- filter by source
-- filter by trust level
-- filter by usage
-- sort by name, recent import, usage count
+- buscar por nombre o slug
+- filtrar por fuente
+- filtrar por nivel de confianza
+- filtrar por uso
+- ordenar por nombre, importación reciente, conteo de uso
 
-#### B. Import actions
+#### B. Acciones de importación
 
-Allow:
+Permitir:
 
-- import from local folder
-- import from GitHub URL
-- import from direct URL
+- importar desde carpeta local
+- importar desde URL de GitHub
+- importar desde URL directa
 
-Future:
+Futuro:
 
-- install from `companies.sh`
-- install from `skills.sh`
+- instalar desde `companies.sh`
+- instalar desde `skills.sh`
 
-V1 requirement:
+Requisito V1:
 
-- importing from a `skills.sh`-compatible source should work without requiring a Paperclip-specific package layout
+- importar desde una fuente compatible con `skills.sh` debería funcionar sin requerir un diseño de paquete específico de Paperclip
 
-#### C. Skill detail drawer or page
+#### C. Panel lateral o página de detalle de habilidad
 
-Each skill should have a detail view showing:
+Cada habilidad debería tener una vista de detalle que muestre:
 
-- rendered `SKILL.md`
-- package source and pinning
-- included files
-- trust and licensing warnings
-- who uses it
-- adapter compatibility notes
+- `SKILL.md` renderizado
+- fuente y fijado del paquete
+- archivos incluidos
+- advertencias de confianza y licencias
+- quién la usa
+- notas de compatibilidad del adaptador
 
-Recommended route:
+Ruta recomendada:
 
 - `/companies/:companyId/skills/:skillId`
 
-Recommended sections:
+Secciones recomendadas:
 
-- Overview
-- Contents
-- Usage
-- Source
-- Trust / licensing
+- Resumen
+- Contenidos
+- Uso
+- Fuente
+- Confianza / licencias
 
-#### D. Usage view
+#### D. Vista de uso
 
-Each company skill should show which agents use it.
+Cada habilidad de empresa debería mostrar qué agentes la usan.
 
-Suggested columns:
+Columnas sugeridas:
 
-- agent
-- desired state
-- actual state
-- adapter
-- sync mode
-- last sync status
+- agente
+- estado deseado
+- estado real
+- adaptador
+- modo de sincronización
+- último estado de sincronización
 
-### 5.2 Agent Skills tab
+### 5.2 Pestaña de habilidades de agente
 
-Keep and evolve the existing `AgentDetail` skill sync UI, but move it out of configuration.
+Mantener y evolucionar la UI existente de sincronización de habilidades de `AgentDetail`, pero moverla fuera de la configuración.
 
-Purpose:
+Propósito:
 
-- attach/detach company skills to one agent
-- inspect adapter reality for that agent
-- reconcile desired vs actual state
-- keep the association format readable and aligned with `AGENTS.md`
+- adjuntar/desadjuntar habilidades de empresa a un agente
+- inspeccionar la realidad del adaptador para ese agente
+- conciliar el estado deseado vs real
+- mantener el formato de asociación legible y alineado con `AGENTS.md`
 
-#### Route
+#### Ruta
 
 - `/agents/:agentId/skills`
 
-#### Agent tabs
+#### Pestañas del agente
 
-The intended agent-level tab model becomes:
+El modelo de pestañas a nivel de agente previsto se convierte en:
 
 - `dashboard`
 - `configuration`
 - `skills`
 - `runs`
 
-This is preferable to hiding skills inside configuration because:
+Esto es preferible a ocultar las habilidades dentro de la configuración porque:
 
-- skills are not just adapter config
-- skills need their own sync/status language
-- skills are a reusable company asset, not merely one agent field
-- the screen needs room for desired vs actual state, warnings, and external skill adoption
+- las habilidades no son solo configuración del adaptador
+- las habilidades necesitan su propio lenguaje de sincronización/estado
+- las habilidades son un activo reutilizable de la empresa, no meramente un campo de agente
+- la pantalla necesita espacio para estado deseado vs real, advertencias y adopción de habilidades externas
 
-#### Tab layout
+#### Diseño de pestaña
 
-The `Skills` tab should have three stacked sections:
+La pestaña `Skills` debería tener tres secciones apiladas:
 
-1. Summary
-2. Managed skills
-3. External / discovered skills
+1. Resumen
+2. Habilidades gestionadas
+3. Habilidades externas / descubiertas
 
-Summary should show:
+El resumen debería mostrar:
 
-- adapter sync support
-- sync mode
-- number of managed skills
-- number of external skills
-- drift or warning count
+- soporte de sincronización del adaptador
+- modo de sincronización
+- número de habilidades gestionadas
+- número de habilidades externas
+- conteo de derivas o advertencias
 
-#### A. Desired skills
+#### A. Habilidades deseadas
 
-Show company-managed skills attached to the agent.
+Mostrar habilidades gestionadas de la empresa adjuntas al agente.
 
-Each row should show:
+Cada fila debería mostrar:
 
-- skill name
-- shortname
-- sync state
-- source
-- last adapter observation if available
+- nombre de habilidad
+- nombre corto
+- estado de sincronización
+- fuente
+- última observación del adaptador si está disponible
 
-Each row should support:
+Cada fila debería admitir:
 
-- enable / disable
-- open skill detail
-- see source badge
-- see sync badge
+- habilitar / deshabilitar
+- abrir detalle de habilidad
+- ver insignia de fuente
+- ver insignia de sincronización
 
-#### B. External or discovered skills
+#### B. Habilidades externas o descubiertas
 
-Show skills reported by the adapter that are not company-managed.
+Mostrar habilidades reportadas por el adaptador que no son gestionadas por la empresa.
 
-This matters because Codex and similar adapters may already have local skills that Paperclip did not install.
+Esto importa porque Codex y adaptadores similares pueden ya tener habilidades locales que Paperclip no instaló.
 
-These should be clearly marked:
+Estas deberían estar claramente marcadas:
 
-- external
-- not managed by Paperclip
+- externa
+- no gestionada por Paperclip
 
-Each external row should support:
+Cada fila externa debería admitir:
 
-- inspect
-- adopt into company library later
-- attach as managed skill later if appropriate
+- inspeccionar
+- adoptar en la biblioteca de la empresa más adelante
+- adjuntar como habilidad gestionada más adelante si corresponde
 
-#### C. Sync controls
+#### C. Controles de sincronización
 
-Support:
+Admitir:
 
-- sync
-- reset draft
-- detach
+- sincronizar
+- restablecer borrador
+- desadjuntar
 
-Future:
+Futuro:
 
-- import external skill into company library
-- promote ad hoc local skill into a managed company skill
+- importar habilidad externa a la biblioteca de la empresa
+- promover habilidad local ad hoc a habilidad de empresa gestionada
 
-Recommended footer actions:
+Acciones de pie recomendadas:
 
 - `Sync skills`
 - `Reset`
 - `Refresh adapter state`
 
-## 6. Skill State Model In The UI
+## 6. Modelo de estado de habilidad en la UI
 
-Each skill attachment should have a user-facing state.
+Cada adjunto de habilidad debería tener un estado orientado al usuario.
 
-Suggested states:
+Estados sugeridos:
 
 - `in_sync`
 - `desired_only`
@@ -366,16 +366,16 @@ Suggested states:
 - `unmanaged`
 - `unknown`
 
-Definitions:
+Definiciones:
 
-- `in_sync`: desired and actual match
-- `desired_only`: Paperclip wants it, adapter does not show it yet
-- `external`: adapter has it but Paperclip does not manage it
-- `drifted`: adapter has a conflicting or unexpected version/location
-- `unmanaged`: adapter does not support sync, Paperclip only tracks desired state
-- `unknown`: adapter read failed or state cannot be trusted
+- `in_sync`: deseado y real coinciden
+- `desired_only`: Paperclip la quiere, el adaptador aún no la muestra
+- `external`: el adaptador la tiene pero Paperclip no la gestiona
+- `drifted`: el adaptador tiene una versión/ubicación conflictiva o inesperada
+- `unmanaged`: el adaptador no admite sincronización, Paperclip solo rastrea el estado deseado
+- `unknown`: la lectura del adaptador falló o el estado no es confiable
 
-Suggested badge copy:
+Texto de insignia sugerido:
 
 - `In sync`
 - `Needs sync`
@@ -384,346 +384,346 @@ Suggested badge copy:
 - `Unmanaged`
 - `Unknown`
 
-## 7. Adapter Presentation Rules
+## 7. Reglas de presentación del adaptador
 
-The UI should not describe all adapters the same way.
+La UI no debería describir todos los adaptadores de la misma forma.
 
-### 7.1 Persistent adapters
+### 7.1 Adaptadores persistentes
 
-Example:
+Ejemplo:
 
 - Codex local
 
-Language:
+Lenguaje:
 
-- installed
-- synced into adapter home
-- external skills detected
+- instalado
+- sincronizado en el directorio del adaptador
+- habilidades externas detectadas
 
-### 7.2 Ephemeral adapters
+### 7.2 Adaptadores efímeros
 
-Example:
+Ejemplo:
 
 - Claude local
 
-Language:
+Lenguaje:
 
-- will be mounted on next run
-- effective runtime skills
-- not globally installed
+- se montará en la próxima ejecución
+- habilidades efectivas de tiempo de ejecución
+- no instalado globalmente
 
-### 7.3 Unsupported adapters
+### 7.3 Adaptadores no admitidos
 
-Language:
+Lenguaje:
 
-- this adapter does not implement skill sync yet
-- Paperclip can still track desired skills
-- actual adapter state is unavailable
+- este adaptador aún no implementa sincronización de habilidades
+- Paperclip aún puede rastrear habilidades deseadas
+- el estado real del adaptador no está disponible
 
-This state should still allow:
+Este estado aún debería permitir:
 
-- attaching company skills to the agent as desired state
-- export/import of those desired attachments
+- adjuntar habilidades de empresa al agente como estado deseado
+- exportación/importación de esos adjuntos deseados
 
-## 7.4 Read-only adapters
+## 7.4 Adaptadores de solo lectura
 
-Some adapters may be able to list skills but not mutate them.
+Algunos adaptadores pueden listar habilidades pero no mutarlas.
 
-Language:
+Lenguaje:
 
-- Paperclip can see adapter skills
-- this adapter does not support applying changes
-- desired state can be tracked, but reconciliation is manual
+- Paperclip puede ver las habilidades del adaptador
+- este adaptador no admite aplicar cambios
+- el estado deseado puede rastrearse, pero la conciliación es manual
 
-## 8. Information Architecture
+## 8. Arquitectura de información
 
-Recommended navigation:
+Navegación recomendada:
 
-- company nav adds `Skills`
-- agent detail adds `Skills` as its own tab
-- company skill detail gets its own route when the company library ships
+- la navegación de empresa agrega `Skills`
+- el detalle de agente agrega `Skills` como su propia pestaña
+- el detalle de habilidad de empresa obtiene su propia ruta cuando se lance la biblioteca de la empresa
 
-Recommended separation:
+Separación recomendada:
 
-- Company Skills page answers: “What skills do we have?”
-- Agent Skills tab answers: “What does this agent use, and is it synced?”
+- La página de habilidades de empresa responde: "¿Qué habilidades tenemos?"
+- La pestaña de habilidades de agente responde: "¿Qué usa este agente y está sincronizado?"
 
-## 8.1 Proposed route map
+## 8.1 Mapa de rutas propuesto
 
 - `/companies/:companyId/skills`
 - `/companies/:companyId/skills/:skillId`
 - `/agents/:agentId/skills`
 
-## 8.2 Nav and discovery
+## 8.2 Navegación y descubrimiento
 
-Recommended entry points:
+Puntos de entrada recomendados:
 
-- company sidebar: `Skills`
-- agent page tabs: `Skills`
-- company import preview: link imported skills to company skills page later
-- agent skills rows: link to company skill detail
+- sidebar de empresa: `Skills`
+- pestañas de página de agente: `Skills`
+- vista previa de importación de empresa: enlazar habilidades importadas a la página de habilidades de empresa más adelante
+- filas de habilidades de agente: enlazar al detalle de habilidad de empresa
 
-## 9. Import / Export Integration
+## 9. Integración de importación / exportación
 
-Skill UI and package portability should meet in the company skill library.
+La UI de habilidades y la portabilidad de paquetes deberían encontrarse en la biblioteca de habilidades de la empresa.
 
-Import behavior:
+Comportamiento de importación:
 
-- importing a company package with `SKILL.md` content should create or update company skills
-- agent attachments should primarily come from `AGENTS.md` shortname associations
-- `.paperclip.yaml` may add Paperclip-specific fidelity, but should not replace the base shortname association model
-- referenced third-party skills should keep provenance visible
+- importar un paquete de empresa con contenido `SKILL.md` debería crear o actualizar habilidades de empresa
+- los adjuntos de agente deberían provenir principalmente de asociaciones de nombre corto de `AGENTS.md`
+- `.paperclip.yaml` puede agregar fidelidad específica de Paperclip, pero no debería reemplazar el modelo base de asociación de nombre corto
+- las habilidades de terceros referenciadas deberían mantener visible la procedencia
 
-Export behavior:
+Comportamiento de exportación:
 
-- exporting a company should include company-managed skills when selected
-- `AGENTS.md` should emit skill associations by shortname or slug
-- `.paperclip.yaml` may add Paperclip-specific skill fidelity later if needed, but should not be required for ordinary agent-to-skill association
-- adapter-only external skills should not be silently exported as managed company skills
+- exportar una empresa debería incluir habilidades gestionadas de empresa cuando se seleccionen
+- `AGENTS.md` debería emitir asociaciones de habilidades por nombre corto o slug
+- `.paperclip.yaml` puede agregar fidelidad de habilidades específica de Paperclip más adelante si se necesita, pero no debería ser requerido para la asociación ordinaria de agente a habilidad
+- las habilidades externas solo del adaptador no deberían exportarse silenciosamente como habilidades de empresa gestionadas
 
-## 9.1 Import workflows
+## 9.1 Flujos de importación
 
-V1 workflows should support:
+Los flujos V1 deberían admitir:
 
-1. import one or more skills from a local folder
-2. import one or more skills from a GitHub repo
-3. import a company package that contains skills
-4. attach imported skills to one or more agents
+1. importar una o más habilidades desde una carpeta local
+2. importar una o más habilidades desde un repositorio de GitHub
+3. importar un paquete de empresa que contenga habilidades
+4. adjuntar habilidades importadas a uno o más agentes
 
-Import preview for skills should show:
+La vista previa de importación para habilidades debería mostrar:
 
-- skills discovered
-- source and pinning
-- trust level
-- licensing warnings
-- whether an existing company skill will be created, updated, or skipped
+- habilidades descubiertas
+- fuente y fijado
+- nivel de confianza
+- advertencias de licencias
+- si una habilidad de empresa existente se creará, actualizará u omitirá
 
-## 9.2 Export workflows
+## 9.2 Flujos de exportación
 
-V1 should support:
+V1 debería admitir:
 
-1. export a company with managed skills included when selected
-2. export an agent whose `AGENTS.md` contains shortname skill associations
-3. preserve Agent Skills compatibility for each `SKILL.md`
+1. exportar una empresa con habilidades gestionadas incluidas cuando se seleccionen
+2. exportar un agente cuyo `AGENTS.md` contenga asociaciones de habilidades de nombre corto
+3. preservar la compatibilidad con Agent Skills para cada `SKILL.md`
 
-Out of scope for V1:
+Fuera del alcance de V1:
 
-- exporting adapter-only external skills as managed packages automatically
+- exportar automáticamente habilidades externas solo del adaptador como paquetes gestionados
 
-## 10. Data And API Shape
+## 10. Forma de datos y API
 
-This plan implies a clean split in backend concepts.
+Este plan implica una división limpia en los conceptos del backend.
 
-### 10.1 Company skill records
+### 10.1 Registros de habilidades de empresa
 
-Paperclip should have a company-scoped skill model or managed package model representing:
+Paperclip debería tener un modelo de habilidad con alcance de empresa o un modelo de paquete gestionado que represente:
 
-- identity
-- source
-- files
-- provenance
-- trust and licensing metadata
+- identidad
+- fuente
+- archivos
+- procedencia
+- metadatos de confianza y licencias
 
-### 10.2 Agent skill attachments
+### 10.2 Adjuntos de habilidades de agente
 
-Paperclip should separately store:
+Paperclip debería almacenar por separado:
 
-- agent id
-- skill identity
-- desired enabled state
-- optional ordering or metadata later
+- id de agente
+- identidad de habilidad
+- estado deseado habilitado
+- ordenamiento opcional o metadatos más adelante
 
-### 10.3 Adapter sync snapshot
+### 10.3 Instantánea de sincronización del adaptador
 
-Adapter reads should return:
+Las lecturas del adaptador deberían retornar:
 
-- supported flag
-- sync mode
-- entries
-- warnings
-- desired skills
+- bandera de admitido
+- modo de sincronización
+- entradas
+- advertencias
+- habilidades deseadas
 
-This already exists in rough form and should be the basis for the UI.
+Esto ya existe en forma aproximada y debería ser la base para la UI.
 
-### 10.4 UI-facing API needs
+### 10.4 Necesidades de API orientadas a la UI
 
-The complete UI implies these API surfaces:
+La UI completa implica estas superficies de API:
 
-- list company-managed skills
-- import company skills from path/URL/GitHub
-- get one company skill detail
-- list agents using a given skill
-- attach/detach company skills for an agent
-- list adapter sync snapshot for an agent
-- apply desired skills for an agent
+- listar habilidades gestionadas de empresa
+- importar habilidades de empresa desde ruta/URL/GitHub
+- obtener detalle de una habilidad de empresa
+- listar agentes que usan una habilidad dada
+- adjuntar/desadjuntar habilidades de empresa para un agente
+- listar instantánea de sincronización del adaptador para un agente
+- aplicar habilidades deseadas para un agente
 
-Existing agent-level skill sync APIs can remain the base for the agent tab.
-The company-level library APIs still need to be designed and implemented.
+Las API existentes de sincronización de habilidades a nivel de agente pueden seguir siendo la base para la pestaña del agente.
+Las API de biblioteca a nivel de empresa aún necesitan diseñarse e implementarse.
 
-## 11. Page-by-page UX
+## 11. UX página por página
 
-### 11.1 Company Skills list page
+### 11.1 Página de lista de habilidades de empresa
 
-Header:
+Encabezado:
 
-- title
-- short explanation of compatibility with Agent Skills / `skills.sh`
-- import button
+- título
+- explicación corta de compatibilidad con Agent Skills / `skills.sh`
+- botón de importar
 
-Body:
+Cuerpo:
 
-- filters
-- skill table or cards
-- empty state when none
+- filtros
+- tabla o tarjetas de habilidades
+- estado vacío cuando no hay
 
-Secondary content:
+Contenido secundario:
 
-- warnings panel for untrusted or incompatible skills
+- panel de advertencias para habilidades no confiables o incompatibles
 
-### 11.2 Company Skill detail page
+### 11.2 Página de detalle de habilidad de empresa
 
-Header:
+Encabezado:
 
-- skill name
-- shortname
-- source badge
-- trust badge
-- compatibility badge
+- nombre de habilidad
+- nombre corto
+- insignia de fuente
+- insignia de confianza
+- insignia de compatibilidad
 
-Sections:
+Secciones:
 
-- rendered `SKILL.md`
-- files and references
-- usage by agents
-- source / provenance
-- trust and licensing warnings
+- `SKILL.md` renderizado
+- archivos y referencias
+- uso por agentes
+- fuente / procedencia
+- advertencias de confianza y licencias
 
-Actions:
+Acciones:
 
-- attach to agent
-- remove from company library later
-- export later
+- adjuntar a agente
+- eliminar de la biblioteca de la empresa más adelante
+- exportar más adelante
 
-### 11.3 Agent Skills tab
+### 11.3 Pestaña de habilidades de agente
 
-Header:
+Encabezado:
 
-- adapter support summary
-- sync mode
-- refresh and sync actions
+- resumen de soporte del adaptador
+- modo de sincronización
+- acciones de actualización y sincronización
 
-Body:
+Cuerpo:
 
-- managed skills list
-- external/discovered skills list
-- warnings / unsupported state block
+- lista de habilidades gestionadas
+- lista de habilidades externas/descubiertas
+- advertencias / bloque de estado no admitido
 
-## 12. States And Empty Cases
+## 12. Estados y casos vacíos
 
-### 12.1 Company Skills page
+### 12.1 Página de habilidades de empresa
 
-States:
+Estados:
 
-- empty
-- loading
-- loaded
-- import in progress
-- import failed
+- vacío
+- cargando
+- cargado
+- importación en curso
+- importación fallida
 
-### 12.2 Company Skill detail
+### 12.2 Detalle de habilidad de empresa
 
-States:
+Estados:
 
-- loading
-- not found
+- cargando
+- no encontrado
 - incompatible
-- loaded
+- cargado
 
-### 12.3 Agent Skills tab
+### 12.3 Pestaña de habilidades de agente
 
-States:
+Estados:
 
-- loading snapshot
-- unsupported adapter
-- read-only adapter
-- sync-capable adapter
-- sync failed
-- stale draft
+- cargando instantánea
+- adaptador no admitido
+- adaptador de solo lectura
+- adaptador con capacidad de sincronización
+- sincronización fallida
+- borrador obsoleto
 
-## 13. Permissions And Governance
+## 13. Permisos y gobernanza
 
-Suggested V1 policy:
+Política V1 sugerida:
 
-- board users can manage company skills
-- board users can attach skills to agents
-- agents themselves do not mutate company skill library by default
-- later, certain agents may get scoped permissions for skill attachment or sync
+- los usuarios del tablero pueden gestionar habilidades de empresa
+- los usuarios del tablero pueden adjuntar habilidades a agentes
+- los agentes mismos no mutan la biblioteca de habilidades de empresa por defecto
+- más adelante, ciertos agentes pueden obtener permisos con alcance para adjunto o sincronización de habilidades
 
-## 14. UI Phases
+## 14. Fases de UI
 
-### Phase A: Stabilize current agent skill sync UI
+### Fase A: Estabilizar la UI actual de sincronización de habilidades de agente
 
-Goals:
+Objetivos:
 
-- move skills to an `AgentDetail` tab
-- improve status language
-- support desired-only state even on unsupported adapters
-- polish copy for persistent vs ephemeral adapters
+- mover habilidades a una pestaña de `AgentDetail`
+- mejorar el lenguaje de estado
+- admitir estado solo deseado incluso en adaptadores no admitidos
+- pulir el texto para adaptadores persistentes vs efímeros
 
-### Phase B: Add Company Skills page
+### Fase B: Agregar página de habilidades de empresa
 
-Goals:
+Objetivos:
 
-- company-level skill library
-- import from GitHub/local folder
-- basic detail view
-- usage counts by agent
-- `skills.sh`-compatible import path
+- biblioteca de habilidades a nivel de empresa
+- importar desde GitHub/carpeta local
+- vista de detalle básica
+- conteos de uso por agente
+- ruta de importación compatible con `skills.sh`
 
-### Phase C: Connect skills to portability
+### Fase C: Conectar habilidades con portabilidad
 
-Goals:
+Objetivos:
 
-- importing company packages creates company skills
-- exporting selected skills works cleanly
-- agent attachments round-trip primarily through `AGENTS.md` shortnames
+- importar paquetes de empresa crea habilidades de empresa
+- exportar habilidades seleccionadas funciona limpiamente
+- los adjuntos de agente hacen ida y vuelta principalmente a través de nombres cortos de `AGENTS.md`
 
-### Phase D: External skill adoption flow
+### Fase D: Flujo de adopción de habilidades externas
 
-Goals:
+Objetivos:
 
-- detect adapter external skills
-- allow importing them into company-managed state where possible
-- make provenance explicit
+- detectar habilidades externas del adaptador
+- permitir importarlas al estado gestionado de la empresa donde sea posible
+- hacer explícita la procedencia
 
-### Phase E: Advanced sync and drift UX
+### Fase E: UX avanzada de sincronización y deriva
 
-Goals:
+Objetivos:
 
-- desired-vs-actual diffing
-- drift resolution actions
-- multi-agent skill usage and sync reporting
+- comparación de deseado vs real
+- acciones de resolución de deriva
+- informes de uso y sincronización de habilidades multiagente
 
-## 15. Design Risks
+## 15. Riesgos de diseño
 
-1. Overloading the agent page with package management will make the feature confusing.
-2. Treating unsupported adapters as broken rather than unmanaged will make the product feel inconsistent.
-3. Mixing external adapter-discovered skills with company-managed skills without clear labels will erode trust.
-4. If company skill records do not exist, import/export and UI will remain loosely coupled and round-trip fidelity will stay weak.
-5. If agent skill associations are path-based instead of shortname-based, the format will feel too technical and too Paperclip-specific.
+1. Sobrecargar la página del agente con gestión de paquetes hará la función confusa.
+2. Tratar los adaptadores no admitidos como rotos en lugar de no gestionados hará que el producto se sienta inconsistente.
+3. Mezclar habilidades externas descubiertas por el adaptador con habilidades gestionadas de empresa sin etiquetas claras erosionará la confianza.
+4. Si los registros de habilidades de empresa no existen, la importación/exportación y la UI seguirán débilmente acopladas y la fidelidad de ida y vuelta seguirá débil.
+5. Si las asociaciones de agente a habilidad están basadas en rutas en lugar de nombres cortos, el formato se sentirá demasiado técnico y demasiado específico de Paperclip.
 
-## 16. Recommendation
+## 16. Recomendación
 
-The next product step should be:
+El próximo paso de producto debería ser:
 
-1. move skills out of agent configuration and into a dedicated `Skills` tab
-2. add a dedicated company-level `Skills` page as the library and package-management surface
-3. make company import/export target that company skill library, not the agent page directly
-4. preserve adapter-aware truth in the UI by clearly separating:
-   - desired
-   - actual
-   - external
-   - unmanaged
-5. keep agent-to-skill associations shortname-based in `AGENTS.md`
+1. mover las habilidades fuera de la configuración del agente a una pestaña dedicada de `Skills`
+2. agregar una página dedicada de `Skills` a nivel de empresa como superficie de biblioteca y gestión de paquetes
+3. hacer que la importación/exportación de empresas apunte a esa biblioteca de habilidades de empresa, no directamente a la página del agente
+4. preservar la verdad consciente del adaptador en la UI separando claramente:
+   - deseado
+   - real
+   - externo
+   - no gestionado
+5. mantener las asociaciones de agente a habilidad basadas en nombre corto en `AGENTS.md`
 
-That gives Paperclip one coherent skill story instead of forcing package management, adapter sync, and agent configuration into the same screen.
+Eso le da a Paperclip una historia coherente de habilidades en lugar de forzar la gestión de paquetes, la sincronización del adaptador y la configuración del agente en la misma pantalla.

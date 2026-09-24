@@ -50,7 +50,7 @@ export function deriveAuthTrustedOrigins(config: Config): string[] {
     try {
       trustedOrigins.add(new URL(baseUrl).origin);
     } catch {
-      // Better Auth will surface invalid base URL separately.
+      // Better Auth reportará por separado una base URL inválida.
     }
   }
   if (config.deploymentMode === "authenticated") {

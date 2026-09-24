@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# build-npm.sh — Build the paperclipai CLI package for npm publishing.
+# build-npm.sh — Compila el paquete CLI paperclipai para publicarlo en npm.
 #
-# Uses esbuild to bundle all workspace code into a single file,
-# keeping external npm dependencies as regular package dependencies.
+# Usa esbuild para empaquetar todo el código del workspace en un solo archivo,
+# manteniendo las dependencias externas de npm como dependencias normales del paquete.
 #
-# Usage:
-#   ./scripts/build-npm.sh               # full build
-#   ./scripts/build-npm.sh --skip-checks  # skip forbidden-token check (CI without token list)
+# Uso:
+#   ./scripts/build-npm.sh               # compilación completa
+#   ./scripts/build-npm.sh --skip-checks  # omite la verificación de tokens prohibidos (CI sin lista de tokens)
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CLI_DIR="$REPO_ROOT/cli"
@@ -23,27 +23,27 @@ for arg in "$@"; do
   esac
 done
 
-echo "==> Building paperclipai for npm"
+echo "==> Compilando paperclipai para npm"
 
-# ── Step 1: Forbidden token check ──────────────────────────────────────────────
+# ── Paso 1: Verificación de tokens prohibidos ──────────────────────────────────
 if [ "$skip_checks" = false ]; then
-  echo "  [1/5] Running forbidden token check..."
+  echo "  [1/5] Ejecutando verificación de tokens prohibidos..."
   node "$REPO_ROOT/scripts/check-forbidden-tokens.mjs"
 else
-  echo "  [1/5] Skipping forbidden token check (--skip-checks)"
+  echo "  [1/5] Omitiendo verificación de tokens prohibidos (--skip-checks)"
 fi
 
-# ── Step 2: TypeScript type-check ──────────────────────────────────────────────
+# ── Paso 2: Verificación de tipos de TypeScript ────────────────────────────────
 if [ "$skip_typecheck" = false ]; then
-  echo "  [2/6] Type-checking..."
+  echo "  [2/6] Verificando tipos..."
   cd "$REPO_ROOT"
   pnpm -r typecheck
 else
-  echo "  [2/6] Skipping type-check (--skip-typecheck)"
+  echo "  [2/6] Omitiendo verificación de tipos (--skip-typecheck)"
 fi
 
-# ── Step 3: Bundle CLI with esbuild ────────────────────────────────────────────
-echo "  [3/6] Bundling CLI with esbuild..."
+# ── Paso 3: Empaquetar CLI con esbuild ────────────────────────────────────────
+echo "  [3/6] Empaquetando CLI con esbuild..."
 cd "$CLI_DIR"
 rm -rf dist
 
@@ -55,26 +55,26 @@ await esbuild.build(config);
 
 chmod +x dist/index.js
 
-# ── Step 4: Validate bundled entrypoint syntax ─────────────────────────────────
-echo "  [4/6] Verifying bundled entrypoint syntax..."
+# ── Paso 4: Validar la sintaxis del punto de entrada empaquetado ────────────────
+echo "  [4/6] Verificando sintaxis del punto de entrada empaquetado..."
 node --check "$DIST_DIR/index.js"
 
-# ── Step 5: Back up dev package.json, generate publishable one ─────────────────
-echo "  [5/6] Generating publishable package.json..."
+# ── Paso 5: Respaldar package.json de desarrollo, generar el publicable ───────
+echo "  [5/6] Generando package.json publicable..."
 cp "$CLI_DIR/package.json" "$CLI_DIR/package.dev.json"
 node "$REPO_ROOT/scripts/generate-npm-package-json.mjs"
 
-# Copy root README so npm shows the repo README on the package page
+# Copia el README raíz para que npm muestre el README del repo en la página del paquete
 cp "$REPO_ROOT/README.md" "$CLI_DIR/README.md"
 
-# ── Step 6: Summary ───────────────────────────────────────────────────────────
+# ── Paso 6: Resumen ───────────────────────────────────────────────────────────
 BUNDLE_SIZE=$(wc -c < "$DIST_DIR/index.js" | xargs)
-echo "  [6/6] Build verification..."
+echo "  [6/6] Verificando la compilación..."
 echo ""
-echo "Build complete."
-echo "  Bundle: cli/dist/index.js (${BUNDLE_SIZE} bytes)"
-echo "  Source map: cli/dist/index.js.map"
+echo "Compilación completa."
+echo "  Paquete: cli/dist/index.js (${BUNDLE_SIZE} bytes)"
+echo "  Mapa de fuentes: cli/dist/index.js.map"
 echo ""
-echo "To preview:   cd cli && npm pack --dry-run"
-echo "To publish:   cd cli && npm publish --access public"
-echo "To restore:   mv cli/package.dev.json cli/package.json"
+echo "Para previsualizar:   cd cli && npm pack --dry-run"
+echo "Para publicar:        cd cli && npm publish --access public"
+echo "Para restaurar:       mv cli/package.dev.json cli/package.json"

@@ -43,14 +43,14 @@ interface ApprovalCommentOptions extends BaseClientOptions {
 }
 
 export function registerApprovalCommands(program: Command): void {
-  const approval = program.command("approval").description("Approval operations");
+  const approval = program.command("approval").description("Operaciones de aprobaciones");
 
   addCommonClientOptions(
     approval
       .command("list")
-      .description("List approvals for a company")
-      .requiredOption("-C, --company-id <id>", "Company ID")
-      .option("--status <status>", "Status filter")
+      .description("Listar aprobaciones de una empresa")
+      .requiredOption("-C, --company-id <id>", "ID de empresa")
+      .option("--status <status>", "Filtro de estado")
       .action(async (opts: ApprovalListOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -93,8 +93,8 @@ export function registerApprovalCommands(program: Command): void {
   addCommonClientOptions(
     approval
       .command("get")
-      .description("Get one approval")
-      .argument("<approvalId>", "Approval ID")
+      .description("Obtener una aprobación")
+      .argument("<approvalId>", "ID de aprobación")
       .action(async (approvalId: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -109,12 +109,12 @@ export function registerApprovalCommands(program: Command): void {
   addCommonClientOptions(
     approval
       .command("create")
-      .description("Create an approval request")
-      .requiredOption("-C, --company-id <id>", "Company ID")
-      .requiredOption("--type <type>", "Approval type (hire_agent|approve_ceo_strategy)")
-      .requiredOption("--payload <json>", "Approval payload as JSON object")
-      .option("--requested-by-agent-id <id>", "Requesting agent ID")
-      .option("--issue-ids <csv>", "Comma-separated linked issue IDs")
+      .description("Crear una solicitud de aprobación")
+      .requiredOption("-C, --company-id <id>", "ID de empresa")
+      .requiredOption("--type <type>", "Tipo de aprobación (hire_agent|approve_ceo_strategy)")
+      .requiredOption("--payload <json>", "Payload de la aprobación como objeto JSON")
+      .option("--requested-by-agent-id <id>", "ID del agente solicitante")
+      .option("--issue-ids <csv>", "IDs de issues vinculados separados por comas")
       .action(async (opts: ApprovalCreateOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -137,10 +137,10 @@ export function registerApprovalCommands(program: Command): void {
   addCommonClientOptions(
     approval
       .command("approve")
-      .description("Approve an approval request")
-      .argument("<approvalId>", "Approval ID")
-      .option("--decision-note <text>", "Decision note")
-      .option("--decided-by-user-id <id>", "Decision actor user ID")
+      .description("Aprobar una solicitud de aprobación")
+      .argument("<approvalId>", "ID de aprobación")
+      .option("--decision-note <text>", "Nota de la decisión")
+      .option("--decided-by-user-id <id>", "ID de usuario del actor de la decisión")
       .action(async (approvalId: string, opts: ApprovalDecisionOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -159,10 +159,10 @@ export function registerApprovalCommands(program: Command): void {
   addCommonClientOptions(
     approval
       .command("reject")
-      .description("Reject an approval request")
-      .argument("<approvalId>", "Approval ID")
-      .option("--decision-note <text>", "Decision note")
-      .option("--decided-by-user-id <id>", "Decision actor user ID")
+      .description("Rechazar una solicitud de aprobación")
+      .argument("<approvalId>", "ID de aprobación")
+      .option("--decision-note <text>", "Nota de la decisión")
+      .option("--decided-by-user-id <id>", "ID de usuario del actor de la decisión")
       .action(async (approvalId: string, opts: ApprovalDecisionOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -181,10 +181,10 @@ export function registerApprovalCommands(program: Command): void {
   addCommonClientOptions(
     approval
       .command("request-revision")
-      .description("Request revision for an approval")
-      .argument("<approvalId>", "Approval ID")
-      .option("--decision-note <text>", "Decision note")
-      .option("--decided-by-user-id <id>", "Decision actor user ID")
+      .description("Solicitar revisión de una aprobación")
+      .argument("<approvalId>", "ID de aprobación")
+      .option("--decision-note <text>", "Nota de la decisión")
+      .option("--decided-by-user-id <id>", "ID de usuario del actor de la decisión")
       .action(async (approvalId: string, opts: ApprovalDecisionOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -203,9 +203,9 @@ export function registerApprovalCommands(program: Command): void {
   addCommonClientOptions(
     approval
       .command("resubmit")
-      .description("Resubmit an approval (optionally with new payload)")
-      .argument("<approvalId>", "Approval ID")
-      .option("--payload <json>", "Payload JSON object")
+      .description("Reenviar una aprobación (opcionalmente con nuevo payload)")
+      .argument("<approvalId>", "ID de aprobación")
+      .option("--payload <json>", "Objeto JSON de payload")
       .action(async (approvalId: string, opts: ApprovalResubmitOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -223,9 +223,9 @@ export function registerApprovalCommands(program: Command): void {
   addCommonClientOptions(
     approval
       .command("comment")
-      .description("Add comment to an approval")
-      .argument("<approvalId>", "Approval ID")
-      .requiredOption("--body <text>", "Comment body")
+      .description("Agregar comentario a una aprobación")
+      .argument("<approvalId>", "ID de aprobación")
+      .requiredOption("--body <text>", "Cuerpo del comentario")
       .action(async (approvalId: string, opts: ApprovalCommentOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -250,10 +250,10 @@ function parseJsonObject(value: string, name: string): Record<string, unknown> {
   try {
     const parsed = JSON.parse(value) as unknown;
     if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      throw new Error(`${name} must be a JSON object`);
+      throw new Error(`${name} debe ser un objeto JSON`);
     }
     return parsed as Record<string, unknown>;
   } catch (err) {
-    throw new Error(`Invalid ${name} JSON: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(`JSON de ${name} inválido: ${err instanceof Error ? err.message : String(err)}`);
   }
 }

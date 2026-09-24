@@ -38,7 +38,7 @@ export function costRoutes(db: Db) {
     assertCompanyAccess(req, companyId);
 
     if (req.actor.type === "agent" && req.actor.agentId !== req.body.agentId) {
-      res.status(403).json({ error: "Agent can only report its own costs" });
+      res.status(403).json({ error: "El agente solo puede reportar sus propios costos" });
       return;
     }
 
@@ -196,11 +196,11 @@ export function costRoutes(db: Db) {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
     assertBoard(req);
-    // validate companyId resolves to a real company so the "__none__" sentinel
-    // and any forged ids are rejected before we touch provider credentials
+    // valida que companyId se resuelva a una empresa real para que el centinela "__none__"
+    // y cualquier id falsificado se rechace antes de tocar las credenciales del proveedor
     const company = await companies.getById(companyId);
     if (!company) {
-      res.status(404).json({ error: "Company not found" });
+      res.status(404).json({ error: "Empresa no encontrada" });
       return;
     }
     const results = await fetchAllQuotaWindows();
@@ -253,7 +253,7 @@ export function costRoutes(db: Db) {
     assertCompanyAccess(req, companyId);
     const company = await companies.update(companyId, { budgetMonthlyCents: req.body.budgetMonthlyCents });
     if (!company) {
-      res.status(404).json({ error: "Company not found" });
+      res.status(404).json({ error: "Empresa no encontrada" });
       return;
     }
 
@@ -285,7 +285,7 @@ export function costRoutes(db: Db) {
     const agentId = req.params.agentId as string;
     const agent = await agents.getById(agentId);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
 
@@ -293,14 +293,14 @@ export function costRoutes(db: Db) {
 
     if (req.actor.type === "agent") {
       if (req.actor.agentId !== agentId) {
-        res.status(403).json({ error: "Agent can only change its own budget" });
+        res.status(403).json({ error: "El agente solo puede cambiar su propio presupuesto" });
         return;
       }
     }
 
     const updated = await agents.update(agentId, { budgetMonthlyCents: req.body.budgetMonthlyCents });
     if (!updated) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
 

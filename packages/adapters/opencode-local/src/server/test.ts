@@ -65,13 +65,13 @@ export async function testEnvironment(
     checks.push({
       code: "opencode_cwd_valid",
       level: "info",
-      message: `Working directory is valid: ${cwd}`,
+      message: `El directorio de trabajo es válido: ${cwd}`,
     });
   } catch (err) {
     checks.push({
       code: "opencode_cwd_invalid",
       level: "error",
-      message: err instanceof Error ? err.message : "Invalid working directory",
+      message: err instanceof Error ? err.message : "Directorio de trabajo no válido",
       detail: cwd,
     });
   }
@@ -92,14 +92,14 @@ export async function testEnvironment(
     });
   }
 
-  // Prevent OpenCode from writing an opencode.json into the working directory.
+  // Evita que OpenCode escriba un opencode.json en el directorio de trabajo.
   env.OPENCODE_DISABLE_PROJECT_CONFIG = "true";
   const preparedRuntimeConfig = await prepareOpenCodeRuntimeConfig({ env, config });
   if (asBoolean(config.dangerouslySkipPermissions, true)) {
     checks.push({
       code: "opencode_headless_permissions_enabled",
       level: "info",
-      message: "Headless OpenCode external-directory permissions are auto-approved for unattended runs.",
+      message: "Los permisos headless de directorios externos de OpenCode se aprueban automáticamente para ejecuciones desatendidas.",
     });
   }
   try {
@@ -110,7 +110,7 @@ export async function testEnvironment(
       checks.push({
         code: "opencode_command_skipped",
         level: "warn",
-        message: "Skipped command check because working directory validation failed.",
+        message: "Se omitió la verificación del comando porque falló la validación del directorio de trabajo.",
         detail: command,
       });
     } else {
@@ -119,13 +119,13 @@ export async function testEnvironment(
         checks.push({
           code: "opencode_command_resolvable",
           level: "info",
-          message: `Command is executable: ${command}`,
+          message: `El comando es ejecutable: ${command}`,
         });
       } catch (err) {
         checks.push({
           code: "opencode_command_unresolvable",
           level: "error",
-          message: err instanceof Error ? err.message : "Command is not executable",
+          message: err instanceof Error ? err.message : "El comando no es ejecutable",
           detail: command,
         });
       }
@@ -144,14 +144,14 @@ export async function testEnvironment(
           checks.push({
             code: "opencode_models_discovered",
             level: "info",
-            message: `Discovered ${discovered.length} model(s) from OpenCode providers.`,
+            message: `Se descubrieron ${discovered.length} modelo(s) de los proveedores de OpenCode.`,
           });
         } else {
           checks.push({
             code: "opencode_models_empty",
             level: "error",
-            message: "OpenCode returned no models.",
-            hint: "Run `opencode models` and verify provider authentication.",
+            message: "OpenCode no devolvió modelos.",
+            hint: "Ejecuta `opencode models` y verifica la autenticación del proveedor.",
           });
         }
       } catch (err) {
@@ -160,16 +160,16 @@ export async function testEnvironment(
           checks.push({
             code: "opencode_hello_probe_model_unavailable",
             level: "warn",
-            message: "The configured model was not found by the provider.",
+            message: "El proveedor no encontró el modelo configurado.",
             detail: errMsg,
-            hint: "Run `opencode models` and choose an available provider/model ID.",
+            hint: "Ejecuta `opencode models` y elige un ID de proveedor/modelo disponible.",
           });
         } else {
           checks.push({
             code: "opencode_models_discovery_failed",
             level: "error",
-            message: errMsg || "OpenCode model discovery failed.",
-            hint: "Run `opencode models` manually to verify provider auth and config.",
+            message: errMsg || "Falló el descubrimiento de modelos de OpenCode.",
+            hint: "Ejecuta `opencode models` manualmente para verificar la autenticación y la configuración del proveedor.",
           });
         }
       }
@@ -180,7 +180,7 @@ export async function testEnvironment(
           checks.push({
             code: "opencode_models_discovered",
             level: "info",
-            message: `Discovered ${discovered.length} model(s) from OpenCode providers.`,
+            message: `Se descubrieron ${discovered.length} modelo(s) de los proveedores de OpenCode.`,
           });
         }
       } catch (err) {
@@ -189,16 +189,16 @@ export async function testEnvironment(
           checks.push({
             code: "opencode_hello_probe_model_unavailable",
             level: "warn",
-            message: "The configured model was not found by the provider.",
+            message: "El proveedor no encontró el modelo configurado.",
             detail: errMsg,
-            hint: "Run `opencode models` and choose an available provider/model ID.",
+            hint: "Ejecuta `opencode models` y elige un ID de proveedor/modelo disponible.",
           });
         } else {
           checks.push({
             code: "opencode_models_discovery_failed",
             level: "warn",
-            message: errMsg || "OpenCode model discovery failed (best-effort, no model configured).",
-            hint: "Run `opencode models` manually to verify provider auth and config.",
+            message: errMsg || "Falló el descubrimiento de modelos de OpenCode (mejor esfuerzo, sin modelo configurado).",
+            hint: "Ejecuta `opencode models` manualmente para verificar la autenticación y la configuración del proveedor.",
           });
         }
       }
@@ -206,7 +206,7 @@ export async function testEnvironment(
 
     const modelUnavailable = checks.some((check) => check.code === "opencode_hello_probe_model_unavailable");
     if (!configuredModel && !modelUnavailable) {
-      // No model configured – skip model requirement if no model-related checks exist
+      // Sin modelo configurado: omitir el requisito de modelo si no existen verificaciones relacionadas con el modelo
     } else if (configuredModel && canRunProbe) {
       try {
         await ensureOpenCodeModelConfiguredAndAvailable({
@@ -218,15 +218,15 @@ export async function testEnvironment(
         checks.push({
           code: "opencode_model_configured",
           level: "info",
-          message: `Configured model: ${configuredModel}`,
+          message: `Modelo configurado: ${configuredModel}`,
         });
         modelValidationPassed = true;
       } catch (err) {
         checks.push({
           code: "opencode_model_invalid",
           level: "error",
-          message: err instanceof Error ? err.message : "Configured model is unavailable.",
-          hint: "Run `opencode models` and choose a currently available provider/model ID.",
+          message: err instanceof Error ? err.message : "El modelo configurado no está disponible.",
+          hint: "Ejecuta `opencode models` y elige un ID de proveedor/modelo disponible actualmente.",
         });
       }
     }
@@ -268,8 +268,8 @@ export async function testEnvironment(
           checks.push({
             code: "opencode_hello_probe_timed_out",
             level: "warn",
-            message: "OpenCode hello probe timed out.",
-            hint: "Retry the probe. If this persists, run OpenCode manually in this working directory.",
+            message: "La sonda hello de OpenCode agotó el tiempo de espera.",
+            hint: "Reintenta la sonda. Si persiste, ejecuta OpenCode manualmente en este directorio de trabajo.",
           });
         } else if ((probe.exitCode ?? 1) === 0 && !parsed.errorMessage) {
           const summary = parsed.summary.trim();
@@ -278,47 +278,47 @@ export async function testEnvironment(
             code: hasHello ? "opencode_hello_probe_passed" : "opencode_hello_probe_unexpected_output",
             level: hasHello ? "info" : "warn",
             message: hasHello
-              ? "OpenCode hello probe succeeded."
-              : "OpenCode probe ran but did not return `hello` as expected.",
+              ? "La sonda hello de OpenCode se completó correctamente."
+              : "La sonda de OpenCode se ejecutó, pero no devolvió `hello` como se esperaba.",
             ...(summary ? { detail: summary.replace(/\s+/g, " ").trim().slice(0, 240) } : {}),
             ...(hasHello
               ? {}
               : {
-                  hint: "Run `opencode run --format json` manually and prompt `Respond with hello` to inspect output.",
+                  hint: "Ejecuta `opencode run --format json` manualmente con el prompt `Respond with hello` para inspeccionar la salida.",
                 }),
           });
         } else if (/ProviderModelNotFoundError/i.test(authEvidence)) {
           checks.push({
             code: "opencode_hello_probe_model_unavailable",
             level: "warn",
-            message: "The configured model was not found by the provider.",
+            message: "El proveedor no encontró el modelo configurado.",
             ...(detail ? { detail } : {}),
-            hint: "Run `opencode models` and choose an available provider/model ID.",
+            hint: "Ejecuta `opencode models` y elige un ID de proveedor/modelo disponible.",
           });
         } else if (OPENCODE_AUTH_REQUIRED_RE.test(authEvidence)) {
           checks.push({
             code: "opencode_hello_probe_auth_required",
             level: "warn",
-            message: "OpenCode is installed, but provider authentication is not ready.",
+            message: "OpenCode está instalado, pero la autenticación del proveedor no está lista.",
             ...(detail ? { detail } : {}),
-            hint: "Run `opencode auth login` or set provider credentials, then retry the probe.",
+            hint: "Ejecuta `opencode auth login` o configura las credenciales del proveedor, y reintenta la sonda.",
           });
         } else {
           checks.push({
             code: "opencode_hello_probe_failed",
             level: "error",
-            message: "OpenCode hello probe failed.",
+            message: "La sonda hello de OpenCode falló.",
             ...(detail ? { detail } : {}),
-            hint: "Run `opencode run --format json` manually in this working directory to debug.",
+            hint: "Ejecuta `opencode run --format json` manualmente en este directorio de trabajo para depurar.",
           });
         }
       } catch (err) {
         checks.push({
           code: "opencode_hello_probe_failed",
           level: "error",
-          message: "OpenCode hello probe failed.",
+          message: "La sonda hello de OpenCode falló.",
           detail: err instanceof Error ? err.message : String(err),
-          hint: "Run `opencode run --format json` manually in this working directory to debug.",
+          hint: "Ejecuta `opencode run --format json` manualmente en este directorio de trabajo para depurar.",
         });
       }
     }

@@ -1,223 +1,223 @@
-# Deployment/Auth Mode Consolidation Plan
+# Plan de consolidación de modo de despliegue/auth
 
-Status: Proposal  
-Owner: Server + CLI + UI  
-Date: 2026-02-23
+Estado: Propuesta  
+Responsable: Servidor + CLI + UI  
+Fecha: 2026-02-23
 
-## Goal
+## Objetivo
 
-Keep Paperclip low-friction while making the mode model simpler and safer:
+Mantener Paperclip de baja fricción mientras el modelo de modos es más simple y seguro:
 
-1. `local_trusted` remains the default and easiest path.
-2. one authenticated runtime mode supports both private-network local use and public cloud use.
-3. onboarding/configure/doctor stay primarily interactive and flagless.
-4. Board identity is represented by a real user row in the database, with explicit role/membership integration points.
+1. `local_trusted` sigue siendo el default y la ruta más fácil.
+2. un modo de tiempo de ejecución autenticado soporta tanto el uso local en red privada como el uso en la nube pública.
+3. onboarding/configure/doctor siguen siendo principalmente interactivos y sin flags.
+4. La identidad del tablero está representada por una fila real de usuario en la base de datos, con puntos explícitos de integración de rol/membresía.
 
-## Product Constraints (From Review)
+## Restricciones de producto (de la revisión)
 
-1. `onboard` default flow is interactive (no flags required).
-2. first mode choice defaults to `local_trusted`, with clear UX copy.
-3. authenticated flow gives guidance for private vs public exposure.
-4. `doctor` should also be flagless by default (read config and evaluate the selected mode/profile).
-5. do not add backward-compatibility alias layers for abandoned mode names.
-6. plan must explicitly cover how users/Board are represented in DB and how that affects task assignment and permissions.
+1. El flujo default de `onboard` es interactivo (sin flags requeridos).
+2. la primera elección de modo por defecto es `local_trusted`, con copy UX claro.
+3. el flujo autenticado da guía para exposición privada vs pública.
+4. `doctor` también debería ser sin flags por defecto (leer la configuración y evaluar el modo/perfil seleccionado).
+5. no agregar capas de alias de retrocompatibilidad para nombres de modos abandonados.
+6. el plan debe cubrir explícitamente cómo se representan los usuarios/tablero en DB y cómo eso afecta la asignación de tareas y los permisos.
 
-## Current Implementation Audit (As Of 2026-02-23)
+## Auditoría de implementación actual (al 2026-02-23)
 
-## Runtime/Auth
+## Tiempo de ejecución/auth
 
-- Runtime deployment modes are currently `local_trusted | cloud_hosted` (`packages/shared/src/constants.ts`).
-- `local_trusted` actor is currently synthetic:
+- Los modos de despliegue en tiempo de ejecución son actualmente `local_trusted | cloud_hosted` (`packages/shared/src/constants.ts`).
+- El actor de `local_trusted` es actualmente sintético:
   - `req.actor = { type: "board", userId: "local-board", source: "local_implicit" }` (`server/src/middleware/auth.ts`).
-  - this is not a real auth user row by default.
-- `cloud_hosted` uses Better Auth sessions and `authUsers` rows (`server/src/auth/better-auth.ts`, `packages/db/src/schema/auth.ts`).
+  - esto no es una fila real de usuario de auth por defecto.
+- `cloud_hosted` usa sesiones de Better Auth y filas `authUsers` (`server/src/auth/better-auth.ts`, `packages/db/src/schema/auth.ts`).
 
-## Bootstrap/Admin
+## Bootstrap/admin
 
-- `cloud_hosted` requires `BETTER_AUTH_SECRET` and reports bootstrap status from `instance_user_roles` (`server/src/index.ts`, `server/src/routes/health.ts`).
-- bootstrap invite acceptance promotes the signed-in user to `instance_admin` (`server/src/routes/access.ts`, `server/src/services/access.ts`).
+- `cloud_hosted` requiere `BETTER_AUTH_SECRET` y reporta el estado de bootstrap desde `instance_user_roles` (`server/src/index.ts`, `server/src/routes/health.ts`).
+- la aceptación de la invitación de bootstrap promueve al usuario autenticado a `instance_admin` (`server/src/routes/access.ts`, `server/src/services/access.ts`).
 
-## Membership/Assignment Integration
+## Integración de membresía/asignación
 
-- User task assignment requires active `company_memberships` entry for that user (`server/src/services/issues.ts`).
-- Local implicit board identity is not automatically a real membership principal; this is a gap for “board as assignable user” semantics.
+- La asignación de tareas a usuarios requiere una entrada `company_memberships` activa para ese usuario (`server/src/services/issues.ts`).
+- La identidad del tablero implícita local no es automáticamente un principal real de membresía; esto es una brecha para la semántica de "tablero como usuario asignable".
 
-## Proposed Runtime Model
+## Modelo de tiempo de ejecución propuesto
 
-## Modes
+## Modos
 
 1. `local_trusted`
-- no login required
-- localhost/loopback only
-- optimized for single-operator local setup
+- no se requiere login
+- solo localhost/loopback
+- optimizado para configuración local de un solo operador
 
 2. `authenticated`
-- login required for human actions
-- same auth stack for both private and public deployments
+- login requerido para acciones humanas
+- mismo stack de auth para despliegues privados y públicos
 
-## Exposure Policy (Within `authenticated`)
+## Política de exposición (dentro de `authenticated`)
 
 1. `private`
-- private-network deployments (LAN, VPN, Tailscale)
-- low-friction URL handling (`auto` base URL)
-- strict host allow policy for private targets
+- despliegues de red privada (LAN, VPN, Tailscale)
+- manejo de URL de baja fricción (`auto` base URL)
+- política estricta de hosts permitidos para objetivos privados
 
 2. `public`
-- internet-facing deployments
-- explicit public base URL required
-- stricter deployment checks in doctor
+- despliegues con cara a internet
+- URL pública explícita requerida
+- chequeos de despliegue más estrictos en doctor
 
-This is one authenticated mode with two safety policies, not two different auth systems.
+Esto es un modo autenticado con dos políticas de seguridad, no dos sistemas de auth diferentes.
 
-## UX Contract
+## Contrato UX
 
-## Onboard (Primary Path: Interactive)
+## Onboard (ruta principal: interactiva)
 
-Default command remains:
+El comando default sigue siendo:
 
 ```sh
 pnpm paperclipai onboard
 ```
 
-Interactive server step:
+Paso interactivo del servidor:
 
-1. ask mode with default selection `local_trusted`
-2. copy for options:
+1. preguntar el modo con selección por defecto `local_trusted`
+2. copy para las opciones:
 - `local_trusted`: "Easiest for local setup (no login, localhost-only)"
 - `authenticated`: "Login required; use for private network or public hosting"
-3. if `authenticated`, ask exposure:
+3. si `authenticated`, preguntar la exposición:
 - `private`: "Private network access (for example Tailscale), lower setup friction"
 - `public`: "Internet-facing deployment, stricter security requirements"
-4. only if `authenticated + public`, ask for explicit public URL
+4. solo si `authenticated + public`, pedir la URL pública explícita
 
-Flags are optional power-user overrides, not required for normal setup.
+Los flags son overrides opcionales para usuarios avanzados, no requeridos para la configuración normal.
 
 ## Configure
 
-Default command remains interactive:
+El comando default sigue siendo interactivo:
 
 ```sh
 pnpm paperclipai configure --section server
 ```
 
-Same mode/exposure questions and defaults as onboarding.
+Mismas preguntas y defaults de modo/exposición que onboarding.
 
 ## Doctor
 
-Default command remains flagless:
+El comando default sigue siendo sin flags:
 
 ```sh
 pnpm paperclipai doctor
 ```
 
-Doctor reads configured mode/exposure and applies relevant checks.
-Optional flags may exist for override/testing, but are not required for normal operation.
+Doctor lee el modo/exposición configurado y aplica los chequeos relevantes.
+Pueden existir flags opcionales para override/pruebas, pero no se requieren para el uso normal.
 
-## Board/User Data Model Integration (Required)
+## Integración del modelo de datos Tablero/usuario (requerido)
 
-## Requirement
+## Requisito
 
-Board must be a real DB user principal so user-centric features (task assignment, membership, audit identity) work consistently.
+El tablero debe ser un principal de usuario real en DB para que las funciones céntricas en el usuario (asignación de tareas, membresía, identidad de auditoría) funcionen de forma consistente.
 
-## Target Behavior
+## Comportamiento objetivo
 
 1. `local_trusted`
-- seed/ensure a deterministic local board user row in `authUsers` during setup/startup.
-- actor middleware uses that real user id instead of synthetic-only identity.
-- ensure:
-  - `instance_user_roles` includes `instance_admin` for this user.
-  - company membership can be created/maintained for this user where needed.
+- sembrar/asegurar una fila determinista de usuario del tablero local en `authUsers` durante la configuración/arranque.
+- el middleware de actor usa ese id de usuario real en lugar de la identidad solo-sintética.
+- asegurar:
+  - `instance_user_roles` incluye `instance_admin` para este usuario.
+  - la membresía de empresa puede crearse/mantenerse para este usuario donde se necesite.
 
 2. `authenticated`
-- Better Auth sign-up creates user row.
-- bootstrap/admin flow promotes that real user to `instance_admin`.
-- first company creation flow should ensure creator membership is active.
+- el registro de Better Auth crea la fila de usuario.
+- el flujo de bootstrap/admin promueve a ese usuario real a `instance_admin`.
+- el primer flujo de creación de empresa debería asegurar que la membresía del creador esté activa.
 
-## Why This Matters
+## Por qué esto importa
 
-- `assigneeUserId` validation checks company membership.
-- without a real board user + membership path, assigning tasks to board user is inconsistent.
+- la validación de `assigneeUserId` verifica la membresía de empresa.
+- sin una ruta real de usuario del tablero + membresía, asignar tareas al usuario del tablero es inconsistente.
 
-## Configuration Contract (Target)
+## Contrato de configuración (objetivo)
 
 - `server.mode`: `local_trusted | authenticated`
-- `server.exposure`: `private | public` (required when mode is `authenticated`)
+- `server.exposure`: `private | public` (requerido cuando el modo es `authenticated`)
 - `auth.baseUrlMode`: `auto | explicit`
-- `auth.publicBaseUrl`: required when `authenticated + public`
+- `auth.publicBaseUrl`: requerido cuando `authenticated + public`
 
-No compatibility aliases for discarded naming variants.
+Sin alias de compatibilidad para variantes de nomenclatura descartadas.
 
-## No Backward-Compatibility Layer
+## Sin capa de retrocompatibilidad
 
-This change is a clean cut:
+Este cambio es un corte limpio:
 
-- remove use of old split terminology in code and prompts.
-- config schema uses only canonical fields/values above.
-- existing dev instances can rerun onboarding or update config once.
+- eliminar el uso de la vieja terminología dividida en código y prompts.
+- el esquema de configuración usa solo los campos/valores canónicos de arriba.
+- las instancias de dev existentes pueden re-ejecutar onboarding o actualizar la configuración una vez.
 
-## Implementation Phases
+## Fases de implementación
 
-## Phase 1: Shared Schema + Config Surface
+## Fase 1: Esquema compartido + superficie de configuración
 
-- `packages/shared/src/constants.ts`: define canonical mode/exposure constants.
-- `packages/shared/src/config-schema.ts`: add mode/exposure/auth URL fields.
-- `server/src/config.ts` and CLI config types: consume canonical fields only.
+- `packages/shared/src/constants.ts`: definir constantes canónicas de modo/exposición.
+- `packages/shared/src/config-schema.ts`: agregar campos de modo/exposición/URL de auth.
+- `server/src/config.ts` y tipos de configuración del CLI: consumir solo campos canónicos.
 
-## Phase 2: CLI Interactive UX
+## Fase 2: UX interactiva del CLI
 
-- `cli/src/prompts/server.ts`: implement defaulted mode prompt and authenticated exposure guidance copy.
-- `cli/src/commands/onboard.ts`: keep interactive-first flow; optional overrides only.
-- `cli/src/commands/configure.ts`: same behavior for server section.
-- `cli/src/commands/doctor.ts`: mode-aware checks from config, flagless default flow.
+- `cli/src/prompts/server.ts`: implementar el prompt de modo con default y el copy de guía de exposición autenticada.
+- `cli/src/commands/onboard.ts`: mantener el flujo interactivo primero; solo overrides opcionales.
+- `cli/src/commands/configure.ts`: mismo comportamiento para la sección de servidor.
+- `cli/src/commands/doctor.ts`: chequeos conscientes del modo desde la configuración, flujo default sin flags.
 
-## Phase 3: Runtime/Auth Policy
+## Fase 3: Política de tiempo de ejecución/auth
 
-- `server/src/index.ts`: enforce mode-specific startup constraints.
-- `server/src/auth/better-auth.ts`: implement `auto` vs `explicit` base URL behavior.
-- host/origin trust helper for `authenticated + private`.
+- `server/src/index.ts`: aplicar restricciones de arranque específicas del modo.
+- `server/src/auth/better-auth.ts`: implementar el comportamiento de URL base `auto` vs `explicit`.
+- helper de confianza de host/origen para `authenticated + private`.
 
-## Phase 4: Board Principal Integration
+## Fase 4: Integración del principal Tablero
 
-- add ensure-board-user startup/setup step:
-  - real local board user row
-  - instance admin role row
-- ensure first-company creation path grants creator membership.
-- remove synthetic-only assumptions where they break user assignment/membership semantics.
+- agregar paso de asegurar-usuario-tablero en arranque/configuración:
+  - fila real de usuario del tablero local
+  - fila de rol admin de instancia
+- asegurar que la ruta de creación de la primera empresa otorga membresía al creador.
+- eliminar suposiciones solo-sintéticas donde rompen la semántica de asignación/membresía de usuario.
 
-## Phase 5: UI + Docs
+## Fase 5: UI + docs
 
-- update UI labels/help text around mode and exposure guidance.
-- update docs:
+- actualizar etiquetas/texto de ayuda de UI sobre el modo y la guía de exposición.
+- actualizar docs:
   - `doc/DEPLOYMENT-MODES.md`
   - `doc/DEVELOPING.md`
   - `doc/CLI.md`
   - `doc/SPEC-implementation.md`
 
-## Test Plan
+## Plan de pruebas
 
-- config schema tests for canonical mode/exposure/auth fields.
-- CLI prompt tests for default interactive selections and copy.
-- doctor tests by mode/exposure.
-- runtime tests:
-  - authenticated/private works without explicit URL
-  - authenticated/public requires explicit URL
-  - private host policy rejects untrusted hosts
-- Board principal tests:
-  - local_trusted board user exists as real DB user
-  - board can be assigned tasks via `assigneeUserId` after membership setup
-  - creator membership behavior for authenticated flows
+- pruebas de esquema de configuración para campos canónicos de modo/exposición/auth.
+- pruebas de prompts del CLI para selecciones interactivas por defecto y copy.
+- pruebas de doctor por modo/exposición.
+- pruebas de tiempo de ejecución:
+  - authenticated/private funciona sin URL explícita
+  - authenticated/public requiere URL explícita
+  - la política de host privado rechaza hosts no confiables
+- Pruebas del principal Tablero:
+  - el usuario del tablero de local_trusted existe como usuario real en DB
+  - el tablero puede tener tareas asignadas vía `assigneeUserId` después de la configuración de membresía
+  - comportamiento de membresía del creador para flujos autenticados
 
-## Acceptance Criteria
+## Criterios de aceptación
 
-1. `pnpm paperclipai onboard` is interactive-first and defaults to `local_trusted`.
-2. authenticated mode is one runtime mode with `private/public` exposure guidance.
-3. `pnpm paperclipai doctor` works flagless with mode-aware checks.
-4. no extra compatibility aliases for dropped naming variants.
-5. Board identity is represented by real DB user/role/membership integration points, enabling consistent task assignment and permission behavior.
+1. `pnpm paperclipai onboard` es interactivo primero y por defecto es `local_trusted`.
+2. el modo autenticado es un modo de tiempo de ejecución con guía de exposición `private/public`.
+3. `pnpm paperclipai doctor` funciona sin flags con chequeos conscientes del modo.
+4. sin alias de compatibilidad extra para variantes de nomenclatura descartadas.
+5. La identidad del tablero está representada por puntos reales de integración de usuario/rol/membresía en DB, permitiendo un comportamiento consistente de asignación de tareas y permisos.
 
-## Verification Gate
+## Puerta de verificación
 
-Before merge:
+Antes del merge:
 
 ```sh
 pnpm -r typecheck

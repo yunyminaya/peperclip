@@ -1,121 +1,121 @@
-# Paperclip V1 Implementation Spec
+# Especificación de implementación de Paperclip V1
 
-Status: Implementation contract for first release (V1)
-Date: 2026-02-17
-Audience: Product, engineering, and agent-integration authors
-Source inputs: `GOAL.md`, `PRODUCT.md`, `SPEC.md`, `DATABASE.md`, current monorepo code
+Estado: Contrato de implementación para la primera versión (V1)
+Fecha: 2026-02-17
+Audiencia: Producto, ingeniería y autores de integración de agentes
+Entradas fuente: `GOAL.md`, `PRODUCT.md`, `SPEC.md`, `DATABASE.md`, código actual del monorepo
 
-## 1. Document Role
+## 1. Rol del documento
 
-`SPEC.md` remains the long-horizon product spec.
-This document is the concrete, build-ready V1 contract.
-When there is a conflict, `SPEC-implementation.md` controls V1 behavior.
+`SPEC.md` sigue siendo la especificación de producto de largo plazo.
+Este documento es el contrato concreto y listo para construir de V1.
+Cuando haya un conflicto, `SPEC-implementation.md` controla el comportamiento de V1.
 
-## 2. V1 Outcomes
+## 2. Resultados de V1
 
-Paperclip V1 must provide a full control-plane loop for autonomous agents:
+Paperclip V1 debe proporcionar un ciclo completo de plano de control para agentes autónomos:
 
-1. A human board creates a company and defines goals.
-2. The board creates and manages agents in an org tree.
-3. Agents receive and execute tasks via heartbeat invocations.
-4. All work is tracked through tasks/comments with audit visibility.
-5. Token/cost usage is reported and budget limits can stop work.
-6. The board can intervene anywhere (pause agents/tasks, override decisions).
+1. Un tablero humano crea una empresa y define objetivos.
+2. El tablero crea y gestiona agentes en un organigrama.
+3. Los agentes reciben y ejecutan tareas mediante invocaciones de latido.
+4. Todo el trabajo se rastrea mediante tareas/comentarios con visibilidad de auditoría.
+5. Se informa el uso de tokens/costos y los límites de presupuesto pueden detener el trabajo.
+6. El tablero puede intervenir en cualquier parte (pausar agentes/tareas, anular decisiones).
 
-Success means one operator can run a small AI-native company end-to-end with clear visibility and control.
+Éxito significa que un solo operador puede gestionar una pequeña empresa nativa de IA de principio a fin con visibilidad y control claros.
 
-## 3. Explicit V1 Product Decisions
+## 3. Decisiones de producto explícitas de V1
 
-These decisions close open questions from `SPEC.md` for V1.
+Estas decisiones cierran las preguntas abiertas de `SPEC.md` para V1.
 
-| Topic | V1 Decision |
+| Tema | Decisión de V1 |
 |---|---|
-| Tenancy | Single-tenant deployment, multi-company data model |
-| Company model | Company is first-order; all business entities are company-scoped |
-| Board | Single human board operator per deployment |
-| Org graph | Strict tree (`reports_to` nullable root); no multi-manager reporting |
-| Visibility | Full visibility to board and all agents in same company |
-| Communication | Tasks + comments only (no separate chat system) |
-| Task ownership | Single assignee; atomic checkout required for `in_progress` transition |
-| Recovery | No automatic reassignment; work recovery stays manual/explicit |
-| Agent adapters | Built-in `process` and `http` adapters |
-| Auth | Mode-dependent human auth (`local_trusted` implicit board in current code; authenticated mode uses sessions), API keys for agents |
-| Budget period | Monthly UTC calendar window |
-| Budget enforcement | Soft alerts + hard limit auto-pause |
-| Deployment modes | Canonical model is `local_trusted` + `authenticated` with `private/public` exposure policy (see `doc/DEPLOYMENT-MODES.md`) |
+| Inquilinos | Despliegue de un solo inquilino, modelo de datos multiempresa |
+| Modelo de empresa | La empresa es de primer orden; todas las entidades de negocio tienen alcance de empresa |
+| Tablero | Un solo operador de tablero humano por despliegue |
+| Grafo de organización | Árbol estricto (`reports_to` raíz anulable); sin reporte a múltiples jefes |
+| Visibilidad | Visibilidad total para el tablero y todos los agentes de la misma empresa |
+| Comunicación | Solo tareas + comentarios (sin sistema de chat separado) |
+| Propiedad de tareas | Un solo asignado; checkout atómico requerido para la transición a `in_progress` |
+| Recuperación | Sin reasignación automática; la recuperación del trabajo sigue siendo manual/explícita |
+| Adaptadores de agentes | Adaptadores integrados `process` y `http` |
+| Autenticación | Autenticación humana dependiente del modo (`local_trusted` tablero implícito en el código actual; el modo autenticado usa sesiones), claves de API para agentes |
+| Período de presupuesto | Ventana de calendario UTC mensual |
+| Aplicación del presupuesto | Alertas suaves + pausa automática por límite duro |
+| Modos de despliegue | El modelo canónico es `local_trusted` + `authenticated` con política de exposición `private/public` (ver `doc/DEPLOYMENT-MODES.md`) |
 
-## 4. Current Baseline (Repo Snapshot)
+## 4. Base actual (instantánea del repositorio)
 
-As of 2026-02-17, the repo already includes:
+Al 2026-02-17, el repositorio ya incluye:
 
-- Node + TypeScript backend with REST CRUD for `agents`, `projects`, `goals`, `issues`, `activity`
-- React UI pages for dashboard/agents/projects/goals/issues lists
-- PostgreSQL schema via Drizzle with embedded PostgreSQL fallback when `DATABASE_URL` is unset
+- Backend Node + TypeScript con CRUD REST para `agents`, `projects`, `goals`, `issues`, `activity`
+- Páginas de UI React para listas de panel/agentes/proyectos/objetivos/issues
+- Esquema PostgreSQL vía Drizzle con respaldo de PostgreSQL embebido cuando `DATABASE_URL` no está definido
 
-V1 implementation extends this baseline into a company-centric, governance-aware control plane.
+La implementación de V1 extiende esta base hacia un plano de control centrado en la empresa y consciente de la gobernanza.
 
-## 5. V1 Scope
+## 5. Alcance de V1
 
-## 5.1 In Scope
+## 5.1 Dentro del alcance
 
-- Company lifecycle (create/list/get/update/archive)
-- Goal hierarchy linked to company mission
-- Agent lifecycle with org structure and adapter configuration
-- Task lifecycle with parent/child hierarchy and comments
-- Atomic task checkout and explicit task status transitions
-- Board approvals for hires and CEO strategy proposal
-- Heartbeat invocation, status tracking, and cancellation
-- Cost event ingestion and rollups (agent/task/project/company)
-- Budget settings and hard-stop enforcement
-- Board web UI for dashboard, org chart, tasks, agents, approvals, costs
-- Agent-facing API contract (task read/write, heartbeat report, cost report)
-- Auditable activity log for all mutating actions
+- Ciclo de vida de la empresa (crear/listar/obtener/actualizar/archivar)
+- Jerarquía de objetivos vinculada a la misión de la empresa
+- Ciclo de vida del agente con estructura de organización y configuración de adaptador
+- Ciclo de vida de la tarea con jerarquía padre/hijo y comentarios
+- Checkout atómico de tareas y transiciones de estado explícitas de tareas
+- Aprobaciones del tablero para contrataciones y propuesta de estrategia del CEO
+- Invocación de latido, seguimiento de estado y cancelación
+- Ingesta de eventos de costo y acumulados (agente/tarea/proyecto/empresa)
+- Ajustes de presupuesto y aplicación de tope duro
+- UI web del tablero para panel, organigrama, tareas, agentes, aprobaciones, costos
+- Contrato de API orientado a agentes (lectura/escritura de tareas, reporte de latido, reporte de costos)
+- Registro de actividad auditable para todas las acciones que mutan
 
-## 5.2 Out of Scope (V1)
+## 5.2 Fuera del alcance (V1)
 
-- Plugin framework and third-party extension SDK
-- Revenue/expense accounting beyond model/token costs
-- Knowledge base subsystem
-- Public marketplace (ClipHub)
-- Multi-board governance or role-based human permission granularity
-- Automatic self-healing orchestration (auto-reassign/retry planners)
+- Framework de plugins y SDK de extensiones de terceros
+- Contabilidad de ingresos/gastos más allá de los costos de modelo/token
+- Subsistema de base de conocimiento
+- Marketplace público (ClipHub)
+- Gobernanza de múltiples juntas o granularidad de permisos humanos basada en roles
+- Orquestación de auto-reparación automática (planificadores de auto-reasignación/reintento)
 
-## 6. Architecture
+## 6. Arquitectura
 
-## 6.1 Runtime Components
+## 6.1 Componentes en ejecución
 
-- `server/`: REST API, auth, orchestration services
-- `ui/`: Board operator interface
-- `packages/db/`: Drizzle schema, migrations, DB clients (Postgres)
-- `packages/shared/`: Shared API types, validators, constants
+- `server/`: API REST, autenticación, servicios de orquestación
+- `ui/`: Interfaz del operador del tablero
+- `packages/db/`: Esquema Drizzle, migraciones, clientes de BD (Postgres)
+- `packages/shared/`: Tipos de API compartidos, validadores, constantes
 
-## 6.2 Data Stores
+## 6.2 Almacenes de datos
 
-- Primary: PostgreSQL
-- Local default: embedded PostgreSQL at `~/.paperclip/instances/default/db`
-- Optional local prod-like: Docker Postgres
-- Optional hosted: Supabase/Postgres-compatible
-- File/object storage:
-  - local default: `~/.paperclip/instances/default/data/storage` (`local_disk`)
-  - cloud: S3-compatible object storage (`s3`)
+- Primario: PostgreSQL
+- Local por defecto: PostgreSQL embebido en `~/.paperclip/instances/default/db`
+- Local opcional tipo producción: Docker Postgres
+- Hospedado opcional: Supabase/Postgres-compatible
+- Almacenamiento de archivos/objetos:
+  - local por defecto: `~/.paperclip/instances/default/data/storage` (`local_disk`)
+  - nube: almacenamiento de objetos compatible con S3 (`s3`)
 
-## 6.3 Background Processing
+## 6.3 Procesamiento en segundo plano
 
-A lightweight scheduler/worker in the server process handles:
+Un planificador/trabajador ligero en el proceso del servidor gestiona:
 
-- heartbeat trigger checks
-- stuck run detection
-- budget threshold checks
+- verificaciones de disparo de latido
+- detección de ejecuciones estancadas
+- verificaciones de umbrales de presupuesto
 
-Separate queue infrastructure is not required for V1.
+No se requiere infraestructura de colas separada para V1.
 
-## 7. Canonical Data Model (V1)
+## 7. Modelo de datos canónico (V1)
 
-All core tables include `id`, `created_at`, `updated_at` unless noted.
+Todas las tablas principales incluyen `id`, `created_at`, `updated_at` salvo que se indique lo contrario.
 
-## 7.0 Auth Tables
+## 7.0 Tablas de autenticación
 
-Human auth tables (`users`, `sessions`, and provider-specific auth artifacts) are managed by the selected auth library. This spec treats them as required dependencies and references `users.id` where user attribution is needed.
+Las tablas de autenticación humana (`users`, `sessions` y artefactos de autenticación específicos del proveedor) las gestiona la biblioteca de autenticación seleccionada. Esta especificación las trata como dependencias requeridas y referencia `users.id` donde se necesita atribución de usuario.
 
 ## 7.1 `companies`
 
@@ -124,7 +124,7 @@ Human auth tables (`users`, `sessions`, and provider-specific auth artifacts) ar
 - `description` text null
 - `status` enum: `active | paused | archived`
 
-Invariant: every business record belongs to exactly one company.
+Invariante: cada registro de negocio pertenece a exactamente una empresa.
 
 ## 7.2 `agents`
 
@@ -143,11 +143,11 @@ Invariant: every business record belongs to exactly one company.
 - `spent_monthly_cents` int not null default 0
 - `last_heartbeat_at` timestamptz null
 
-Invariants:
+Invariantes:
 
-- agent and manager must be in same company
-- no cycles in reporting tree
-- `terminated` agents cannot be resumed
+- el agente y su jefe deben estar en la misma empresa
+- sin ciclos en el árbol de reporte
+- los agentes `terminated` no pueden reanudarse
 
 ## 7.3 `agent_api_keys`
 
@@ -159,7 +159,7 @@ Invariants:
 - `last_used_at` timestamptz null
 - `revoked_at` timestamptz null
 
-Invariant: plaintext key shown once at creation; only hash stored.
+Invariante: la clave en texto plano se muestra una sola vez al crearla; solo se almacena el hash.
 
 ## 7.4 `goals`
 
@@ -172,7 +172,7 @@ Invariant: plaintext key shown once at creation; only hash stored.
 - `owner_agent_id` uuid fk `agents.id` null
 - `status` enum: `planned | active | achieved | cancelled`
 
-Invariant: at least one root `company` level goal per company.
+Invariante: al menos un objetivo raíz de nivel `company` por empresa.
 
 ## 7.5 `projects`
 
@@ -185,7 +185,7 @@ Invariant: at least one root `company` level goal per company.
 - `lead_agent_id` uuid fk `agents.id` null
 - `target_date` date null
 
-## 7.6 `issues` (core task entity)
+## 7.6 `issues` (entidad principal de tareas)
 
 - `id` uuid pk
 - `company_id` uuid fk not null
@@ -205,12 +205,12 @@ Invariant: at least one root `company` level goal per company.
 - `completed_at` timestamptz null
 - `cancelled_at` timestamptz null
 
-Invariants:
+Invariantes:
 
-- single assignee only
-- task must trace to company goal chain via `goal_id`, `parent_id`, or project-goal linkage
-- `in_progress` requires assignee
-- terminal states: `done | cancelled`
+- solo un asignado
+- la tarea debe trazar hasta la cadena de objetivos de la empresa vía `goal_id`, `parent_id` o el vínculo proyecto-objetivo
+- `in_progress` requiere asignado
+- estados terminales: `done | cancelled`
 
 ## 7.7 `issue_comments`
 
@@ -250,7 +250,7 @@ Invariants:
 - `cost_cents` int not null
 - `occurred_at` timestamptz not null
 
-Invariant: each event must attach to agent and company; rollups are aggregation, never manually edited.
+Invariante: cada evento debe adjuntarse a un agente y a una empresa; los acumulados son agregación, nunca se editan manualmente.
 
 ## 7.10 `approvals`
 
@@ -279,19 +279,19 @@ Invariant: each event must attach to agent and company; rollups are aggregation,
 
 ## 7.12 `company_secrets` + `company_secret_versions`
 
-- Secret values are not stored inline in `agents.adapter_config.env`.
-- Agent env entries should use secret refs for sensitive values.
-- `company_secrets` tracks identity/provider metadata per company.
-- `company_secret_versions` stores encrypted/reference material per version.
-- Default provider in local deployments: `local_encrypted`.
+- Los valores de secretos no se almacenan en línea en `agents.adapter_config.env`.
+- Las entradas de env del agente deben usar referencias de secretos para valores sensibles.
+- `company_secrets` rastrea metadatos de identidad/proveedor por empresa.
+- `company_secret_versions` almacena material cifrado/de referencia por versión.
+- Proveedor por defecto en despliegues locales: `local_encrypted`.
 
-Operational policy:
+Política operativa:
 
-- Config read APIs redact sensitive plain values.
-- Activity and approval payloads must not persist raw sensitive values.
-- Config revisions may include redacted placeholders; such revisions are non-restorable for redacted fields.
+- Las APIs de lectura de configuración redactan los valores sensibles en texto plano.
+- Los payloads de actividad y aprobación no deben persistir valores sensibles sin procesar.
+- Las revisiones de configuración pueden incluir marcadores redactados; dichas revisiones no son restaurables para los campos redactados.
 
-## 7.13 Required Indexes
+## 7.13 Índices requeridos
 
 - `agents(company_id, status)`
 - `agents(company_id, reports_to)`
@@ -312,7 +312,7 @@ Operational policy:
 
 ## 7.14 `assets` + `issue_attachments`
 
-- `assets` stores provider-backed object metadata (not inline bytes):
+- `assets` almacena metadatos de objetos respaldados por proveedor (no bytes en línea):
   - `id` uuid pk
   - `company_id` uuid fk not null
   - `provider` enum/text (`local_disk | s3`)
@@ -323,7 +323,7 @@ Operational policy:
   - `original_filename` text null
   - `created_by_agent_id` uuid fk null
   - `created_by_user_id` uuid/text fk null
-- `issue_attachments` links assets to issues/comments:
+- `issue_attachments` vincula assets a issues/comentarios:
   - `id` uuid pk
   - `company_id` uuid fk not null
   - `issue_id` uuid fk not null
@@ -332,7 +332,7 @@ Operational policy:
 
 ## 7.15 `documents` + `document_revisions` + `issue_documents`
 
-- `documents` stores editable text-first documents:
+- `documents` almacena documentos editables con prioridad de texto:
   - `id` uuid pk
   - `company_id` uuid fk not null
   - `title` text null
@@ -344,38 +344,38 @@ Operational policy:
   - `created_by_user_id` uuid/text fk null
   - `updated_by_agent_id` uuid fk null
   - `updated_by_user_id` uuid/text fk null
-- `document_revisions` stores append-only history:
+- `document_revisions` almacena historial de solo anexado:
   - `id` uuid pk
   - `company_id` uuid fk not null
   - `document_id` uuid fk not null
   - `revision_number` int not null
   - `body` text not null
   - `change_summary` text null
-- `issue_documents` links documents to issues with a stable workflow key:
+- `issue_documents` vincula documentos a issues con una clave de flujo de trabajo estable:
   - `id` uuid pk
   - `company_id` uuid fk not null
   - `issue_id` uuid fk not null
   - `document_id` uuid fk not null
   - `key` text not null (`plan`, `design`, `notes`, etc.)
 
-## 8. State Machines
+## 8. Máquinas de estado
 
-## 8.1 Agent Status
+## 8.1 Estado del agente
 
-Allowed transitions:
+Transiciones permitidas:
 
 - `idle -> running`
 - `running -> idle`
 - `running -> error`
 - `error -> idle`
 - `idle -> paused`
-- `running -> paused` (requires cancel flow)
+- `running -> paused` (requiere flujo de cancelación)
 - `paused -> idle`
-- `* -> terminated` (board only, irreversible)
+- `* -> terminated` (solo el tablero, irreversible)
 
-## 8.2 Issue Status
+## 8.2 Estado de la issue
 
-Allowed transitions:
+Transiciones permitidas:
 
 - `backlog -> todo | cancelled`
 - `todo -> in_progress | blocked | cancelled`
@@ -384,58 +384,58 @@ Allowed transitions:
 - `blocked -> todo | in_progress | cancelled`
 - terminal: `done`, `cancelled`
 
-Side effects:
+Efectos secundarios:
 
-- entering `in_progress` sets `started_at` if null
-- entering `done` sets `completed_at`
-- entering `cancelled` sets `cancelled_at`
+- entrar a `in_progress` establece `started_at` si es nulo
+- entrar a `done` establece `completed_at`
+- entrar a `cancelled` establece `cancelled_at`
 
-## 8.3 Approval Status
+## 8.3 Estado de la aprobación
 
 - `pending -> approved | rejected | cancelled`
-- terminal after decision
+- terminal tras la decisión
 
-## 9. Auth and Permissions
+## 9. Autenticación y permisos
 
-## 9.1 Board Auth
+## 9.1 Autenticación del tablero
 
-- Session-based auth for human operator
-- Board has full read/write across all companies in deployment
-- Every board mutation writes to `activity_log`
+- Autenticación basada en sesiones para el operador humano
+- El tablero tiene lectura/escritura total en todas las empresas del despliegue
+- Cada mutación del tablero escribe en `activity_log`
 
-## 9.2 Agent Auth
+## 9.2 Autenticación del agente
 
-- Bearer API key mapped to one agent and company
-- Agent key scope:
-  - read org/task/company context for own company
-  - read/write own assigned tasks and comments
-  - create tasks/comments for delegation
-  - report heartbeat status
-  - report cost events
-- Agent cannot:
-  - bypass approval gates
-  - modify company-wide budgets directly
-  - mutate auth/keys
+- Clave de API bearer asignada a un agente y una empresa
+- Alcance de la clave del agente:
+  - leer contexto de organización/tareas/empresa para su propia empresa
+  - leer/escribir sus tareas asignadas y comentarios
+  - crear tareas/comentarios para delegación
+  - reportar estado de latido
+  - reportar eventos de costo
+- El agente no puede:
+  - saltarse las puertas de aprobación
+  - modificar directamente los presupuestos de toda la empresa
+  - mutar autenticación/claves
 
-## 9.3 Permission Matrix (V1)
+## 9.3 Matriz de permisos (V1)
 
-| Action | Board | Agent |
+| Acción | Tablero | Agente |
 |---|---|---|
-| Create company | yes | no |
-| Hire/create agent | yes (direct) | request via approval |
-| Pause/resume agent | yes | no |
-| Create/update task | yes | yes |
-| Force reassign task | yes | limited |
-| Approve strategy/hire requests | yes | no |
-| Report cost | yes | yes |
-| Set company budget | yes | no |
-| Set subordinate budget | yes | yes (manager subtree only) |
+| Crear empresa | sí | no |
+| Contratar/crear agente | sí (directo) | solicitar mediante aprobación |
+| Pausar/reanudar agente | sí | no |
+| Crear/actualizar tarea | sí | sí |
+| Reasignar tarea por la fuerza | sí | limitado |
+| Aprobar solicitudes de estrategia/contratación | sí | no |
+| Reportar costo | sí | sí |
+| Establecer presupuesto de la empresa | sí | no |
+| Establecer presupuesto de subordinados | sí | sí (solo el subárbol de subordinados) |
 
-## 10. API Contract (REST)
+## 10. Contrato de API (REST)
 
-All endpoints are under `/api` and return JSON.
+Todos los endpoints están bajo `/api` y devuelven JSON.
 
-## 10.1 Companies
+## 10.1 Empresas
 
 - `GET /companies`
 - `POST /companies`
@@ -444,15 +444,15 @@ All endpoints are under `/api` and return JSON.
 - `PATCH /companies/:companyId/branding`
 - `POST /companies/:companyId/archive`
 
-## 10.2 Goals
+## 10.2 Objetivos
 
 - `GET /companies/:companyId/goals`
 - `POST /companies/:companyId/goals`
 - `GET /goals/:goalId`
 - `PATCH /goals/:goalId`
-- `DELETE /goals/:goalId` (soft delete optional, hard delete board-only)
+- `DELETE /goals/:goalId` (eliminado suave opcional, eliminado duro solo el tablero)
 
-## 10.3 Agents
+## 10.3 Agentes
 
 - `GET /companies/:companyId/agents`
 - `POST /companies/:companyId/agents`
@@ -461,10 +461,10 @@ All endpoints are under `/api` and return JSON.
 - `POST /agents/:agentId/pause`
 - `POST /agents/:agentId/resume`
 - `POST /agents/:agentId/terminate`
-- `POST /agents/:agentId/keys` (create API key)
+- `POST /agents/:agentId/keys` (crear clave de API)
 - `POST /agents/:agentId/heartbeat/invoke`
 
-## 10.4 Tasks (Issues)
+## 10.4 Tareas (Issues)
 
 - `GET /companies/:companyId/issues`
 - `POST /companies/:companyId/issues`
@@ -479,14 +479,14 @@ All endpoints are under `/api` and return JSON.
 - `POST /issues/:issueId/release`
 - `POST /issues/:issueId/comments`
 - `GET /issues/:issueId/comments`
-- `POST /companies/:companyId/issues/:issueId/attachments` (multipart upload)
+- `POST /companies/:companyId/issues/:issueId/attachments` (subida multipart)
 - `GET /issues/:issueId/attachments`
 - `GET /attachments/:attachmentId/content`
 - `DELETE /attachments/:attachmentId`
 
-### 10.4.1 Atomic Checkout Contract
+### 10.4.1 Contrato de checkout atómico
 
-`POST /issues/:issueId/checkout` request:
+Solicitud de `POST /issues/:issueId/checkout`:
 
 ```json
 {
@@ -495,27 +495,27 @@ All endpoints are under `/api` and return JSON.
 }
 ```
 
-Server behavior:
+Comportamiento del servidor:
 
-1. single SQL update with `WHERE id = ? AND status IN (?) AND (assignee_agent_id IS NULL OR assignee_agent_id = :agentId)`
-2. if updated row count is 0, return `409` with current owner/status
-3. successful checkout sets `assignee_agent_id`, `status = in_progress`, and `started_at`
+1. una sola actualización SQL con `WHERE id = ? AND status IN (?) AND (assignee_agent_id IS NULL OR assignee_agent_id = :agentId)`
+2. si el conteo de filas actualizadas es 0, devolver `409` con el propietario/estado actual
+3. un checkout exitoso establece `assignee_agent_id`, `status = in_progress` y `started_at`
 
-## 10.5 Projects
+## 10.5 Proyectos
 
 - `GET /companies/:companyId/projects`
 - `POST /companies/:companyId/projects`
 - `GET /projects/:projectId`
 - `PATCH /projects/:projectId`
 
-## 10.6 Approvals
+## 10.6 Aprobaciones
 
 - `GET /companies/:companyId/approvals?status=pending`
 - `POST /companies/:companyId/approvals`
 - `POST /approvals/:approvalId/approve`
 - `POST /approvals/:approvalId/reject`
 
-## 10.7 Cost and Budgets
+## 10.7 Costos y presupuestos
 
 - `POST /companies/:companyId/cost-events`
 - `GET /companies/:companyId/costs/summary`
@@ -524,31 +524,31 @@ Server behavior:
 - `PATCH /companies/:companyId/budgets`
 - `PATCH /agents/:agentId/budgets`
 
-## 10.8 Activity and Dashboard
+## 10.8 Actividad y panel
 
 - `GET /companies/:companyId/activity`
 - `GET /companies/:companyId/dashboard`
 
-Dashboard payload must include:
+El payload del panel debe incluir:
 
-- active/running/paused/error agent counts
-- open/in-progress/blocked/done issue counts
-- month-to-date spend and budget utilization
-- pending approvals count
+- conteos de agentes activos/en ejecución/pausados/en error
+- conteos de issues abiertas/en curso/bloqueadas/completadas
+- gasto del mes hasta la fecha y uso del presupuesto
+- conteo de aprobaciones pendientes
 
-## 10.9 Error Semantics
+## 10.9 Semántica de errores
 
-- `400` validation error
-- `401` unauthenticated
-- `403` unauthorized
-- `404` not found
-- `409` state conflict (checkout conflict, invalid transition)
-- `422` semantic rule violation
-- `500` server error
+- `400` error de validación
+- `401` no autenticado
+- `403` no autorizado
+- `404` no encontrado
+- `409` conflicto de estado (conflicto de checkout, transición inválida)
+- `422` violación de regla semántica
+- `500` error del servidor
 
-## 11. Heartbeat and Adapter Contract
+## 11. Contrato de latido y adaptador
 
-## 11.1 Adapter Interface
+## 11.1 Interfaz del adaptador
 
 ```ts
 interface AgentAdapter {
@@ -558,9 +558,9 @@ interface AgentAdapter {
 }
 ```
 
-## 11.2 Process Adapter
+## 11.2 Adaptador de proceso
 
-Config shape:
+Forma de la configuración:
 
 ```json
 {
@@ -573,16 +573,16 @@ Config shape:
 }
 ```
 
-Behavior:
+Comportamiento:
 
-- spawn child process
-- stream stdout/stderr to run logs
-- mark run status on exit code/timeout
-- cancel sends SIGTERM then SIGKILL after grace
+- lanzar proceso hijo
+- enviar stdout/stderr en streaming a los registros de ejecución
+- marcar el estado de la ejecución según el código de salida/tiempo de espera
+- cancelar envía SIGTERM y luego SIGKILL tras el período de gracia
 
-## 11.3 HTTP Adapter
+## 11.3 Adaptador HTTP
 
-Config shape:
+Forma de la configuración:
 
 ```json
 {
@@ -594,81 +594,81 @@ Config shape:
 }
 ```
 
-Behavior:
+Comportamiento:
 
-- invoke by outbound HTTP request
-- 2xx means accepted
-- non-2xx marks failed invocation
-- optional callback endpoint allows asynchronous completion updates
+- invocar mediante solicitud HTTP saliente
+- 2xx significa aceptado
+- no-2xx marca la invocación como fallida
+- el endpoint de callback opcional permite actualizaciones asíncronas de finalización
 
-## 11.4 Context Delivery
+## 11.4 Entrega de contexto
 
-- `thin`: send IDs and pointers only; agent fetches context via API
-- `fat`: include current assignments, goal summary, budget snapshot, and recent comments
+- `thin`: enviar solo IDs y punteros; el agente obtiene el contexto vía API
+- `fat`: incluir asignaciones actuales, resumen de objetivos, instantánea del presupuesto y comentarios recientes
 
-## 11.5 Scheduler Rules
+## 11.5 Reglas del planificador
 
-Per-agent schedule fields in `adapter_config`:
+Campos de programación por agente en `adapter_config`:
 
-- `enabled` boolean
-- `intervalSec` integer (minimum 30)
-- `maxConcurrentRuns` fixed at `1` for V1
+- `enabled` booleano
+- `intervalSec` entero (mínimo 30)
+- `maxConcurrentRuns` fijo en `1` para V1
 
-Scheduler must skip invocation when:
+El planificador debe omitir la invocación cuando:
 
-- agent is paused/terminated
-- an existing run is active
-- hard budget limit has been hit
+- el agente está pausado/terminado
+- hay una ejecución activa
+- se ha alcanzado el límite duro del presupuesto
 
-## 12. Governance and Approval Flows
+## 12. Gobernanza y flujos de aprobación
 
-## 12.1 Hiring
+## 12.1 Contratación
 
-1. Agent or board creates `approval(type=hire_agent, status=pending, payload=agent draft)`.
-2. Board approves or rejects.
-3. On approval, server creates agent row and initial API key (optional).
-4. Decision is logged in `activity_log`.
+1. El agente o el tablero crea `approval(type=hire_agent, status=pending, payload=agent draft)`.
+2. El tablero aprueba o rechaza.
+3. Al aprobar, el servidor crea la fila del agente y la clave de API inicial (opcional).
+4. La decisión se registra en `activity_log`.
 
-Board can bypass request flow and create agents directly via UI; direct create is still logged as a governance action.
+El tablero puede saltarse el flujo de solicitud y crear agentes directamente vía UI; la creación directa aún se registra como acción de gobernanza.
 
-## 12.2 CEO Strategy Approval
+## 12.2 Aprobación de la estrategia del CEO
 
-1. CEO posts strategy proposal as `approval(type=approve_ceo_strategy)`.
-2. Board reviews payload (plan text, initial structure, high-level tasks).
-3. Approval unlocks execution state for CEO-created delegated work.
+1. El CEO publica la propuesta de estrategia como `approval(type=approve_ceo_strategy)`.
+2. El tablero revisa el payload (texto del plan, estructura inicial, tareas de alto nivel).
+3. La aprobación desbloquea el estado de ejecución para el trabajo delegado creado por el CEO.
 
-Before first strategy approval, CEO may only draft tasks, not transition them to active execution states.
+Antes de la primera aprobación de estrategia, el CEO solo puede redactar tareas, no transicionarlas a estados de ejecución activos.
 
-## 12.3 Board Override
+## 12.3 Intervención del tablero
 
-Board can at any time:
+El tablero puede en cualquier momento:
 
-- pause/resume/terminate any agent
-- reassign or cancel any task
-- edit budgets and limits
-- approve/reject/cancel pending approvals
+- pausar/reanudar/terminar cualquier agente
+- reasignar o cancelar cualquier tarea
+- editar presupuestos y límites
+- aprobar/rechazar/cancelar aprobaciones pendientes
 
-## 13. Cost and Budget System
+## 13. Sistema de costos y presupuestos
 
-## 13.1 Budget Layers
+## 13.1 Capas de presupuesto
 
-- company monthly budget
-- agent monthly budget
-- optional project budget (if configured)
+- presupuesto mensual de la empresa
+- presupuesto mensual del agente
+- presupuesto de proyecto opcional (si está configurado)
 
-## 13.2 Enforcement Rules
+## 13.2 Reglas de aplicación
 
-- soft alert default threshold: 80%
-- hard limit: at 100%, trigger:
-  - set agent status to `paused`
-  - block new checkout/invocation for that agent
-  - emit high-priority activity event
+- umbral predeterminado de alerta suave: 80%
+- límite duro: al 100%, desencadena:
+  - establecer el estado del agente a `paused`
+  - bloquear nuevo checkout/invocación para ese agente
+  - emitir evento de actividad de alta prioridad
 
-Board may override by raising budget or explicitly resuming agent.
+El tablero puede anularlo elevando el presupuesto o reanudando explícitamente el agente.
 
-## 13.3 Cost Event Ingestion
+## 13.3 Ingesta de eventos de costo
 
-`POST /companies/:companyId/cost-events` body:
+Cuerpo de `POST /companies/:companyId/cost-events`:
 
 ```json
 {
@@ -684,171 +684,171 @@ Board may override by raising budget or explicitly resuming agent.
 }
 ```
 
-Validation:
+Validación:
 
-- non-negative token counts
+- conteos de tokens no negativos
 - `costCents >= 0`
-- company ownership checks for all linked entities
+- verificaciones de propiedad de la empresa para todas las entidades vinculadas
 
-## 13.4 Rollups
+## 13.4 Acumulados
 
-Read-time aggregate queries are acceptable for V1.
-Materialized rollups can be added later if query latency exceeds targets.
+Las consultas de agregación en tiempo de lectura son aceptables para V1.
+Los acumulados materializados pueden agregarse después si la latencia de las consultas excede los objetivos.
 
-## 14. UI Requirements (Board App)
+## 14. Requisitos de UI (app del tablero)
 
-V1 UI routes:
+Rutas de UI de V1:
 
-- `/` dashboard
-- `/companies` company list/create
-- `/companies/:id/org` org chart and agent status
-- `/companies/:id/tasks` task list/kanban
-- `/companies/:id/agents/:agentId` agent detail
-- `/companies/:id/costs` cost and budget dashboard
-- `/companies/:id/approvals` pending/history approvals
-- `/companies/:id/activity` audit/event stream
+- `/` panel
+- `/companies` lista/creación de empresas
+- `/companies/:id/org` organigrama y estado de agentes
+- `/companies/:id/tasks` lista/kanban de tareas
+- `/companies/:id/agents/:agentId` detalle del agente
+- `/companies/:id/costs` panel de costos y presupuesto
+- `/companies/:id/approvals` aprobaciones pendientes/historial
+- `/companies/:id/activity` flujo de auditoría/eventos
 
-Required UX behaviors:
+Comportamientos de UX requeridos:
 
-- global company selector
-- quick actions: pause/resume agent, create task, approve/reject request
-- conflict toasts on atomic checkout failure
-- no silent background failures; every failed run visible in UI
+- selector global de empresa
+- acciones rápidas: pausar/reanudar agente, crear tarea, aprobar/rechazar solicitud
+- avisos (toasts) de conflicto en falla de checkout atómico
+- sin fallas silenciosas en segundo plano; cada ejecución fallida visible en la UI
 
-## 15. Operational Requirements
+## 15. Requisitos operativos
 
-## 15.1 Environment
+## 15.1 Entorno
 
 - Node 20+
-- `DATABASE_URL` optional
-- if unset, auto-use PGlite and push schema
+- `DATABASE_URL` opcional
+- si no está definido, usar PGlite automáticamente e insertar el esquema
 
-## 15.2 Migrations
+## 15.2 Migraciones
 
-- Drizzle migrations are source of truth
-- no destructive migration in-place for V1 upgrade path
-- provide migration script from existing minimal tables to company-scoped schema
+- Las migraciones de Drizzle son la fuente de verdad
+- sin migración destructiva in-place para la ruta de actualización de V1
+- proveer script de migración desde las tablas mínimas existentes al esquema con alcance de empresa
 
-## 15.3 Logging and Audit
+## 15.3 Registro y auditoría
 
-- structured logs (JSON in production)
-- request ID per API call
-- every mutation writes `activity_log`
+- registros estructurados (JSON en producción)
+- ID de solicitud por llamada de API
+- cada mutación escribe en `activity_log`
 
-## 15.4 Reliability Targets
+## 15.4 Objetivos de confiabilidad
 
-- API p95 latency under 250 ms for standard CRUD at 1k tasks/company
-- heartbeat invoke acknowledgement under 2 s for process adapter
-- no lost approval decisions (transactional writes)
+- latencia p95 de la API menor a 250 ms para CRUD estándar a 1k tareas/empresa
+- acuse de invocación de latido menor a 2 s para el adaptador de proceso
+- sin decisiones de aprobación perdidas (escrituras transaccionales)
 
-## 16. Security Requirements
+## 16. Requisitos de seguridad
 
-- store only hashed agent API keys
-- redact secrets in logs (`adapter_config`, auth headers, env vars)
-- CSRF protection for board session endpoints
-- rate limit auth and key-management endpoints
-- strict company boundary checks on every entity fetch/mutation
+- almacenar solo claves de API de agentes hasheadas
+- redactar secretos en los registros (`adapter_config`, encabezados de autenticación, variables de env)
+- protección CSRF para los endpoints de sesión del tablero
+- limitar la tasa de los endpoints de autenticación y gestión de claves
+- verificaciones estrictas de límites de empresa en cada obtención/mutación de entidades
 
-## 17. Testing Strategy
+## 17. Estrategia de pruebas
 
-## 17.1 Unit Tests
+## 17.1 Pruebas unitarias
 
-- state transition guards (agent, issue, approval)
-- budget enforcement rules
-- adapter invocation/cancel semantics
+- guardias de transición de estado (agente, issue, aprobación)
+- reglas de aplicación de presupuesto
+- semántica de invocación/cancelación de adaptadores
 
-## 17.2 Integration Tests
+## 17.2 Pruebas de integración
 
-- atomic checkout conflict behavior
-- approval-to-agent creation flow
-- cost ingestion and rollup correctness
-- pause while run is active (graceful cancel then force kill)
+- comportamiento de conflicto de checkout atómico
+- flujo de creación de agente desde aprobación
+- corrección de la ingesta de costos y los acumulados
+- pausa mientras hay una ejecución activa (cancelación ordenada y luego terminación forzada)
 
-## 17.3 End-to-End Tests
+## 17.3 Pruebas de extremo a extremo
 
-- board creates company -> hires CEO -> approves strategy -> CEO receives work
-- agent reports cost -> budget threshold reached -> auto-pause occurs
-- task delegation across teams with request depth increment
+- el tablero crea empresa -> contrata CEO -> aprueba estrategia -> el CEO recibe trabajo
+- el agente reporta costo -> se alcanza el umbral de presupuesto -> ocurre la pausa automática
+- delegación de tareas entre equipos con incremento de profundidad de solicitud
 
-## 17.4 Regression Suite Minimum
+## 17.4 Mínimo de la suite de regresión
 
-A release candidate is blocked unless these pass:
+Un candidato de versión está bloqueado salvo que estas pasen:
 
-1. auth boundary tests
-2. checkout race test
-3. hard budget stop test
-4. agent pause/resume test
-5. dashboard summary consistency test
+1. pruebas de límites de autenticación
+2. prueba de carrera de checkout
+3. prueba de tope duro de presupuesto
+4. prueba de pausa/reanudación de agente
+5. prueba de consistencia del resumen del panel
 
-## 18. Delivery Plan
+## 18. Plan de entrega
 
-## Milestone 1: Company Core and Auth
+## Hito 1: Núcleo de empresa y autenticación
 
-- add `companies` and company scoping to existing entities
-- add board session auth and agent API keys
-- migrate existing API routes to company-aware paths
+- agregar `companies` y alcance de empresa a las entidades existentes
+- agregar autenticación de sesión del tablero y claves de API de agentes
+- migrar las rutas de API existentes a rutas conscientes de la empresa
 
-## Milestone 2: Task and Governance Semantics
+## Hito 2: Semántica de tareas y gobernanza
 
-- implement atomic checkout endpoint
-- implement issue comments and lifecycle guards
-- implement approvals table and hire/strategy workflows
+- implementar endpoint de checkout atómico
+- implementar comentarios de issues y guardias de ciclo de vida
+- implementar la tabla de aprobaciones y los flujos de trabajo de contratación/estrategia
 
-## Milestone 3: Heartbeat and Adapter Runtime
+## Hito 3: Tiempo de ejecución de latido y adaptador
 
-- implement adapter interface
-- ship `process` adapter with cancel semantics
-- ship `http` adapter with timeout/error handling
-- persist heartbeat runs and statuses
+- implementar la interfaz del adaptador
+- publicar el adaptador `process` con semántica de cancelación
+- publicar el adaptador `http` con manejo de tiempo de espera/errores
+- persistir ejecuciones de latido y estados
 
-## Milestone 4: Cost and Budget Controls
+## Hito 4: Controles de costo y presupuesto
 
-- implement cost events ingestion
-- implement monthly rollups and dashboards
-- enforce hard limit auto-pause
+- implementar la ingesta de eventos de costo
+- implementar acumulados mensuales y paneles
+- aplicar la pausa automática por límite duro
 
-## Milestone 5: Board UI Completion
+## Hito 5: Finalización de la UI del tablero
 
-- add company selector and org chart view
-- add approvals and cost pages
+- agregar selector de empresa y vista de organigrama
+- agregar páginas de aprobaciones y costos
 
-## Milestone 6: Hardening and Release
+## Hito 6: Endurecimiento y versión
 
-- full integration/e2e suite
-- seed/demo company templates for local testing
-- release checklist and docs update
+- suite completa de integración/e2e
+- plantillas de empresa de ejemplo/demostración para pruebas locales
+- lista de verificación de versión y actualización de la documentación
 
-## 19. Acceptance Criteria (Release Gate)
+## 19. Criterios de aceptación (puerta de versión)
 
-V1 is complete only when all criteria are true:
+V1 está completo solo cuando todos los criterios son verdaderos:
 
-1. A board user can create multiple companies and switch between them.
-2. A company can run at least one active heartbeat-enabled agent.
-3. Task checkout is conflict-safe with `409` on concurrent claims.
-4. Agents can update tasks/comments and report costs with API keys only.
-5. Board can approve/reject hire and CEO strategy requests in UI.
-6. Budget hard limit auto-pauses an agent and prevents new invocations.
-7. Dashboard shows accurate counts/spend from live DB data.
-8. Every mutation is auditable in activity log.
-9. App runs with embedded PostgreSQL by default and with external Postgres via `DATABASE_URL`.
+1. Un usuario del tablero puede crear múltiples empresas y cambiar entre ellas.
+2. Una empresa puede ejecutar al menos un agente activo con latido habilitado.
+3. El checkout de tareas es seguro ante conflictos con `409` en reclamaciones concurrentes.
+4. Los agentes pueden actualizar tareas/comentarios y reportar costos solo con claves de API.
+5. El tablero puede aprobar/rechazar solicitudes de contratación y de estrategia del CEO en la UI.
+6. El límite duro del presupuesto pausa automáticamente un agente y evita nuevas invocaciones.
+7. El panel muestra conteos/gastos precisos a partir de datos en vivo de la BD.
+8. Cada mutación es auditable en el registro de actividad.
+9. La app se ejecuta con PostgreSQL embebido por defecto y con Postgres externo mediante `DATABASE_URL`.
 
-## 20. Post-V1 Backlog (Explicitly Deferred)
+## 20. Pila de trabajo posterior a V1 (explícitamente diferido)
 
-- plugin architecture
-- richer workflow-state customization per team
-- milestones/labels/dependency graph depth beyond V1 minimum
-- realtime transport optimization (SSE/WebSockets)
-- public template marketplace integration (ClipHub)
+- arquitectura de plugins
+- personalización más rica del estado de flujo de trabajo por equipo
+- profundidad de hitos/etiquetas/grafo de dependencias más allá del mínimo de V1
+- optimización del transporte en tiempo real (SSE/WebSockets)
+- integración con el marketplace público de plantillas (ClipHub)
 
-## 21. Company Portability Package (V1 Addendum)
+## 21. Paquete de portabilidad de empresa (adenda de V1)
 
-V1 supports company import/export using a portable package contract:
+V1 admite importación/exportación de empresas usando un contrato de paquete portátil:
 
-- markdown-first package rooted at `COMPANY.md`
-- implicit folder discovery by convention
-- `.paperclip.yaml` sidecar for Paperclip-specific fidelity
-- canonical base package is vendor-neutral and aligned with `docs/companies/companies-spec.md`
-- common conventions:
+- paquete orientado a Markdown con raíz en `COMPANY.md`
+- descubrimiento implícito de carpetas por convención
+- archivo sidecar `.paperclip.yaml` para fidelidad específica de Paperclip
+- el paquete base canónico es neutral al proveedor y está alineado con `docs/companies/companies-spec.md`
+- convenciones comunes:
   - `agents/<slug>/AGENTS.md`
   - `teams/<slug>/TEAM.md`
   - `projects/<slug>/PROJECT.md`
@@ -856,19 +856,19 @@ V1 supports company import/export using a portable package contract:
   - `tasks/<slug>/TASK.md`
   - `skills/<slug>/SKILL.md`
 
-Export/import behavior in V1:
+Comportamiento de exportación/importación en V1:
 
-- export emits a clean vendor-neutral markdown package plus `.paperclip.yaml`
-- projects and starter tasks are opt-in export content rather than default package content
-- recurring `TASK.md` entries use `recurring: true` in the base package and Paperclip routine fidelity in `.paperclip.yaml`
-- Paperclip imports recurring task packages as routines instead of downgrading them to one-time issues
-- export strips environment-specific paths (`cwd`, local instruction file paths, inline prompt duplication) while preserving portable project repo/workspace metadata such as `repoUrl`, refs, and workspace-policy references keyed in `.paperclip.yaml`
-- export never includes secret values; env inputs are reported as portable declarations instead
-- import supports target modes:
-  - create a new company
-  - import into an existing company
-- import recreates exported project workspaces and remaps portable workspace keys back to target-local workspace ids
-- import forces imported agent timer heartbeats off so packages never start scheduled runs implicitly
-- import supports collision strategies: `rename`, `skip`, `replace`
-- import supports preview (dry-run) before apply
-- GitHub imports warn on unpinned refs instead of blocking
+- la exportación emite un paquete markdown limpio neutral al proveedor más `.paperclip.yaml`
+- los proyectos y las tareas iniciales son contenido de exportación optativo en lugar de contenido predeterminado del paquete
+- las entradas recurrentes de `TASK.md` usan `recurring: true` en el paquete base y fidelidad de rutina de Paperclip en `.paperclip.yaml`
+- Paperclip importa paquetes de tareas recurrentes como rutinas en lugar de degradarlas a issues únicas
+- la exportación elimina rutas específicas del entorno (`cwd`, rutas de archivos de instrucciones locales, duplicación de prompts en línea) mientras preserva metadatos portátiles de repo/workspace de proyecto como `repoUrl`, refs y referencias de políticas de workspace registradas en `.paperclip.yaml`
+- la exportación nunca incluye valores de secretos; las entradas de env se reportan como declaraciones portátiles
+- la importación admite modos de destino:
+  - crear una empresa nueva
+  - importar a una empresa existente
+- la importación recrea los workspaces de proyecto exportados y reasigna las claves portátiles de workspace de vuelta a los ids de workspace locales del destino
+- la importación fuerza que los latidos de temporizador de los agentes importados queden apagados para que los paquetes nunca inicien ejecuciones programadas de forma implícita
+- la importación admite estrategias de colisión: `rename`, `skip`, `replace`
+- la importación admite previsualización (dry-run) antes de aplicar
+- las importaciones de GitHub advierten sobre refs sin fijar en lugar de bloquear

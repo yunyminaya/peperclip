@@ -83,7 +83,7 @@ export function parseCursorModelsOutput(stdout: string, stderr: string): Adapter
         collectFromJsonValue(rec.data, models);
       }
     } catch {
-      // Ignore malformed JSON and continue parsing plain text formats.
+      // Ignorar JSON malformado y continuar analizando formatos de texto plano.
     }
   }
 

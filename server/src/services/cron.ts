@@ -1,24 +1,24 @@
 /**
- * Lightweight cron expression parser and next-run calculator.
+ * Analizador ligero de expresiones cron y calculador de próxima ejecución.
  *
- * Supports standard 5-field cron expressions:
+ * Admite expresiones cron estándar de 5 campos:
  *
- *   ┌────────────── minute (0–59)
- *   │ ┌──────────── hour   (0–23)
- *   │ │ ┌────────── day of month (1–31)
- *   │ │ │ ┌──────── month  (1–12)
- *   │ │ │ │ ┌────── day of week (0–6, Sun=0)
+ *   ┌────────────── minuto (0–59)
+ *   │ ┌──────────── hora   (0–23)
+ *   │ │ ┌────────── día del mes (1–31)
+ *   │ │ │ ┌──────── mes  (1–12)
+ *   │ │ │ │ ┌────── día de la semana (0–6, dom=0)
  *   │ │ │ │ │
  *   * * * * *
  *
- * Supported syntax per field:
- *   - `*`        — any value
- *   - `N`        — exact value
- *   - `N-M`      — range (inclusive)
- *   - `N/S`      — start at N, step S (within field bounds)
- *   - `* /S`     — every S (from field min)   [no space — shown to avoid comment termination]
- *   - `N-M/S`    — range with step
- *   - `N,M,...`  — list of values, ranges, or steps
+ * Sintaxis admitida por campo:
+ *   - `*`        — cualquier valor
+ *   - `N`        — valor exacto
+ *   - `N-M`      — rango (inclusivo)
+ *   - `N/S`      — comienza en N, paso S (dentro de los límites del campo)
+ *   - `* /S`     — cada S (desde el mínimo del campo)   [sin espacio — se muestra así para evitar el cierre del comentario]
+ *   - `N-M/S`    — rango con paso
+ *   - `N,M,...`  — lista de valores, rangos o pasos
  *
  * @module
  */
@@ -28,8 +28,8 @@
 // ---------------------------------------------------------------------------
 
 /**
- * A parsed cron schedule. Each field is a sorted array of valid integer values
- * for that field.
+ * Un horario cron analizado. Cada campo es un arreglo ordenado de valores enteros
+ * válidos para ese campo.
  */
 export interface ParsedCron {
   minutes: number[];
@@ -40,7 +40,7 @@ export interface ParsedCron {
 }
 
 // ---------------------------------------------------------------------------
-// Field bounds
+// Límites de campos
 // ---------------------------------------------------------------------------
 
 interface FieldSpec {
@@ -50,11 +50,11 @@ interface FieldSpec {
 }
 
 const FIELD_SPECS: FieldSpec[] = [
-  { min: 0, max: 59, name: "minute" },
-  { min: 0, max: 23, name: "hour" },
-  { min: 1, max: 31, name: "day of month" },
-  { min: 1, max: 12, name: "month" },
-  { min: 0, max: 6, name: "day of week" },
+  { min: 0, max: 59, name: "minuto" },
+  { min: 0, max: 23, name: "hora" },
+  { min: 1, max: 31, name: "día del mes" },
+  { min: 1, max: 12, name: "mes" },
+  { min: 0, max: 6, name: "día de la semana" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -62,24 +62,24 @@ const FIELD_SPECS: FieldSpec[] = [
 // ---------------------------------------------------------------------------
 
 /**
- * Parse a single cron field token (e.g. `"5"`, `"1-3"`, `"* /10"`, `"1,3,5"`).
+ * Analiza un solo token de campo cron (p. ej. `"5"`, `"1-3"`, `"* /10"`, `"1,3,5"`).
  *
- * @returns Sorted deduplicated array of matching integer values within bounds.
- * @throws {Error} on invalid syntax or out-of-range values.
+ * @returns Arreglo ordenado sin duplicados de valores enteros coincidentes dentro de los límites.
+ * @throws {Error} en caso de sintaxis no válida o valores fuera de rango.
  */
 function parseField(token: string, spec: FieldSpec): number[] {
   const values = new Set<number>();
 
-  // Split on commas first — each part can be a value, range, or step
+  // Primero divide por comas: cada parte puede ser un valor, un rango o un paso
   const parts = token.split(",");
 
   for (const part of parts) {
     const trimmed = part.trim();
     if (trimmed === "") {
-      throw new Error(`Empty element in cron ${spec.name} field`);
+      throw new Error(`Elemento vacío en el campo cron ${spec.name}`);
     }
 
-    // Check for step syntax: "X/S" where X is "*" or a range or a number
+    // Revisa la sintaxis de paso: "X/S" donde X es "*" o un rango o un número
     const slashIdx = trimmed.indexOf("/");
     if (slashIdx !== -1) {
       const base = trimmed.slice(0, slashIdx);
@@ -87,7 +87,7 @@ function parseField(token: string, spec: FieldSpec): number[] {
       const step = parseInt(stepStr, 10);
       if (isNaN(step) || step <= 0) {
         throw new Error(
-          `Invalid step "${stepStr}" in cron ${spec.name} field`,
+          `Paso no válido "${stepStr}" en el campo cron ${spec.name}`,
         );
       }
 
@@ -95,23 +95,23 @@ function parseField(token: string, spec: FieldSpec): number[] {
       let rangeEnd = spec.max;
 
       if (base === "*") {
-        // */S — every S from field min
+        // */S: cada S desde el mínimo del campo
       } else if (base.includes("-")) {
-        // N-M/S — range with step
+        // N-M/S: rango con paso
         const [a, b] = base.split("-").map((s) => parseInt(s, 10));
         if (isNaN(a!) || isNaN(b!)) {
           throw new Error(
-            `Invalid range "${base}" in cron ${spec.name} field`,
+            `Rango no válido "${base}" en el campo cron ${spec.name}`,
           );
         }
         rangeStart = a!;
         rangeEnd = b!;
       } else {
-        // N/S — start at N, step S
+        // N/S: comienza en N, paso S
         const start = parseInt(base, 10);
         if (isNaN(start)) {
           throw new Error(
-            `Invalid start "${base}" in cron ${spec.name} field`,
+            `Inicio no válido "${base}" en el campo cron ${spec.name}`,
           );
         }
         rangeStart = start;
@@ -126,21 +126,21 @@ function parseField(token: string, spec: FieldSpec): number[] {
       continue;
     }
 
-    // Check for range syntax: "N-M"
+    // Revisa la sintaxis de rango: "N-M"
     if (trimmed.includes("-")) {
       const [aStr, bStr] = trimmed.split("-");
       const a = parseInt(aStr!, 10);
       const b = parseInt(bStr!, 10);
       if (isNaN(a) || isNaN(b)) {
         throw new Error(
-          `Invalid range "${trimmed}" in cron ${spec.name} field`,
+          `Rango no válido "${trimmed}" en el campo cron ${spec.name}`,
         );
       }
       validateBounds(a, spec);
       validateBounds(b, spec);
       if (a > b) {
         throw new Error(
-          `Invalid range ${a}-${b} in cron ${spec.name} field (start > end)`,
+          `Rango no válido ${a}-${b} en el campo cron ${spec.name} (el inicio es mayor que el fin)`,
         );
       }
       for (let i = a; i <= b; i++) {
@@ -149,7 +149,7 @@ function parseField(token: string, spec: FieldSpec): number[] {
       continue;
     }
 
-    // Wildcard
+    // Comodín
     if (trimmed === "*") {
       for (let i = spec.min; i <= spec.max; i++) {
         values.add(i);
@@ -157,11 +157,11 @@ function parseField(token: string, spec: FieldSpec): number[] {
       continue;
     }
 
-    // Single value
+    // Valor único
     const val = parseInt(trimmed, 10);
     if (isNaN(val)) {
       throw new Error(
-        `Invalid value "${trimmed}" in cron ${spec.name} field`,
+        `Valor no válido "${trimmed}" en el campo cron ${spec.name}`,
       );
     }
     validateBounds(val, spec);
@@ -169,7 +169,7 @@ function parseField(token: string, spec: FieldSpec): number[] {
   }
 
   if (values.size === 0) {
-    throw new Error(`Empty result for cron ${spec.name} field`);
+    throw new Error(`Resultado vacío para el campo cron ${spec.name}`);
   }
 
   return [...values].sort((a, b) => a - b);
@@ -178,7 +178,7 @@ function parseField(token: string, spec: FieldSpec): number[] {
 function validateBounds(value: number, spec: FieldSpec): void {
   if (value < spec.min || value > spec.max) {
     throw new Error(
-      `Value ${value} out of range [${spec.min}–${spec.max}] for cron ${spec.name} field`,
+      `Valor ${value} fuera de rango [${spec.min}–${spec.max}] para el campo cron ${spec.name}`,
     );
   }
 }
@@ -188,15 +188,15 @@ function validateBounds(value: number, spec: FieldSpec): void {
 // ---------------------------------------------------------------------------
 
 /**
- * Parse a cron expression string into a structured {@link ParsedCron}.
+ * Analiza una cadena de expresión cron en un {@link ParsedCron} estructurado.
  *
- * @param expression — A standard 5-field cron expression.
- * @returns Parsed cron with sorted valid values for each field.
- * @throws {Error} on invalid syntax.
+ * @param expression — Una expresión cron estándar de 5 campos.
+ * @returns Cron analizado con valores válidos ordenados para cada campo.
+ * @throws {Error} en caso de sintaxis no válida.
  *
  * @example
  * ```ts
- * const parsed = parseCron("0 * * * *"); // every hour at minute 0
+ * const parsed = parseCron("0 * * * *"); // cada hora en el minuto 0
  * // parsed.minutes === [0]
  * // parsed.hours === [0,1,2,...,23]
  * ```
@@ -204,13 +204,13 @@ function validateBounds(value: number, spec: FieldSpec): void {
 export function parseCron(expression: string): ParsedCron {
   const trimmed = expression.trim();
   if (!trimmed) {
-    throw new Error("Cron expression must not be empty");
+    throw new Error("La expresión cron no debe estar vacía");
   }
 
   const tokens = trimmed.split(/\s+/);
   if (tokens.length !== 5) {
     throw new Error(
-      `Cron expression must have exactly 5 fields, got ${tokens.length}: "${trimmed}"`,
+      `La expresión cron debe tener exactamente 5 campos, se recibieron ${tokens.length}: "${trimmed}"`,
     );
   }
 
@@ -224,11 +224,11 @@ export function parseCron(expression: string): ParsedCron {
 }
 
 /**
- * Validate a cron expression string. Returns `null` if valid, or an error
- * message string if invalid.
+ * Valida una cadena de expresión cron. Devuelve `null` si es válida, o una
+ * cadena con el mensaje de error si no lo es.
  *
- * @param expression — A cron expression string to validate.
- * @returns `null` on success, error message on failure.
+ * @param expression — Una cadena de expresión cron para validar.
+ * @returns `null` en caso de éxito, mensaje de error en caso de fallo.
  */
 export function validateCron(expression: string): string | null {
   try {
@@ -240,25 +240,25 @@ export function validateCron(expression: string): string | null {
 }
 
 /**
- * Calculate the next run time after `after` for the given parsed cron schedule.
+ * Calcula la próxima hora de ejecución después de `after` para el horario cron analizado dado.
  *
- * Starts from the minute immediately following `after` and walks forward
- * until a matching minute is found (up to a safety limit of ~4 years to
- * prevent infinite loops on impossible schedules).
+ * Comienza desde el minuto inmediatamente posterior a `after` y avanza
+ * hasta encontrar un minuto coincidente (hasta un límite de seguridad de ~4 años
+ * para evitar bucles infinitos en horarios imposibles).
  *
- * @param cron  — Parsed cron schedule.
- * @param after — The reference date. The returned date will be strictly after this.
- * @returns The next matching `Date`, or `null` if no match found within the search window.
+ * @param cron  — Horario cron analizado.
+ * @param after — La fecha de referencia. La fecha devuelta será estrictamente posterior a esta.
+ * @returns El siguiente `Date` coincidente, o `null` si no se encuentra coincidencia dentro de la ventana de búsqueda.
  */
 export function nextCronTick(cron: ParsedCron, after: Date): Date | null {
-  // Work in local minutes — start from the minute after `after`
+  // Trabaja en minutos locales: comienza desde el minuto posterior a `after`
   const d = new Date(after.getTime());
-  // Advance to the next whole minute
+  // Avanza al siguiente minuto completo
   d.setUTCSeconds(0, 0);
   d.setUTCMinutes(d.getUTCMinutes() + 1);
 
-  // Safety: search up to 4 years worth of minutes (~2.1M iterations max).
-  // Uses 366 to account for leap years.
+  // Seguridad: busca hasta 4 años de minutos (~2.1M iteraciones como máximo).
+  // Usa 366 para considerar los años bisiestos.
   const MAX_CRON_SEARCH_YEARS = 4;
   const maxIterations = MAX_CRON_SEARCH_YEARS * 366 * 24 * 60;
 
@@ -269,62 +269,62 @@ export function nextCronTick(cron: ParsedCron, after: Date): Date | null {
     const hour = d.getUTCHours(); // 0-23
     const minute = d.getUTCMinutes(); // 0-59
 
-    // Check month
+    // Revisa el mes
     if (!cron.months.includes(month)) {
-      // Skip to the first day of the next matching month
+      // Salta al primer día del siguiente mes coincidente
       advanceToNextMonth(d, cron.months);
       continue;
     }
 
-    // Check day of month AND day of week (both must match)
+    // Revisa el día del mes Y el día de la semana (ambos deben coincidir)
     if (!cron.daysOfMonth.includes(dayOfMonth) || !cron.daysOfWeek.includes(dayOfWeek)) {
-      // Advance one day
+      // Avanza un día
       d.setUTCDate(d.getUTCDate() + 1);
       d.setUTCHours(0, 0, 0, 0);
       continue;
     }
 
-    // Check hour
+    // Revisa la hora
     if (!cron.hours.includes(hour)) {
-      // Advance to next matching hour within the day
+      // Avanza a la siguiente hora coincidente dentro del día
       const nextHour = findNext(cron.hours, hour);
       if (nextHour !== null) {
         d.setUTCHours(nextHour, 0, 0, 0);
       } else {
-        // No matching hour left today — advance to next day
+        // No queda ninguna hora coincidente hoy: avanza al día siguiente
         d.setUTCDate(d.getUTCDate() + 1);
         d.setUTCHours(0, 0, 0, 0);
       }
       continue;
     }
 
-    // Check minute
+    // Revisa el minuto
     if (!cron.minutes.includes(minute)) {
       const nextMin = findNext(cron.minutes, minute);
       if (nextMin !== null) {
         d.setUTCMinutes(nextMin, 0, 0);
       } else {
-        // No matching minute left this hour — advance to next hour
+        // No queda ningún minuto coincidente en esta hora: avanza a la hora siguiente
         d.setUTCHours(d.getUTCHours() + 1, 0, 0, 0);
       }
       continue;
     }
 
-    // All fields match!
+    // ¡Todos los campos coinciden!
     return new Date(d.getTime());
   }
 
-  // No match found within the search window
+  // No se encontró coincidencia dentro de la ventana de búsqueda
   return null;
 }
 
 /**
- * Convenience: parse a cron expression and compute the next run time.
+ * Conveniencia: analiza una expresión cron y calcula la próxima hora de ejecución.
  *
- * @param expression — 5-field cron expression string.
- * @param after — Reference date (defaults to `new Date()`).
- * @returns The next matching Date, or `null` if no match within 4 years.
- * @throws {Error} if the cron expression is invalid.
+ * @param expression — Cadena de expresión cron de 5 campos.
+ * @param after — Fecha de referencia (por defecto `new Date()`).
+ * @returns El siguiente Date coincidente, o `null` si no hay coincidencia en 4 años.
+ * @throws {Error} si la expresión cron no es válida.
  */
 export function nextCronTickFromExpression(
   expression: string,
@@ -339,8 +339,8 @@ export function nextCronTickFromExpression(
 // ---------------------------------------------------------------------------
 
 /**
- * Find the next value in `sortedValues` that is greater than `current`.
- * Returns `null` if no such value exists.
+ * Encuentra el siguiente valor en `sortedValues` que sea mayor que `current`.
+ * Devuelve `null` si no existe tal valor.
  */
 function findNext(sortedValues: number[], current: number): number | null {
   for (const v of sortedValues) {
@@ -350,14 +350,14 @@ function findNext(sortedValues: number[], current: number): number | null {
 }
 
 /**
- * Advance `d` (mutated in place) to midnight UTC of the first day of the next
- * month whose 1-based month number is in `months`.
+ * Avanza `d` (mutado en su lugar) hasta la medianoche UTC del primer día del siguiente
+ * mes cuyo número de mes (base 1) esté en `months`.
  */
 function advanceToNextMonth(d: Date, months: number[]): void {
   let year = d.getUTCFullYear();
   let month = d.getUTCMonth() + 1; // 1-based
 
-  // Walk months forward until we find one in the set (max 48 iterations = 4 years)
+  // Avanza los meses hasta encontrar uno en el conjunto (máx. 48 iteraciones = 4 años)
   for (let i = 0; i < 48; i++) {
     month++;
     if (month > 12) {

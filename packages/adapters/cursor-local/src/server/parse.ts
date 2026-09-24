@@ -120,7 +120,7 @@ export function parseCursorJsonl(stdout: string) {
       continue;
     }
 
-    // Compatibility with older stream-json shapes.
+    // Compatibilidad con formatos antiguos de stream-json.
     if (type === "text") {
       const part = parseObject(event.part);
       const text = asString(part.text, "").trim();

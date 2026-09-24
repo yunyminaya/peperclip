@@ -12,7 +12,7 @@ import {
 export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExecutionResult> {
   const { runId, agent, config, onLog, onMeta } = ctx;
   const command = asString(config.command, "");
-  if (!command) throw new Error("Process adapter missing command");
+  if (!command) throw new Error("Falta el comando del adaptador de procesos");
 
   const args = asStringArray(config.args);
   const cwd = asString(config.cwd, process.cwd());
@@ -48,7 +48,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       exitCode: proc.exitCode,
       signal: proc.signal,
       timedOut: true,
-      errorMessage: `Timed out after ${timeoutSec}s`,
+      errorMessage: `Se agotó el tiempo después de ${timeoutSec}s`,
     };
   }
 
@@ -57,7 +57,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       exitCode: proc.exitCode,
       signal: proc.signal,
       timedOut: false,
-      errorMessage: `Process exited with code ${proc.exitCode ?? -1}`,
+      errorMessage: `El proceso terminó con el código ${proc.exitCode ?? -1}`,
       resultJson: {
         stdout: proc.stdout,
         stderr: proc.stderr,

@@ -4,23 +4,23 @@ import { resolveMigrationConnection } from "./migration-runtime.js";
 async function main(): Promise<void> {
   const resolved = await resolveMigrationConnection();
 
-  console.log(`Migrating database via ${resolved.source}`);
+  console.log(`Migrando la base de datos con ${resolved.source}`);
 
   try {
     const before = await inspectMigrations(resolved.connectionString);
     if (before.status === "upToDate") {
-      console.log("No pending migrations");
+      console.log("Sin migraciones pendientes");
       return;
     }
 
-    console.log(`Applying ${before.pendingMigrations.length} pending migration(s)...`);
+    console.log(`Aplicando ${before.pendingMigrations.length} migración(es) pendiente(s)...`);
     await applyPendingMigrations(resolved.connectionString);
 
     const after = await inspectMigrations(resolved.connectionString);
     if (after.status !== "upToDate") {
-      throw new Error(`Migrations incomplete: ${after.pendingMigrations.join(", ")}`);
+      throw new Error(`Migraciones incompletas: ${after.pendingMigrations.join(", ")}`);
     }
-    console.log("Migrations complete");
+    console.log("Migraciones completas");
   } finally {
     await resolved.stop();
   }

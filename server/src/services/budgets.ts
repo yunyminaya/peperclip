@@ -91,7 +91,7 @@ async function resolveScopeRecord(db: Db, scopeType: BudgetScopeType, scopeId: s
       .from(companies)
       .where(eq(companies.id, scopeId))
       .then((rows) => rows[0] ?? null);
-    if (!row) throw notFound("Company not found");
+    if (!row) throw notFound("Empresa no encontrada");
     return {
       companyId: row.companyId,
       name: row.name,
@@ -111,7 +111,7 @@ async function resolveScopeRecord(db: Db, scopeType: BudgetScopeType, scopeId: s
       .from(agents)
       .where(eq(agents.id, scopeId))
       .then((rows) => rows[0] ?? null);
-    if (!row) throw notFound("Agent not found");
+    if (!row) throw notFound("Agente no encontrado");
     return {
       companyId: row.companyId,
       name: row.name,
@@ -130,7 +130,7 @@ async function resolveScopeRecord(db: Db, scopeType: BudgetScopeType, scopeId: s
     .from(projects)
     .where(eq(projects.id, scopeId))
     .then((rows) => rows[0] ?? null);
-  if (!row) throw notFound("Project not found");
+  if (!row) throw notFound("Proyecto no encontrado");
   return {
     companyId: row.companyId,
     name: row.name,
@@ -185,7 +185,7 @@ function buildApprovalPayload(input: {
     windowStart: input.windowStart.toISOString(),
     windowEnd: input.windowEnd.toISOString(),
     policyId: input.policy.id,
-    guidance: "Raise the budget and resume the scope, or keep the scope paused.",
+    guidance: "Aumenta el presupuesto y reanuda el ámbito, o mantén el ámbito pausado.",
   };
 }
 
@@ -301,7 +301,7 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
       .from(budgetPolicies)
       .where(eq(budgetPolicies.id, policyId))
       .then((rows) => rows[0] ?? null);
-    if (!policy) throw notFound("Budget policy not found");
+    if (!policy) throw notFound("Política de presupuesto no encontrada");
     return policy;
   }
 
@@ -450,7 +450,7 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
 
     if (!approvalStatus || !decidedByUserId) return;
     for (const row of openRows) {
-      await markApprovalStatus(db, row.approvalId ?? null, approvalStatus, "Resolved via budget update", decidedByUserId);
+      await markApprovalStatus(db, row.approvalId ?? null, approvalStatus, "Resuelto mediante actualización del presupuesto", decidedByUserId);
     }
   }
 
@@ -510,7 +510,7 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
     ): Promise<BudgetPolicySummary> => {
       const scope = await resolveScopeRecord(db, input.scopeType, input.scopeId);
       if (scope.companyId !== companyId) {
-        throw unprocessable("Budget scope does not belong to company");
+        throw unprocessable("El ámbito del presupuesto no pertenece a la empresa");
       }
 
       const metric = input.metric ?? "billed_cents";
@@ -728,7 +728,7 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
         .from(agents)
         .where(eq(agents.id, agentId))
         .then((rows) => rows[0] ?? null);
-      if (!agent || agent.companyId !== companyId) throw notFound("Agent not found");
+      if (!agent || agent.companyId !== companyId) throw notFound("Agente no encontrado");
 
       const company = await db
         .select({
@@ -739,7 +739,7 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
         .from(companies)
         .where(eq(companies.id, companyId))
         .then((rows) => rows[0] ?? null);
-      if (!company) throw notFound("Company not found");
+      if (!company) throw notFound("Empresa no encontrada");
       if (company.status === "paused") {
         return {
           scopeType: "company" as const,
@@ -748,7 +748,7 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
           reason:
             company.pauseReason === "budget"
               ? "Company is paused because its budget hard-stop was reached."
-              : "Company is paused and cannot start new work.",
+              : "La empresa está en pausa y no puede iniciar nuevo trabajo.",
         };
       }
 
@@ -772,7 +772,7 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
             scopeType: "company" as const,
             scopeId: companyId,
             scopeName: company.name,
-            reason: "Company cannot start new work because its budget hard-stop is exceeded.",
+            reason: "La empresa no puede iniciar nuevo trabajo porque se superó el límite duro de su presupuesto.",
           };
         }
       }
@@ -782,7 +782,7 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
           scopeType: "agent" as const,
           scopeId: agentId,
           scopeName: agent.name,
-          reason: "Agent is paused because its budget hard-stop was reached.",
+          reason: "El agente está en pausa porque se alcanzó el límite duro de su presupuesto.",
         };
       }
 
@@ -847,7 +847,7 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
             scopeType: "project" as const,
             scopeId: project.id,
             scopeName: project.name,
-            reason: "Project cannot start work because its budget hard-stop is still exceeded.",
+            reason: "El proyecto no puede iniciar trabajo porque el límite duro de su presupuesto sigue superado.",
           };
         }
       }
@@ -857,7 +857,7 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
         scopeType: "project" as const,
         scopeId: project.id,
         scopeName: project.name,
-        reason: "Project is paused because its budget hard-stop was reached.",
+        reason: "El proyecto está en pausa porque se alcanzó el límite duro de su presupuesto.",
       };
     },
 
@@ -872,8 +872,8 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
         .from(budgetIncidents)
         .where(eq(budgetIncidents.id, incidentId))
         .then((rows) => rows[0] ?? null);
-      if (!incident) throw notFound("Budget incident not found");
-      if (incident.companyId !== companyId) throw notFound("Budget incident not found");
+      if (!incident) throw notFound("Incidente de presupuesto no encontrado");
+      if (incident.companyId !== companyId) throw notFound("Incidente de presupuesto no encontrado");
 
       const policy = await getPolicyRow(incident.policyId);
       if (input.action === "raise_budget_and_resume") {

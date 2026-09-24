@@ -1,120 +1,120 @@
-# Agent Runs Subsystem Spec
+# Especificación del subsistema de ejecuciones de agentes
 
-Status: Draft  
-Date: 2026-02-17  
-Audience: Product + Engineering  
-Scope: Agent execution runtime, adapter protocol, wakeup orchestration, and live status delivery
+Estado: Borrador
+Fecha: 2026-02-17
+Audiencia: Producto + Ingeniería
+Alcance: Runtime de ejecución de agentes, protocolo de adaptadores, orquestación de despertares y entrega de estado en vivo
 
-## 1. Document Role
+## 1. Rol del documento
 
-This spec defines how Paperclip actually runs agents while staying runtime-agnostic.
+Esta especificación define cómo Paperclip realmente ejecuta los agentes manteniéndose agnóstico al runtime.
 
-- `doc/SPEC-implementation.md` remains the V1 baseline contract.
-- This document adds concrete subsystem detail for agent execution, including local CLI adapters, runtime state persistence, wakeup scheduling, and browser live updates.
-- If this doc conflicts with current runtime behavior in code, this doc is the target behavior for upcoming implementation.
+- `doc/SPEC-implementation.md` sigue siendo el contrato base de la V1.
+- Este documento agrega detalle concreto del subsistema para la ejecución de agentes, incluyendo adaptadores CLI locales, persistencia de estado del runtime, programación de despertares y actualizaciones en vivo en el navegador.
+- Si este documento entra en conflicto con el comportamiento actual del runtime en el código, este documento es el comportamiento objetivo para la próxima implementación.
 
-## 2. Captured Intent (From Request)
+## 2. Intención capturada (de la solicitud)
 
-The following intentions are explicitly preserved in this spec:
+Las siguientes intenciones se conservan explícitamente en esta especificación:
 
-1. Paperclip is adapter-agnostic. The key is a protocol, not a specific runtime.
-2. We still need default built-ins to make the system useful immediately.
-3. First two built-ins are `claude-local` and `codex-local`.
-4. Those adapters run local CLIs directly on the host machine, unsandboxed.
-5. Agent config includes working directory and initial/default prompt.
-6. Heartbeats run the configured adapter process, Paperclip manages lifecycle, and on exit Paperclip parses JSON output and updates state.
-7. Session IDs and token usage must be persisted so later heartbeats can resume.
-8. Adapters should support status updates (short message + color) and optional streaming logs.
-9. UI should support prompt template "pills" for variable insertion.
-10. CLI errors must be visible in full (or as much as possible) in the UI.
-11. Status changes must live-update across task and agent views via server push.
-12. Wakeup triggers should be centralized by a heartbeat/wakeup service with at least:
-   - timer interval
-   - wake on task assignment
-   - explicit ping/request
+1. Paperclip es agnóstico a adaptadores. Lo clave es un protocolo, no un runtime específico.
+2. Aun así necesitamos adaptadores integrados por defecto para que el sistema sea útil de inmediato.
+3. Los primeros dos integrados son `claude-local` y `codex-local`.
+4. Esos adaptadores ejecutan CLI locales directamente en la máquina anfitriona, sin sandbox.
+5. La configuración del agente incluye directorio de trabajo y prompt inicial/por defecto.
+6. Los latidos ejecutan el proceso del adaptador configurado, Paperclip gestiona el ciclo de vida, y al salir Paperclip analiza la salida JSON y actualiza el estado.
+7. Los ID de sesión y el uso de tokens deben persistirse para que latidos posteriores puedan reanudar.
+8. Los adaptadores deben admitir actualizaciones de estado (mensaje corto + color) y logs de streaming opcionales.
+9. La UI debe admitir "píldoras" de plantillas de prompt para inserción de variables.
+10. Los errores del CLI deben ser visibles completos (o tanto como sea posible) en la UI.
+11. Los cambios de estado deben actualizarse en vivo entre las vistas de tareas y agentes vía push del servidor.
+12. Los disparadores de despertar deben centralizarse en un servicio de latido/despertar con al menos:
+   - intervalo de temporizador
+   - despertar al asignar tarea
+   - ping/solicitud explícito
 
-## 3. Goals and Non-Goals
+## 3. Objetivos y no objetivos
 
-### 3.1 Goals
+### 3.1 Objetivos
 
-1. Define a stable adapter protocol that supports multiple runtimes.
-2. Ship production-usable local adapters for Claude CLI and Codex CLI.
-3. Persist adapter runtime state (session IDs, token/cost usage, last errors).
-4. Centralize wakeup decisions and queueing in one service.
-5. Provide realtime run/task/agent updates to the browser.
-6. Support deployment-specific full-log storage without bloating Postgres.
-7. Preserve company scoping and existing governance invariants.
+1. Definir un protocolo de adaptadores estable que admita múltiples runtimes.
+2. Distribuir adaptadores locales listos para producción para los CLI de Claude y Codex.
+3. Persistir el estado de runtime del adaptador (ID de sesión, uso de tokens/costo, últimos errores).
+4. Centralizar las decisiones de despertar y la cola en un servicio.
+5. Proveer actualizaciones en tiempo real de ejecuciones/tareas/agentes al navegador.
+6. Admitir almacenamiento de logs completos específico del despliegue sin inflar Postgres.
+7. Preservar el alcance por empresa y las invariantes de gobernanza existentes.
 
-### 3.2 Non-Goals (for this subsystem phase)
+### 3.2 No objetivos (para esta fase del subsistema)
 
-1. Distributed execution workers across multiple hosts.
-2. Third-party adapter marketplace/plugin SDK.
-3. Perfect cost accounting for providers that do not emit cost.
-4. Long-term log archival strategy beyond basic retention.
+1. Workers de ejecución distribuidos en múltiples hosts.
+2. Marketplace de adaptadores de terceros / SDK de plugins.
+3. Contabilidad perfecta de costos para proveedores que no emiten costo.
+4. Estrategia de archivo de logs a largo plazo más allá de la retención básica.
 
-## 4. Baseline and Gaps (As of 2026-02-17)
+## 4. Línea base y brechas (al 2026-02-17)
 
-Current code already has:
+El código actual ya tiene:
 
-- `agents` with `adapterType` + `adapterConfig`.
-- `heartbeat_runs` with basic status tracking.
-- in-process `heartbeatService` that invokes `process` and `http`.
-- cancellation endpoints for active runs.
+- `agents` con `adapterType` + `adapterConfig`.
+- `heartbeat_runs` con seguimiento básico de estado.
+- `heartbeatService` en proceso que invoca `process` y `http`.
+- endpoints de cancelación para ejecuciones activas.
 
-Current gaps this spec addresses:
+Brechas actuales que esta especificación aborda:
 
-1. No persistent per-agent runtime state for session resume.
-2. No queue/wakeup abstraction (invoke is immediate).
-3. No assignment-triggered or timer-triggered centralized wakeups.
-4. No websocket/SSE push path to browser.
-5. No persisted run event timeline or external full-log storage contract.
-6. No typed local adapter contracts for Claude/Codex session and usage extraction.
-7. No prompt-template variable/pill system in agent setup.
-8. No deployment-aware adapter for full run log storage (disk/object store/etc).
+1. Sin estado de runtime persistente por agente para reanudar sesiones.
+2. Sin abstracción de cola/despertar (la invocación es inmediata).
+3. Sin despertares centralizados activados por asignación o por temporizador.
+4. Sin ruta de push websocket/SSE al navegador.
+5. Sin línea de tiempo persistente de eventos de ejecución ni contrato de almacenamiento externo de logs completos.
+6. Sin contratos tipados de adaptadores locales para la extracción de sesión y uso de Claude/Codex.
+7. Sin sistema de variables/píldoras de plantillas de prompt en la configuración del agente.
+8. Sin adaptador consciente del despliegue para almacenamiento de logs completos de ejecución (disco/almacén de objetos/etc).
 
-## 5. Architecture Overview
+## 5. Panorama de arquitectura
 
-The subsystem introduces six cooperating components:
+El subsistema introduce seis componentes que cooperan:
 
 1. `Adapter Registry`
-   - Maps `adapter_type` to implementation.
-   - Exposes capability metadata and config validation.
+   - Mapea `adapter_type` a su implementación.
+   - Expone metadatos de capacidades y validación de configuración.
 
 2. `Wakeup Coordinator`
-   - Single entrypoint for all wakeups (`timer`, `assignment`, `on_demand`, `automation`).
-   - Applies dedupe/coalescing and queue rules.
+   - Único punto de entrada para todos los despertares (`timer`, `assignment`, `on_demand`, `automation`).
+   - Aplica deduplicación/coalescencia y reglas de cola.
 
 3. `Run Executor`
-   - Claims queued wakeups.
-   - Creates `heartbeat_runs`.
-   - Spawns/monitors child processes for local adapters.
-   - Handles timeout/cancel/graceful kill.
+   - Toma los despertares en cola.
+   - Crea `heartbeat_runs`.
+   - Genera/monitorea procesos hijos para adaptadores locales.
+   - Maneja timeout/cancelación/terminación controlada.
 
 4. `Runtime State Store`
-   - Persists resumable adapter state per agent.
-   - Persists run usage summaries and lightweight run-event timeline.
+   - Persiste el estado resumible del adaptador por agente.
+   - Persiste resúmenes de uso de ejecuciones y línea de tiempo ligera de eventos de ejecución.
 
 5. `Run Log Store`
-   - Persists full stdout/stderr streams via pluggable storage adapter.
-   - Returns stable `logRef` for retrieval (local path, object key, or DB reference).
+   - Persiste los streams completos de stdout/stderr vía un adaptador de almacenamiento intercambiable.
+   - Devuelve un `logRef` estable para recuperación (ruta local, clave de objeto o referencia de BD).
 
 6. `Realtime Event Hub`
-   - Publishes run/agent/task updates over websocket.
-   - Supports selective subscription by company.
+   - Publica actualizaciones de ejecuciones/agentes/tareas por websocket.
+   - Admite suscripción selectiva por empresa.
 
-Control flow (happy path):
+Flujo de control (ruta feliz):
 
-1. Trigger arrives (`timer`, `assignment`, `on_demand`, or `automation`).
-2. Wakeup coordinator enqueues/merges wake request.
-3. Executor claims request, creates run row, marks agent `running`.
-4. Adapter executes, emits status/log/usage events.
-5. Full logs stream to `RunLogStore`; metadata/events are persisted to DB and pushed to websocket subscribers.
-6. Process exits, output parser updates run result + runtime state.
-7. Agent returns to `idle` or `error`; UI updates in real time.
+1. Llega un disparador (`timer`, `assignment`, `on_demand` o `automation`).
+2. El coordinador de despertares encola/combina la solicitud de despertar.
+3. El ejecutor toma la solicitud, crea la fila de ejecución, marca el agente como `running`.
+4. El adaptador ejecuta, emite eventos de estado/log/uso.
+5. Los logs completos van al `RunLogStore`; los metadatos/eventos se persisten en la BD y se envían a los suscriptores del websocket.
+6. El proceso sale, el analizador de salida actualiza el resultado de la ejecución + el estado de runtime.
+7. El agente vuelve a `idle` o `error`; la UI se actualiza en tiempo real.
 
-## 6. Agent Run Protocol (Version `agent-run/v1`)
+## 6. Protocolo de ejecución de agentes (versión `agent-run/v1`)
 
-This protocol is runtime-agnostic and implemented by all adapters.
+Este protocolo es agnóstico al runtime y lo implementan todos los adaptadores.
 
 ```ts
 type RunOutcome = "succeeded" | "failed" | "cancelled" | "timed_out";
@@ -177,21 +177,21 @@ interface AgentRunAdapter {
 }
 ```
 
-### 6.1 Required Behavior
+### 6.1 Comportamiento requerido
 
-1. `validateConfig` runs before saving or invoking.
-2. `invoke` must be deterministic for a given config + runtime state + prompt.
-3. Adapter must not mutate DB directly; it returns data via result/events only.
-4. Adapter must emit enough context for errors to be debuggable.
-5. If `invoke` throws, executor records run as `failed` with captured error text.
+1. `validateConfig` se ejecuta antes de guardar o invocar.
+2. `invoke` debe ser determinista para una configuración + estado de runtime + prompt dados.
+3. El adaptador no debe mutar la BD directamente; devuelve datos solo vía resultado/eventos.
+4. El adaptador debe emitir suficiente contexto para que los errores sean depurables.
+5. Si `invoke` lanza una excepción, el ejecutor registra la ejecución como `failed` con el texto del error capturado.
 
-### 6.2 Optional Behavior
+### 6.2 Comportamiento opcional
 
-Adapters may omit status/log hooks. If omitted, runtime still emits system lifecycle statuses (`queued`, `running`, `finished`).
+Los adaptadores pueden omitir los hooks de estado/log. Si se omiten, el runtime aun emite estados del ciclo de vida del sistema (`queued`, `running`, `finished`).
 
-### 6.3 Run log storage protocol
+### 6.3 Protocolo de almacenamiento de logs de ejecución
 
-Full run logs are managed by a separate pluggable store (not by the agent adapter).
+Los logs completos de ejecución los gestiona un almacén intercambiable separado (no el adaptador del agente).
 
 ```ts
 type RunLogStoreType = "local_file" | "object_store" | "postgres";
@@ -219,30 +219,30 @@ interface RunLogStore {
 }
 ```
 
-V1 deployment defaults:
+Valores por defecto del despliegue V1:
 
-1. Dev/local default: `local_file` (write to `data/run-logs/...`).
-2. Cloud/serverless default: `object_store` (S3/R2/GCS compatible).
-3. Optional fallback: `postgres` with strict size caps.
+1. Dev/local por defecto: `local_file` (escribe en `data/run-logs/...`).
+2. Nube/serverless por defecto: `object_store` (compatible con S3/R2/GCS).
+3. Respaldo opcional: `postgres` con límites estrictos de tamaño.
 
-### 6.4 Adapter identity and compatibility
+### 6.4 Identidad y compatibilidad del adaptador
 
-For V1 rollout, adapter identity is explicit:
+Para el lanzamiento de la V1, la identidad del adaptador es explícita:
 
 - `claude_local`
 - `codex_local`
-- `process` (generic existing behavior)
-- `http` (generic existing behavior)
+- `process` (comportamiento genérico existente)
+- `http` (comportamiento genérico existente)
 
-`claude_local` and `codex_local` are not wrappers around arbitrary `process`; they are typed adapters with known parser/resume semantics.
+`claude_local` y `codex_local` no son envoltorios alrededor de un `process` arbitrario; son adaptadores tipados con semántica conocida de análisis/reanudación.
 
-## 7. Built-in Adapters (Phase 1)
+## 7. Adaptadores integrados (Fase 1)
 
 ## 7.1 `claude-local`
 
-Runs local `claude` CLI directly.
+Ejecuta el CLI `claude` local directamente.
 
-### Config
+### Configuración
 
 ```json
 {
@@ -258,28 +258,28 @@ Runs local `claude` CLI directly.
 }
 ```
 
-### Invocation
+### Invocación
 
-- Base command: `claude --print <prompt> --output-format json`
-- Resume: add `--resume <sessionId>` when runtime state has session ID
-- Unsandboxed mode: add `--dangerously-skip-permissions` when enabled
+- Comando base: `claude --print <prompt> --output-format json`
+- Reanudación: agregar `--resume <sessionId>` cuando el estado de runtime tenga ID de sesión
+- Modo sin sandbox: agregar `--dangerously-skip-permissions` cuando esté habilitado
 
-### Output parsing
+### Análisis de salida
 
-1. Parse stdout JSON object.
-2. Extract `session_id` for resume.
-3. Extract usage fields:
+1. Analizar el objeto JSON de stdout.
+2. Extraer `session_id` para la reanudación.
+3. Extraer campos de uso:
    - `usage.input_tokens`
-   - `usage.cache_read_input_tokens` (if present)
+   - `usage.cache_read_input_tokens` (si está presente)
    - `usage.output_tokens`
-4. Extract `total_cost_usd` when present.
-5. On non-zero exit: still attempt parse; if parse succeeds keep extracted state and mark run failed unless adapter explicitly reports success.
+4. Extraer `total_cost_usd` cuando esté presente.
+5. En salida con código distinto de cero: aun intentar el análisis; si el análisis tiene éxito conservar el estado extraído y marcar la ejecución como fallida salvo que el adaptador reporte éxito explícitamente.
 
 ## 7.2 `codex-local`
 
-Runs local `codex` CLI directly.
+Ejecuta el CLI `codex` local directamente.
 
-### Config
+### Configuración
 
 ```json
 {
@@ -295,52 +295,52 @@ Runs local `codex` CLI directly.
 }
 ```
 
-### Invocation
+### Invocación
 
-- Base command: `codex exec --json <prompt>`
-- Resume form: `codex exec --json resume <sessionId> <prompt>`
-- Unsandboxed mode: add `--dangerously-bypass-approvals-and-sandbox` when enabled
-- Optional search mode: add `--search`
+- Comando base: `codex exec --json <prompt>`
+- Forma de reanudación: `codex exec --json resume <sessionId> <prompt>`
+- Modo sin sandbox: agregar `--dangerously-bypass-approvals-and-sandbox` cuando esté habilitado
+- Modo de búsqueda opcional: agregar `--search`
 
-### Output parsing
+### Análisis de salida
 
-Codex emits JSONL events. Parse line-by-line and extract:
+Codex emite eventos JSONL. Analizar línea por línea y extraer:
 
-1. `thread.started.thread_id` -> session ID
-2. `item.completed` where item type is `agent_message` -> output text
+1. `thread.started.thread_id` -> ID de sesión
+2. `item.completed` donde el tipo de item es `agent_message` -> texto de salida
 3. `turn.completed.usage`:
    - `input_tokens`
    - `cached_input_tokens`
    - `output_tokens`
 
-Codex JSONL currently may not include cost; store token usage and leave cost null/unknown unless available.
+El JSONL de Codex actualmente puede no incluir costo; almacenar el uso de tokens y dejar el costo null/desconocido salvo que esté disponible.
 
-## 7.3 Common local adapter process handling
+## 7.3 Manejo común de procesos de adaptadores locales
 
-Both local adapters must:
+Ambos adaptadores locales deben:
 
-1. Use `spawn(command, args, { shell: false, stdio: "pipe" })`.
-2. Capture stdout/stderr in stream chunks and forward to `RunLogStore`.
-3. Maintain rolling stdout/stderr tail excerpts in memory for DB diagnostic fields.
-4. Emit live log events to websocket subscribers (optional to throttle/chunk).
-5. Support graceful cancel: `SIGTERM`, then `SIGKILL` after `graceSec`.
-6. Enforce timeout using adapter `timeoutSec`.
-7. Return exit code + parsed result + diagnostic stderr.
+1. Usar `spawn(command, args, { shell: false, stdio: "pipe" })`.
+2. Capturar stdout/stderr en fragmentos de stream y reenviarlos al `RunLogStore`.
+3. Mantener en memoria extractos rodantes de la cola de stdout/stderr para los campos de diagnóstico de la BD.
+4. Emitir eventos de log en vivo a los suscriptores del websocket (opcional limitar/agrupar).
+5. Admitir cancelación controlada: `SIGTERM`, luego `SIGKILL` después de `graceSec`.
+6. Imponer el timeout usando el `timeoutSec` del adaptador.
+7. Devolver el código de salida + el resultado analizado + el stderr de diagnóstico.
 
-## 8. Heartbeat and Wakeup Coordinator
+## 8. Coordinador de latidos y despertares
 
-## 8.1 Wakeup sources
+## 8.1 Fuentes de despertar
 
-Supported sources:
+Fuentes admitidas:
 
-1. `timer`: periodic heartbeat per agent.
-2. `assignment`: issue assigned/reassigned to agent.
-3. `on_demand`: explicit wake request path (board/manual click or API ping).
-4. `automation`: non-interactive wake path (external callback or internal system automation).
+1. `timer`: latido periódico por agente.
+2. `assignment`: issue asignado/reasignado a un agente.
+3. `on_demand`: ruta explícita de solicitud de despertar (botón/clic manual o ping de API).
+4. `automation`: ruta de despertar no interactiva (callback externo o automatización interna del sistema).
 
-## 8.2 Central API
+## 8.2 API central
 
-All sources call one internal service:
+Todas las fuentes llaman a un solo servicio interno:
 
 ```ts
 enqueueWakeup({
@@ -355,22 +355,22 @@ enqueueWakeup({
 })
 ```
 
-No source invokes adapters directly.
+Ninguna fuente invoca adaptadores directamente.
 
-## 8.3 Queue semantics
+## 8.3 Semántica de la cola
 
-1. Max active run per agent remains `1`.
-2. If agent already has `queued`/`running` run:
-   - coalesce duplicate wakeups
-   - increment `coalescedCount`
-   - preserve latest reason/source metadata
-3. Queue is DB-backed for restart safety.
-4. Coordinator uses FIFO by `requested_at`, with optional priority:
+1. El máximo de ejecuciones activas por agente sigue siendo `1`.
+2. Si el agente ya tiene una ejecución `queued`/`running`:
+   - coalescer despertares duplicados
+   - incrementar `coalescedCount`
+   - conservar los metadatos más recientes de motivo/origen
+3. La cola está respaldada por BD para seguridad ante reinicios.
+4. El coordinador usa FIFO por `requested_at`, con prioridad opcional:
    - `on_demand` > `assignment` > `timer`/`automation`
 
-## 8.4 Agent heartbeat policy fields
+## 8.4 Campos de política de latido del agente
 
-Agent-level control-plane settings (not adapter-specific):
+Ajustes del plano de control a nivel de agente (no específicos del adaptador):
 
 ```json
 {
@@ -385,43 +385,43 @@ Agent-level control-plane settings (not adapter-specific):
 }
 ```
 
-Defaults:
+Valores por defecto:
 
 - `enabled: true`
-- `intervalSec: null` (no timer until explicitly set) or product default `300` if desired globally
+- `intervalSec: null` (sin temporizador hasta que se establezca explícitamente) o valor por defecto de producto `300` si se desea globalmente
 - `wakeOnAssignment: true`
 - `wakeOnOnDemand: true`
 - `wakeOnAutomation: true`
 
-## 8.5 Trigger integration rules
+## 8.5 Reglas de integración de disparadores
 
-1. Timer checks run on server worker interval and enqueue due agents.
-2. Issue assignment mutation enqueues wakeup when assignee changes and target agent has `wakeOnAssignment=true`.
-3. On-demand endpoint enqueues wakeup with `source=on_demand` and `triggerDetail=manual|ping` when `wakeOnOnDemand=true`.
-4. Callback/system automations enqueue wakeup with `source=automation` and `triggerDetail=callback|system` when `wakeOnAutomation=true`.
-5. Paused/terminated agents do not receive new wakeups.
-6. Hard budget-stopped agents do not receive new wakeups.
+1. Las comprobaciones del temporizador corren en el intervalo del worker del servidor y encolan los agentes vencidos.
+2. La mutación de asignación de issues encola un despertar cuando el asignado cambia y el agente destino tiene `wakeOnAssignment=true`.
+3. El endpoint bajo demanda encola un despertar con `source=on_demand` y `triggerDetail=manual|ping` cuando `wakeOnOnDemand=true`.
+4. Las automatizaciones de callback/sistema encolan un despertar con `source=automation` y `triggerDetail=callback|system` cuando `wakeOnAutomation=true`.
+5. Los agentes pausados/terminados no reciben nuevos despertares.
+6. Los agentes detenidos por límite duro de presupuesto no reciben nuevos despertares.
 
-## 9. Persistence Model
+## 9. Modelo de persistencia
 
-All tables remain company-scoped.
+Todas las tablas siguen limitadas por empresa.
 
-## 9.0 Changes to `agents`
+## 9.0 Cambios a `agents`
 
-1. Extend `adapter_type` domain to include `claude_local` and `codex_local` (alongside existing `process`, `http`).
-2. Keep `adapter_config` as adapter-owned config (CLI flags, cwd, prompt templates, env overrides).
-3. Add `runtime_config` jsonb for control-plane scheduling policy:
-   - heartbeat enable/interval
-   - wake-on-assignment
-   - wake-on-on-demand
-   - wake-on-automation
-   - cooldown
+1. Extender el dominio de `adapter_type` para incluir `claude_local` y `codex_local` (junto con los existentes `process`, `http`).
+2. Mantener `adapter_config` como configuración propia del adaptador (flags del CLI, cwd, plantillas de prompt, overrides de env).
+3. Agregar jsonb `runtime_config` para la política de programación del plano de control:
+   - habilitación/intervalo de latido
+   - despertar al asignar
+   - despertar bajo demanda
+   - despertar por automatización
+   - enfriamiento
 
-This separation keeps adapter config runtime-agnostic while allowing the heartbeat service to apply consistent scheduling logic.
+Esta separación mantiene la configuración del adaptador agnóstica al runtime mientras permite al servicio de latidos aplicar lógica de programación consistente.
 
-## 9.1 New table: `agent_runtime_state`
+## 9.1 Nueva tabla: `agent_runtime_state`
 
-One row per agent for aggregate runtime counters and legacy compatibility.
+Una fila por agente para contadores agregados de runtime y compatibilidad con legado.
 
 - `agent_id` uuid pk fk `agents.id`
 - `company_id` uuid fk not null
@@ -437,29 +437,29 @@ One row per agent for aggregate runtime counters and legacy compatibility.
 - `last_error` text null
 - `updated_at` timestamptz not null
 
-Invariant: exactly one runtime state row per agent.
+Invariante: exactamente una fila de estado de runtime por agente.
 
-## 9.1.1 New table: `agent_task_sessions`
+## 9.1.1 Nueva tabla: `agent_task_sessions`
 
-One row per `(company_id, agent_id, adapter_type, task_key)` for resumable session state.
+Una fila por `(company_id, agent_id, adapter_type, task_key)` para el estado de sesión resumible.
 
 - `id` uuid pk
 - `company_id` uuid fk not null
 - `agent_id` uuid fk not null
 - `adapter_type` text not null
 - `task_key` text not null
-- `session_params_json` jsonb null (adapter-defined shape)
-- `session_display_id` text null (for UI/debug)
+- `session_params_json` jsonb null (forma definida por el adaptador)
+- `session_display_id` text null (para UI/depuración)
 - `last_run_id` uuid fk `heartbeat_runs.id` null
 - `last_error` text null
 - `created_at` timestamptz not null
 - `updated_at` timestamptz not null
 
-Invariant: unique `(company_id, agent_id, adapter_type, task_key)`.
+Invariante: único `(company_id, agent_id, adapter_type, task_key)`.
 
-## 9.2 New table: `agent_wakeup_requests`
+## 9.2 Nueva tabla: `agent_wakeup_requests`
 
-Queue + audit for wakeups.
+Cola + auditoría para despertares.
 
 - `id` uuid pk
 - `company_id` uuid fk not null
@@ -479,9 +479,9 @@ Queue + audit for wakeups.
 - `finished_at` timestamptz null
 - `error` text null
 
-## 9.3 New table: `heartbeat_run_events`
+## 9.3 Nueva tabla: `heartbeat_run_events`
 
-Append-only per-run lightweight event timeline (no full raw log chunks).
+Línea de tiempo de eventos ligera por ejecución, solo anexable (sin fragmentos crudos de log completos).
 
 - `id` bigserial pk
 - `company_id` uuid fk not null
@@ -489,16 +489,16 @@ Append-only per-run lightweight event timeline (no full raw log chunks).
 - `agent_id` uuid fk `agents.id` not null
 - `seq` int not null
 - `event_type` text not null (`lifecycle|status|usage|error|structured`)
-- `stream` text null (`system|stdout|stderr`) (summarized events only, not full stream chunks)
+- `stream` text null (`system|stdout|stderr`) (solo eventos resumidos, no fragmentos completos del stream)
 - `level` text null (`info|warn|error`)
 - `color` text null
 - `message` text null
 - `payload` jsonb null
 - `created_at` timestamptz not null
 
-## 9.4 Changes to `heartbeat_runs`
+## 9.4 Cambios a `heartbeat_runs`
 
-Add fields required for result and diagnostics:
+Agregar campos requeridos para resultado y diagnóstico:
 
 - `wakeup_request_id` uuid fk `agent_wakeup_requests.id` null
 - `exit_code` int null
@@ -508,7 +508,7 @@ Add fields required for result and diagnostics:
 - `session_id_before` text null
 - `session_id_after` text null
 - `log_store` text null (`local_file|object_store|postgres`)
-- `log_ref` text null (opaque provider reference; path/key/uri/row id)
+- `log_ref` text null (referencia opaca del proveedor; ruta/clave/uri/id de fila)
 - `log_bytes` bigint null
 - `log_sha256` text null
 - `log_compressed` boolean not null default false
@@ -516,11 +516,11 @@ Add fields required for result and diagnostics:
 - `stdout_excerpt` text null
 - `error_code` text null
 
-This keeps per-run diagnostics queryable without storing full logs in Postgres.
+Esto mantiene los diagnósticos por ejecución consultables sin almacenar logs completos en Postgres.
 
-## 9.5 Log storage adapter configuration
+## 9.5 Configuración del adaptador de almacenamiento de logs
 
-Runtime log storage is deployment-configured (not per-agent by default).
+El almacenamiento de logs del runtime se configura por despliegue (no por agente por defecto).
 
 ```json
 {
@@ -535,21 +535,21 @@ Runtime log storage is deployment-configured (not per-agent by default).
 }
 ```
 
-Rules:
+Reglas:
 
-1. `log_ref` must be opaque and provider-neutral at API boundaries.
-2. UI/API must not assume local filesystem semantics.
-3. Provider-specific secrets/credentials stay in server config, never in agent config.
+1. `log_ref` debe ser opaco y neutral al proveedor en los límites de la API.
+2. La UI/API no debe asumir semántica de sistema de archivos local.
+3. Los secretos/credenciales específicos del proveedor permanecen en la configuración del servidor, nunca en la configuración del agente.
 
-## 10. Prompt Template and Pill System
+## 10. Sistema de plantillas de prompt y píldoras
 
-## 10.1 Template format
+## 10.1 Formato de plantilla
 
-- Mustache-style placeholders: `{{path.to.value}}`
-- No arbitrary code execution.
-- Unknown variable on save = validation error.
+- Placeholders estilo Mustache: `{{path.to.value}}`
+- Sin ejecución de código arbitrario.
+- Variable desconocida al guardar = error de validación.
 
-## 10.2 Initial variable catalog
+## 10.2 Catálogo inicial de variables
 
 - `company.id`
 - `company.name`
@@ -561,39 +561,39 @@ Rules:
 - `run.source`
 - `run.startedAt`
 - `heartbeat.reason`
-- `paperclip.skill` (shared Paperclip skill text block)
+- `paperclip.skill` (bloque de texto compartido de la habilidad de Paperclip)
 - `credentials.apiBaseUrl`
-- `credentials.apiKey` (optional, sensitive)
+- `credentials.apiKey` (opcional, sensible)
 
-## 10.3 Prompt fields
+## 10.3 Campos de prompt
 
 1. `promptTemplate`
-   - Used on every wakeup (first run and resumed runs).
-   - Can include run source/reason pills.
+   - Usado en cada despertar (primera ejecución y ejecuciones reanudadas).
+   - Puede incluir píldoras de origen/motivo de la ejecución.
 
-## 10.4 UI requirements
+## 10.4 Requisitos de UI
 
-1. Agent setup/edit form includes prompt editors with pill insertion.
-2. Variables are shown as clickable pills for fast insertion.
-3. Save-time validation indicates unknown/missing variables.
-4. Sensitive pills (`credentials.*`) show explicit warning badge.
+1. El formulario de creación/edición del agente incluye editores de prompt con inserción de píldoras.
+2. Las variables se muestran como píldoras clicables para inserción rápida.
+3. La validación al guardar indica variables desconocidas/faltantes.
+4. Las píldoras sensibles (`credentials.*`) muestran una insignia explícita de advertencia.
 
-## 10.5 Security notes for credentials
+## 10.5 Notas de seguridad para credenciales
 
-1. Credentials in prompt are allowed for initial simplicity but discouraged.
-2. Preferred transport is env vars (`PAPERCLIP_*`) injected at runtime.
-3. Prompt preview and logs must redact sensitive values.
+1. Las credenciales en el prompt se permiten por simplicidad inicial pero se desaconsejan.
+2. El transporte preferido son variables de entorno (`PAPERCLIP_*`) inyectadas en runtime.
+3. La vista previa del prompt y los logs deben redactar los valores sensibles.
 
-## 11. Realtime Status Delivery
+## 11. Entrega de estado en tiempo real
 
-## 11.1 Transport
+## 11.1 Transporte
 
-Primary transport: websocket channel per company.
+Transporte principal: canal websocket por empresa.
 
 - Endpoint: `GET /api/companies/:companyId/events/ws`
-- Auth: board session or agent API key (company-bound)
+- Autenticación: sesión del panel u API key de agente (ligada a la empresa)
 
-## 11.2 Event envelope
+## 11.2 Envoltorio del evento
 
 ```json
 {
@@ -607,28 +607,28 @@ Primary transport: websocket channel per company.
 }
 ```
 
-## 11.3 Required event types
+## 11.3 Tipos de eventos requeridos
 
 1. `agent.status.changed`
 2. `heartbeat.run.queued`
 3. `heartbeat.run.started`
-4. `heartbeat.run.status` (short color+message updates)
-5. `heartbeat.run.log` (optional live chunk stream; full persistence handled by `RunLogStore`)
+4. `heartbeat.run.status` (actualizaciones cortas de color+mensaje)
+5. `heartbeat.run.log` (stream opcional de fragmentos en vivo; la persistencia completa la maneja el `RunLogStore`)
 6. `heartbeat.run.finished`
 7. `issue.updated`
 8. `issue.comment.created`
 9. `activity.appended`
 
-## 11.4 UI behavior
+## 11.4 Comportamiento de la UI
 
-1. Agent detail view updates run timeline live.
-2. Task board reflects assignment/status/comment changes from agent activity without refresh.
-3. Org/agent list reflects status changes live.
-4. If websocket disconnects, client falls back to short polling until reconnect.
+1. La vista de detalle del agente actualiza la línea de tiempo de ejecuciones en vivo.
+2. El panel de tareas refleja cambios de asignación/estado/comentarios de la actividad del agente sin recargar.
+3. La lista de organización/agentes refleja los cambios de estado en vivo.
+4. Si el websocket se desconecta, el cliente recurre a polling corto hasta reconectar.
 
-## 12. Error Handling and Diagnostics
+## 12. Manejo de errores y diagnóstico
 
-## 12.1 Error classes
+## 12.1 Clases de error
 
 - `adapter_not_installed`
 - `invalid_working_directory`
@@ -640,54 +640,54 @@ Primary transport: websocket channel per company.
 - `resume_session_invalid`
 - `budget_blocked`
 
-## 12.2 Logging requirements
+## 12.2 Requisitos de registro
 
-1. Persist full stdout/stderr stream to configured `RunLogStore`.
-2. Persist only lightweight run metadata/events in Postgres (`heartbeat_runs`, `heartbeat_run_events`).
-3. Persist bounded `stdout_excerpt` and `stderr_excerpt` in Postgres for quick diagnostics.
-4. Mark truncation explicitly when excerpts are capped.
-5. Redact secrets from logs, excerpts, and websocket payloads.
+1. Persistir el stream completo de stdout/stderr en el `RunLogStore` configurado.
+2. Persistir solo metadatos/eventos ligeros de ejecución en Postgres (`heartbeat_runs`, `heartbeat_run_events`).
+3. Persistir `stdout_excerpt` y `stderr_excerpt` acotados en Postgres para diagnóstico rápido.
+4. Marcar el truncamiento explícitamente cuando los extractos están limitados.
+5. Redactar secretos de los logs, extractos y payloads del websocket.
 
-## 12.3 Log retention and lifecycle
+## 12.3 Retención y ciclo de vida de logs
 
-1. `RunLogStore` retention is configurable by deployment (for example 7/30/90 days).
-2. Postgres run metadata can outlive full log objects.
-3. Deletion/pruning jobs must handle orphaned metadata/log-object references safely.
-4. If full log object is gone, APIs still return metadata and excerpts with `log_unavailable` status.
+1. La retención del `RunLogStore` es configurable por despliegue (por ejemplo 7/30/90 días).
+2. Los metadatos de ejecución en Postgres pueden sobrevivir a los objetos de log completos.
+3. Los trabajos de eliminación/poda deben manejar de forma segura las referencias huérfanas de metadatos/objetos de log.
+4. Si el objeto de log completo ya no existe, las API aun devuelven metadatos y extractos con estado `log_unavailable`.
 
-## 12.4 Restart recovery
+## 12.4 Recuperación ante reinicios
 
-On server startup:
+Al iniciar el servidor:
 
-1. Find stale `queued`/`running` runs.
-2. Mark as `failed` with `error_code=control_plane_restart`.
-3. Set affected non-paused/non-terminated agents to `error` (or `idle` based on policy).
-4. Emit recovery events to websocket and activity log.
+1. Buscar ejecuciones `queued`/`running` obsoletas.
+2. Marcarlas como `failed` con `error_code=control_plane_restart`.
+3. Poner los agentes afectados no pausados/no terminados en `error` (o `idle` según política).
+4. Emitir eventos de recuperación al websocket y al log de actividad.
 
-## 13. API Surface Changes
+## 13. Cambios a la superficie de API
 
-## 13.1 New/updated endpoints
+## 13.1 Endpoints nuevos/actualizados
 
 1. `POST /agents/:agentId/wakeup`
-   - enqueue wakeup with source/reason
+   - encola un despertar con origen/motivo
 2. `POST /agents/:agentId/heartbeat/invoke`
-   - backward-compatible alias to wakeup API
+   - alias retrocompatible a la API de despertar
 3. `GET /agents/:agentId/runtime-state`
-   - board-only debug view
+   - vista de depuración solo para el panel
 4. `GET /agents/:agentId/task-sessions`
-   - board-only list of task-scoped adapter sessions
+   - listado solo del panel de las sesiones de adaptador por tarea
 5. `POST /agents/:agentId/runtime-state/reset-session`
-   - clears all task sessions for the agent, or one when `taskKey` is provided
+   - borra todas las sesiones de tarea del agente, o una cuando se provee `taskKey`
 6. `GET /heartbeat-runs/:runId/events?afterSeq=:n`
-   - fetch persisted lightweight timeline
+   - obtiene la línea de tiempo ligera persistida
 7. `GET /heartbeat-runs/:runId/log`
-   - reads full log stream via `RunLogStore` (or redirects/presigned URL for object store)
+   - lee el stream completo de logs vía `RunLogStore` (o redirige/URL prefirmada para almacén de objetos)
 8. `GET /api/companies/:companyId/events/ws`
-   - websocket stream
+   - stream websocket
 
-## 13.2 Mutation logging
+## 13.2 Registro de mutaciones
 
-All wakeup/run state mutations must create `activity_log` entries:
+Todas las mutaciones de estado de despertar/ejecución deben crear entradas en `activity_log`:
 
 - `wakeup.requested`
 - `wakeup.coalesced`
@@ -697,60 +697,60 @@ All wakeup/run state mutations must create `activity_log` entries:
 - `heartbeat.cancelled`
 - `runtime_state.updated`
 
-## 14. Heartbeat Service Implementation Plan
+## 14. Plan de implementación del servicio de latidos
 
-## Phase 1: Contracts and schema
+## Fase 1: Contratos y esquema
 
-1. Add new DB tables/columns (`agent_runtime_state`, `agent_wakeup_requests`, `heartbeat_run_events`, `heartbeat_runs.log_*` fields).
-2. Add `RunLogStore` interface and configuration wiring.
-3. Add shared types/constants/validators.
-4. Keep existing routes functional during migration.
+1. Agregar nuevas tablas/columnas de BD (`agent_runtime_state`, `agent_wakeup_requests`, `heartbeat_run_events`, campos `log_*` de `heartbeat_runs`).
+2. Agregar la interfaz `RunLogStore` y el cableado de configuración.
+3. Agregar tipos/constantes/validadores compartidos.
+4. Mantener funcionales las rutas existentes durante la migración.
 
-## Phase 2: Wakeup coordinator
+## Fase 2: Coordinador de despertares
 
-1. Implement DB-backed wakeup queue.
-2. Convert invoke/wake routes to enqueue with `source=on_demand` and appropriate `triggerDetail`.
-3. Add worker loop to claim and execute queued wakeups.
+1. Implementar la cola de despertares respaldada por BD.
+2. Convertir las rutas invoke/wake a encolar con `source=on_demand` y `triggerDetail` apropiado.
+3. Agregar bucle de worker para tomar y ejecutar despertares en cola.
 
-## Phase 3: Local adapters
+## Fase 3: Adaptadores locales
 
-1. Implement `claude-local` adapter.
-2. Implement `codex-local` adapter.
-3. Parse and persist session IDs and token usage.
-4. Wire cancel/timeout/grace behavior.
+1. Implementar el adaptador `claude-local`.
+2. Implementar el adaptador `codex-local`.
+3. Analizar y persistir ID de sesión y uso de tokens.
+4. Cablear comportamiento de cancelación/timeout/gracia.
 
-## Phase 4: Realtime push
+## Fase 4: Push en tiempo real
 
-1. Implement company websocket hub.
-2. Publish run/agent/issue events.
-3. Update UI pages to subscribe and invalidate/update relevant data.
+1. Implementar el hub websocket de la empresa.
+2. Publicar eventos de ejecución/agente/issue.
+3. Actualizar las páginas de la UI para suscribirse e invalidar/actualizar los datos relevantes.
 
-## Phase 5: Prompt pills and config UX
+## Fase 5: Píldoras de prompt y UX de configuración
 
-1. Add adapter-specific config editor with prompt templates.
-2. Add pill insertion and variable validation.
-3. Add sensitive-variable warnings and redaction.
+1. Agregar editor de configuración específico del adaptador con plantillas de prompt.
+2. Agregar inserción de píldoras y validación de variables.
+3. Agregar advertencias de variables sensibles y redacción.
 
-## Phase 6: Hardening
+## Fase 6: Endurecimiento
 
-1. Add failure/restart recovery sweeps.
-2. Add metadata/full-log retention policies and pruning jobs.
-3. Add integration/e2e coverage for wakeup triggers and live updates.
+1. Agregar barridos de recuperación ante fallos/reinicios.
+2. Agregar políticas de retención de metadatos/logs completos y trabajos de poda.
+3. Agregar cobertura de integración/e2e para disparadores de despertar y actualizaciones en vivo.
 
-## 15. Acceptance Criteria
+## 15. Criterios de aceptación
 
-1. Agent with `claude-local` or `codex-local` can run, exit, and persist run result.
-2. Session parameters are persisted per task scope and reused automatically for same-task resumes.
-3. Token usage is persisted per run and accumulated per agent runtime state.
-4. Timer, assignment, on-demand, and automation wakeups all enqueue through one coordinator.
-5. Pause/terminate interrupts running local process and prevents new wakeups.
-6. Browser receives live websocket updates for run status/logs and task/agent changes.
-7. Failed runs expose rich CLI diagnostics in UI with excerpts immediately available and full log retrievable via `RunLogStore`.
-8. All actions remain company-scoped and auditable.
+1. Un agente con `claude-local` o `codex-local` puede ejecutar, salir y persistir el resultado de la ejecución.
+2. Los parámetros de sesión se persisten por alcance de tarea y se reutilizan automáticamente para reanudaciones de la misma tarea.
+3. El uso de tokens se persiste por ejecución y se acumula en el estado de runtime del agente.
+4. Los despertares de temporizador, asignación, bajo demanda y automatización se encolan todos vía un solo coordinador.
+5. Pausar/terminar interrumpe el proceso local en ejecución e impide nuevos despertares.
+6. El navegador recibe actualizaciones websocket en vivo de estado/logs de ejecución y cambios de tareas/agentes.
+7. Las ejecuciones fallidas exponen diagnóstico rico del CLI en la UI con extractos disponibles de inmediato y log completo recuperable vía `RunLogStore`.
+8. Todas las acciones siguen limitadas por empresa y auditables.
 
-## 16. Open Questions
+## 16. Preguntas abiertas
 
-1. Should timer default be `null` (off until enabled) or `300` seconds by default?
-2. What should the default retention policy be for full log objects vs Postgres metadata?
-3. Should agent API credentials be allowed in prompt templates by default, or require explicit opt-in toggle?
-4. Should websocket be the only realtime channel, or should we also expose SSE for simpler clients?
+1. ¿Debe el valor por defecto del temporizador ser `null` (apagado hasta habilitarlo) o `300` segundos por defecto?
+2. ¿Cuál debe ser la política de retención por defecto para objetos de log completos vs metadatos de Postgres?
+3. ¿Deben permitirse las credenciales de API del agente en plantillas de prompt por defecto, o requerir un toggle explícito de opt-in?
+4. ¿Debe el websocket ser el único canal en tiempo real, o también exponer SSE para clientes más simples?

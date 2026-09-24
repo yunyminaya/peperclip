@@ -6,84 +6,84 @@ description: >
   to ship a release, not merely to discuss versioning.
 ---
 
-# Release Coordination Skill
+# Habilidad de coordinación de versiones
 
-Run the full Paperclip maintainer release workflow, not just an npm publish.
+Ejecutar el flujo de trabajo completo de publicación de Paperclip del mantenedor, no solo un npm publish.
 
-This skill coordinates:
+Esta habilidad coordina:
 
-- stable changelog drafting via `release-changelog`
-- canary verification and publish status from `master`
-- Docker smoke testing via `scripts/docker-onboard-smoke.sh`
-- manual stable promotion from a chosen source ref
-- GitHub Release creation
-- website / announcement follow-up tasks
+- redacción del changelog estable vía `release-changelog`
+- verificación de canary y estado de publicación desde `master`
+- smoke testing de Docker vía `scripts/docker-onboard-smoke.sh`
+- promoción manual estable desde un source ref elegido
+- creación del GitHub Release
+- tareas de seguimiento de sitio web / anuncios
 
-## Trigger
+## Disparador
 
-Use this skill when leadership asks for:
+Usar esta habilidad cuando el liderazgo pida:
 
-- "do a release"
-- "ship the release"
-- "promote this canary to stable"
-- "cut the stable release"
+- «haz una versión»
+- «publica la versión»
+- «promueve este canary a estable»
+- «saca la versión estable»
 
-## Preconditions
+## Condiciones previas
 
-Before proceeding, verify all of the following:
+Antes de continuar, verificar todo lo siguiente:
 
-1. `.agents/skills/release-changelog/SKILL.md` exists and is usable.
-2. The repo working tree is clean, including untracked files.
-3. There is at least one canary or candidate commit since the last stable tag.
-4. The candidate SHA has passed the verification gate or is about to.
-5. If manifests changed, the CI-owned `pnpm-lock.yaml` refresh is already merged on `master`.
-6. npm publish rights are available through GitHub trusted publishing, or through local npm auth for emergency/manual use.
-7. If running through Paperclip, you have issue context for status updates and follow-up task creation.
+1. `.agents/skills/release-changelog/SKILL.md` existe y es utilizable.
+2. El working tree del repo está limpio, incluidos los archivos sin seguimiento.
+3. Hay al menos un commit canary o candidato desde el último tag estable.
+4. El SHA candidato pasó la puerta de verificación o está por pasarla.
+5. Si los manifiestos cambiaron, la actualización de `pnpm-lock.yaml` propiedad de CI ya está fusionada en `master`.
+6. Los derechos de npm publish están disponibles mediante GitHub trusted publishing, o mediante autenticación npm local para uso de emergencia/manual.
+7. Si se ejecuta a través de Paperclip, se tiene el contexto del issue para actualizaciones de estado y creación de tareas de seguimiento.
 
-If any precondition fails, stop and report the blocker.
+Si alguna condición previa falla, detenerse e informar el bloqueador.
 
-## Inputs
+## Entradas
 
-Collect these inputs up front:
+Recopilar estas entradas por adelantado:
 
-- whether the target is a canary check or a stable promotion
-- the candidate `source_ref` for stable
-- whether the stable run is dry-run or live
-- release issue / company context for website and announcement follow-up
+- si el objetivo es una verificación canary o una promoción estable
+- el `source_ref` candidato para estable
+- si la ejecución estable es dry-run o en vivo
+- contexto de issue de versión / empresa para el seguimiento de sitio web y anuncios
 
-## Step 0 — Release Model
+## Paso 0 — Modelo de versión
 
-Paperclip now uses a commit-driven release model:
+Paperclip ahora usa un modelo de versión basado en commits:
 
-1. every push to `master` publishes a canary automatically
-2. canaries use `YYYY.MDD.P-canary.N`
-3. stable releases use `YYYY.MDD.P`
-4. the middle slot is `MDD`, where `M` is the UTC month and `DD` is the zero-padded UTC day
-5. the stable patch slot increments when more than one stable ships on the same UTC date
-6. stable releases are manually promoted from a chosen tested commit or canary source commit
-7. only stable releases get `releases/vYYYY.MDD.P.md`, git tag `vYYYY.MDD.P`, and a GitHub Release
+1. cada push a `master` publica un canary automáticamente
+2. los canaries usan `YYYY.MDD.P-canary.N`
+3. las versiones estables usan `YYYY.MDD.P`
+4. el slot central es `MDD`, donde `M` es el mes UTC y `DD` es el día UTC con cero a la izquierda
+5. el slot de parche estable se incrementa cuando se publica más de una estable en la misma fecha UTC
+6. las versiones estables se promueven manualmente desde un commit probado elegido o un commit fuente canary
+7. solo las versiones estables obtienen `releases/vYYYY.MDD.P.md`, el tag de git `vYYYY.MDD.P` y un GitHub Release
 
-Critical consequences:
+Consecuencias críticas:
 
-- do not use release branches as the default path
-- do not derive major/minor/patch bumps
-- do not create canary changelog files
-- do not create canary GitHub Releases
+- no usar ramas de versión como ruta predeterminada
+- no derivar incrementos de major/minor/patch
+- no crear archivos de changelog canary
+- no crear GitHub Releases canary
 
-## Step 1 — Choose the Candidate
+## Paso 1 — Elegir el candidato
 
-For canary validation:
+Para validación de canary:
 
-- inspect the latest successful canary run on `master`
-- record the canary version and source SHA
+- inspeccionar la última ejecución exitosa de canary en `master`
+- registrar la versión canary y el SHA fuente
 
-For stable promotion:
+Para promoción estable:
 
-1. choose the tested source ref
-2. confirm it is the exact SHA you want to promote
-3. resolve the target stable version with `./scripts/release.sh stable --date YYYY-MM-DD --print-version`
+1. elegir el source ref probado
+2. confirmar que es el SHA exacto que se quiere promover
+3. resolver la versión estable objetivo con `./scripts/release.sh stable --date YYYY-MM-DD --print-version`
 
-Useful commands:
+Comandos útiles:
 
 ```bash
 git tag --list 'v*' --sort=-version:refname | head -1
@@ -91,24 +91,24 @@ git log --oneline --no-merges
 npm view paperclipai@canary version
 ```
 
-## Step 2 — Draft the Stable Changelog
+## Paso 2 — Redactar el changelog estable
 
-Stable changelog files live at:
+Los archivos de changelog estable viven en:
 
 - `releases/vYYYY.MDD.P.md`
 
-Invoke `release-changelog` and generate or update the stable notes only.
+Invocar `release-changelog` y generar o actualizar solo las notas estables.
 
-Rules:
+Reglas:
 
-- review the draft with a human before publish
-- preserve manual edits if the file already exists
-- keep the filename stable-only
-- do not create a canary changelog file
+- revisar el borrador con un humano antes de publicar
+- preservar las ediciones manuales si el archivo ya existe
+- mantener el nombre del archivo solo-estable
+- no crear un archivo de changelog canary
 
-## Step 3 — Verify the Candidate SHA
+## Paso 3 — Verificar el SHA candidato
 
-Run the standard gate:
+Ejecutar la puerta estándar:
 
 ```bash
 pnpm -r typecheck
@@ -116,86 +116,86 @@ pnpm test:run
 pnpm build
 ```
 
-If the GitHub release workflow will run the publish, it can rerun this gate. Still report local status if you checked it.
+Si el workflow de versión de GitHub ejecutará la publicación, puede volver a ejecutar esta puerta. Aun así informar el estado local si se verificó.
 
-For PRs that touch release logic, the repo also runs a canary release dry-run in CI. That is a release-specific guard, not a substitute for the standard gate.
+Para los PR que tocan la lógica de versión, el repo también ejecuta un dry-run de versión canary en CI. Esa es una protección específica de la versión, no un sustituto de la puerta estándar.
 
-## Step 4 — Validate the Canary
+## Paso 4 — Validar el canary
 
-The normal canary path is automatic from `master` via:
+La ruta canary normal es automática desde `master` vía:
 
 - `.github/workflows/release.yml`
 
-Confirm:
+Confirmar:
 
-1. verification passed
-2. npm canary publish succeeded
-3. git tag `canary/vYYYY.MDD.P-canary.N` exists
+1. la verificación pasó
+2. la publicación npm canary tuvo éxito
+3. el tag de git `canary/vYYYY.MDD.P-canary.N` existe
 
-Useful checks:
+Verificaciones útiles:
 
 ```bash
 npm view paperclipai@canary version
 git tag --list 'canary/v*' --sort=-version:refname | head -5
 ```
 
-## Step 5 — Smoke Test the Canary
+## Paso 5 — Smoke test del canary
 
-Run:
+Ejecutar:
 
 ```bash
 PAPERCLIPAI_VERSION=canary ./scripts/docker-onboard-smoke.sh
 ```
 
-Useful isolated variant:
+Variante aislada útil:
 
 ```bash
 HOST_PORT=3232 DATA_DIR=./data/release-smoke-canary PAPERCLIPAI_VERSION=canary ./scripts/docker-onboard-smoke.sh
 ```
 
-Confirm:
+Confirmar:
 
-1. install succeeds
-2. onboarding completes without crashes
-3. the server boots
-4. the UI loads
-5. basic company creation and dashboard load work
+1. la instalación tiene éxito
+2. la incorporación se completa sin fallos
+3. el servidor arranca
+4. la UI carga
+5. la creación básica de empresa y la carga del panel funcionan
 
-If smoke testing fails:
+Si el smoke testing falla:
 
-- stop the stable release
-- fix the issue on `master`
-- wait for the next automatic canary
-- rerun smoke testing
+- detener la versión estable
+- corregir el issue en `master`
+- esperar el siguiente canary automático
+- volver a ejecutar el smoke testing
 
-## Step 6 — Preview or Publish Stable
+## Paso 6 — Vista previa o publicación de la estable
 
-The normal stable path is manual `workflow_dispatch` on:
+La ruta estable normal es `workflow_dispatch` manual en:
 
 - `.github/workflows/release.yml`
 
-Inputs:
+Entradas:
 
 - `source_ref`
 - `stable_date`
 - `dry_run`
 
-Before live stable:
+Antes de la estable en vivo:
 
-1. resolve the target stable version with `./scripts/release.sh stable --date YYYY-MM-DD --print-version`
-2. ensure `releases/vYYYY.MDD.P.md` exists on the source ref
-3. run the stable workflow in dry-run mode first when practical
-4. then run the real stable publish
+1. resolver la versión estable objetivo con `./scripts/release.sh stable --date YYYY-MM-DD --print-version`
+2. asegurar que `releases/vYYYY.MDD.P.md` exista en el source ref
+3. ejecutar primero el workflow estable en modo dry-run cuando sea práctico
+4. luego ejecutar la publicación estable real
 
-The stable workflow:
+El workflow estable:
 
-- re-verifies the exact source ref
-- computes the next stable patch slot for the chosen UTC date
-- publishes `YYYY.MDD.P` under dist-tag `latest`
-- creates git tag `vYYYY.MDD.P`
-- creates or updates the GitHub Release from `releases/vYYYY.MDD.P.md`
+- vuelve a verificar el source ref exacto
+- calcula el siguiente slot de parche estable para la fecha UTC elegida
+- publica `YYYY.MDD.P` bajo el dist-tag `latest`
+- crea el tag de git `vYYYY.MDD.P`
+- crea o actualiza el GitHub Release desde `releases/vYYYY.MDD.P.md`
 
-Local emergency/manual commands:
+Comandos locales de emergencia/manual:
 
 ```bash
 ./scripts/release.sh stable --dry-run
@@ -204,44 +204,44 @@ git push public-gh refs/tags/vYYYY.MDD.P
 ./scripts/create-github-release.sh YYYY.MDD.P
 ```
 
-## Step 7 — Finish the Other Surfaces
+## Paso 7 — Terminar las otras superficies
 
-Create or verify follow-up work for:
+Crear o verificar el trabajo de seguimiento para:
 
-- website changelog publishing
-- launch post / social announcement
-- release summary in Paperclip issue context
+- publicación del changelog del sitio web
+- post de lanzamiento / anuncio social
+- resumen de la versión en el contexto del issue de Paperclip
 
-These should reference the stable release, not the canary.
+Estos deben referenciar la versión estable, no el canary.
 
-## Failure Handling
+## Manejo de fallos
 
-If the canary is bad:
+Si el canary está mal:
 
-- publish another canary, do not ship stable
+- publicar otro canary, no publicar la estable
 
-If stable npm publish succeeds but tag push or GitHub release creation fails:
+Si la publicación npm estable tiene éxito pero el push del tag o la creación del GitHub Release fallan:
 
-- fix the git/GitHub issue immediately from the same release result
-- do not republish the same version
+- corregir el issue de git/GitHub inmediatamente desde el mismo resultado de la versión
+- no volver a publicar la misma versión
 
-If `latest` is bad after stable publish:
+Si `latest` está mal después de la publicación estable:
 
 ```bash
 ./scripts/rollback-latest.sh <last-good-version>
 ```
 
-Then fix forward with a new stable release.
+Luego corregir hacia adelante con una nueva versión estable.
 
-## Output
+## Salida
 
-When the skill completes, provide:
+Cuando la habilidad termine, proporcionar:
 
-- candidate SHA and tested canary version, if relevant
-- stable version, if promoted
-- verification status
-- npm status
-- smoke-test status
-- git tag / GitHub Release status
-- website / announcement follow-up status
-- rollback recommendation if anything is still partially complete
+- SHA candidato y versión canary probada, si aplica
+- versión estable, si se promovió
+- estado de la verificación
+- estado de npm
+- estado del smoke test
+- estado del tag de git / GitHub Release
+- estado del seguimiento de sitio web / anuncios
+- recomendación de rollback si algo sigue parcialmente completo

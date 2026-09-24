@@ -79,9 +79,9 @@ function geminiSkillsHome(): string {
 }
 
 /**
- * Inject Paperclip skills directly into `~/.gemini/skills/` via symlinks.
- * This avoids needing GEMINI_CLI_HOME overrides, so the CLI naturally finds
- * both its auth credentials and the injected skills in the real home directory.
+ * Inyecta las habilidades de Paperclip directamente en `~/.gemini/skills/` mediante enlaces simbólicos.
+ * Esto evita necesitar anulaciones de GEMINI_CLI_HOME, para que la CLI encuentre de forma natural
+ * tanto sus credenciales de autenticación como las habilidades inyectadas en el directorio personal real.
  */
 async function ensureGeminiSkillsInjected(
   onLog: AdapterExecutionContext["onLog"],
@@ -98,7 +98,7 @@ async function ensureGeminiSkillsInjected(
   } catch (err) {
     await onLog(
       "stderr",
-      `[paperclip] Failed to prepare Gemini skills directory ${skillsHome}: ${err instanceof Error ? err.message : String(err)}\n`,
+      `[paperclip] No se pudo preparar el directorio de habilidades de Gemini ${skillsHome}: ${err instanceof Error ? err.message : String(err)}\n`,
     );
     return;
   }
@@ -109,7 +109,7 @@ async function ensureGeminiSkillsInjected(
   for (const skillName of removedSkills) {
     await onLog(
       "stderr",
-      `[paperclip] Removed maintainer-only Gemini skill "${skillName}" from ${skillsHome}\n`,
+      `[paperclip] Se eliminó la habilidad de Gemini solo de mantenimiento "${skillName}" de ${skillsHome}\n`,
     );
   }
 
@@ -121,12 +121,12 @@ async function ensureGeminiSkillsInjected(
       if (result === "skipped") continue;
       await onLog(
         "stderr",
-        `[paperclip] ${result === "repaired" ? "Repaired" : "Linked"} Gemini skill: ${entry.key}\n`,
+        `[paperclip] ${result === "repaired" ? "Reparada" : "Enlazada"} la habilidad de Gemini: ${entry.key}\n`,
       );
     } catch (err) {
       await onLog(
         "stderr",
-        `[paperclip] Failed to link Gemini skill "${entry.key}": ${err instanceof Error ? err.message : String(err)}\n`,
+        `[paperclip] No se pudo enlazar la habilidad de Gemini "${entry.key}": ${err instanceof Error ? err.message : String(err)}\n`,
       );
     }
   }
@@ -257,23 +257,23 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       const reason = err instanceof Error ? err.message : String(err);
       await onLog(
         "stdout",
-        `[paperclip] Warning: could not read agent instructions file "${instructionsFilePath}": ${reason}\n`,
+        `[paperclip] Advertencia: no se pudo leer el archivo de instrucciones del agente "${instructionsFilePath}": ${reason}\n`,
       );
     }
   }
   const commandNotes = (() => {
-    const notes: string[] = ["Prompt is passed to Gemini via --prompt for non-interactive execution."];
-    notes.push("Added --approval-mode yolo for unattended execution.");
+    const notes: string[] = ["El prompt se pasa a Gemini con --prompt para la ejecución no interactiva."];
+    notes.push("Se agregó --approval-mode yolo para la ejecución desatendida.");
     if (!instructionsFilePath) return notes;
     if (instructionsPrefix.length > 0) {
       notes.push(
-        `Loaded agent instructions from ${instructionsFilePath}`,
-        `Prepended instructions + path directive to prompt (relative references from ${instructionsDir}).`,
+        `Instrucciones del agente cargadas desde ${instructionsFilePath}`,
+        `Instrucciones y directiva de ruta antepuestas al prompt (referencias relativas desde ${instructionsDir}).`,
       );
       return notes;
     }
     notes.push(
-      `Configured instructionsFilePath ${instructionsFilePath}, but file could not be read; continuing without injected instructions.`,
+      `instructionsFilePath está configurado como ${instructionsFilePath}, pero no se pudo leer el archivo; se continúa sin instrucciones inyectadas.`,
     );
     return notes;
   })();
@@ -385,7 +385,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
         exitCode: attempt.proc.exitCode,
         signal: attempt.proc.signal,
         timedOut: true,
-        errorMessage: `Timed out after ${timeoutSec}s`,
+        errorMessage: `Se agotó el tiempo después de ${timeoutSec}s`,
         errorCode: authMeta.requiresAuth ? "gemini_auth_required" : null,
         clearSession: clearSessionOnMissingSession,
       };
@@ -393,7 +393,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
 
     const clearSessionForTurnLimit = isGeminiTurnLimitResult(attempt.parsed.resultEvent, attempt.proc.exitCode);
 
-    // On retry, don't fall back to old session ID — the old session was stale
+    // Al reintentar, no volver al ID de sesión anterior: la sesión anterior quedó obsoleta
     const canFallbackToRuntimeSession = !isRetry;
     const resolvedSessionId = attempt.parsed.sessionId
       ?? (canFallbackToRuntimeSession ? (runtimeSessionId ?? runtime.sessionId ?? null) : null);
@@ -415,7 +415,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       parsedError ||
       structuredFailure ||
       stderrLine ||
-      `Gemini exited with code ${attempt.proc.exitCode ?? -1}`;
+      `Gemini salió con el código ${attempt.proc.exitCode ?? -1}`;
 
     return {
       exitCode: attempt.proc.exitCode,

@@ -82,7 +82,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
     res.json(filtered);
   });
 
-  // Common malformed path when companyId is empty in "/api/companies/{companyId}/issues".
+  // Ruta malformada común cuando companyId está vacío en "/api/companies/{companyId}/issues".
   router.get("/issues", (_req, res) => {
     res.status(400).json({
       error: "Missing companyId in path. Use /api/companies/{companyId}/issues.",
@@ -92,13 +92,13 @@ export function companyRoutes(db: Db, storage?: StorageService) {
   router.get("/:companyId", async (req, res) => {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
-    // Allow agents (CEO) to read their own company; board always allowed
+    // Permite a los agentes (CEO) leer su propia empresa; el board siempre tiene permiso
     if (req.actor.type !== "agent") {
       assertBoard(req);
     }
     const company = await svc.getById(companyId);
     if (!company) {
-      res.status(404).json({ error: "Company not found" });
+      res.status(404).json({ error: "Empresa no encontrada" });
       return;
     }
     res.json(company);
@@ -249,7 +249,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
     let body: Record<string, unknown>;
 
     if (req.actor.type === "agent") {
-      // Only CEO agents may update company branding fields
+      // Solo los agentes CEO pueden actualizar los campos de marca de la empresa
       const agentSvc = agentService(db);
       const actorAgent = req.actor.agentId ? await agentSvc.getById(req.actor.agentId) : null;
       if (!actorAgent || actorAgent.role !== "ceo") {
@@ -266,7 +266,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
 
     const company = await svc.update(companyId, body);
     if (!company) {
-      res.status(404).json({ error: "Company not found" });
+      res.status(404).json({ error: "Empresa no encontrada" });
       return;
     }
     await logActivity(db, {
@@ -288,7 +288,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
     await assertCanUpdateBranding(req, companyId);
     const company = await svc.update(companyId, req.body);
     if (!company) {
-      res.status(404).json({ error: "Company not found" });
+      res.status(404).json({ error: "Empresa no encontrada" });
       return;
     }
     const actor = getActorInfo(req);
@@ -312,7 +312,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
     assertCompanyAccess(req, companyId);
     const company = await svc.archive(companyId);
     if (!company) {
-      res.status(404).json({ error: "Company not found" });
+      res.status(404).json({ error: "Empresa no encontrada" });
       return;
     }
     await logActivity(db, {
@@ -332,7 +332,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
     assertCompanyAccess(req, companyId);
     const company = await svc.remove(companyId);
     if (!company) {
-      res.status(404).json({ error: "Company not found" });
+      res.status(404).json({ error: "Empresa no encontrada" });
       return;
     }
     res.json({ ok: true });

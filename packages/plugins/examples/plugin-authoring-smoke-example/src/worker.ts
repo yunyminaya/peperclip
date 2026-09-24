@@ -5,7 +5,7 @@ const plugin = definePlugin({
     ctx.events.on("issue.created", async (event) => {
       const issueId = event.entityId ?? "unknown";
       await ctx.state.set({ scopeKind: "issue", scopeId: issueId, stateKey: "seen" }, true);
-      ctx.logger.info("Observed issue.created", { issueId });
+      ctx.logger.info("issue.created observado", { issueId });
     });
 
     ctx.data.register("health", async () => {
@@ -13,13 +13,13 @@ const plugin = definePlugin({
     });
 
     ctx.actions.register("ping", async () => {
-      ctx.logger.info("Ping action invoked");
+      ctx.logger.info("Acci\u00f3n de ping invocada");
       return { pong: true, at: new Date().toISOString() };
     });
   },
 
   async onHealth() {
-    return { status: "ok", message: "Plugin worker is running" };
+    return { status: "ok", message: "El worker del plugin est\u00e1 en ejecuci\u00f3n" };
   }
 });
 

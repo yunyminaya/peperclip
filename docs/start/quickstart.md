@@ -1,60 +1,60 @@
 ---
-title: Quickstart
-summary: Get Paperclip running in minutes
+title: Inicio rápido
+summary: Pon Paperclip en marcha en minutos
 ---
 
-Get Paperclip running locally in under 5 minutes.
+Pon Paperclip en marcha localmente en menos de 5 minutos.
 
-## Quick Start (Recommended)
+## Inicio rápido (recomendado)
 
 ```sh
 npx paperclipai onboard --yes
 ```
 
-This walks you through setup, configures your environment, and gets Paperclip running.
+Esto te guía por la configuración, configura tu entorno y pone Paperclip en marcha.
 
-To start Paperclip again later:
+Para iniciar Paperclip de nuevo más tarde:
 
 ```sh
 npx paperclipai run
 ```
 
-> **Note:** If you used `npx` for setup, always use `npx paperclipai` to run commands. The `pnpm paperclipai` form only works inside a cloned copy of the Paperclip repository (see Local Development below).
+> **Nota:** si usaste `npx` para la configuración, usa siempre `npx paperclipai` para ejecutar comandos. La forma `pnpm paperclipai` solo funciona dentro de una copia clonada del repositorio Paperclip (consulta Desarrollo local más abajo).
 
-## Local Development
+## Desarrollo local
 
-For contributors working on Paperclip itself. Prerequisites: Node.js 20+ and pnpm 9+.
+Para colaboradores que trabajan en el propio Paperclip. Requisitos previos: Node.js 20+ y pnpm 9+.
 
-Clone the repository, then:
+Clona el repositorio y luego:
 
 ```sh
 pnpm install
 pnpm dev
 ```
 
-This starts the API server and UI at [http://localhost:3100](http://localhost:3100).
+Esto inicia el servidor de API y la interfaz en [http://localhost:3100](http://localhost:3100).
 
-No external database required — Paperclip uses an embedded PostgreSQL instance by default.
+No se requiere base de datos externa: Paperclip usa una instancia PostgreSQL incorporada de forma predeterminada.
 
-When working from the cloned repo, you can also use:
+Cuando trabajas desde el repositorio clonado, también puedes usar:
 
 ```sh
 pnpm paperclipai run
 ```
 
-This auto-onboards if config is missing, runs health checks with auto-repair, and starts the server.
+Esto se auto-incorpora si falta la configuración, ejecuta verificaciones de salud con auto-reparación e inicia el servidor.
 
-## What's Next
+## Qué sigue
 
-Once Paperclip is running:
+Una vez que Paperclip esté en marcha:
 
-1. Create your first company in the web UI
-2. Define a company goal
-3. Create a CEO agent and configure its adapter
-4. Build out the org chart with more agents
-5. Set budgets and assign initial tasks
-6. Hit go — agents start their heartbeats and the company runs
+1. Crea tu primera empresa en la interfaz web
+2. Define un objetivo de la empresa
+3. Crea un agente CEO y configura su adaptador
+4. Construye el organigrama con más agentes
+5. Establece presupuestos y asigna las tareas iniciales
+6. Enciende todo: los agentes inician sus latidos y la empresa funciona
 
-<Card title="Core Concepts" href="/start/core-concepts">
-  Learn the key concepts behind Paperclip
+<Card title="Conceptos fundamentales" href="/start/core-concepts">
+  Aprende los conceptos clave detrás de Paperclip
 </Card>

@@ -59,12 +59,12 @@ import { issueService } from "./issues.js";
 import { projectService } from "./projects.js";
 import { routineService } from "./routines.js";
 
-/** Build OrgNode tree from manifest agent list (slug + reportsToSlug). */
+/** Construye el árbol OrgNode a partir de la lista de agentes del manifiesto (slug + reportsToSlug). */
 function buildOrgTreeFromManifest(agents: CompanyPortabilityManifest["agents"]): OrgNode[] {
   const ROLE_LABELS: Record<string, string> = {
-    ceo: "Chief Executive", cto: "Technology", cmo: "Marketing",
-    cfo: "Finance", coo: "Operations", vp: "VP", manager: "Manager",
-    engineer: "Engineer", agent: "Agent",
+    ceo: "CEO", cto: "CTO", cmo: "CMO",
+    cfo: "CFO", coo: "COO", vp: "VP", manager: "Gerente",
+    engineer: "Ingeniero", agent: "Agente",
   };
   const bySlug = new Map(agents.map((a) => [a.slug, a]));
   const childrenOf = new Map<string | null, typeof agents>();
@@ -84,14 +84,14 @@ function buildOrgTreeFromManifest(agents: CompanyPortabilityManifest["agents"]):
       reports: build(m.slug),
     }));
   };
-  // Find roots: agents whose reportsToSlug is null or points to a non-existent slug
+  // Encuentra las raíces: agentes cuyo reportsToSlug es null o apunta a un slug inexistente
   const roots = agents.filter((a) => !a.reportsToSlug || !bySlug.has(a.reportsToSlug));
   const rootSlugs = new Set(roots.map((r) => r.slug));
-  // Start from null parent, but also include orphans
+  // Comienza desde el padre null, pero también incluye huérfanos
   const tree = build(null);
   for (const root of roots) {
     if (root.reportsToSlug && !bySlug.has(root.reportsToSlug)) {
-      // Orphan root (parent slug doesn't exist)
+      // Raíz huérfana (el slug del padre no existe)
       tree.push({
         id: root.slug,
         name: root.name,
@@ -312,7 +312,7 @@ function deriveSkillExportDirCandidates(
     try {
       pushSuffix(skill.sourceLocator ? new URL(skill.sourceLocator).host : null);
     } catch {
-      // Ignore URL parse failures and fall through to generic suffixes.
+      // Ignora los fallos de análisis de URL y continúa con los sufijos genéricos.
     }
     pushSuffix("url");
   } else if (skill.sourceType === "local_path") {
@@ -675,7 +675,7 @@ function exportPortableProjectExecutionWorkspacePolicy(
     if (defaultWorkspaceKey) {
       next.defaultProjectWorkspaceKey = defaultWorkspaceKey;
     } else {
-      warnings.push(`Project ${projectSlug} default workspace ${defaultWorkspaceId} was omitted from export because that workspace is not portable.`);
+      warnings.push(`El espacio de trabajo predeterminado ${defaultWorkspaceId} del proyecto ${projectSlug} se omitió de la exportación porque ese espacio de trabajo no es portable.`);
     }
     delete next.defaultProjectWorkspaceId;
   }
@@ -697,7 +697,7 @@ function importPortableProjectExecutionWorkspacePolicy(
     if (defaultWorkspaceId) {
       next.defaultProjectWorkspaceId = defaultWorkspaceId;
     } else {
-      warnings.push(`Project ${projectSlug} references missing workspace key ${defaultWorkspaceKey}; imported execution workspace policy without a default workspace.`);
+      warnings.push(`El proyecto ${projectSlug} referencia la clave de espacio de trabajo faltante ${defaultWorkspaceKey}; se importó la política de espacios de trabajo de ejecución sin un espacio de trabajo predeterminado.`);
     }
   }
   delete next.defaultProjectWorkspaceKey;
@@ -815,13 +815,13 @@ async function buildPortableProjectWorkspaces(
 
     let setupCommand = asString(workspace.setupCommand);
     if (setupCommand && containsAbsolutePathFragment(setupCommand)) {
-      warnings.push(`Project ${projectSlug} workspace ${workspaceKey} setupCommand was omitted from export because it is system-dependent.`);
+      warnings.push(`El setupCommand del espacio de trabajo ${workspaceKey} del proyecto ${projectSlug} se omitió de la exportación porque depende del sistema.`);
       setupCommand = null;
     }
 
     let cleanupCommand = asString(workspace.cleanupCommand);
     if (cleanupCommand && containsAbsolutePathFragment(cleanupCommand)) {
-      warnings.push(`Project ${projectSlug} workspace ${workspaceKey} cleanupCommand was omitted from export because it is system-dependent.`);
+      warnings.push(`El cleanupCommand del espacio de trabajo ${workspaceKey} del proyecto ${projectSlug} se omitió de la exportación porque depende del sistema.`);
       cleanupCommand = null;
     }
 
@@ -829,7 +829,7 @@ async function buildPortableProjectWorkspaces(
       ? workspace.metadata
       : null;
     if (isPlainRecord(workspace.metadata) && metadata == null) {
-      warnings.push(`Project ${projectSlug} workspace ${workspaceKey} metadata was omitted from export because it contains system-dependent paths.`);
+      warnings.push(`Los metadatos del espacio de trabajo ${workspaceKey} del proyecto ${projectSlug} se omitieron de la exportación porque contienen rutas que dependen del sistema.`);
     }
 
     const portableWorkspace = stripEmptyValues({
@@ -932,11 +932,11 @@ function buildLegacyRoutineTriggerFromRecurrence(
   const frequency = asString(issue.legacyRecurrence.frequency);
   const interval = asInteger(issue.legacyRecurrence.interval) ?? 1;
   if (!frequency) {
-    errors.push(`Recurring task ${issue.slug} uses legacy recurrence without frequency; add .paperclip.yaml routines.${issue.slug}.triggers.`);
+    errors.push(`La tarea recurrente ${issue.slug} usa recurrencia heredada sin frecuencia; agrega .paperclip.yaml routines.${issue.slug}.triggers.`);
     return { trigger: null, warnings, errors };
   }
   if (interval < 1) {
-    errors.push(`Recurring task ${issue.slug} uses legacy recurrence with an invalid interval; add .paperclip.yaml routines.${issue.slug}.triggers.`);
+    errors.push(`La tarea recurrente ${issue.slug} usa recurrencia heredada con un intervalo no válido; agrega .paperclip.yaml routines.${issue.slug}.triggers.`);
     return { trigger: null, warnings, errors };
   }
 
@@ -944,7 +944,7 @@ function buildLegacyRoutineTriggerFromRecurrence(
   const startsAt = asString(schedule?.startsAt);
   const zonedStartsAt = startsAt ? readZonedDateParts(startsAt, timezone) : null;
   if (startsAt && !zonedStartsAt) {
-    errors.push(`Recurring task ${issue.slug} has an invalid legacy startsAt/timezone combination; add .paperclip.yaml routines.${issue.slug}.triggers.`);
+    errors.push(`La tarea recurrente ${issue.slug} tiene una combinación de startsAt/zona horaria heredada no válida; agrega .paperclip.yaml routines.${issue.slug}.triggers.`);
     return { trigger: null, warnings, errors };
   }
 
@@ -952,12 +952,12 @@ function buildLegacyRoutineTriggerFromRecurrence(
   const hour = asInteger(time?.hour) ?? zonedStartsAt?.hour ?? 0;
   const minute = asInteger(time?.minute) ?? zonedStartsAt?.minute ?? 0;
   if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-    errors.push(`Recurring task ${issue.slug} uses legacy recurrence with an invalid time; add .paperclip.yaml routines.${issue.slug}.triggers.`);
+    errors.push(`La tarea recurrente ${issue.slug} usa recurrencia heredada con una hora no válida; agrega .paperclip.yaml routines.${issue.slug}.triggers.`);
     return { trigger: null, warnings, errors };
   }
 
   if (issue.legacyRecurrence.until != null || issue.legacyRecurrence.count != null) {
-    warnings.push(`Recurring task ${issue.slug} uses legacy recurrence end bounds; Paperclip will import the routine trigger without those limits.`);
+    warnings.push(`La tarea recurrente ${issue.slug} usa límites de fin de recurrencia heredada; Paperclip importará el disparador de la rutina sin esos límites.`);
   }
 
   let cronExpression: string | null = null;
@@ -971,14 +971,14 @@ function buildLegacyRoutineTriggerFromRecurrence(
     cronExpression = `${minute} ${hourField} * * *`;
   } else if (frequency === "daily") {
     if (Array.isArray(issue.legacyRecurrence.weekdays) || Array.isArray(issue.legacyRecurrence.monthDays) || Array.isArray(issue.legacyRecurrence.months)) {
-      errors.push(`Recurring task ${issue.slug} uses unsupported legacy daily recurrence constraints; add .paperclip.yaml routines.${issue.slug}.triggers.`);
+      errors.push(`La tarea recurrente ${issue.slug} usa restricciones de recurrencia diaria heredada no compatibles; agrega .paperclip.yaml routines.${issue.slug}.triggers.`);
       return { trigger: null, warnings, errors };
     }
     const dayField = interval === 1 ? "*" : `*/${interval}`;
     cronExpression = `${minute} ${hour} ${dayField} * *`;
   } else if (frequency === "weekly") {
     if (interval !== 1) {
-      errors.push(`Recurring task ${issue.slug} uses legacy weekly recurrence with interval > 1; add .paperclip.yaml routines.${issue.slug}.triggers.`);
+      errors.push(`La tarea recurrente ${issue.slug} usa recurrencia semanal heredada con intervalo > 1; agrega .paperclip.yaml routines.${issue.slug}.triggers.`);
       return { trigger: null, warnings, errors };
     }
     const weekdays = Array.isArray(issue.legacyRecurrence.weekdays)
@@ -993,17 +993,17 @@ function buildLegacyRoutineTriggerFromRecurrence(
       cronWeekdays.push(zonedStartsAt.weekday);
     }
     if (cronWeekdays.length === 0) {
-      errors.push(`Recurring task ${issue.slug} uses legacy weekly recurrence without weekdays; add .paperclip.yaml routines.${issue.slug}.triggers.`);
+      errors.push(`La tarea recurrente ${issue.slug} usa recurrencia semanal heredada sin días de la semana; agrega .paperclip.yaml routines.${issue.slug}.triggers.`);
       return { trigger: null, warnings, errors };
     }
     cronExpression = `${minute} ${hour} * * ${normalizeCronList(cronWeekdays)}`;
   } else if (frequency === "monthly") {
     if (interval !== 1) {
-      errors.push(`Recurring task ${issue.slug} uses legacy monthly recurrence with interval > 1; add .paperclip.yaml routines.${issue.slug}.triggers.`);
+      errors.push(`La tarea recurrente ${issue.slug} usa recurrencia mensual heredada con intervalo > 1; agrega .paperclip.yaml routines.${issue.slug}.triggers.`);
       return { trigger: null, warnings, errors };
     }
     if (Array.isArray(issue.legacyRecurrence.ordinalWeekdays) && issue.legacyRecurrence.ordinalWeekdays.length > 0) {
-      errors.push(`Recurring task ${issue.slug} uses legacy ordinal monthly recurrence; add .paperclip.yaml routines.${issue.slug}.triggers.`);
+      errors.push(`La tarea recurrente ${issue.slug} usa recurrencia mensual ordinal heredada; agrega .paperclip.yaml routines.${issue.slug}.triggers.`);
       return { trigger: null, warnings, errors };
     }
     const monthDays = Array.isArray(issue.legacyRecurrence.monthDays)
@@ -1015,7 +1015,7 @@ function buildLegacyRoutineTriggerFromRecurrence(
       monthDays.push(zonedStartsAt.day);
     }
     if (monthDays.length === 0) {
-      errors.push(`Recurring task ${issue.slug} uses legacy monthly recurrence without monthDays; add .paperclip.yaml routines.${issue.slug}.triggers.`);
+      errors.push(`La tarea recurrente ${issue.slug} usa recurrencia mensual heredada sin monthDays; agrega .paperclip.yaml routines.${issue.slug}.triggers.`);
       return { trigger: null, warnings, errors };
     }
     const months = Array.isArray(issue.legacyRecurrence.months)
@@ -1027,7 +1027,7 @@ function buildLegacyRoutineTriggerFromRecurrence(
     cronExpression = `${minute} ${hour} ${normalizeCronList(monthDays.map(String))} ${monthField} *`;
   } else if (frequency === "yearly") {
     if (interval !== 1) {
-      errors.push(`Recurring task ${issue.slug} uses legacy yearly recurrence with interval > 1; add .paperclip.yaml routines.${issue.slug}.triggers.`);
+      errors.push(`La tarea recurrente ${issue.slug} usa recurrencia anual heredada con intervalo > 1; agrega .paperclip.yaml routines.${issue.slug}.triggers.`);
       return { trigger: null, warnings, errors };
     }
     const months = Array.isArray(issue.legacyRecurrence.months)
@@ -1047,19 +1047,19 @@ function buildLegacyRoutineTriggerFromRecurrence(
       monthDays.push(zonedStartsAt.day);
     }
     if (months.length === 0 || monthDays.length === 0) {
-      errors.push(`Recurring task ${issue.slug} uses legacy yearly recurrence without month/monthDay anchors; add .paperclip.yaml routines.${issue.slug}.triggers.`);
+      errors.push(`La tarea recurrente ${issue.slug} usa recurrencia anual heredada sin anclas month/monthDay; agrega .paperclip.yaml routines.${issue.slug}.triggers.`);
       return { trigger: null, warnings, errors };
     }
     cronExpression = `${minute} ${hour} ${normalizeCronList(monthDays.map(String))} ${normalizeCronList(months.map(String))} *`;
   } else {
-    errors.push(`Recurring task ${issue.slug} uses unsupported legacy recurrence frequency "${frequency}"; add .paperclip.yaml routines.${issue.slug}.triggers.`);
+    errors.push(`La tarea recurrente ${issue.slug} usa una frecuencia de recurrencia heredada no compatible "${frequency}"; agrega .paperclip.yaml routines.${issue.slug}.triggers.`);
     return { trigger: null, warnings, errors };
   }
 
   return {
     trigger: {
       kind: "schedule",
-      label: "Migrated legacy recurrence",
+      label: "Recurrencia heredada migrada",
       enabled: true,
       cronExpression,
       timezone,
@@ -1094,30 +1094,30 @@ function resolvePortableRoutineDefinition(
     };
 
   if (routine.concurrencyPolicy && !ROUTINE_CONCURRENCY_POLICIES.includes(routine.concurrencyPolicy as any)) {
-    errors.push(`Recurring task ${issue.slug} uses unsupported routine concurrencyPolicy "${routine.concurrencyPolicy}".`);
+    errors.push(`La tarea recurrente ${issue.slug} usa una concurrencyPolicy de rutina no compatible "${routine.concurrencyPolicy}".`);
   }
   if (routine.catchUpPolicy && !ROUTINE_CATCH_UP_POLICIES.includes(routine.catchUpPolicy as any)) {
-    errors.push(`Recurring task ${issue.slug} uses unsupported routine catchUpPolicy "${routine.catchUpPolicy}".`);
+    errors.push(`La tarea recurrente ${issue.slug} usa una catchUpPolicy de rutina no compatible "${routine.catchUpPolicy}".`);
   }
 
   for (const trigger of routine.triggers) {
     if (!ROUTINE_TRIGGER_KINDS.includes(trigger.kind as any)) {
-      errors.push(`Recurring task ${issue.slug} uses unsupported trigger kind "${trigger.kind}".`);
+      errors.push(`La tarea recurrente ${issue.slug} usa un tipo de disparador no compatible "${trigger.kind}".`);
       continue;
     }
     if (trigger.kind === "schedule") {
       if (!trigger.cronExpression || !trigger.timezone) {
-        errors.push(`Recurring task ${issue.slug} has a schedule trigger missing cronExpression/timezone.`);
+        errors.push(`La tarea recurrente ${issue.slug} tiene un disparador de programación sin cronExpression/zona horaria.`);
         continue;
       }
       const cronError = validateCron(trigger.cronExpression);
       if (cronError) {
-        errors.push(`Recurring task ${issue.slug} has an invalid schedule trigger: ${cronError}`);
+        errors.push(`La tarea recurrente ${issue.slug} tiene un disparador de programación no válido: ${cronError}`);
       }
       continue;
     }
     if (trigger.kind === "webhook" && trigger.signingMode && !ROUTINE_TRIGGER_SIGNING_MODES.includes(trigger.signingMode as any)) {
-      errors.push(`Recurring task ${issue.slug} uses unsupported webhook signingMode "${trigger.signingMode}".`);
+      errors.push(`La tarea recurrente ${issue.slug} usa un signingMode de webhook no compatible "${trigger.signingMode}".`);
     }
   }
 
@@ -1258,7 +1258,7 @@ function portableFileToBuffer(entry: CompanyPortabilityFileEntry, filePath: stri
   if (isPortableBinaryFile(entry)) {
     return portableBinaryFileToBuffer(entry);
   }
-  throw unprocessable(`Unsupported file entry encoding for ${filePath}`);
+  throw unprocessable(`Codificación de entrada de archivo no compatible para ${filePath}`);
 }
 
 function bufferToPortableBinaryFile(buffer: Buffer, contentType: string | null): CompanyPortabilityFileEntry {
@@ -1455,7 +1455,7 @@ function findPaperclipExtensionPath(files: Record<string, CompanyPortabilityFile
 function ensureMarkdownPath(pathValue: string) {
   const normalized = pathValue.replace(/\\/g, "/");
   if (!normalized.endsWith(".md")) {
-    throw unprocessable(`Manifest file path must end in .md: ${pathValue}`);
+    throw unprocessable(`La ruta del archivo del manifiesto debe terminar en .md: ${pathValue}`);
   }
   return normalized;
 }
@@ -1524,11 +1524,11 @@ function extractPortableEnvInputs(
         ? "system_dependent"
         : "portable";
       if (portability === "system_dependent") {
-        warnings.push(`Agent ${agentSlug} env ${key} default was exported as system-dependent.`);
+        warnings.push(`El valor predeterminado de la variable de entorno ${key} del agente ${agentSlug} se exportó como dependiente del sistema.`);
       }
       inputs.push({
         key,
-        description: `Optional default for ${key} on agent ${agentSlug}`,
+        description: `Valor predeterminado opcional para ${key} en el agente ${agentSlug}`,
         agentSlug,
         kind: isSensitive ? "secret" : "plain",
         requirement: "optional",
@@ -1541,11 +1541,11 @@ function extractPortableEnvInputs(
     if (typeof binding === "string") {
       const portability = isAbsoluteCommand(binding) ? "system_dependent" : "portable";
       if (portability === "system_dependent") {
-        warnings.push(`Agent ${agentSlug} env ${key} default was exported as system-dependent.`);
+        warnings.push(`El valor predeterminado de la variable de entorno ${key} del agente ${agentSlug} se exportó como dependiente del sistema.`);
       }
       inputs.push({
         key,
-        description: `Optional default for ${key} on agent ${agentSlug}`,
+        description: `Valor predeterminado opcional para ${key} en el agente ${agentSlug}`,
         agentSlug,
         kind: isSensitiveEnvKey(key) ? "secret" : "plain",
         requirement: "optional",
@@ -1744,7 +1744,7 @@ function renderYamlBlock(value: unknown, indentLevel: number): string[] {
 function renderFrontmatter(frontmatter: Record<string, unknown>) {
   const lines: string[] = ["---"];
   for (const [key, value] of orderedYamlEntries(frontmatter)) {
-    // Skip null/undefined values — don't export empty fields
+    // Omite valores null/undefined — no exporta campos vacíos
     if (value === null || value === undefined) continue;
     const scalar =
       typeof value === "string" ||
@@ -1807,12 +1807,12 @@ function applySelectedFilesToSource(source: ResolvedSource, selectedFiles?: stri
     ? ensureMarkdownPath(source.manifest.company.path)
     : Object.keys(source.files).find((entry) => entry.endsWith("/COMPANY.md") || entry === "COMPANY.md") ?? null;
   if (!companyPath) {
-    throw unprocessable("Company package is missing COMPANY.md");
+    throw unprocessable("Al paquete de empresa le falta COMPANY.md");
   }
 
   const companyMarkdown = source.files[companyPath];
   if (typeof companyMarkdown !== "string") {
-    throw unprocessable("Company package is missing COMPANY.md");
+    throw unprocessable("Al paquete de empresa le falta COMPANY.md");
   }
 
   const effectiveFiles: Record<string, CompanyPortabilityFileEntry> = {};
@@ -2103,7 +2103,7 @@ function parseFrontmatterMarkdown(raw: string): MarkdownDoc {
 async function fetchText(url: string) {
   const response = await fetch(url);
   if (!response.ok) {
-    throw unprocessable(`Failed to fetch ${url}: ${response.status}`);
+    throw unprocessable(`No se pudo obtener ${url}: ${response.status}`);
   }
   return response.text();
 }
@@ -2112,7 +2112,7 @@ async function fetchOptionalText(url: string) {
   const response = await fetch(url);
   if (response.status === 404) return null;
   if (!response.ok) {
-    throw unprocessable(`Failed to fetch ${url}: ${response.status}`);
+    throw unprocessable(`No se pudo obtener ${url}: ${response.status}`);
   }
   return response.text();
 }
@@ -2120,7 +2120,7 @@ async function fetchOptionalText(url: string) {
 async function fetchBinary(url: string) {
   const response = await fetch(url);
   if (!response.ok) {
-    throw unprocessable(`Failed to fetch ${url}: ${response.status}`);
+    throw unprocessable(`No se pudo obtener ${url}: ${response.status}`);
   }
   return Buffer.from(await response.arrayBuffer());
 }
@@ -2132,7 +2132,7 @@ async function fetchJson<T>(url: string): Promise<T> {
     },
   });
   if (!response.ok) {
-    throw unprocessable(`Failed to fetch ${url}: ${response.status}`);
+    throw unprocessable(`No se pudo obtener ${url}: ${response.status}`);
   }
   return response.json() as Promise<T>;
 }
@@ -2229,12 +2229,12 @@ function buildManifestFromPackageFiles(
     ? "COMPANY.md"
     : Object.keys(normalizedFiles).find((entry) => entry.endsWith("/COMPANY.md") || entry === "COMPANY.md");
   if (!resolvedCompanyPath) {
-    throw unprocessable("Company package is missing COMPANY.md");
+    throw unprocessable("Al paquete de empresa le falta COMPANY.md");
   }
 
   const companyMarkdown = readPortableTextFile(normalizedFiles, resolvedCompanyPath);
   if (typeof companyMarkdown !== "string") {
-    throw unprocessable(`Company package file is not readable as text: ${resolvedCompanyPath}`);
+    throw unprocessable(`El archivo del paquete de empresa no se puede leer como texto: ${resolvedCompanyPath}`);
   }
   const companyDoc = parseFrontmatterMarkdown(companyMarkdown);
   const companyFrontmatter = companyDoc.frontmatter;
@@ -2319,12 +2319,12 @@ function buildManifestFromPackageFiles(
 
   const warnings: string[] = [];
   if (manifest.company?.logoPath && !normalizedFiles[manifest.company.logoPath]) {
-    warnings.push(`Referenced company logo file is missing from package: ${manifest.company.logoPath}`);
+    warnings.push(`El archivo de logo de empresa referenciado falta en el paquete: ${manifest.company.logoPath}`);
   }
   for (const agentPath of agentPaths) {
     const markdownRaw = readPortableTextFile(normalizedFiles, agentPath);
     if (typeof markdownRaw !== "string") {
-      warnings.push(`Referenced agent file is missing from package: ${agentPath}`);
+      warnings.push(`El archivo de agente referenciado falta en el paquete: ${agentPath}`);
       continue;
     }
     const agentDoc = parseFrontmatterMarkdown(markdownRaw);
@@ -2366,14 +2366,14 @@ function buildManifestFromPackageFiles(
     manifest.envInputs.push(...readAgentEnvInputs(extension, slug));
 
     if (frontmatter.kind && frontmatter.kind !== "agent") {
-      warnings.push(`Agent markdown ${agentPath} does not declare kind: agent in frontmatter.`);
+      warnings.push(`El markdown del agente ${agentPath} no declara kind: agent en el frontmatter.`);
     }
   }
 
   for (const skillPath of skillPaths) {
     const markdownRaw = readPortableTextFile(normalizedFiles, skillPath);
     if (typeof markdownRaw !== "string") {
-      warnings.push(`Referenced skill file is missing from package: ${skillPath}`);
+      warnings.push(`El archivo de skill referenciado falta en el paquete: ${skillPath}`);
       continue;
     }
     const skillDoc = parseFrontmatterMarkdown(markdownRaw);
@@ -2458,7 +2458,7 @@ function buildManifestFromPackageFiles(
   for (const projectPath of projectPaths) {
     const markdownRaw = readPortableTextFile(normalizedFiles, projectPath);
     if (typeof markdownRaw !== "string") {
-      warnings.push(`Referenced project file is missing from package: ${projectPath}`);
+      warnings.push(`El archivo de proyecto referenciado falta en el paquete: ${projectPath}`);
       continue;
     }
     const projectDoc = parseFrontmatterMarkdown(markdownRaw);
@@ -2490,14 +2490,14 @@ function buildManifestFromPackageFiles(
       metadata: isPlainRecord(extension.metadata) ? extension.metadata : null,
     });
     if (frontmatter.kind && frontmatter.kind !== "project") {
-      warnings.push(`Project markdown ${projectPath} does not declare kind: project in frontmatter.`);
+      warnings.push(`El markdown del proyecto ${projectPath} no declara kind: project en el frontmatter.`);
     }
   }
 
   for (const taskPath of taskPaths) {
     const markdownRaw = readPortableTextFile(normalizedFiles, taskPath);
     if (typeof markdownRaw !== "string") {
-      warnings.push(`Referenced task file is missing from package: ${taskPath}`);
+      warnings.push(`El archivo de tarea referenciado falta en el paquete: ${taskPath}`);
       continue;
     }
     const taskDoc = parseFrontmatterMarkdown(markdownRaw);
@@ -2544,7 +2544,7 @@ function buildManifestFromPackageFiles(
       metadata: isPlainRecord(extension.metadata) ? extension.metadata : null,
     });
     if (frontmatter.kind && frontmatter.kind !== "task") {
-      warnings.push(`Task markdown ${taskPath} does not declare kind: task in frontmatter.`);
+      warnings.push(`El markdown de la tarea ${taskPath} no declara kind: task en el frontmatter.`);
     }
   }
 
@@ -2565,11 +2565,11 @@ function normalizeGitHubSourcePath(value: string | null | undefined) {
 export function parseGitHubSourceUrl(rawUrl: string) {
   const url = new URL(rawUrl);
   if (url.hostname !== "github.com") {
-    throw unprocessable("GitHub source must use github.com URL");
+    throw unprocessable("La fuente de GitHub debe usar una URL de github.com");
   }
   const parts = url.pathname.split("/").filter(Boolean);
   if (parts.length < 2) {
-    throw unprocessable("Invalid GitHub URL");
+    throw unprocessable("URL de GitHub no válida");
   }
   const owner = parts[0]!;
   const repo = parts[1]!.replace(/\.git$/i, "");
@@ -2601,7 +2601,7 @@ export function parseGitHubSourceUrl(rawUrl: string) {
     ref = parts[3] ?? "main";
     const blobPath = parts.slice(4).join("/");
     if (!blobPath) {
-      throw unprocessable("Invalid GitHub blob URL");
+      throw unprocessable("URL de blob de GitHub no válida");
     }
     companyPath = blobPath;
     basePath = path.posix.dirname(blobPath);
@@ -2646,7 +2646,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
     } catch (err) {
       if (ref === "main") {
         ref = "master";
-        warnings.push("GitHub ref main not found; falling back to master.");
+        warnings.push("No se encontró la ref main de GitHub; se usará master como alternativa.");
         companyMarkdown = await fetchOptionalText(
           resolveRawGitHubUrl(parsed.owner, parsed.repo, ref, companyRelativePath),
         );
@@ -2655,7 +2655,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
       }
     }
     if (!companyMarkdown) {
-      throw unprocessable("GitHub company package is missing COMPANY.md");
+      throw unprocessable("Al paquete de empresa de GitHub le falta COMPANY.md");
     }
 
     const companyPath = parsed.companyPath === "COMPANY.md"
@@ -2711,7 +2711,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
         );
         resolved.files[companyLogoPath] = bufferToPortableBinaryFile(binary, inferContentTypeFromPath(companyLogoPath));
       } catch (err) {
-        warnings.push(`Failed to fetch company logo ${companyLogoPath} from GitHub: ${err instanceof Error ? err.message : String(err)}`);
+        warnings.push(`No se pudo obtener el logo de empresa ${companyLogoPath} desde GitHub: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
     resolved.warnings.unshift(...warnings);
@@ -2733,7 +2733,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
       skills: input.skills && input.skills.length > 0 ? true : input.include?.skills,
     });
     const company = await companies.getById(companyId);
-    if (!company) throw notFound("Company not found");
+    if (!company) throw notFound("Empresa no encontrada");
 
     const files: Record<string, CompanyPortabilityFileEntry> = {};
     const warnings: string[] = [];
@@ -2748,7 +2748,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
     if (include.agents) {
       const skipped = allAgentRows.length - liveAgentRows.length;
       if (skipped > 0) {
-        warnings.push(`Skipped ${skipped} terminated agent${skipped === 1 ? "" : "s"} from export.`);
+        warnings.push(`Se ${skipped === 1 ? "omitió" : "omitieron"} ${skipped} agente${skipped === 1 ? "" : "s"} terminado${skipped === 1 ? "" : "s"} de la exportación.`);
       }
     }
 
@@ -2769,7 +2769,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
       const normalized = normalizeAgentUrlKey(trimmed) ?? trimmed;
       const match = agentByReference.get(trimmed) ?? agentByReference.get(normalized);
       if (!match) {
-        warnings.push(`Agent selector "${selector}" was not found and was skipped.`);
+        warnings.push(`No se encontró el selector de agente "${selector}"; se omitió.`);
         continue;
       }
       selectedAgents.set(match.id, match);
@@ -2810,7 +2810,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
     for (const selector of input.projects ?? []) {
       const match = projectByReference.get(selector) ?? projectByReference.get(normalizeProjectSelector(selector));
       if (!match) {
-        warnings.push(`Project selector "${selector}" was not found and was skipped.`);
+        warnings.push(`No se encontró el selector de proyecto "${selector}"; se omitió.`);
         continue;
       }
       selectedProjects.set(match.id, match);
@@ -2838,7 +2838,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
           }
           continue;
         }
-        warnings.push(`Issue selector "${selector}" was not found and was skipped.`);
+        warnings.push(`No se encontró el selector de issue "${selector}"; se omitió.`);
         continue;
       }
       selectedIssues.set(issue.id, issue);
@@ -2851,7 +2851,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
     for (const selector of input.projectIssues ?? []) {
       const match = projectByReference.get(selector) ?? projectByReference.get(normalizeProjectSelector(selector));
       if (!match) {
-        warnings.push(`Project-issues selector "${selector}" was not found and was skipped.`);
+        warnings.push(`No se encontró el selector de issues de proyecto "${selector}"; se omitió.`);
         continue;
       }
       selectedProjects.set(match.id, match);
@@ -2942,11 +2942,11 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
 
     if (include.company && company.logoAssetId) {
       if (!storage) {
-        warnings.push("Skipped company logo from export because storage is unavailable.");
+        warnings.push("Se omitió el logo de empresa de la exportación porque el almacenamiento no está disponible.");
       } else {
         const logoAsset = await assetRecords.getById(company.logoAssetId);
         if (!logoAsset) {
-          warnings.push(`Skipped company logo ${company.logoAssetId} because the asset record was not found.`);
+          warnings.push(`Se omitió el logo de empresa ${company.logoAssetId} porque no se encontró el registro del recurso.`);
         } else {
           try {
             const object = await storage.getObject(company.id, logoAsset.objectKey);
@@ -2954,7 +2954,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
             companyLogoPath = `images/${COMPANY_LOGO_FILE_NAME}${resolveCompanyLogoExtension(logoAsset.contentType, logoAsset.originalFilename)}`;
             files[companyLogoPath] = bufferToPortableBinaryFile(body, logoAsset.contentType);
           } catch (err) {
-            warnings.push(`Failed to export company logo ${company.logoAssetId}: ${err instanceof Error ? err.message : String(err)}`);
+            warnings.push(`No se pudo exportar el logo de empresa ${company.logoAssetId}: ${err instanceof Error ? err.message : String(err)}`);
           }
         }
       }
@@ -2980,7 +2980,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
       const normalized = normalizeSkillKey(trimmed) ?? normalizeSkillSlug(trimmed) ?? trimmed;
       const match = skillByReference.get(trimmed) ?? skillByReference.get(normalized);
       if (!match) {
-        warnings.push(`Skill selector "${selector}" was not found and was skipped.`);
+        warnings.push(`No se encontró el selector de skill "${selector}"; se omitió.`);
         continue;
       }
       selectedSkills.set(match.id, match);
@@ -3126,7 +3126,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
     for (const issue of selectedIssueRows) {
       const taskSlug = taskSlugByIssueId.get(issue.id)!;
       const projectSlug = issue.projectId ? (projectSlugById.get(issue.projectId) ?? null) : null;
-      // All tasks go in top-level tasks/ folder, never nested under projects/
+      // Todas las tareas van en la carpeta tasks/ de nivel superior, nunca anidadas bajo projects/
       const taskPath = `tasks/${taskSlug}/TASK.md`;
       const assigneeSlug = issue.assigneeAgentId ? (idToSlug.get(issue.assigneeAgentId) ?? null) : null;
       const projectWorkspaceKey = issue.projectId && issue.projectWorkspaceId
@@ -3252,14 +3252,14 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
     resolved.manifest.envInputs = dedupeEnvInputs(envInputs);
     resolved.warnings.unshift(...warnings);
 
-    // Generate org chart PNG from manifest agents
+    // Genera el PNG del organigrama a partir de los agentes del manifiesto
     if (resolved.manifest.agents.length > 0) {
       try {
         const orgNodes = buildOrgTreeFromManifest(resolved.manifest.agents);
         const pngBuffer = await renderOrgChartPng(orgNodes);
         finalFiles["images/org-chart.png"] = bufferToPortableBinaryFile(pngBuffer, "image/png");
       } catch {
-        // Non-fatal: export still works without the org chart image
+        // No fatal: la exportación sigue funcionando sin la imagen del organigrama
       }
     }
 
@@ -3348,13 +3348,13 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
     };
     const collisionStrategy = input.collisionStrategy ?? DEFAULT_COLLISION_STRATEGY;
     if (mode === "agent_safe" && collisionStrategy === "replace") {
-      throw unprocessable("Safe import routes do not allow replace collision strategy.");
+      throw unprocessable("Las rutas de importación segura no permiten la estrategia de colisión \"replace\".");
     }
     const warnings = [...source.warnings];
     const errors: string[] = [];
 
     if (include.company && !manifest.company) {
-      errors.push("Manifest does not include company metadata.");
+      errors.push("El manifiesto no incluye metadatos de la empresa.");
     }
 
     const selectedSlugs = include.agents
@@ -3370,11 +3370,11 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
       : [];
     const selectedMissing = selectedSlugs.filter((slug) => !manifest.agents.some((agent) => agent.slug === slug));
     for (const missing of selectedMissing) {
-      errors.push(`Selected agent slug not found in manifest: ${missing}`);
+      errors.push(`No se encontró el slug de agente seleccionado en el manifiesto: ${missing}`);
     }
 
     if (include.agents && selectedAgents.length === 0) {
-      warnings.push("No agents selected for import.");
+      warnings.push("No se seleccionaron agentes para la importación.");
     }
 
     const availableSkillKeys = new Set(source.manifest.skills.map((skill) => skill.key));
@@ -3389,17 +3389,17 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
       const filePath = ensureMarkdownPath(agent.path);
       const markdown = readPortableTextFile(source.files, filePath);
       if (typeof markdown !== "string") {
-        errors.push(`Missing markdown file for agent ${agent.slug}: ${filePath}`);
+        errors.push(`Falta el archivo markdown del agente ${agent.slug}: ${filePath}`);
         continue;
       }
       const parsed = parseFrontmatterMarkdown(markdown);
       if (parsed.frontmatter.kind && parsed.frontmatter.kind !== "agent") {
-        warnings.push(`Agent markdown ${filePath} does not declare kind: agent in frontmatter.`);
+        warnings.push(`El markdown del agente ${filePath} no declara kind: agent en el frontmatter.`);
       }
       for (const skillRef of agent.skills) {
         const slugMatches = availableSkillSlugs.get(skillRef) ?? [];
         if (!availableSkillKeys.has(skillRef) && slugMatches.length !== 1) {
-          warnings.push(`Agent ${agent.slug} references skill ${skillRef}, but that skill is not present in the package.`);
+          warnings.push(`El agente ${agent.slug} referencia el skill ${skillRef}, pero ese skill no está presente en el paquete.`);
         }
       }
     }
@@ -3408,12 +3408,12 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
       for (const project of manifest.projects) {
         const markdown = readPortableTextFile(source.files, ensureMarkdownPath(project.path));
         if (typeof markdown !== "string") {
-          errors.push(`Missing markdown file for project ${project.slug}: ${project.path}`);
+          errors.push(`Falta el archivo markdown del proyecto ${project.slug}: ${project.path}`);
           continue;
         }
         const parsed = parseFrontmatterMarkdown(markdown);
         if (parsed.frontmatter.kind && parsed.frontmatter.kind !== "project") {
-          warnings.push(`Project markdown ${project.path} does not declare kind: project in frontmatter.`);
+          warnings.push(`El markdown del proyecto ${project.path} no declara kind: project en el frontmatter.`);
         }
       }
     }
@@ -3423,19 +3423,19 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
       for (const issue of manifest.issues) {
         const markdown = readPortableTextFile(source.files, ensureMarkdownPath(issue.path));
         if (typeof markdown !== "string") {
-          errors.push(`Missing markdown file for task ${issue.slug}: ${issue.path}`);
+          errors.push(`Falta el archivo markdown de la tarea ${issue.slug}: ${issue.path}`);
           continue;
         }
         const parsed = parseFrontmatterMarkdown(markdown);
         if (parsed.frontmatter.kind && parsed.frontmatter.kind !== "task") {
-          warnings.push(`Task markdown ${issue.path} does not declare kind: task in frontmatter.`);
+          warnings.push(`El markdown de la tarea ${issue.path} no declara kind: task en el frontmatter.`);
         }
         if (issue.projectWorkspaceKey) {
           const project = issue.projectSlug ? projectBySlug.get(issue.projectSlug) ?? null : null;
           if (!project) {
-            warnings.push(`Task ${issue.slug} references workspace key ${issue.projectWorkspaceKey}, but its project is not present in the package.`);
+            warnings.push(`La tarea ${issue.slug} referencia la clave de espacio de trabajo ${issue.projectWorkspaceKey}, pero su proyecto no está presente en el paquete.`);
           } else if (!project.workspaces.some((workspace) => workspace.key === issue.projectWorkspaceKey)) {
-            warnings.push(`Task ${issue.slug} references missing project workspace key ${issue.projectWorkspaceKey}.`);
+            warnings.push(`La tarea ${issue.slug} referencia la clave de espacio de trabajo del proyecto faltante ${issue.projectWorkspaceKey}.`);
           }
         }
         if (issue.recurring) {
@@ -3454,7 +3454,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
 
     for (const envInput of manifest.envInputs) {
       if (envInput.portability === "system_dependent") {
-        warnings.push(`Environment input ${envInput.key}${envInput.agentSlug ? ` for ${envInput.agentSlug}` : ""} is system-dependent and may need manual adjustment after import.`);
+        warnings.push(`La entrada de entorno ${envInput.key}${envInput.agentSlug ? ` para ${envInput.agentSlug}` : ""} depende del sistema y puede necesitar ajuste manual después de la importación.`);
       }
     }
 
@@ -3463,7 +3463,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
 
     if (input.target.mode === "existing_company") {
       const targetCompany = await companies.getById(input.target.companyId);
-      if (!targetCompany) throw notFound("Target company not found");
+      if (!targetCompany) throw notFound("Empresa destino no encontrada");
       targetCompanyId = targetCompany.id;
       targetCompanyName = targetCompany.name;
     }
@@ -3498,9 +3498,9 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
         const skillSlug = normalizeSkillSlug(skill.slug) ?? skill.slug;
         if (existingSkillKeys.has(skill.key) || existingSkillSlugs.has(skillSlug)) {
           if (mode === "agent_safe") {
-            warnings.push(`Existing skill "${skill.slug}" matched during safe import and will ${collisionStrategy === "skip" ? "be skipped" : "be renamed"} instead of overwritten.`);
+            warnings.push(`El skill existente "${skill.slug}" coincidió durante la importación segura y ${collisionStrategy === "skip" ? "se omitirá" : "se renombrará"} en lugar de sobrescribirse.`);
           } else if (collisionStrategy === "replace") {
-            warnings.push(`Existing skill "${skill.slug}" (${skill.key}) will be overwritten by import.`);
+            warnings.push(`El skill existente "${skill.slug}" (${skill.key}) será sobrescrito por la importación.`);
           }
         }
       }
@@ -3525,7 +3525,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
           action: "update",
           plannedName: existing.name,
           existingAgentId: existing.id,
-          reason: "Existing slug matched; replace strategy.",
+          reason: "Slug existente coincidente; estrategia replace.",
         });
         continue;
       }
@@ -3536,7 +3536,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
           action: "skip",
           plannedName: existing.name,
           existingAgentId: existing.id,
-          reason: "Existing slug matched; skip strategy.",
+          reason: "Slug existente coincidente; estrategia skip.",
         });
         continue;
       }
@@ -3548,7 +3548,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
         action: "create",
         plannedName: renamed,
         existingAgentId: existing.id,
-        reason: "Existing slug matched; rename strategy.",
+        reason: "Slug existente coincidente; estrategia rename.",
       });
     }
 
@@ -3571,7 +3571,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
             action: "update",
             plannedName: existing.name,
             existingProjectId: existing.id,
-            reason: "Existing slug matched; replace strategy.",
+            reason: "Slug existente coincidente; estrategia replace.",
           });
           continue;
         }
@@ -3581,7 +3581,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
             action: "skip",
             plannedName: existing.name,
             existingProjectId: existing.id,
-            reason: "Existing slug matched; skip strategy.",
+            reason: "Slug existente coincidente; estrategia skip.",
           });
           continue;
         }
@@ -3592,7 +3592,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
           action: "create",
           plannedName: renamed,
           existingProjectId: existing.id,
-          reason: "Existing slug matched; rename strategy.",
+          reason: "Slug existente coincidente; estrategia rename.",
         });
       }
     }
@@ -3619,17 +3619,17 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
       }
     }
 
-    // Warn about agents that will be overwritten/updated
+    // Advierte sobre los agentes que se sobrescribirán/actualizarán
     for (const ap of agentPlans) {
       if (ap.action === "update") {
-        warnings.push(`Existing agent "${ap.plannedName}" (${ap.slug}) will be overwritten by import.`);
+        warnings.push(`El agente existente "${ap.plannedName}" (${ap.slug}) será sobrescrito por la importación.`);
       }
     }
 
-    // Warn about projects that will be overwritten/updated
+    // Advierte sobre los proyectos que se sobrescribirán/actualizarán
     for (const pp of projectPlans) {
       if (pp.action === "update") {
-        warnings.push(`Existing project "${pp.plannedName}" (${pp.slug}) will be overwritten by import.`);
+        warnings.push(`El proyecto existente "${pp.plannedName}" (${pp.slug}) será sobrescrito por la importación.`);
       }
     }
 
@@ -3639,7 +3639,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
           slug: manifestIssue.slug,
           action: "create",
           plannedTitle: manifestIssue.title,
-          reason: manifestIssue.recurring ? "Recurring task will be imported as a routine." : null,
+          reason: manifestIssue.recurring ? "La tarea recurrente se importará como una rutina." : null,
         });
       }
     }
@@ -3692,7 +3692,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
     const mode = resolveImportMode(options);
     const plan = await buildPreview(input, options);
     if (plan.preview.errors.length > 0) {
-      throw unprocessable(`Import preview has errors: ${plan.preview.errors.join("; ")}`);
+      throw unprocessable(`La vista previa de importación tiene errores: ${plan.preview.errors.join("; ")}`);
     }
     if (
       mode === "agent_safe"
@@ -3702,7 +3702,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
         || plan.preview.plan.projectPlans.some((entry) => entry.action === "update")
       )
     ) {
-      throw unprocessable("Safe import routes only allow create or skip actions.");
+      throw unprocessable("Las rutas de importación segura solo permiten acciones \"create\" o \"skip\".");
     }
 
     const sourceManifest = plan.source.manifest;
@@ -3714,12 +3714,12 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
 
     if (input.target.mode === "new_company") {
       if (mode === "agent_safe" && !options?.sourceCompanyId) {
-        throw unprocessable("Safe new-company imports require a source company context.");
+        throw unprocessable("Las importaciones seguras de empresas nuevas requieren un contexto de empresa de origen.");
       }
       if (mode === "agent_safe" && options?.sourceCompanyId) {
         const sourceMemberships = await access.listActiveUserMemberships(options.sourceCompanyId);
         if (sourceMemberships.length === 0) {
-          throw unprocessable("Safe new-company import requires at least one active user membership on the source company.");
+          throw unprocessable("La importación segura de una empresa nueva requiere al menos una membresía de usuario activa en la empresa de origen.");
         }
       }
       const companyName =
@@ -3744,7 +3744,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
       companyAction = "created";
     } else {
       targetCompany = await companies.getById(input.target.companyId);
-      if (!targetCompany) throw notFound("Target company not found");
+      if (!targetCompany) throw notFound("Empresa destino no encontrada");
       if (include.company && sourceManifest.company && mode === "board_full") {
         const updated = await companies.update(targetCompany.id, {
           name: sourceManifest.company.name,
@@ -3757,7 +3757,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
       }
     }
 
-    if (!targetCompany) throw notFound("Target company not found");
+    if (!targetCompany) throw notFound("Empresa destino no encontrada");
 
     if (include.company) {
       const logoPath = sourceManifest.company?.logoPath ?? null;
@@ -3767,15 +3767,15 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
       } else {
         const logoFile = plan.source.files[logoPath];
         if (!logoFile) {
-          warnings.push(`Skipped company logo import because ${logoPath} is missing from the package.`);
+          warnings.push(`Se omitió la importación del logo de empresa porque ${logoPath} falta en el paquete.`);
         } else if (!storage) {
-          warnings.push("Skipped company logo import because storage is unavailable.");
+          warnings.push("Se omitió la importación del logo de empresa porque el almacenamiento no está disponible.");
         } else {
           const contentType = isPortableBinaryFile(logoFile)
             ? (logoFile.contentType ?? inferContentTypeFromPath(logoPath))
             : inferContentTypeFromPath(logoPath);
           if (!contentType || !COMPANY_LOGO_CONTENT_TYPE_EXTENSIONS[contentType]) {
-            warnings.push(`Skipped company logo import for ${logoPath} because the file type is unsupported.`);
+            warnings.push(`Se omitió la importación del logo de empresa para ${logoPath} porque el tipo de archivo no es compatible.`);
           } else {
             try {
               const body = portableFileToBuffer(logoFile, logoPath);
@@ -3801,7 +3801,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
               });
               targetCompany = updated ?? targetCompany;
             } catch (err) {
-              warnings.push(`Failed to import company logo ${logoPath}: ${err instanceof Error ? err.message : String(err)}`);
+              warnings.push(`No se pudo importar el logo de empresa ${logoPath}: ${err instanceof Error ? err.message : String(err)}`);
             }
           }
         }
@@ -3834,9 +3834,9 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
       desiredSkillRefMap.set(importedSkill.originalKey, importedSkill.skill.key);
       desiredSkillRefMap.set(importedSkill.originalSlug, importedSkill.skill.key);
       if (importedSkill.action === "skipped") {
-        warnings.push(`Skipped skill ${importedSkill.originalSlug}; existing skill ${importedSkill.skill.slug} was kept.`);
+        warnings.push(`Se omitió el skill ${importedSkill.originalSlug}; se conservó el skill existente ${importedSkill.skill.slug}.`);
       } else if (importedSkill.originalKey !== importedSkill.skill.key) {
-        warnings.push(`Imported skill ${importedSkill.originalSlug} as ${importedSkill.skill.slug} to avoid overwriting an existing skill.`);
+        warnings.push(`Se importó el skill ${importedSkill.originalSlug} como ${importedSkill.skill.slug} para evitar sobrescribir un skill existente.`);
       }
     }
 
@@ -3879,7 +3879,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
           bundleFiles["AGENTS.md"] = fallbackPromptTemplate;
         }
         if (!markdownRaw && !fallbackPromptTemplate) {
-          warnings.push(`Missing AGENTS markdown for ${manifestAgent.slug}; imported with an empty managed bundle.`);
+          warnings.push(`Falta el markdown de AGENTS para ${manifestAgent.slug}; se importó con un bundle administrado vacío.`);
         }
 
         // Apply adapter overrides from request if present
@@ -3918,13 +3918,13 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
         if (planAgent.action === "update" && planAgent.existingAgentId) {
           let updated = await agents.update(planAgent.existingAgentId, patch);
           if (!updated) {
-            warnings.push(`Skipped update for missing agent ${planAgent.existingAgentId}.`);
+            warnings.push(`Se omitió la actualización del agente faltante ${planAgent.existingAgentId}.`);
             resultAgents.push({
               slug: planAgent.slug,
               id: null,
               action: "skipped",
               name: planAgent.plannedName,
-              reason: "Existing target agent not found.",
+              reason: "No se encontró el agente destino existente.",
             });
             continue;
           }
@@ -3935,7 +3935,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
             });
             updated = await agents.update(updated.id, { adapterConfig: materialized.adapterConfig }) ?? updated;
           } catch (err) {
-            warnings.push(`Failed to materialize instructions bundle for ${manifestAgent.slug}: ${err instanceof Error ? err.message : String(err)}`);
+            warnings.push(`No se pudo materializar el bundle de instrucciones para ${manifestAgent.slug}: ${err instanceof Error ? err.message : String(err)}`);
           }
           importedSlugToAgentId.set(planAgent.slug, updated.id);
           existingSlugToAgentId.set(normalizeAgentUrlKey(updated.name) ?? updated.id, updated.id);
@@ -3966,7 +3966,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
           });
           created = await agents.update(created.id, { adapterConfig: materialized.adapterConfig }) ?? created;
         } catch (err) {
-          warnings.push(`Failed to materialize instructions bundle for ${manifestAgent.slug}: ${err instanceof Error ? err.message : String(err)}`);
+          warnings.push(`No se pudo materializar el bundle de instrucciones para ${manifestAgent.slug}: ${err instanceof Error ? err.message : String(err)}`);
         }
         importedSlugToAgentId.set(planAgent.slug, created.id);
         existingSlugToAgentId.set(normalizeAgentUrlKey(created.name) ?? created.id, created.id);
@@ -3990,7 +3990,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
         try {
           await agents.update(agentId, { reportsTo: managerId });
         } catch {
-          warnings.push(`Could not assign manager ${managerSlug} for imported agent ${manifestAgent.slug}.`);
+          warnings.push(`No se pudo asignar el manager ${managerSlug} al agente importado ${manifestAgent.slug}.`);
         }
       }
     }
@@ -4032,13 +4032,13 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
         if (planProject.action === "update" && planProject.existingProjectId) {
           const updated = await projects.update(planProject.existingProjectId, projectPatch);
           if (!updated) {
-            warnings.push(`Skipped update for missing project ${planProject.existingProjectId}.`);
+            warnings.push(`Se omitió la actualización del proyecto faltante ${planProject.existingProjectId}.`);
             resultProjects.push({
               slug: planProject.slug,
               id: null,
               action: "skipped",
               name: planProject.plannedName,
-              reason: "Existing target project not found.",
+              reason: "No se encontró el proyecto destino existente.",
             });
             continue;
           }
@@ -4082,7 +4082,7 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
             isPrimary: workspace.isPrimary,
           });
           if (!createdWorkspace) {
-            warnings.push(`Project ${planProject.slug} workspace ${workspace.key} could not be created during import.`);
+            warnings.push(`No se pudo crear el espacio de trabajo ${workspace.key} del proyecto ${planProject.slug} durante la importación.`);
             continue;
           }
           projectWorkspaceIdByKey.set(workspace.key, createdWorkspace.id);
@@ -4123,15 +4123,15 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
           ? importedProjectWorkspaceIdByProjectSlug.get(manifestIssue.projectSlug)?.get(manifestIssue.projectWorkspaceKey) ?? null
           : null;
         if (manifestIssue.projectWorkspaceKey && !projectWorkspaceId) {
-          warnings.push(`Task ${manifestIssue.slug} references workspace key ${manifestIssue.projectWorkspaceKey}, but that workspace was not imported.`);
+          warnings.push(`La tarea ${manifestIssue.slug} referencia la clave de espacio de trabajo ${manifestIssue.projectWorkspaceKey}, pero ese espacio de trabajo no se importó.`);
         }
         if (manifestIssue.recurring) {
           if (!projectId || !assigneeAgentId) {
-            throw unprocessable(`Recurring task ${manifestIssue.slug} is missing the project or assignee required to create a routine.`);
+            throw unprocessable(`A la tarea recurrente ${manifestIssue.slug} le falta el proyecto o el asignado requerido para crear una rutina.`);
           }
           const resolvedRoutine = resolvePortableRoutineDefinition(manifestIssue, parsed?.frontmatter.schedule);
           if (resolvedRoutine.errors.length > 0) {
-            throw unprocessable(`Recurring task ${manifestIssue.slug} could not be imported as a routine: ${resolvedRoutine.errors.join("; ")}`);
+            throw unprocessable(`No se pudo importar la tarea recurrente ${manifestIssue.slug} como rutina: ${resolvedRoutine.errors.join("; ")}`);
           }
           warnings.push(...resolvedRoutine.warnings);
           const routineDefinition = resolvedRoutine.routine ?? {

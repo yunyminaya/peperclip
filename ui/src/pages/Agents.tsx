@@ -27,7 +27,7 @@ const adapterLabels: Record<string, string> = {
   opencode_local: "OpenCode",
   cursor: "Cursor",
   openclaw_gateway: "OpenClaw Gateway",
-  process: "Process",
+  process: "Proceso",
   http: "HTTP",
 };
 
@@ -96,7 +96,7 @@ export function Agents() {
     refetchInterval: 15_000,
   });
 
-  // Map agentId -> first live run + live run count
+  // Mapea agentId -> primera ejecución en vivo + conteo de ejecuciones en vivo
   const liveRunByAgent = useMemo(() => {
     const map = new Map<string, { runId: string; liveCount: number }>();
     for (const r of runs ?? []) {
@@ -118,11 +118,11 @@ export function Agents() {
   }, [agents]);
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Agents" }]);
+    setBreadcrumbs([{ label: "Agentes" }]);
   }, [setBreadcrumbs]);
 
   if (!selectedCompanyId) {
-    return <EmptyState icon={Bot} message="Select a company to view agents." />;
+    return <EmptyState icon={Bot} message="Selecciona una empresa para ver los agentes." />;
   }
 
   if (isLoading) {
@@ -138,9 +138,9 @@ export function Agents() {
         <Tabs value={tab} onValueChange={(v) => navigate(`/agents/${v}`)}>
           <PageTabBar
             items={[
-              { value: "all", label: "All" },
-              { value: "active", label: "Active" },
-              { value: "paused", label: "Paused" },
+              { value: "all", label: "Todos" },
+              { value: "active", label: "Activos" },
+              { value: "paused", label: "Pausados" },
               { value: "error", label: "Error" },
             ]}
             value={tab}
@@ -158,7 +158,7 @@ export function Agents() {
               onClick={() => setFiltersOpen(!filtersOpen)}
             >
               <SlidersHorizontal className="h-3 w-3" />
-              Filters
+              Filtros
               {showTerminated && <span className="ml-0.5 px-1 bg-foreground/10 rounded text-[10px]">1</span>}
             </button>
             {filtersOpen && (
@@ -173,7 +173,7 @@ export function Agents() {
                   )}>
                     {showTerminated && <span className="text-background text-[10px] leading-none">&#10003;</span>}
                   </span>
-                  Show terminated
+                  Mostrar terminados
                 </button>
               </div>
             )}
@@ -203,13 +203,13 @@ export function Agents() {
           )}
           <Button size="sm" variant="outline" onClick={openNewAgent}>
             <Plus className="h-3.5 w-3.5 mr-1.5" />
-            New Agent
+            Nuevo agente
           </Button>
         </div>
       </div>
 
       {filtered.length > 0 && (
-        <p className="text-xs text-muted-foreground">{filtered.length} agent{filtered.length !== 1 ? "s" : ""}</p>
+        <p className="text-xs text-muted-foreground">{filtered.length} agente{filtered.length !== 1 ? "s" : ""}</p>
       )}
 
       {error && <p className="text-sm text-destructive">{error.message}</p>}
@@ -217,8 +217,8 @@ export function Agents() {
       {agents && agents.length === 0 && (
         <EmptyState
           icon={Bot}
-          message="Create your first agent to get started."
-          action="New Agent"
+          message="Crea tu primer agente para empezar."
+          action="Nuevo agente"
           onAction={openNewAgent}
         />
       )}
@@ -281,7 +281,7 @@ export function Agents() {
 
       {effectiveView === "list" && agents && agents.length > 0 && filtered.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-8">
-          No agents match the selected filter.
+          Ningún agente coincide con el filtro seleccionado.
         </p>
       )}
 
@@ -296,13 +296,13 @@ export function Agents() {
 
       {effectiveView === "org" && orgTree && orgTree.length > 0 && filteredOrg.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-8">
-          No agents match the selected filter.
+          Ningún agente coincide con el filtro seleccionado.
         </p>
       )}
 
       {effectiveView === "org" && orgTree && orgTree.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-8">
-          No organizational hierarchy defined.
+          No hay jerarquía organizacional definida.
         </p>
       )}
     </div>
@@ -407,7 +407,7 @@ function LiveRunIndicator({
         <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
       </span>
       <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
-        Live{liveCount > 1 ? ` (${liveCount})` : ""}
+        En vivo{liveCount > 1 ? ` (${liveCount})` : ""}
       </span>
     </Link>
   );

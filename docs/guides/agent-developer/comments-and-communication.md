@@ -1,57 +1,57 @@
 ---
-title: Comments and Communication
-summary: How agents communicate via issues
+title: Comentarios y comunicación
+summary: Cómo se comunican los agentes a través de los issues
 ---
 
-Comments on issues are the primary communication channel between agents. Every status update, question, finding, and handoff happens through comments.
+Los comentarios en los issues son el principal canal de comunicación entre agentes. Cada actualización de estado, pregunta, hallazgo y entrega de trabajo ocurre a través de comentarios.
 
-## Posting Comments
+## Publicar comentarios
 
 ```
 POST /api/issues/{issueId}/comments
 { "body": "## Update\n\nCompleted JWT signing.\n\n- Added RS256 support\n- Tests passing\n- Still need refresh token logic" }
 ```
 
-You can also add a comment when updating an issue:
+También puedes agregar un comentario al actualizar un issue:
 
 ```
 PATCH /api/issues/{issueId}
 { "status": "done", "comment": "Implemented login endpoint with JWT auth." }
 ```
 
-## Comment Style
+## Estilo de comentarios
 
-Use concise markdown with:
+Usa markdown conciso con:
 
-- A short status line
-- Bullets for what changed or what is blocked
-- Links to related entities when available
+- Una línea corta de estado
+- Viñetas para lo que cambió o lo que está bloqueado
+- Enlaces a entidades relacionadas cuando estén disponibles
 
 ```markdown
 ## Update
 
-Submitted CTO hire request and linked it for board review.
+Solicitud de contratación de CTO enviada y vinculada para revisión del tablero.
 
 - Approval: [ca6ba09d](/approvals/ca6ba09d-b558-4a53-a552-e7ef87e54a1b)
 - Pending agent: [CTO draft](/agents/66b3c071-6cb8-4424-b833-9d9b6318de0b)
 - Source issue: [PC-142](/issues/244c0c2c-8416-43b6-84c9-ec183c074cc1)
 ```
 
-## @-Mentions
+## Menciones @
 
-Mention another agent by name using `@AgentName` in a comment to wake them:
+Menciona a otro agente por su nombre usando `@AgentName` en un comentario para despertarlo:
 
 ```
 POST /api/issues/{issueId}/comments
 { "body": "@EngineeringLead I need a review on this implementation." }
 ```
 
-The name must match the agent's `name` field exactly (case-insensitive). This triggers a heartbeat for the mentioned agent.
+El nombre debe coincidir exactamente con el campo `name` del agente (sin distinción de mayúsculas/minúsculas). Esto dispara un latido para el agente mencionado.
 
-@-mentions also work inside the `comment` field of `PATCH /api/issues/{issueId}`.
+Las menciones @ también funcionan dentro del campo `comment` de `PATCH /api/issues/{issueId}`.
 
-## @-Mention Rules
+## Reglas de las menciones @
 
-- **Don't overuse mentions** — each mention triggers a budget-consuming heartbeat
-- **Don't use mentions for assignment** — create/assign a task instead
-- **Mention handoff exception** — if an agent is explicitly @-mentioned with a clear directive to take a task, they may self-assign via checkout
+- **No abuses de las menciones** — cada mención dispara un latido que consume presupuesto
+- **No uses menciones para asignar** — crea/asigna una tarea en su lugar
+- **Excepción de entrega con mención** — si un agente recibe una mención @ explícita con una directiva clara de tomar una tarea, puede autoasignársela mediante el reclamo (checkout)

@@ -92,9 +92,9 @@ if (tailscaleAuth) {
   env.PAPERCLIP_DEPLOYMENT_EXPOSURE = "private";
   env.PAPERCLIP_AUTH_BASE_URL_MODE = "auto";
   env.HOST = "0.0.0.0";
-  console.log("[paperclip] dev mode: authenticated/private (tailscale-friendly) on 0.0.0.0");
+  console.log("[paperclip] modo dev: authenticated/private (compatible con tailscale) en 0.0.0.0");
 } else {
-  console.log("[paperclip] dev mode: local_trusted (default)");
+  console.log("[paperclip] modo dev: local_trusted (predeterminado)");
 }
 
 const pnpmBin = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
@@ -112,7 +112,7 @@ let childExitPromise = null;
 let scanTimer = null;
 let autoRestartTimer = null;
 
-function toError(error, context = "Dev runner command failed") {
+function toError(error, context = "El comando del dev runner falló") {
   if (error instanceof Error) return error;
   if (error === undefined) return new Error(context);
   if (typeof error === "string") return new Error(`${context}: ${error}`);
@@ -125,21 +125,21 @@ function toError(error, context = "Dev runner command failed") {
 }
 
 process.on("uncaughtException", (error) => {
-  const err = toError(error, "Uncaught exception in dev runner");
+  const err = toError(error, "Excepción no capturada en el dev runner");
   process.stderr.write(`${err.stack ?? err.message}\n`);
   process.exit(1);
 });
 
 process.on("unhandledRejection", (reason) => {
-  const err = toError(reason, "Unhandled promise rejection in dev runner");
+  const err = toError(reason, "Promesa rechazada no manejada en el dev runner");
   process.stderr.write(`${err.stack ?? err.message}\n`);
   process.exit(1);
 });
 
 function formatPendingMigrationSummary(migrations) {
-  if (migrations.length === 0) return "none";
+  if (migrations.length === 0) return "ninguna";
   return migrations.length > 3
-    ? `${migrations.slice(0, 3).join(", ")} (+${migrations.length - 3} more)`
+    ? `${migrations.slice(0, 3).join(", ")} (+${migrations.length - 3} más)`
     : migrations.join(", ");
 }
 
@@ -288,7 +288,7 @@ async function getMigrationStatusPayload() {
     process.stderr.write(
       status.stderr ||
         status.stdout ||
-        `[paperclip] Command failed with code ${status.code}: pnpm --filter @paperclipai/db exec tsx src/migration-status.ts --json\n`,
+        `[paperclip] El comando falló con código ${status.code}: pnpm --filter @paperclipai/db exec tsx src/migration-status.ts --json\n`,
     );
     process.exit(status.code);
   }
@@ -299,9 +299,9 @@ async function getMigrationStatusPayload() {
     process.stderr.write(
       status.stderr ||
         status.stdout ||
-        "[paperclip] migration-status returned invalid JSON payload\n",
+        "[paperclip] migration-status devolvió un payload JSON inválido\n",
     );
-    throw toError(error, "Unable to parse migration-status JSON output");
+    throw toError(error, "No se pudo analizar la salida JSON de migration-status");
   }
 }
 
@@ -335,7 +335,7 @@ async function maybePreflightMigrations(options = {}) {
       try {
         const answer = (
           await prompt.question(
-            `Apply pending migrations (${formatPendingMigrationSummary(pendingMigrations)}) now? (y/N): `,
+            `Aplicar las migraciones pendientes (${formatPendingMigrationSummary(pendingMigrations)}) ahora? (y/N): `,
           )
         )
           .trim()
@@ -350,8 +350,8 @@ async function maybePreflightMigrations(options = {}) {
   if (!shouldApply) {
     if (exitOnDecline) {
       process.stderr.write(
-        `[paperclip] Pending migrations detected (${formatPendingMigrationSummary(pendingMigrations)}). ` +
-          "Refusing to start watch mode against a stale schema.\n",
+        `[paperclip] Se detectaron migraciones pendientes (${formatPendingMigrationSummary(pendingMigrations)}). ` +
+          "Negándose a iniciar el modo watch con un esquema desactualizado.\n",
       );
       process.exit(1);
     }
@@ -378,7 +378,7 @@ async function maybePreflightMigrations(options = {}) {
 }
 
 async function buildPluginSdk() {
-  console.log("[paperclip] building plugin sdk...");
+  console.log("[paperclip] compilando el SDK del plugin...");
   const result = await runPnpm(
     ["--filter", "@paperclipai/plugin-sdk", "build"],
     { stdio: "inherit" },
@@ -388,7 +388,7 @@ async function buildPluginSdk() {
     return;
   }
   if (result.code !== 0) {
-    console.error("[paperclip] plugin sdk build failed");
+    console.error("[paperclip] falló la compilación del SDK del plugin");
     process.exit(result.code);
   }
 }
@@ -424,7 +424,7 @@ async function getDevHealthPayload() {
   const serverPort = env.PORT ?? process.env.PORT ?? "3100";
   const response = await fetch(`http://127.0.0.1:${serverPort}/api/health`);
   if (!response.ok) {
-    throw new Error(`Health request failed (${response.status})`);
+    throw new Error(`La solicitud de salud falló (${response.status})`);
   }
   return await response.json();
 }
@@ -517,7 +517,7 @@ async function maybeAutoRestartChild() {
     await stopChildForRestart();
     await startServerChild();
   } catch (error) {
-    const err = toError(error, "Auto-restart failed");
+    const err = toError(error, "El reinicio automático falló");
     process.stderr.write(`${err.stack ?? err.message}\n`);
     process.exit(1);
   } finally {

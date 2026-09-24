@@ -1,27 +1,27 @@
-# 2026-03-14 Adapter Skill Sync Rollout
+# Despliegue de sincronización de habilidades por adaptador 2026-03-14
 
-Status: Proposed
-Date: 2026-03-14
-Audience: Product and engineering
-Related:
+Estado: Propuesto
+Fecha: 2026-03-14
+Audiencia: Producto e ingeniería
+Relacionado:
 - `doc/plans/2026-03-14-skills-ui-product-plan.md`
 - `doc/plans/2026-03-13-company-import-export-v2.md`
 - `docs/companies/companies-spec.md`
 
-## 1. Purpose
+## 1. Propósito
 
-This document defines the rollout plan for adapter-wide skill support in Paperclip.
+Este documento define el plan de despliegue para el soporte de habilidades en todos los adaptadores de Paperclip.
 
-The goal is not just “show a skills tab.” The goal is:
+El objetivo no es solo "mostrar una pestaña de habilidades". El objetivo es:
 
-- every adapter has a deliberate skill-sync truth model
-- the UI tells the truth for that adapter
-- Paperclip stores desired skill state consistently even when the adapter cannot fully reconcile it
-- unsupported adapters degrade clearly and safely
+- cada adaptador tiene un modelo de verdad deliberado de sincronización de habilidades
+- la UI dice la verdad para ese adaptador
+- Paperclip almacena el estado de habilidad deseado de forma consistente incluso cuando el adaptador no puede conciliarlo por completo
+- los adaptadores no admitidos se degradan con claridad y seguridad
 
-## 2. Current Adapter Matrix
+## 2. Matriz actual de adaptadores
 
-Paperclip currently has these adapters:
+Paperclip actualmente tiene estos adaptadores:
 
 - `claude_local`
 - `codex_local`
@@ -31,369 +31,369 @@ Paperclip currently has these adapters:
 - `pi_local`
 - `openclaw_gateway`
 
-The current skill API supports:
+La API de habilidades actual admite:
 
 - `unsupported`
 - `persistent`
 - `ephemeral`
 
-Current implementation state:
+Estado actual de implementación:
 
-- `codex_local`: implemented, `persistent`
-- `claude_local`: implemented, `ephemeral`
-- `cursor_local`: not yet implemented, but technically suited to `persistent`
-- `gemini_local`: not yet implemented, but technically suited to `persistent`
-- `pi_local`: not yet implemented, but technically suited to `persistent`
-- `opencode_local`: not yet implemented; likely `persistent`, but with special handling because it currently injects into Claude’s shared skills home
-- `openclaw_gateway`: not yet implemented; blocked on gateway protocol support, so `unsupported` for now
+- `codex_local`: implementado, `persistent`
+- `claude_local`: implementado, `ephemeral`
+- `cursor_local`: aún no implementado, pero técnicamente apto para `persistent`
+- `gemini_local`: aún no implementado, pero técnicamente apto para `persistent`
+- `pi_local`: aún no implementado, pero técnicamente apto para `persistent`
+- `opencode_local`: aún no implementado; probablemente `persistent`, pero con manejo especial porque actualmente inyecta en el directorio compartido de habilidades de Claude
+- `openclaw_gateway`: aún no implementado; bloqueado en el soporte del protocolo de gateway, así que `unsupported` por ahora
 
-## 3. Product Principles
+## 3. Principios de producto
 
-1. Desired skills live in Paperclip for every adapter.
-2. Adapters may expose different truth models, and the UI must reflect that honestly.
-3. Persistent adapters should read and reconcile actual installed state.
-4. Ephemeral adapters should report effective runtime state, not pretend they own a persistent install.
-5. Shared-home adapters need stronger safeguards than isolated-home adapters.
-6. Gateway or cloud adapters must not fake local filesystem sync.
+1. Las habilidades deseadas viven en Paperclip para cada adaptador.
+2. Los adaptadores pueden exponer diferentes modelos de verdad, y la UI debe reflejar eso honestamente.
+3. Los adaptadores persistentes deberían leer y conciliar el estado instalado real.
+4. Los adaptadores efímeros deberían reportar el estado efectivo de tiempo de ejecución, no pretender que poseen una instalación persistente.
+5. Los adaptadores de directorio compartido necesitan salvaguardas más fuertes que los adaptadores de directorio aislado.
+6. Los adaptadores de gateway o nube no deben fingir sincronización local del sistema de archivos.
 
-## 4. Adapter Classification
+## 4. Clasificación de adaptadores
 
-### 4.1 Persistent local-home adapters
+### 4.1 Adaptadores persistentes de directorio local
 
-These adapters have a stable local skills directory that Paperclip can read and manage.
+Estos adaptadores tienen un directorio local estable de habilidades que Paperclip puede leer y gestionar.
 
-Candidates:
+Candidatos:
 
 - `codex_local`
 - `cursor_local`
 - `gemini_local`
 - `pi_local`
-- `opencode_local` with caveats
+- `opencode_local` con salvedades
 
-Expected UX:
+UX esperada:
 
-- show actual installed skills
-- show managed vs external skills
-- support `sync`
-- support stale removal
-- preserve unknown external skills
+- mostrar habilidades instaladas reales
+- mostrar habilidades gestionadas vs externas
+- admitir `sync`
+- admitir eliminación de obsoletas
+- conservar habilidades externas desconocidas
 
-### 4.2 Ephemeral mount adapters
+### 4.2 Adaptadores de montaje efímero
 
-These adapters do not have a meaningful Paperclip-owned persistent install state.
+Estos adaptadores no tienen un estado de instalación persistente significativo propio de Paperclip.
 
-Current adapter:
+Adaptador actual:
 
 - `claude_local`
 
-Expected UX:
+UX esperada:
 
-- show desired Paperclip skills
-- show any discoverable external dirs if available
-- say “mounted on next run” instead of “installed”
-- do not imply a persistent adapter-owned install state
+- mostrar habilidades deseadas de Paperclip
+- mostrar directorios externos descubribles si están disponibles
+- decir "se montará en la próxima ejecución" en lugar de "instalado"
+- no implicar un estado de instalación persistente propio del adaptador
 
-### 4.3 Unsupported / remote adapters
+### 4.3 Adaptadores no admitidos / remotos
 
-These adapters cannot support skill sync without new external capabilities.
+Estos adaptadores no pueden admitir sincronización de habilidades sin nuevas capacidades externas.
 
-Current adapter:
+Adaptador actual:
 
 - `openclaw_gateway`
 
-Expected UX:
+UX esperada:
 
-- company skill library still works
-- agent attachment UI still works at the desired-state level
-- actual adapter state is `unsupported`
-- sync button is disabled or replaced with explanatory text
+- la biblioteca de habilidades de empresa sigue funcionando
+- la UI de adjunto de agente sigue funcionando a nivel de estado deseado
+- el estado real del adaptador es `unsupported`
+- el botón de sincronización está deshabilitado o reemplazado con texto explicativo
 
-## 5. Per-Adapter Plan
+## 5. Plan por adaptador
 
 ### 5.1 Codex Local
 
-Target mode:
+Modo objetivo:
 
 - `persistent`
 
-Current state:
+Estado actual:
 
-- already implemented
+- ya implementado
 
-Requirements to finish:
+Requisitos para terminar:
 
-- keep as reference implementation
-- tighten tests around external custom skills and stale removal
-- ensure imported company skills can be attached and synced without manual path work
+- mantener como implementación de referencia
+- reforzar las pruebas en torno a habilidades personalizadas externas y eliminación de obsoletas
+- garantizar que las habilidades de empresa importadas puedan adjuntarse y sincronizarse sin trabajo manual de rutas
 
-Success criteria:
+Criterios de éxito:
 
-- list installed managed and external skills
-- sync desired skills into `CODEX_HOME/skills`
-- preserve external user-managed skills
+- listar habilidades instaladas gestionadas y externas
+- sincronizar habilidades deseadas en `CODEX_HOME/skills`
+- conservar habilidades externas gestionadas por el usuario
 
 ### 5.2 Claude Local
 
-Target mode:
+Modo objetivo:
 
 - `ephemeral`
 
-Current state:
+Estado actual:
 
-- already implemented
+- ya implementado
 
-Requirements to finish:
+Requisitos para terminar:
 
-- polish status language in UI
-- clearly distinguish “desired” from “mounted on next run”
-- optionally surface configured external skill dirs if Claude exposes them
+- pulir el lenguaje de estado en la UI
+- distinguir claramente "deseado" de "montado en la próxima ejecución"
+- opcionalmente mostrar directorios de habilidades externas configurados si Claude los expone
 
-Success criteria:
+Criterios de éxito:
 
-- desired skills stored in Paperclip
-- selected skills mounted per run
-- no misleading “installed” language
+- habilidades deseadas almacenadas en Paperclip
+- habilidades seleccionadas montadas por ejecución
+- sin lenguaje engañoso de "instalado"
 
 ### 5.3 Cursor Local
 
-Target mode:
+Modo objetivo:
 
 - `persistent`
 
-Technical basis:
+Base técnica:
 
-- runtime already injects Paperclip skills into `~/.cursor/skills`
+- el tiempo de ejecución ya inyecta habilidades de Paperclip en `~/.cursor/skills`
 
-Implementation work:
+Trabajo de implementación:
 
-1. Add `listSkills` for Cursor.
-2. Add `syncSkills` for Cursor.
-3. Reuse the same managed-symlink pattern as Codex.
-4. Distinguish:
-   - managed Paperclip skills
-   - external skills already present
-   - missing desired skills
-   - stale managed skills
+1. Agregar `listSkills` para Cursor.
+2. Agregar `syncSkills` para Cursor.
+3. Reutilizar el mismo patrón de symlink gestionado que Codex.
+4. Distinguir:
+   - habilidades gestionadas de Paperclip
+   - habilidades externas ya presentes
+   - habilidades deseadas faltantes
+   - habilidades gestionadas obsoletas
 
-Testing:
+Pruebas:
 
-- unit tests for discovery
-- unit tests for sync and stale removal
-- verify shared auth/session setup is not disturbed
+- pruebas unitarias para descubrimiento
+- pruebas unitarias para sincronización y eliminación de obsoletas
+- verificar que la configuración compartida de autenticación/sesión no se altere
 
-Success criteria:
+Criterios de éxito:
 
-- Cursor agents show real installed state
-- syncing from the agent Skills tab works
+- los agentes de Cursor muestran el estado instalado real
+- la sincronización desde la pestaña de Skills del agente funciona
 
 ### 5.4 Gemini Local
 
-Target mode:
+Modo objetivo:
 
 - `persistent`
 
-Technical basis:
+Base técnica:
 
-- runtime already injects Paperclip skills into `~/.gemini/skills`
+- el tiempo de ejecución ya inyecta habilidades de Paperclip en `~/.gemini/skills`
 
-Implementation work:
+Trabajo de implementación:
 
-1. Add `listSkills` for Gemini.
-2. Add `syncSkills` for Gemini.
-3. Reuse managed-symlink conventions from Codex/Cursor.
-4. Verify auth remains untouched while skills are reconciled.
+1. Agregar `listSkills` para Gemini.
+2. Agregar `syncSkills` para Gemini.
+3. Reutilizar las convenciones de symlink gestionado de Codex/Cursor.
+4. Verificar que la autenticación permanezca intacta mientras se concilian las habilidades.
 
-Potential caveat:
+Salvedad potencial:
 
-- if Gemini treats that skills directory as shared user state, the UI should warn before removing stale managed skills
+- si Gemini trata ese directorio de habilidades como estado de usuario compartido, la UI debería advertir antes de eliminar habilidades gestionadas obsoletas
 
-Success criteria:
+Criterios de éxito:
 
-- Gemini agents can reconcile desired vs actual skill state
+- los agentes de Gemini pueden conciliar el estado de habilidad deseado vs real
 
 ### 5.5 Pi Local
 
-Target mode:
+Modo objetivo:
 
 - `persistent`
 
-Technical basis:
+Base técnica:
 
-- runtime already injects Paperclip skills into `~/.pi/agent/skills`
+- el tiempo de ejecución ya inyecta habilidades de Paperclip en `~/.pi/agent/skills`
 
-Implementation work:
+Trabajo de implementación:
 
-1. Add `listSkills` for Pi.
-2. Add `syncSkills` for Pi.
-3. Reuse managed-symlink helpers.
-4. Verify session-file behavior remains independent from skill sync.
+1. Agregar `listSkills` para Pi.
+2. Agregar `syncSkills` para Pi.
+3. Reutilizar ayudantes de symlink gestionado.
+4. Verificar que el comportamiento del archivo de sesión permanezca independiente de la sincronización de habilidades.
 
-Success criteria:
+Criterios de éxito:
 
-- Pi agents expose actual installed skill state
-- Paperclip can sync desired skills into Pi’s persistent home
+- los agentes de Pi exponen el estado real de habilidad instalada
+- Paperclip puede sincronizar habilidades deseadas en el directorio persistente de Pi
 
 ### 5.6 OpenCode Local
 
-Target mode:
+Modo objetivo:
 
 - `persistent`
 
-Special case:
+Caso especial:
 
-- OpenCode currently injects Paperclip skills into `~/.claude/skills`
+- OpenCode actualmente inyecta habilidades de Paperclip en `~/.claude/skills`
 
-This is product-risky because:
+Esto es riesgoso para el producto porque:
 
-- it shares state with Claude
-- Paperclip may accidentally imply the skills belong only to OpenCode when the home is shared
+- comparte estado con Claude
+- Paperclip puede implicar accidentalmente que las habilidades pertenecen solo a OpenCode cuando el directorio es compartido
 
 Plan:
 
-Phase 1:
+Fase 1:
 
-- implement `listSkills` and `syncSkills`
-- treat it as `persistent`
-- explicitly label the home as shared in UI copy
-- only remove stale managed Paperclip skills that are clearly marked as Paperclip-managed
+- implementar `listSkills` y `syncSkills`
+- tratarlo como `persistent`
+- etiquetar explícitamente el directorio como compartido en el texto de la UI
+- solo eliminar habilidades gestionadas obsoletas de Paperclip que estén claramente marcadas como gestionadas por Paperclip
 
-Phase 2:
+Fase 2:
 
-- investigate whether OpenCode supports its own isolated skills home
-- if yes, migrate to an adapter-specific home and remove the shared-home caveat
+- investigar si OpenCode admite su propio directorio de habilidades aislado
+- si sí, migrar a un directorio específico del adaptador y eliminar la salvedad del directorio compartido
 
-Success criteria:
+Criterios de éxito:
 
-- OpenCode agents show real state
-- shared-home risk is visible and bounded
+- los agentes de OpenCode muestran el estado real
+- el riesgo del directorio compartido es visible y acotado
 
 ### 5.7 OpenClaw Gateway
 
-Target mode:
+Modo objetivo:
 
-- `unsupported` until gateway protocol support exists
+- `unsupported` hasta que exista soporte del protocolo de gateway
 
-Required external work:
+Trabajo externo requerido:
 
-- gateway API to list installed/available skills
-- gateway API to install/remove or otherwise reconcile skills
-- gateway metadata for whether state is persistent or ephemeral
+- API de gateway para listar habilidades instaladas/disponibles
+- API de gateway para instalar/eliminar o conciliar habilidades de otra forma
+- metadatos de gateway sobre si el estado es persistente o efímero
 
-Until then:
+Hasta entonces:
 
-- Paperclip stores desired skills only
-- UI shows unsupported actual state
-- no fake sync implementation
+- Paperclip almacena solo habilidades deseadas
+- la UI muestra estado real no admitido
+- sin implementación falsa de sincronización
 
-Future target:
+Objetivo futuro:
 
-- likely a fourth truth model eventually, such as remote-managed persistent state
-- for now, keep the current API and treat gateway as unsupported
+- probablemente un cuarto modelo de verdad eventualmente, como estado persistente gestionado remotamente
+- por ahora, mantener la API actual y tratar el gateway como no admitido
 
-## 6. API Plan
+## 6. Plan de API
 
-## 6.1 Keep the current minimal adapter API
+## 6.1 Mantener la API mínima actual del adaptador
 
-Near-term adapter contract remains:
+El contrato del adaptador a corto plazo sigue siendo:
 
 - `listSkills(ctx)`
 - `syncSkills(ctx, desiredSkills)`
 
-This is enough for all local adapters.
+Esto es suficiente para todos los adaptadores locales.
 
-## 6.2 Optional extension points
+## 6.2 Puntos de extensión opcionales
 
-Add only if needed after the first broad rollout:
+Agregar solo si se necesita después del primer despliegue amplio:
 
 - `skillHomeLabel`
 - `sharedHome: boolean`
 - `supportsExternalDiscovery: boolean`
 - `supportsDestructiveSync: boolean`
 
-These should be optional metadata additions to the snapshot, not required new adapter methods.
+Estos deberían ser adiciones opcionales de metadatos a la instantánea, no nuevos métodos de adaptador requeridos.
 
-## 7. UI Plan
+## 7. Plan de UI
 
-The company-level skill library can stay adapter-neutral.
+La biblioteca de habilidades a nivel de empresa puede seguir siendo neutral ante el adaptador.
 
-The agent-level Skills tab must become adapter-aware by copy and status:
+La pestaña de Skills a nivel de agente debe volverse consciente del adaptador en texto y estado:
 
-- `persistent`: installed / missing / stale / external
-- `ephemeral`: mounted on next run / external / desired only
-- `unsupported`: desired only, adapter cannot report actual state
+- `persistent`: instalado / faltante / obsoleto / externo
+- `ephemeral`: montado en la próxima ejecución / externo / solo deseado
+- `unsupported`: solo deseado, el adaptador no puede reportar el estado real
 
-Additional UI requirement for shared-home adapters:
+Requisito adicional de UI para adaptadores de directorio compartido:
 
-- show a small warning that the adapter uses a shared user skills home
-- avoid destructive wording unless Paperclip can prove a skill is Paperclip-managed
+- mostrar una pequeña advertencia de que el adaptador usa un directorio de habilidades de usuario compartido
+- evitar lenguaje destructivo a menos que Paperclip pueda probar que una habilidad es gestionada por Paperclip
 
-## 8. Rollout Phases
+## 8. Fases de despliegue
 
-### Phase 1: Finish the local filesystem family
+### Fase 1: Terminar la familia local de sistema de archivos
 
-Ship:
+Entregar:
 
 - `cursor_local`
 - `gemini_local`
 - `pi_local`
 
-Rationale:
+Justificación:
 
-- these are the closest to Codex in architecture
-- they already inject into stable local skill homes
+- son los más cercanos a Codex en arquitectura
+- ya inyectan en directorios de habilidades locales estables
 
-### Phase 2: OpenCode shared-home support
+### Fase 2: Soporte de directorio compartido de OpenCode
 
-Ship:
+Entregar:
 
 - `opencode_local`
 
-Rationale:
+Justificación:
 
-- technically feasible now
-- needs slightly more careful product language because of the shared Claude skills home
+- técnicamente factible ahora
+- necesita un lenguaje de producto ligeramente más cuidadoso por el directorio compartido de habilidades de Claude
 
-### Phase 3: Gateway support decision
+### Fase 3: Decisión de soporte de gateway
 
-Decide:
+Decidir:
 
-- keep `openclaw_gateway` unsupported for V1
-- or extend the gateway protocol for remote skill management
+- mantener `openclaw_gateway` no admitido para V1
+- o extender el protocolo de gateway para gestión remota de habilidades
 
-My recommendation:
+Mi recomendación:
 
-- do not block V1 on gateway support
-- keep it explicitly unsupported until the remote protocol exists
+- no bloquear V1 en el soporte de gateway
+- mantenerlo explícitamente no admitido hasta que exista el protocolo remoto
 
-## 9. Definition Of Done
+## 9. Definición de terminado
 
-Adapter-wide skill support is ready when all are true:
+El soporte de habilidades en todos los adaptadores está listo cuando todo esto es cierto:
 
-1. Every adapter has an explicit truth model:
+1. Cada adaptador tiene un modelo de verdad explícito:
    - `persistent`
    - `ephemeral`
    - `unsupported`
-2. The UI copy matches that truth model.
-3. All local persistent adapters implement:
+2. El texto de la UI coincide con ese modelo de verdad.
+3. Todos los adaptadores persistentes locales implementan:
    - `listSkills`
    - `syncSkills`
-4. Tests cover:
-   - desired-state storage
-   - actual-state discovery
-   - managed vs external distinctions
-   - stale managed-skill cleanup where supported
-5. `openclaw_gateway` is either:
-   - explicitly unsupported with clean UX
-   - or backed by a real remote skill API
+4. Las pruebas cubren:
+   - almacenamiento de estado deseado
+   - descubrimiento de estado real
+   - distinciones gestionado vs externo
+   - limpieza de habilidades gestionadas obsoletas donde se admita
+5. `openclaw_gateway` está:
+   - explícitamente no admitido con UX limpia
+   - o respaldado por una API remota real de habilidades
 
-## 10. Recommendation
+## 10. Recomendación
 
-The recommended immediate order is:
+El orden inmediato recomendado es:
 
 1. `cursor_local`
 2. `gemini_local`
 3. `pi_local`
 4. `opencode_local`
-5. defer `openclaw_gateway`
+5. diferir `openclaw_gateway`
 
-That gets Paperclip from “skills work for Codex and Claude” to “skills work for the whole local-adapter family,” which is the meaningful V1 milestone.
+Eso lleva a Paperclip de "las habilidades funcionan para Codex y Claude" a "las habilidades funcionan para toda la familia de adaptadores locales", que es el hito significativo de V1.

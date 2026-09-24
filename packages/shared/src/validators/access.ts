@@ -29,7 +29,7 @@ export const acceptInviteSchema = z.object({
   adapterType: z.enum(AGENT_ADAPTER_TYPES).optional(),
   capabilities: z.string().max(4000).optional().nullable(),
   agentDefaultsPayload: z.record(z.string(), z.unknown()).optional().nullable(),
-  // OpenClaw join compatibility fields accepted at top level.
+  // Campos de compatibilidad con la incorporación de OpenClaw aceptados en el nivel superior.
   responsesWebhookUrl: z.string().max(4000).optional().nullable(),
   responsesWebhookMethod: z.string().max(32).optional().nullable(),
   responsesWebhookHeaders: z.record(z.string(), z.unknown()).optional().nullable(),

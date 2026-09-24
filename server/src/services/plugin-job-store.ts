@@ -1,33 +1,36 @@
 /**
- * Plugin Job Store — persistence layer for scheduled plugin jobs and their
- * execution history.
+ * Plugin Job Store — capa de persistencia para trabajos programados de
+ * plugins y su historial de ejecución.
  *
- * This service manages the `plugin_jobs` and `plugin_job_runs` tables. It is
- * the server-side backing store for the `ctx.jobs` SDK surface exposed to
- * plugin workers.
+ * Este servicio maneja las tablas `plugin_jobs` y `plugin_job_runs`. Es el
+ * almacén del lado del servidor para la superficie `ctx.jobs` del SDK
+ * expuesta a los workers de plugins.
  *
- * ## Responsibilities
+ * ## Responsabilidades
  *
- * 1. **Sync job declarations** — When a plugin is installed or started, the
- *    host calls `syncJobDeclarations()` to upsert the manifest's declared jobs
- *    into the `plugin_jobs` table. Jobs removed from the manifest are marked
- *    `paused` (not deleted) to preserve history.
+ * 1. **Sincronizar declaraciones de trabajos** — Cuando se instala o inicia
+ *    un plugin, el host llama a `syncJobDeclarations()` para hacer upsert de
+ *    los trabajos declarados del manifiesto en la tabla `plugin_jobs`. Los
+ *    trabajos eliminados del manifiesto se marcan como `paused` (no se
+ *    eliminan) para preservar el historial.
  *
- * 2. **Job CRUD** — List, get, pause, and resume jobs for a given plugin.
+ * 2. **CRUD de trabajos** — Listar, obtener, pausar y reanudar trabajos de
+ *    un plugin dado.
  *
- * 3. **Run lifecycle** — Create job run records, update their status, and
- *    record results (duration, errors, logs).
+ * 3. **Ciclo de vida de ejecuciones** — Crear registros de ejecuciones de
+ *    trabajos, actualizar su estado y registrar resultados (duración,
+ *    errores, logs).
  *
- * 4. **Next-run calculation** — After a run completes the host should call
- *    `updateNextRunAt()` with the next cron tick so the scheduler knows when
- *    to fire next.
+ * 4. **Cálculo de próxima ejecución** — Tras completar una ejecución, el
+ *    host debe llamar a `updateNextRunAt()` con el próximo tick cron para
+ *    que el programador sepa cuándo disparar de nuevo.
  *
- * The capability check (`jobs.schedule`) is enforced upstream by the host
- * client factory and manifest validator — this store trusts that the caller
- * has already been authorised.
+ * El chequeo de capacidad (`jobs.schedule`) se aplica aguas arriba por la
+ * fábrica de clientes del host y el validador de manifiestos — este almacén
+ * confía en que el llamador ya fue autorizado.
  *
- * @see PLUGIN_SPEC.md §17 — Scheduled Jobs
- * @see PLUGIN_SPEC.md §21.3 — `plugin_jobs` / `plugin_job_runs` tables
+ * @see PLUGIN_SPEC.md §17 — Trabajos programados
+ * @see PLUGIN_SPEC.md §21.3 — tablas `plugin_jobs` / `plugin_job_runs`
  */
 
 import { and, desc, eq } from "drizzle-orm";
@@ -42,58 +45,59 @@ import type {
 import { notFound } from "../errors.js";
 
 /**
- * The statuses used for job *definitions* in the `plugin_jobs` table.
- * Aliased from `PluginJobRecord` to keep the store API aligned with
- * the domain type (`"active" | "paused" | "failed"`).
+ * Los estados usados para *definiciones* de trabajos en la tabla
+ * `plugin_jobs`. Alias de `PluginJobRecord` para mantener la API del almacén
+ * alineada con el tipo de dominio (`"active" | "paused" | "failed"`).
  */
 type JobDefinitionStatus = PluginJobRecord["status"];
 
 // ---------------------------------------------------------------------------
-// Types
+// Tipos
 // ---------------------------------------------------------------------------
 
 /**
- * Input for creating a job run record.
+ * Entrada para crear un registro de ejecución de trabajo.
  */
 export interface CreateJobRunInput {
-  /** FK to the plugin_jobs row. */
+  /** FK a la fila de plugin_jobs. */
   jobId: string;
-  /** FK to the plugins row. */
+  /** FK a la fila de plugins. */
   pluginId: string;
-  /** What triggered this run. */
+  /** Qué disparó esta ejecución. */
   trigger: PluginJobRunTrigger;
 }
 
 /**
- * Input for completing (or failing) a job run.
+ * Entrada para completar (o fallar) una ejecución de trabajo.
  */
 export interface CompleteJobRunInput {
-  /** Final run status. */
+  /** Estado final de la ejecución. */
   status: PluginJobRunStatus;
-  /** Error message if the run failed. */
+  /** Mensaje de error si la ejecución falló. */
   error?: string | null;
-  /** Run duration in milliseconds. */
+  /** Duración de la ejecución en milisegundos. */
   durationMs?: number | null;
 }
 
 // ---------------------------------------------------------------------------
-// Service
+// Servicio
 // ---------------------------------------------------------------------------
 
 /**
- * Create a PluginJobStore backed by the given Drizzle database instance.
+ * Crea un PluginJobStore respaldado por la instancia de base de datos
+ * Drizzle dada.
  *
  * @example
  * ```ts
  * const jobStore = pluginJobStore(db);
  *
- * // On plugin install/start — sync declared jobs into the DB
+ * // Al instalar/iniciar el plugin — sincroniza los trabajos declarados a la BD
  * await jobStore.syncJobDeclarations(pluginId, manifest.jobs ?? []);
  *
- * // Before dispatching a runJob RPC — create a run record
+ * // Antes de despachar el RPC runJob — crea un registro de ejecución
  * const run = await jobStore.createRun({ jobId, pluginId, trigger: "schedule" });
  *
- * // After the RPC completes — record the result
+ * // Tras completar el RPC — registra el resultado
  * await jobStore.completeRun(run.id, {
  *   status: "succeeded",
  *   durationMs: Date.now() - startedAt,
@@ -102,7 +106,7 @@ export interface CompleteJobRunInput {
  */
 export function pluginJobStore(db: Db) {
   // -----------------------------------------------------------------------
-  // Internal helpers
+  // Utilidades internas
   // -----------------------------------------------------------------------
 
   async function assertPluginExists(pluginId: string): Promise<void> {
@@ -111,35 +115,36 @@ export function pluginJobStore(db: Db) {
       .from(plugins)
       .where(eq(plugins.id, pluginId));
     if (rows.length === 0) {
-      throw notFound(`Plugin not found: ${pluginId}`);
+      throw notFound(`Plugin no encontrado: ${pluginId}`);
     }
   }
 
   // -----------------------------------------------------------------------
-  // Public API
+  // API pública
   // -----------------------------------------------------------------------
 
   return {
     // =====================================================================
-    // Job declarations (plugin_jobs)
+    // Declaraciones de trabajos (plugin_jobs)
     // =====================================================================
 
     /**
-     * Sync declared jobs from a plugin manifest into the `plugin_jobs` table.
+     * Sincroniza los trabajos declarados de un manifiesto de plugin en la
+     * tabla `plugin_jobs`.
      *
-     * This is called at plugin install and on each worker startup so the DB
-     * always reflects the manifest's declared jobs:
+     * Se llama al instalar el plugin y en cada inicio del worker para que la
+     * BD siempre refleje los trabajos declarados del manifiesto:
      *
-     * - **New jobs** are inserted with status `active`.
-     * - **Existing jobs** have their `schedule` updated if it changed.
-     * - **Removed jobs** (present in DB but absent from the manifest) are
-     *   set to `paused` so their history is preserved.
+     * - Los trabajos **nuevos** se insertan con estado `active`.
+     * - Los trabajos **existentes** actualizan su `schedule` si cambió.
+     * - Los trabajos **eliminados** (presentes en la BD pero ausentes del
+     *   manifiesto) pasan a `paused` para preservar su historial.
      *
-     * The unique constraint `(pluginId, jobKey)` is used for conflict
-     * resolution.
+     * La restricción única `(pluginId, jobKey)` se usa para la resolución
+     * de conflictos.
      *
-     * @param pluginId - UUID of the owning plugin
-     * @param declarations - Job declarations from the plugin manifest
+     * @param pluginId - UUID del plugin propietario
+     * @param declarations - Declaraciones de trabajos del manifiesto del plugin
      */
     async syncJobDeclarations(
       pluginId: string,
@@ -147,7 +152,7 @@ export function pluginJobStore(db: Db) {
     ): Promise<void> {
       await assertPluginExists(pluginId);
 
-      // Fetch existing jobs for this plugin
+      // Obtiene los trabajos existentes de este plugin
       const existingJobs = await db
         .select()
         .from(pluginJobs)
@@ -159,7 +164,7 @@ export function pluginJobStore(db: Db) {
 
       const declaredKeys = new Set<string>();
 
-      // Upsert each declared job
+      // Hace upsert de cada trabajo declarado
       for (const decl of declarations) {
         declaredKeys.add(decl.jobKey);
 
@@ -167,7 +172,7 @@ export function pluginJobStore(db: Db) {
         const schedule = decl.schedule ?? "";
 
         if (existing) {
-          // Update schedule if it changed; re-activate if it was paused
+          // Actualiza el cronograma si cambió; reactiva si estaba pausado
           const updates: Record<string, unknown> = {
             updatedAt: new Date(),
           };
@@ -183,7 +188,7 @@ export function pluginJobStore(db: Db) {
             .set(updates)
             .where(eq(pluginJobs.id, existing.id));
         } else {
-          // Insert new job
+          // Inserta el trabajo nuevo
           await db.insert(pluginJobs).values({
             pluginId,
             jobKey: decl.jobKey,
@@ -193,7 +198,7 @@ export function pluginJobStore(db: Db) {
         }
       }
 
-      // Pause jobs that are no longer declared in the manifest
+      // Pausa los trabajos que ya no están declarados en el manifiesto
       for (const existing of existingJobs) {
         if (!declaredKeys.has(existing.jobKey) && existing.status !== "paused") {
           await db
@@ -205,10 +210,11 @@ export function pluginJobStore(db: Db) {
     },
 
     /**
-     * List all jobs for a plugin, optionally filtered by status.
+     * Lista todos los trabajos de un plugin, opcionalmente filtrados por
+     * estado.
      *
-     * @param pluginId - UUID of the owning plugin
-     * @param status - Optional status filter
+     * @param pluginId - UUID del plugin propietario
+     * @param status - Filtro de estado opcional
      */
     async listJobs(
       pluginId: string,
@@ -225,11 +231,11 @@ export function pluginJobStore(db: Db) {
     },
 
     /**
-     * Get a single job by its composite key `(pluginId, jobKey)`.
+     * Obtiene un solo trabajo por su clave compuesta `(pluginId, jobKey)`.
      *
-     * @param pluginId - UUID of the owning plugin
-     * @param jobKey - Stable job identifier from the manifest
-     * @returns The job row, or `null` if not found
+     * @param pluginId - UUID del plugin propietario
+     * @param jobKey - Identificador estable del trabajo del manifiesto
+     * @returns La fila del trabajo, o `null` si no se encuentra
      */
     async getJobByKey(
       pluginId: string,
@@ -248,10 +254,10 @@ export function pluginJobStore(db: Db) {
     },
 
     /**
-     * Get a single job by its primary key (UUID).
+     * Obtiene un solo trabajo por su clave primaria (UUID).
      *
-     * @param jobId - UUID of the job row
-     * @returns The job row, or `null` if not found
+     * @param jobId - UUID de la fila del trabajo
+     * @returns La fila del trabajo, o `null` si no se encuentra
      */
     async getJobById(
       jobId: string,
@@ -264,10 +270,10 @@ export function pluginJobStore(db: Db) {
     },
 
     /**
-     * Fetch a single job by ID, scoped to a specific plugin.
+     * Obtiene un solo trabajo por ID, con alcance a un plugin específico.
      *
-     * Returns `null` if the job does not exist or does not belong to the
-     * given plugin — callers should treat both cases as "not found".
+     * Devuelve `null` si el trabajo no existe o no pertenece al plugin
+     * dado — los llamadores deben tratar ambos casos como "no encontrado".
      */
     async getJobByIdForPlugin(
       pluginId: string,
@@ -281,10 +287,10 @@ export function pluginJobStore(db: Db) {
     },
 
     /**
-     * Update a job's status.
+     * Actualiza el estado de un trabajo.
      *
-     * @param jobId - UUID of the job row
-     * @param status - New status
+     * @param jobId - UUID de la fila del trabajo
+     * @param status - Nuevo estado
      */
     async updateJobStatus(
       jobId: string,
@@ -297,14 +303,14 @@ export function pluginJobStore(db: Db) {
     },
 
     /**
-     * Update the `lastRunAt` and `nextRunAt` timestamps on a job.
+     * Actualiza los timestamps `lastRunAt` y `nextRunAt` de un trabajo.
      *
-     * Called by the scheduler after a run completes to advance the
-     * scheduling pointer.
+     * Lo llama el programador tras completar una ejecución para avanzar el
+     * puntero de programación.
      *
-     * @param jobId - UUID of the job row
-     * @param lastRunAt - When the last run started
-     * @param nextRunAt - When the next run should fire
+     * @param jobId - UUID de la fila del trabajo
+     * @param lastRunAt - Cuándo inició la última ejecución
+     * @param nextRunAt - Cuándo debe dispararse la próxima ejecución
      */
     async updateRunTimestamps(
       jobId: string,
@@ -322,11 +328,12 @@ export function pluginJobStore(db: Db) {
     },
 
     /**
-     * Delete all jobs (and cascaded runs) owned by a plugin.
+     * Elimina todos los trabajos (y las ejecuciones en cascada) de un plugin.
      *
-     * Called during plugin uninstall when `removeData = true`.
+     * Se llama durante la desinstalación del plugin cuando `removeData =
+     * true`.
      *
-     * @param pluginId - UUID of the owning plugin
+     * @param pluginId - UUID del plugin propietario
      */
     async deleteAllJobs(pluginId: string): Promise<void> {
       await db
@@ -335,18 +342,18 @@ export function pluginJobStore(db: Db) {
     },
 
     // =====================================================================
-    // Job runs (plugin_job_runs)
+    // Ejecuciones de trabajos (plugin_job_runs)
     // =====================================================================
 
     /**
-     * Create a new job run record with status `queued`.
+     * Crea un nuevo registro de ejecución de trabajo con estado `queued`.
      *
-     * The caller should create the run record *before* dispatching the
-     * `runJob` RPC to the worker, then update it to `running` once the
-     * worker begins execution.
+     * El llamador debe crear el registro de ejecución *antes* de despachar
+     * el RPC `runJob` al worker, y luego actualizarlo a `running` una vez
+     * que el worker empiece la ejecución.
      *
-     * @param input - Job run input (jobId, pluginId, trigger)
-     * @returns The newly created run row
+     * @param input - Entrada de la ejecución (jobId, pluginId, trigger)
+     * @returns La fila de la ejecución recién creada
      */
     async createRun(
       input: CreateJobRunInput,
@@ -365,9 +372,9 @@ export function pluginJobStore(db: Db) {
     },
 
     /**
-     * Mark a run as `running` and set its `startedAt` timestamp.
+     * Marca una ejecución como `running` y fija su timestamp `startedAt`.
      *
-     * @param runId - UUID of the run row
+     * @param runId - UUID de la fila de la ejecución
      */
     async markRunning(runId: string): Promise<void> {
       await db
@@ -380,11 +387,11 @@ export function pluginJobStore(db: Db) {
     },
 
     /**
-     * Complete a run — set its final status, error, duration, and
-     * `finishedAt` timestamp.
+     * Completa una ejecución — fija su estado final, error, duración y
+     * timestamp `finishedAt`.
      *
-     * @param runId - UUID of the run row
-     * @param input - Completion details
+     * @param runId - UUID de la fila de la ejecución
+     * @param input - Detalles de la finalización
      */
     async completeRun(
       runId: string,
@@ -402,10 +409,10 @@ export function pluginJobStore(db: Db) {
     },
 
     /**
-     * Get a run by its primary key.
+     * Obtiene una ejecución por su clave primaria.
      *
-     * @param runId - UUID of the run row
-     * @returns The run row, or `null` if not found
+     * @param runId - UUID de la fila de la ejecución
+     * @returns La fila de la ejecución, o `null` si no se encuentra
      */
     async getRunById(
       runId: string,
@@ -418,10 +425,11 @@ export function pluginJobStore(db: Db) {
     },
 
     /**
-     * List runs for a specific job, ordered by creation time descending.
+     * Lista las ejecuciones de un trabajo específico, ordenadas por fecha
+     * de creación descendente.
      *
-     * @param jobId - UUID of the job
-     * @param limit - Maximum number of rows to return (default: 50)
+     * @param jobId - UUID del trabajo
+     * @param limit - Número máximo de filas a devolver (por defecto: 50)
      */
     async listRunsByJob(
       jobId: string,
@@ -436,11 +444,12 @@ export function pluginJobStore(db: Db) {
     },
 
     /**
-     * List runs for a plugin, optionally filtered by status.
+     * Lista las ejecuciones de un plugin, opcionalmente filtradas por
+     * estado.
      *
-     * @param pluginId - UUID of the owning plugin
-     * @param status - Optional status filter
-     * @param limit - Maximum number of rows to return (default: 50)
+     * @param pluginId - UUID del plugin propietario
+     * @param status - Filtro de estado opcional
+     * @param limit - Número máximo de filas a devolver (por defecto: 50)
      */
     async listRunsByPlugin(
       pluginId: string,
@@ -461,5 +470,5 @@ export function pluginJobStore(db: Db) {
   };
 }
 
-/** Type alias for the return value of `pluginJobStore()`. */
+/** Alias de tipo para el valor de retorno de `pluginJobStore()`. */
 export type PluginJobStore = ReturnType<typeof pluginJobStore>;

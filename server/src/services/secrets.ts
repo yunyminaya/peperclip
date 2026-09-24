@@ -70,8 +70,8 @@ export function secretService(db: Db) {
 
   async function assertSecretInCompany(companyId: string, secretId: string) {
     const secret = await getById(secretId);
-    if (!secret) throw notFound("Secret not found");
-    if (secret.companyId !== companyId) throw unprocessable("Secret must belong to same company");
+    if (!secret) throw notFound("Secreto no encontrado");
+    if (secret.companyId !== companyId) throw unprocessable("El secreto debe pertenecer a la misma compañía");
     return secret;
   }
 
@@ -83,7 +83,7 @@ export function secretService(db: Db) {
     const secret = await assertSecretInCompany(companyId, secretId);
     const resolvedVersion = version === "latest" ? secret.latestVersion : version;
     const versionRow = await getSecretVersion(secret.id, resolvedVersion);
-    if (!versionRow) throw notFound("Secret version not found");
+    if (!versionRow) throw notFound("Versión del secreto no encontrada");
     const provider = getSecretProvider(secret.provider as SecretProvider);
     return provider.resolveVersion({
       material: versionRow.material as Record<string, unknown>,
@@ -97,28 +97,28 @@ export function secretService(db: Db) {
     opts?: { strictMode?: boolean },
   ): Promise<AgentEnvConfig> {
     const record = asRecord(envValue);
-    if (!record) throw unprocessable("adapterConfig.env must be an object");
+    if (!record) throw unprocessable("adapterConfig.env debe ser un objeto");
 
     const normalized: AgentEnvConfig = {};
     for (const [key, rawBinding] of Object.entries(record)) {
       if (!ENV_KEY_RE.test(key)) {
-        throw unprocessable(`Invalid environment variable name: ${key}`);
+        throw unprocessable(`Nombre de variable de entorno inválido: ${key}`);
       }
 
       const parsed = envBindingSchema.safeParse(rawBinding);
       if (!parsed.success) {
-        throw unprocessable(`Invalid environment binding for key: ${key}`);
+        throw unprocessable(`Binding de entorno inválido para la clave: ${key}`);
       }
 
       const binding = canonicalizeBinding(parsed.data as EnvBinding);
       if (binding.type === "plain") {
         if (opts?.strictMode && isSensitiveEnvKey(key) && binding.value.trim().length > 0) {
           throw unprocessable(
-            `Strict secret mode requires secret references for sensitive key: ${key}`,
+            `El modo estricto de secretos requiere referencias de secreto para la clave sensible: ${key}`,
           );
         }
         if (binding.value === REDACTED_SENTINEL) {
-          throw unprocessable(`Refusing to persist redacted placeholder for key: ${key}`);
+          throw unprocessable(`Se omite persistir el placeholder redactado para la clave: ${key}`);
         }
         normalized[key] = binding;
         continue;
@@ -173,7 +173,7 @@ export function secretService(db: Db) {
       actor?: { userId?: string | null; agentId?: string | null },
     ) => {
       const existing = await getByName(companyId, input.name);
-      if (existing) throw conflict(`Secret already exists: ${input.name}`);
+      if (existing) throw conflict(`El secreto ya existe: ${input.name}`);
 
       const provider = getSecretProvider(input.provider);
       const prepared = await provider.createVersion({
@@ -216,7 +216,7 @@ export function secretService(db: Db) {
       actor?: { userId?: string | null; agentId?: string | null },
     ) => {
       const secret = await getById(secretId);
-      if (!secret) throw notFound("Secret not found");
+      if (!secret) throw notFound("Secreto no encontrado");
       const provider = getSecretProvider(secret.provider as SecretProvider);
       const nextVersion = secret.latestVersion + 1;
       const prepared = await provider.createVersion({
@@ -245,7 +245,7 @@ export function secretService(db: Db) {
           .returning()
           .then((rows) => rows[0] ?? null);
 
-        if (!updated) throw notFound("Secret not found");
+        if (!updated) throw notFound("Secreto no encontrado");
         return updated;
       });
     },
@@ -255,12 +255,12 @@ export function secretService(db: Db) {
       patch: { name?: string; description?: string | null; externalRef?: string | null },
     ) => {
       const secret = await getById(secretId);
-      if (!secret) throw notFound("Secret not found");
+      if (!secret) throw notFound("Secreto no encontrado");
 
       if (patch.name && patch.name !== secret.name) {
         const duplicate = await getByName(secret.companyId, patch.name);
         if (duplicate && duplicate.id !== secret.id) {
-          throw conflict(`Secret already exists: ${patch.name}`);
+          throw conflict(`El secreto ya existe: ${patch.name}`);
         }
       }
 
@@ -317,11 +317,11 @@ export function secretService(db: Db) {
 
       for (const [key, rawBinding] of Object.entries(record)) {
         if (!ENV_KEY_RE.test(key)) {
-          throw unprocessable(`Invalid environment variable name: ${key}`);
+          throw unprocessable(`Nombre de variable de entorno inválido: ${key}`);
         }
         const parsed = envBindingSchema.safeParse(rawBinding);
         if (!parsed.success) {
-          throw unprocessable(`Invalid environment binding for key: ${key}`);
+          throw unprocessable(`Binding de entorno inválido para la clave: ${key}`);
         }
         const binding = canonicalizeBinding(parsed.data as EnvBinding);
         if (binding.type === "plain") {
@@ -348,11 +348,11 @@ export function secretService(db: Db) {
       const env: Record<string, string> = {};
       for (const [key, rawBinding] of Object.entries(record)) {
         if (!ENV_KEY_RE.test(key)) {
-          throw unprocessable(`Invalid environment variable name: ${key}`);
+          throw unprocessable(`Nombre de variable de entorno inválido: ${key}`);
         }
         const parsed = envBindingSchema.safeParse(rawBinding);
         if (!parsed.success) {
-          throw unprocessable(`Invalid environment binding for key: ${key}`);
+          throw unprocessable(`Binding de entorno inválido para la clave: ${key}`);
         }
         const binding = canonicalizeBinding(parsed.data as EnvBinding);
         if (binding.type === "plain") {

@@ -1,17 +1,19 @@
 /**
- * Shared UI component declarations for plugin frontends.
+ * Declaraciones de componentes de interfaz compartidos para frontends de plugins.
  *
- * These components are exported from `@paperclipai/plugin-sdk/ui` and are
- * provided by the host at runtime.  They match the host's design tokens and
- * visual language, reducing the boilerplate needed to build consistent plugin UIs.
+ * Estos componentes se exportan desde `@paperclipai/plugin-sdk/ui` y los
+ * proporciona el host en tiempo de ejecución. Coinciden con los tokens de
+ * diseño y el lenguaje visual del host, reduciendo el código repetitivo
+ * necesario para construir interfaces de plugin consistentes.
  *
- * **Plugins are not required to use these components.**  They exist to reduce
- * boilerplate and keep visual consistency. A plugin may render entirely custom
- * UI using any React component library.
+ * **Los plugins no están obligados a usar estos componentes.** Existen para
+ * reducir el código repetitivo y mantener la consistencia visual. Un plugin puede
+ * renderizar una interfaz totalmente personalizada con cualquier biblioteca de
+ * componentes React.
  *
- * Component implementations are provided by the host — plugin bundles contain
- * only the type declarations; the runtime implementations are injected via the
- * host module registry.
+ * Las implementaciones de los componentes las proporciona el host: los paquetes
+ * del plugin contienen solo las declaraciones de tipos; las implementaciones
+ * en tiempo de ejecución se inyectan vía el registro de módulos del host.
  *
  * @see PLUGIN_SPEC.md §19.6 — Shared Components In `@paperclipai/plugin-sdk/ui`
  */
@@ -20,213 +22,214 @@ import type React from "react";
 import { renderSdkUiComponent } from "./runtime.js";
 
 // ---------------------------------------------------------------------------
-// Component prop interfaces
+// Interfaces de props de componentes
 // ---------------------------------------------------------------------------
 
 /**
- * A trend value that can accompany a metric.
- * Positive values indicate upward trends; negative values indicate downward trends.
+ * Un valor de tendencia que puede acompañar a una métrica.
+ * Los valores positivos indican tendencias al alza; los negativos, a la baja.
  */
 export interface MetricTrend {
-  /** Direction of the trend. */
+  /** Dirección de la tendencia. */
   direction: "up" | "down" | "flat";
-  /** Percentage change value (e.g. `12.5` for 12.5%). */
+  /** Valor del cambio porcentual (p. ej. `12.5` para 12.5%). */
   percentage?: number;
 }
 
-/** Props for `MetricCard`. */
+/** Props de `MetricCard`. */
 export interface MetricCardProps {
-  /** Short label describing the metric (e.g. `"Synced Issues"`). */
+  /** Etiqueta corta que describe la métrica (p. ej. `"Synced Issues"`). */
   label: string;
-  /** The metric value to display. */
+  /** El valor de la métrica a mostrar. */
   value: number | string;
-  /** Optional trend indicator. */
+  /** Indicador de tendencia opcional. */
   trend?: MetricTrend;
-  /** Optional sparkline data (array of numbers, latest last). */
+  /** Datos opcionales de minigráfico (arreglo de números, el último es el más reciente). */
   sparkline?: number[];
-  /** Optional unit suffix (e.g. `"%"`, `"ms"`). */
+  /** Sufijo de unidad opcional (p. ej. `"%"`, `"ms"`). */
   unit?: string;
 }
 
-/** Status variants for `StatusBadge`. */
+/** Variantes de estado para `StatusBadge`. */
 export type StatusBadgeVariant = "ok" | "warning" | "error" | "info" | "pending";
 
-/** Props for `StatusBadge`. */
+/** Props de `StatusBadge`. */
 export interface StatusBadgeProps {
-  /** Human-readable label. */
+  /** Etiqueta legible. */
   label: string;
-  /** Visual variant determining colour. */
+  /** Variante visual que determina el color. */
   status: StatusBadgeVariant;
 }
 
-/** A single column definition for `DataTable`. */
+/** Definición de una sola columna para `DataTable`. */
 export interface DataTableColumn<T = Record<string, unknown>> {
-  /** Column key, matching a field on the row object. */
+  /** Clave de la columna, que coincide con un campo del objeto de fila. */
   key: keyof T & string;
-  /** Column header label. */
+  /** Etiqueta del encabezado de la columna. */
   header: string;
-  /** Optional custom cell renderer. */
+  /** Renderizador de celda personalizado opcional. */
   render?: (value: unknown, row: T) => React.ReactNode;
-  /** Whether this column is sortable. */
+  /** Indica si esta columna se puede ordenar. */
   sortable?: boolean;
-  /** CSS width (e.g. `"120px"`, `"20%"`). */
+  /** Ancho CSS (p. ej. `"120px"`, `"20%"`). */
   width?: string;
 }
 
-/** Props for `DataTable`. */
+/** Props de `DataTable`. */
 export interface DataTableProps<T = Record<string, unknown>> {
-  /** Column definitions. */
+  /** Definiciones de columnas. */
   columns: DataTableColumn<T>[];
-  /** Row data. Each row should have a stable `id` field. */
+  /** Datos de filas. Cada fila debe tener un campo `id` estable. */
   rows: T[];
-  /** Whether the table is currently loading. */
+  /** Indica si la tabla se está cargando actualmente. */
   loading?: boolean;
-  /** Message shown when `rows` is empty. */
+  /** Mensaje mostrado cuando `rows` está vacío. */
   emptyMessage?: string;
-  /** Total row count for pagination (if different from `rows.length`). */
+  /** Número total de filas para paginación (si difiere de `rows.length`). */
   totalCount?: number;
-  /** Current page (0-based, for pagination). */
+  /** Página actual (base 0, para paginación). */
   page?: number;
-  /** Rows per page (for pagination). */
+  /** Filas por página (para paginación). */
   pageSize?: number;
-  /** Callback when page changes. */
+  /** Callback cuando cambia la página. */
   onPageChange?: (page: number) => void;
-  /** Callback when a column header is clicked to sort. */
+  /** Callback cuando se hace clic en un encabezado de columna para ordenar. */
   onSort?: (key: string, direction: "asc" | "desc") => void;
 }
 
-/** A single data point for `TimeseriesChart`. */
+/** Un solo punto de datos para `TimeseriesChart`. */
 export interface TimeseriesDataPoint {
-  /** ISO 8601 timestamp. */
+  /** Marca de tiempo ISO 8601. */
   timestamp: string;
-  /** Numeric value. */
+  /** Valor numérico. */
   value: number;
-  /** Optional label for the point. */
+  /** Etiqueta opcional para el punto. */
   label?: string;
 }
 
-/** Props for `TimeseriesChart`. */
+/** Props de `TimeseriesChart`. */
 export interface TimeseriesChartProps {
-  /** Series data. */
+  /** Datos de la serie. */
   data: TimeseriesDataPoint[];
-  /** Chart title. */
+  /** Título del gráfico. */
   title?: string;
-  /** Y-axis label. */
+  /** Etiqueta del eje Y. */
   yLabel?: string;
-  /** Chart type. Defaults to `"line"`. */
+  /** Tipo de gráfico. Por defecto `"line"`. */
   type?: "line" | "bar";
-  /** Height of the chart in pixels. Defaults to `200`. */
+  /** Alto del gráfico en píxeles. Por defecto `200`. */
   height?: number;
-  /** Whether the chart is currently loading. */
+  /** Indica si el gráfico se está cargando actualmente. */
   loading?: boolean;
 }
 
-/** Props for `MarkdownBlock`. */
+/** Props de `MarkdownBlock`. */
 export interface MarkdownBlockProps {
-  /** Markdown content to render. */
+  /** Contenido Markdown a renderizar. */
   content: string;
 }
 
-/** A single key-value pair for `KeyValueList`. */
+/** Un solo par clave-valor para `KeyValueList`. */
 export interface KeyValuePair {
-  /** Label for the key. */
+  /** Etiqueta de la clave. */
   label: string;
-  /** Value to display. May be a string, number, or a React node. */
+  /** Valor a mostrar. Puede ser una cadena, un número o un nodo React. */
   value: React.ReactNode;
 }
 
-/** Props for `KeyValueList`. */
+/** Props de `KeyValueList`. */
 export interface KeyValueListProps {
-  /** Pairs to render in the list. */
+  /** Pares a renderizar en la lista. */
   pairs: KeyValuePair[];
 }
 
-/** A single action button for `ActionBar`. */
+/** Un solo botón de acción para `ActionBar`. */
 export interface ActionBarItem {
-  /** Button label. */
+  /** Etiqueta del botón. */
   label: string;
-  /** Action key to call via the plugin bridge. */
+  /** Clave de acción a llamar vía el puente del plugin. */
   actionKey: string;
-  /** Optional parameters to pass to the action handler. */
+  /** Parámetros opcionales para pasar al manejador de la acción. */
   params?: Record<string, unknown>;
-  /** Button variant. Defaults to `"default"`. */
+  /** Variante del botón. Por defecto `"default"`. */
   variant?: "default" | "primary" | "destructive";
-  /** Whether to show a confirmation dialog before executing. */
+  /** Indica si mostrar un diálogo de confirmación antes de ejecutar. */
   confirm?: boolean;
-  /** Text for the confirmation dialog (used when `confirm` is true). */
+  /** Texto del diálogo de confirmación (usado cuando `confirm` es verdadero). */
   confirmMessage?: string;
 }
 
-/** Props for `ActionBar`. */
+/** Props de `ActionBar`. */
 export interface ActionBarProps {
-  /** Action definitions. */
+  /** Definiciones de acciones. */
   actions: ActionBarItem[];
-  /** Called after an action succeeds. Use to trigger data refresh. */
+  /** Llamado después de que una acción tiene éxito. Úsese para disparar la actualización de datos. */
   onSuccess?: (actionKey: string, result: unknown) => void;
-  /** Called when an action fails. */
+  /** Llamado cuando una acción falla. */
   onError?: (actionKey: string, error: unknown) => void;
 }
 
-/** A single log line for `LogView`. */
+/** Una sola línea de registro para `LogView`. */
 export interface LogViewEntry {
-  /** ISO 8601 timestamp. */
+  /** Marca de tiempo ISO 8601. */
   timestamp: string;
-  /** Log level. */
+  /** Nivel de registro. */
   level: "info" | "warn" | "error" | "debug";
-  /** Log message. */
+  /** Mensaje de registro. */
   message: string;
-  /** Optional structured metadata. */
+  /** Metadatos estructurados opcionales. */
   meta?: Record<string, unknown>;
 }
 
-/** Props for `LogView`. */
+/** Props de `LogView`. */
 export interface LogViewProps {
-  /** Log entries to display. */
+  /** Entradas de registro a mostrar. */
   entries: LogViewEntry[];
-  /** Maximum height of the scrollable container (CSS value). Defaults to `"400px"`. */
+  /** Alto máximo del contenedor desplazable (valor CSS). Por defecto `"400px"`. */
   maxHeight?: string;
-  /** Whether to auto-scroll to the latest entry. */
+  /** Indica si desplazarse automáticamente a la última entrada. */
   autoScroll?: boolean;
-  /** Whether the log is currently loading. */
+  /** Indica si el registro se está cargando actualmente. */
   loading?: boolean;
 }
 
-/** Props for `JsonTree`. */
+/** Props de `JsonTree`. */
 export interface JsonTreeProps {
-  /** The data to render as a collapsible JSON tree. */
+  /** Los datos a renderizar como árbol JSON plegable. */
   data: unknown;
-  /** Initial depth to expand. Defaults to `2`. */
+  /** Profundidad inicial a expandir. Por defecto `2`. */
   defaultExpandDepth?: number;
 }
 
-/** Props for `Spinner`. */
+/** Props de `Spinner`. */
 export interface SpinnerProps {
-  /** Size of the spinner. Defaults to `"md"`. */
+  /** Tamaño del indicador. Por defecto `"md"`. */
   size?: "sm" | "md" | "lg";
-  /** Accessible label for the spinner (used as `aria-label`). */
+  /** Etiqueta accesible para el indicador (usada como `aria-label`). */
   label?: string;
 }
 
-/** Props for `ErrorBoundary`. */
+/** Props de `ErrorBoundary`. */
 export interface ErrorBoundaryProps {
-  /** Content to render inside the error boundary. */
+  /** Contenido a renderizar dentro del límite de error. */
   children: React.ReactNode;
-  /** Optional custom fallback to render when an error is caught. */
+  /** Reemplazo personalizado opcional a renderizar cuando se captura un error. */
   fallback?: React.ReactNode;
-  /** Called when an error is caught, for logging or reporting. */
+  /** Llamado cuando se captura un error, para registro o reporte. */
   onError?: (error: Error, info: React.ErrorInfo) => void;
 }
 
 // ---------------------------------------------------------------------------
-// Component declarations (provided by host at runtime)
+// Declaraciones de componentes (proporcionados por el host en tiempo de ejecución)
 // ---------------------------------------------------------------------------
 
-// These are declared as ambient values so plugin TypeScript code can import
-// and use them with full type-checking. The host's module registry provides
-// the concrete React component implementations at bundle load time.
+// Se declaran como valores ambientales para que el código TypeScript del plugin
+// pueda importarlos y usarlos con verificación completa de tipos. El registro
+// de módulos del host proporciona las implementaciones concretas de los
+// componentes React al cargar el paquete.
 
 /**
- * Displays a single metric with an optional trend indicator and sparkline.
+ * Muestra una sola métrica con un indicador de tendencia y un minigráfico opcionales.
  *
  * @see PLUGIN_SPEC.md §19.6 — Shared Components
  */
@@ -239,72 +242,72 @@ function createSdkUiComponent<TProps>(name: string): React.ComponentType<TProps>
 export const MetricCard = createSdkUiComponent<MetricCardProps>("MetricCard");
 
 /**
- * Displays an inline status badge (ok / warning / error / info / pending).
+ * Muestra una insignia de estado en línea (ok / warning / error / info / pending).
  *
  * @see PLUGIN_SPEC.md §19.6 — Shared Components
  */
 export const StatusBadge = createSdkUiComponent<StatusBadgeProps>("StatusBadge");
 
 /**
- * Sortable, paginated data table.
+ * Tabla de datos ordenable y paginada.
  *
  * @see PLUGIN_SPEC.md §19.6 — Shared Components
  */
 export const DataTable = createSdkUiComponent<DataTableProps>("DataTable");
 
 /**
- * Line or bar chart for time-series data.
+ * Gráfico de líneas o barras para datos de series temporales.
  *
  * @see PLUGIN_SPEC.md §19.6 — Shared Components
  */
 export const TimeseriesChart = createSdkUiComponent<TimeseriesChartProps>("TimeseriesChart");
 
 /**
- * Renders Markdown text as HTML.
+ * Renderiza texto Markdown como HTML.
  *
  * @see PLUGIN_SPEC.md §19.6 — Shared Components
  */
 export const MarkdownBlock = createSdkUiComponent<MarkdownBlockProps>("MarkdownBlock");
 
 /**
- * Renders a definition-list of label/value pairs.
+ * Renderiza una lista de definiciones de pares etiqueta/valor.
  *
  * @see PLUGIN_SPEC.md §19.6 — Shared Components
  */
 export const KeyValueList = createSdkUiComponent<KeyValueListProps>("KeyValueList");
 
 /**
- * Row of action buttons wired to the plugin bridge's `performAction` handlers.
+ * Fila de botones de acción conectados a los manejadores `performAction` del puente del plugin.
  *
  * @see PLUGIN_SPEC.md §19.6 — Shared Components
  */
 export const ActionBar = createSdkUiComponent<ActionBarProps>("ActionBar");
 
 /**
- * Scrollable, timestamped log output viewer.
+ * Visor desplazable de salida de registro con marcas de tiempo.
  *
  * @see PLUGIN_SPEC.md §19.6 — Shared Components
  */
 export const LogView = createSdkUiComponent<LogViewProps>("LogView");
 
 /**
- * Collapsible JSON tree for debugging or raw data inspection.
+ * Árbol JSON plegable para depuración o inspección de datos sin procesar.
  *
  * @see PLUGIN_SPEC.md §19.6 — Shared Components
  */
 export const JsonTree = createSdkUiComponent<JsonTreeProps>("JsonTree");
 
 /**
- * Loading indicator.
+ * Indicador de carga.
  *
  * @see PLUGIN_SPEC.md §19.6 — Shared Components
  */
 export const Spinner = createSdkUiComponent<SpinnerProps>("Spinner");
 
 /**
- * React error boundary that prevents plugin rendering errors from crashing
- * the host page.
+ * Límite de error de React que evita que los errores de renderizado del plugin
+ * bloqueen la página del host.
  *
- * @see PLUGIN_SPEC.md §19.7 — Error Propagation Through The Bridge
+ * @see PLUGIN_SPEC.md §19.7 — Propagación de errores a través del puente
  */
 export const ErrorBoundary = createSdkUiComponent<ErrorBoundaryProps>("ErrorBoundary");

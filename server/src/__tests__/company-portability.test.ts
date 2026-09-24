@@ -1379,7 +1379,7 @@ describe("company portability", () => {
     expect(preview.plan.issuePlans).toEqual([
       expect.objectContaining({
         slug: "monday-review",
-        reason: "Recurring task will be imported as a routine.",
+        reason: "La tarea recurrente se importará como una rutina.",
       }),
     ]);
 

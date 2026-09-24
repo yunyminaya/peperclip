@@ -157,13 +157,13 @@ function buildAgentEnvExports(input: {
 }
 
 export function registerAgentCommands(program: Command): void {
-  const agent = program.command("agent").description("Agent operations");
+  const agent = program.command("agent").description("Operaciones de agentes");
 
   addCommonClientOptions(
     agent
       .command("list")
-      .description("List agents for a company")
-      .requiredOption("-C, --company-id <id>", "Company ID")
+      .description("Listar agentes de una empresa")
+      .requiredOption("-C, --company-id <id>", "ID de empresa")
       .action(async (opts: AgentListOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -202,8 +202,8 @@ export function registerAgentCommands(program: Command): void {
   addCommonClientOptions(
     agent
       .command("get")
-      .description("Get one agent")
-      .argument("<agentId>", "Agent ID")
+      .description("Obtener un agente")
+      .argument("<agentId>", "ID de agente")
       .action(async (agentId: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -219,14 +219,14 @@ export function registerAgentCommands(program: Command): void {
     agent
       .command("local-cli")
       .description(
-        "Create an agent API key, install local Paperclip skills for Codex/Claude, and print shell exports",
+        "Crear una API key de agente, instalar habilidades locales de Paperclip para Codex/Claude, e imprimir exportaciones de shell",
       )
-      .argument("<agentRef>", "Agent ID or shortname/url-key")
-      .requiredOption("-C, --company-id <id>", "Company ID")
-      .option("--key-name <name>", "API key label", "local-cli")
+      .argument("<agentRef>", "ID de agente o shortname/url-key")
+      .requiredOption("-C, --company-id <id>", "ID de empresa")
+      .option("--key-name <name>", "Etiqueta de la API key", "local-cli")
       .option(
         "--no-install-skills",
-        "Skip installing Paperclip skills into ~/.codex/skills and ~/.claude/skills",
+        "Omitir la instalación de habilidades de Paperclip en ~/.codex/skills y ~/.claude/skills",
       )
       .action(async (agentRef: string, opts: AgentLocalCliOptions) => {
         try {
@@ -236,14 +236,14 @@ export function registerAgentCommands(program: Command): void {
             `/api/agents/${encodeURIComponent(agentRef)}?${query.toString()}`,
           );
           if (!agentRow) {
-            throw new Error(`Agent not found: ${agentRef}`);
+            throw new Error(`Agente no encontrado: ${agentRef}`);
           }
 
           const now = new Date().toISOString().replaceAll(":", "-");
           const keyName = opts.keyName?.trim() ? opts.keyName.trim() : `local-cli-${now}`;
           const key = await ctx.api.post<CreatedAgentKey>(`/api/agents/${agentRow.id}/keys`, { name: keyName });
           if (!key) {
-            throw new Error("Failed to create API key");
+            throw new Error("No se pudo crear la API key");
           }
 
           const installSummaries: SkillsInstallSummary[] = [];
@@ -251,7 +251,7 @@ export function registerAgentCommands(program: Command): void {
             const skillsDir = await resolvePaperclipSkillsDir(__moduleDir, [path.resolve(process.cwd(), "skills")]);
             if (!skillsDir) {
               throw new Error(
-                "Could not locate local Paperclip skills directory. Expected ./skills in the repo checkout.",
+                "No se pudo localizar el directorio de habilidades locales de Paperclip. Se esperaba ./skills en el checkout del repo.",
               );
             }
 
@@ -291,20 +291,20 @@ export function registerAgentCommands(program: Command): void {
             return;
           }
 
-          console.log(`Agent: ${agentRow.name} (${agentRow.id})`);
-          console.log(`API key created: ${key.name} (${key.id})`);
+          console.log(`Agente: ${agentRow.name} (${agentRow.id})`);
+          console.log(`API key creada: ${key.name} (${key.id})`);
           if (installSummaries.length > 0) {
             for (const summary of installSummaries) {
               console.log(
-                `${summary.tool}: linked=${summary.linked.length} removed=${summary.removed.length} skipped=${summary.skipped.length} failed=${summary.failed.length} target=${summary.target}`,
+                `${summary.tool}: vinculadas=${summary.linked.length} eliminadas=${summary.removed.length} omitidas=${summary.skipped.length} fallidas=${summary.failed.length} destino=${summary.target}`,
               );
               for (const failed of summary.failed) {
-                console.log(`  failed ${failed.name}: ${failed.error}`);
+                console.log(`  falló ${failed.name}: ${failed.error}`);
               }
             }
           }
           console.log("");
-          console.log("# Run this in your shell before launching codex/claude:");
+          console.log("# Ejecuta esto en tu shell antes de lanzar codex/claude:");
           console.log(exportsText);
         } catch (err) {
           handleCommandError(err);

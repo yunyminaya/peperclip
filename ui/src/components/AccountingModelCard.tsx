@@ -3,24 +3,24 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 
 const SURFACES = [
   {
-    title: "Inference ledger",
-    description: "Request-scoped usage and billed runs from cost_events.",
+    title: "Libro de inferencia",
+    description: "Uso con alcance de solicitud y ejecuciones facturadas de cost_events.",
     icon: Database,
-    points: ["tokens + billed dollars", "provider, biller, model", "subscription and overage aware"],
+    points: ["tokens + dólares facturados", "proveedor, facturador, modelo", "consciente de suscripción y excedentes"],
     tone: "from-sky-500/12 via-sky-500/6 to-transparent",
   },
   {
-    title: "Finance ledger",
-    description: "Account-level charges that are not one prompt-response pair.",
+    title: "Libro financiero",
+    description: "Cargos a nivel de cuenta que no son un par solicitud-respuesta.",
     icon: ReceiptText,
-    points: ["top-ups, refunds, fees", "Bedrock provisioned or training charges", "credit expiries and adjustments"],
+    points: ["recargas, reembolsos, comisiones", "cargos de aprovisionamiento o entrenamiento de Bedrock", "vencimientos de crédito y ajustes"],
     tone: "from-amber-500/14 via-amber-500/6 to-transparent",
   },
   {
-    title: "Live quotas",
-    description: "Provider or biller windows that can stop traffic in real time.",
+    title: "Cuotas en vivo",
+    description: "Ventanas de proveedor o facturador que pueden detener el tráfico en tiempo real.",
     icon: Gauge,
-    points: ["provider quota windows", "biller credit systems", "errors surfaced directly"],
+    points: ["ventanas de cuota del proveedor", "sistemas de crédito del facturador", "errores mostrados directamente"],
     tone: "from-emerald-500/14 via-emerald-500/6 to-transparent",
   },
 ] as const;
@@ -31,11 +31,11 @@ export function AccountingModelCard() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.08),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.1),transparent_32%)]" />
       <CardHeader className="relative px-5 pt-5 pb-2">
         <CardTitle className="text-sm font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-          Accounting model
+          Modelo de contabilidad
         </CardTitle>
         <CardDescription className="max-w-2xl text-sm leading-6">
-          Paperclip now separates request-level inference usage from account-level finance events.
-          That keeps provider reporting honest when the biller is OpenRouter, Cloudflare, Bedrock, or another intermediary.
+          Paperclip ahora separa el uso de inferencia a nivel de solicitud de los eventos financieros a nivel de cuenta.
+          Eso mantiene honestos los reportes del proveedor cuando el facturador es OpenRouter, Cloudflare, Bedrock u otro intermediario.
         </CardDescription>
       </CardHeader>
       <CardContent className="relative grid gap-3 px-5 pb-5 md:grid-cols-3">

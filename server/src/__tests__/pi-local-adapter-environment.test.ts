@@ -95,7 +95,7 @@ describe("pi_local environment diagnostics", () => {
 
     const stalePackageCheck = result.checks.find((check) => check.code === "pi_package_install_failed");
     expect(stalePackageCheck?.level).toBe("warn");
-    expect(stalePackageCheck?.hint).toContain("Remove `npm:pi-driver`");
+    expect(stalePackageCheck?.hint).toContain("Elimina `npm:pi-driver`");
     await fs.rm(root, { recursive: true, force: true });
   });
 });

@@ -1,19 +1,19 @@
 ---
-title: Secrets
-summary: Secrets CRUD
+title: Secretos
+summary: CRUD de secretos
 ---
 
-Manage encrypted secrets that agents reference in their environment configuration.
+Gestiona secretos cifrados que los agentes referencian en su configuración de entorno.
 
-## List Secrets
+## Listar secretos
 
 ```
 GET /api/companies/{companyId}/secrets
 ```
 
-Returns secret metadata (not decrypted values).
+Devuelve los metadatos del secreto (no los valores descifrados).
 
-## Create Secret
+## Crear secreto
 
 ```
 POST /api/companies/{companyId}/secrets
@@ -23,9 +23,9 @@ POST /api/companies/{companyId}/secrets
 }
 ```
 
-The value is encrypted at rest. Only the secret ID and metadata are returned.
+El valor se cifra en reposo. Solo se devuelven el ID del secreto y los metadatos.
 
-## Update Secret
+## Actualizar secreto
 
 ```
 PATCH /api/secrets/{secretId}
@@ -34,11 +34,11 @@ PATCH /api/secrets/{secretId}
 }
 ```
 
-Creates a new version of the secret. Agents referencing `"version": "latest"` automatically get the new value on next heartbeat.
+Crea una nueva versión del secreto. Los agentes que referencian `"version": "latest"` obtienen automáticamente el nuevo valor en el próximo latido.
 
-## Using Secrets in Agent Config
+## Usar secretos en la configuración del agente
 
-Reference secrets in agent adapter config instead of inline values:
+Referencia secretos en la configuración del adaptador del agente en lugar de valores en línea:
 
 ```json
 {
@@ -52,4 +52,4 @@ Reference secrets in agent adapter config instead of inline values:
 }
 ```
 
-The server resolves and decrypts secret references at runtime, injecting the real value into the agent process environment.
+El servidor resuelve y descifra las referencias de secretos en tiempo de ejecución, inyectando el valor real en el entorno del proceso del agente.

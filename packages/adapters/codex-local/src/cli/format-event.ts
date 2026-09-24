@@ -117,7 +117,7 @@ function printItemCompleted(item: Record<string, unknown>): boolean {
         return `${kind} ${path}`;
       });
     const preview = entries.length > 0 ? entries.slice(0, 6).join(", ") : "none";
-    const more = entries.length > 6 ? ` (+${entries.length - 6} more)` : "";
+    const more = entries.length > 6 ? ` (+${entries.length - 6} más)` : "";
     console.log(pc.cyan(`file_change: ${preview}${more}`));
     return true;
   }
@@ -157,12 +157,12 @@ export function printCodexStreamEvent(raw: string, _debug: boolean): void {
     const threadId = asString(parsed.thread_id);
     const model = asString(parsed.model);
     const details = [threadId ? `session: ${threadId}` : "", model ? `model: ${model}` : ""].filter(Boolean).join(", ");
-    console.log(pc.blue(`Codex thread started${details ? ` (${details})` : ""}`));
+    console.log(pc.blue(`Hilo de Codex iniciado${details ? ` (${details})` : ""}`));
     return;
   }
 
   if (type === "turn.started") {
-    console.log(pc.blue("turn started"));
+    console.log(pc.blue("Turno iniciado"));
     return;
   }
 
@@ -214,7 +214,7 @@ export function printCodexStreamEvent(raw: string, _debug: boolean): void {
     const output = asNumber(usage?.output_tokens);
     const cached = asNumber(usage?.cached_input_tokens, asNumber(usage?.cache_read_input_tokens));
     const message = errorText(parsed.error ?? parsed.message);
-    console.log(pc.red(`turn failed${message ? `: ${message}` : ""}`));
+    console.log(pc.red(`turno fallido${message ? `: ${message}` : ""}`));
     console.log(pc.blue(`tokens: in=${input} out=${output} cached=${cached}`));
     return;
   }

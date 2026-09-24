@@ -657,7 +657,7 @@ describe("realizeExecutionWorkspace", () => {
 
     expect(cleanup.cleaned).toBe(true);
     expect(cleanup.warnings).toHaveLength(1);
-    expect(cleanup.warnings[0]).toContain(`Skipped deleting branch "${workspace.branchName}"`);
+    expect(cleanup.warnings[0]).toContain(`Omitida la eliminación de la rama "${workspace.branchName}"`);
     await expect(
       execFileAsync("git", ["branch", "--list", workspace.branchName!], { cwd: repoRoot }),
     ).resolves.toMatchObject({

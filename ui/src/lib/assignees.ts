@@ -58,7 +58,7 @@ export function parseAssigneeValue(value: string): AssigneeSelection {
     const assigneeUserId = value.slice("user:".length);
     return { assigneeAgentId: null, assigneeUserId: assigneeUserId || null };
   }
-  // Backward compatibility for older drafts/defaults that stored a raw agent id.
+  // Compatibilidad con versiones anteriores para borradores/valores predeterminados que almacenaban un id de agente sin procesar.
   return { assigneeAgentId: value, assigneeUserId: null };
 }
 
@@ -66,8 +66,8 @@ export function currentUserAssigneeOption(currentUserId: string | null | undefin
   if (!currentUserId) return [];
   return [{
     id: assigneeValueFromSelection({ assigneeUserId: currentUserId }),
-    label: "Me",
-    searchText: currentUserId === "local-board" ? "me board human local-board" : `me human ${currentUserId}`,
+    label: "Yo",
+    searchText: currentUserId === "local-board" ? "yo tablero humano local-board" : `yo humano ${currentUserId}`,
   }];
 }
 
@@ -76,7 +76,7 @@ export function formatAssigneeUserLabel(
   currentUserId: string | null | undefined,
 ): string | null {
   if (!userId) return null;
-  if (currentUserId && userId === currentUserId) return "Me";
-  if (userId === "local-board") return "Board";
+  if (currentUserId && userId === currentUserId) return "Yo";
+  if (userId === "local-board") return "Tablero";
   return userId.slice(0, 5);
 }

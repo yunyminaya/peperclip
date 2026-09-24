@@ -1,20 +1,20 @@
 /**
- * In-memory pub/sub bus for plugin SSE streams.
+ * Bus pub/sub en memoria para streams SSE de plugins.
  *
- * Workers emit stream events via JSON-RPC notifications. The bus fans out
- * each event to all connected SSE clients that match the (pluginId, channel,
- * companyId) tuple.
+ * Los workers emiten eventos de stream vía notificaciones JSON-RPC. El bus
+ * distribuye cada evento a todos los clientes SSE conectados que coincidan
+ * con la tupla (pluginId, channel, companyId).
  *
- * @see PLUGIN_SPEC.md §19.8 — Real-Time Streaming
+ * @see PLUGIN_SPEC.md §19.8 — Streaming en tiempo real
  */
 
-/** Valid SSE event types for plugin streams. */
+/** Tipos de evento SSE válidos para streams de plugins. */
 export type StreamEventType = "message" | "open" | "close" | "error";
 
 export type StreamSubscriber = (event: unknown, eventType: StreamEventType) => void;
 
 /**
- * Composite key for stream subscriptions: pluginId:channel:companyId
+ * Clave compuesta para suscripciones de stream: pluginId:channel:companyId
  */
 function streamKey(pluginId: string, channel: string, companyId: string): string {
   return `${pluginId}:${channel}:${companyId}`;
@@ -22,8 +22,8 @@ function streamKey(pluginId: string, channel: string, companyId: string): string
 
 export interface PluginStreamBus {
   /**
-   * Subscribe to stream events for a specific (pluginId, channel, companyId).
-   * Returns an unsubscribe function.
+   * Suscribe a eventos de stream para un (pluginId, channel, companyId)
+   * específico. Devuelve una función para desuscribirse.
    */
   subscribe(
     pluginId: string,
@@ -33,8 +33,9 @@ export interface PluginStreamBus {
   ): () => void;
 
   /**
-   * Publish an event to all subscribers of (pluginId, channel, companyId).
-   * Called by the worker manager when it receives a stream notification.
+   * Publica un evento a todos los suscriptores de (pluginId, channel,
+   * companyId). Lo llama el worker manager cuando recibe una notificación
+   * de stream.
    */
   publish(
     pluginId: string,
@@ -46,7 +47,7 @@ export interface PluginStreamBus {
 }
 
 /**
- * Create a new PluginStreamBus instance.
+ * Crea una nueva instancia de PluginStreamBus.
  */
 export function createPluginStreamBus(): PluginStreamBus {
   const subscribers = new Map<string, Set<StreamSubscriber>>();

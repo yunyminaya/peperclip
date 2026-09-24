@@ -220,10 +220,10 @@ export function printCursorStreamEvent(raw: string, _debug: boolean): void {
       const details = [sessionId ? `session: ${sessionId}` : "", model ? `model: ${model}` : ""]
         .filter(Boolean)
         .join(", ");
-      console.log(pc.blue(`Cursor init${details ? ` (${details})` : ""}`));
+      console.log(pc.blue(`Cursor iniciado${details ? ` (${details})` : ""}`));
       return;
     }
-    console.log(pc.blue(`system: ${subtype || "event"}`));
+    console.log(pc.blue(`sistema: ${subtype || "evento"}`));
     return;
   }
 
@@ -275,10 +275,10 @@ export function printCursorStreamEvent(raw: string, _debug: boolean): void {
     return;
   }
 
-  // Compatibility with older stream-json event shapes.
+  // Compatibilidad con formatos antiguos de eventos stream-json.
   if (type === "step_start") {
     const sessionId = asString(parsed.sessionID);
-    console.log(pc.blue(`step started${sessionId ? ` (session: ${sessionId})` : ""}`));
+    console.log(pc.blue(`paso iniciado${sessionId ? ` (sesión: ${sessionId})` : ""}`));
     return;
   }
 
@@ -308,7 +308,7 @@ export function printCursorStreamEvent(raw: string, _debug: boolean): void {
     const output = asNumber(tokens?.output);
     const cached = asNumber(cache?.read);
     const cost = asNumber(part?.cost);
-    console.log(pc.blue(`step finished: reason=${reason}`));
+    console.log(pc.blue(`paso terminado: motivo=${reason}`));
     console.log(pc.blue(`tokens: in=${input} out=${output} cached=${cached} cost=$${cost.toFixed(6)}`));
     return;
   }

@@ -25,7 +25,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { PluginLauncherOutlet } from "@/plugins/launchers";
 import { PluginSlotMount, PluginSlotOutlet, usePluginSlots } from "@/plugins/slots";
 
-/* ── Top-level tab types ── */
+/* ── Tipos de pestaña de nivel superior ── */
 
 type ProjectBaseTab = "overview" | "list" | "configuration" | "budget";
 type ProjectPluginTab = `plugin:${string}`;
@@ -47,7 +47,7 @@ function resolveProjectTab(pathname: string, projectId: string): ProjectTab | nu
   return null;
 }
 
-/* ── Overview tab content ── */
+/* ── Contenido de la pestaña de resumen ── */
 
 function OverviewContent({
   project,
@@ -65,21 +65,21 @@ function OverviewContent({
         onSave={(description) => onUpdate({ description })}
         as="p"
         className="text-sm text-muted-foreground"
-        placeholder="Add a description..."
+        placeholder="Agrega una descripción…"
         multiline
         imageUploadHandler={imageUploadHandler}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
         <div>
-          <span className="text-muted-foreground">Status</span>
+          <span className="text-muted-foreground">Estado</span>
           <div className="mt-1">
             <StatusBadge status={project.status} />
           </div>
         </div>
         {project.targetDate && (
           <div>
-            <span className="text-muted-foreground">Target Date</span>
+            <span className="text-muted-foreground">Fecha objetivo</span>
             <p>{project.targetDate}</p>
           </div>
         )}
@@ -88,7 +88,7 @@ function OverviewContent({
   );
 }
 
-/* ── Color picker popover ── */
+/* ── Ventana emergente del selector de color ── */
 
 function ColorPicker({
   currentColor,
@@ -117,7 +117,7 @@ function ColorPicker({
         onClick={() => setOpen(!open)}
         className="shrink-0 h-5 w-5 rounded-md cursor-pointer hover:ring-2 hover:ring-foreground/20 transition-[box-shadow]"
         style={{ backgroundColor: currentColor }}
-        aria-label="Change project color"
+        aria-label="Cambiar el color del proyecto"
       />
       {open && (
         <div className="absolute top-full left-0 mt-2 p-2 bg-popover border border-border rounded-lg shadow-lg z-50 w-max">
@@ -135,7 +135,7 @@ function ColorPicker({
                     : "hover:ring-2 hover:ring-foreground/30"
                 }`}
                 style={{ backgroundColor: color }}
-                aria-label={`Select color ${color}`}
+                aria-label={`Seleccionar color ${color}`}
               />
             ))}
           </div>
@@ -145,7 +145,7 @@ function ColorPicker({
   );
 }
 
-/* ── List (issues) tab content ── */
+/* ── Contenido de la pestaña de lista (issues) ── */
 
 function ProjectIssuesList({ projectId, companyId }: { projectId: string; companyId: string }) {
   const queryClient = useQueryClient();
@@ -200,7 +200,7 @@ function ProjectIssuesList({ projectId, companyId }: { projectId: string; compan
   );
 }
 
-/* ── Main project page ── */
+/* ── Página principal del proyecto ── */
 
 export function ProjectDetail() {
   const { companyPrefix, projectId, filter } = useParams<{
@@ -288,17 +288,17 @@ export function ProjectDetail() {
       ),
     onSuccess: (updatedProject, archived) => {
       invalidateProject();
-      const name = updatedProject?.name ?? project?.name ?? "Project";
+      const name = updatedProject?.name ?? project?.name ?? "Proyecto";
       if (archived) {
-        pushToast({ title: `"${name}" has been archived`, tone: "success" });
+        pushToast({ title: `"${name}" se ha archivado`, tone: "success" });
         navigate("/dashboard");
       } else {
-        pushToast({ title: `"${name}" has been unarchived`, tone: "success" });
+        pushToast({ title: `"${name}" se ha desarchivado`, tone: "success" });
       }
     },
     onError: (_, archived) => {
       pushToast({
-        title: archived ? "Failed to archive project" : "Failed to unarchive project",
+        title: archived ? "No se pudo archivar el proyecto" : "No se pudo desarchivar el proyecto",
         tone: "error",
       });
     },
@@ -306,7 +306,7 @@ export function ProjectDetail() {
 
   const uploadImage = useMutation({
     mutationFn: async (file: File) => {
-      if (!resolvedCompanyId) throw new Error("No company selected");
+      if (!resolvedCompanyId) throw new Error("Ninguna empresa seleccionada");
       return assetsApi.uploadImage(resolvedCompanyId, file, `projects/${projectLookupRef || "draft"}`);
     },
   });
@@ -321,8 +321,8 @@ export function ProjectDetail() {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: "Projects", href: "/projects" },
-      { label: project?.name ?? routeProjectRef ?? "Project" },
+      { label: "Proyectos", href: "/projects" },
+      { label: project?.name ?? routeProjectRef ?? "Proyecto" },
     ]);
   }, [setBreadcrumbs, project, routeProjectRef]);
 
@@ -414,7 +414,7 @@ export function ProjectDetail() {
       companyId: resolvedCompanyId ?? "",
       scopeType: "project",
       scopeId: project?.id ?? routeProjectRef,
-      scopeName: project?.name ?? "Project",
+      scopeName: project?.name ?? "Proyecto",
       metric: "billed_cents",
       windowKind: "lifetime",
       amount: 0,
@@ -455,7 +455,7 @@ export function ProjectDetail() {
     return <Navigate to={`/projects/${canonicalProjectRef}/issues`} replace />;
   }
 
-  // Redirect bare /projects/:id to cached tab or default /issues
+  // Redirigir /projects/:id sin pestaña a la pestaña en caché o a /issues por defecto
   if (routeProjectRef && activeTab === null) {
     let cachedTab: string | null = null;
     if (project?.id) {
@@ -481,7 +481,7 @@ export function ProjectDetail() {
   if (!project) return null;
 
   const handleTabChange = (tab: ProjectTab) => {
-    // Cache the active tab per project
+    // Guardar en caché la pestaña activa por proyecto
     if (project?.id) {
       try { localStorage.setItem(`paperclip:project-tab:${project.id}`, tab); } catch {}
     }
@@ -519,7 +519,7 @@ export function ProjectDetail() {
           {project.pauseReason === "budget" ? (
             <div className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-red-200">
               <span className="h-2 w-2 rounded-full bg-red-400" />
-              Paused by budget hard stop
+              Pausado por tope de presupuesto
             </div>
           ) : null}
         </div>
@@ -560,9 +560,9 @@ export function ProjectDetail() {
         <PageTabBar
           items={[
             { value: "list", label: "Issues" },
-            { value: "overview", label: "Overview" },
-            { value: "configuration", label: "Configuration" },
-            { value: "budget", label: "Budget" },
+            { value: "overview", label: "Resumen" },
+            { value: "configuration", label: "Configuración" },
+            { value: "budget", label: "Presupuesto" },
             ...pluginTabItems.map((item) => ({
               value: item.value,
               label: item.label,

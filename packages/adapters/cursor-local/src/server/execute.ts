@@ -122,7 +122,7 @@ export async function ensureCursorSkillsInjected(
   } catch (err) {
     await onLog(
       "stderr",
-      `[paperclip] Failed to prepare Cursor skills directory ${skillsHome}: ${err instanceof Error ? err.message : String(err)}\n`,
+      `[paperclip] No se pudo preparar el directorio de habilidades de Cursor ${skillsHome}: ${err instanceof Error ? err.message : String(err)}\n`,
     );
     return;
   }
@@ -133,7 +133,7 @@ export async function ensureCursorSkillsInjected(
   for (const skillName of removedSkills) {
     await onLog(
       "stderr",
-      `[paperclip] Removed maintainer-only Cursor skill "${skillName}" from ${skillsHome}\n`,
+      `[paperclip] Habilidad de Cursor solo del mantenedor "${skillName}" eliminada de ${skillsHome}\n`,
     );
   }
   const linkSkill = options.linkSkill ?? ((source: string, target: string) => fs.symlink(source, target));
@@ -145,12 +145,12 @@ export async function ensureCursorSkillsInjected(
 
       await onLog(
         "stderr",
-        `[paperclip] ${result === "repaired" ? "Repaired" : "Injected"} Cursor skill "${entry.key}" into ${skillsHome}\n`,
+        `[paperclip] Habilidad de Cursor "${entry.key}" ${result === "repaired" ? "reparada" : "inyectada"} en ${skillsHome}\n`,
       );
     } catch (err) {
       await onLog(
         "stderr",
-        `[paperclip] Failed to inject Cursor skill "${entry.key}" into ${skillsHome}: ${err instanceof Error ? err.message : String(err)}\n`,
+        `[paperclip] No se pudo inyectar la habilidad de Cursor "${entry.key}" en ${skillsHome}: ${err instanceof Error ? err.message : String(err)}\n`,
       );
     }
   }
@@ -291,7 +291,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   if (runtimeSessionId && !canResumeSession) {
     await onLog(
       "stdout",
-      `[paperclip] Cursor session "${runtimeSessionId}" was saved for cwd "${runtimeSessionCwd}" and will not be resumed in "${cwd}".\n`,
+      `[paperclip] La sesión de Cursor "${runtimeSessionId}" se guardó para el cwd "${runtimeSessionCwd}" y no se reanudará en "${cwd}".\n`,
     );
   }
 
@@ -311,26 +311,26 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       const reason = err instanceof Error ? err.message : String(err);
       await onLog(
         "stdout",
-        `[paperclip] Warning: could not read agent instructions file "${instructionsFilePath}": ${reason}\n`,
+        `[paperclip] Advertencia: no se pudo leer el archivo de instrucciones del agente "${instructionsFilePath}": ${reason}\n`,
       );
     }
   }
   const commandNotes = (() => {
     const notes: string[] = [];
     if (autoTrustEnabled) {
-      notes.push("Auto-added --yolo to bypass interactive prompts.");
+      notes.push("--yolo agregado automáticamente para omitir los prompts interactivos.");
     }
-    notes.push("Prompt is piped to Cursor via stdin.");
+    notes.push("El prompt se envía a Cursor vía stdin.");
     if (!instructionsFilePath) return notes;
     if (instructionsPrefix.length > 0) {
       notes.push(
-        `Loaded agent instructions from ${instructionsFilePath}`,
-        `Prepended instructions + path directive to prompt (relative references from ${instructionsDir}).`,
+        `Instrucciones del agente cargadas desde ${instructionsFilePath}`,
+        `Instrucciones + directiva de ruta antepuestas al prompt (referencias relativas desde ${instructionsDir}).`,
       );
       return notes;
     }
     notes.push(
-      `Configured instructionsFilePath ${instructionsFilePath}, but file could not be read; continuing without injected instructions.`,
+      `instructionsFilePath ${instructionsFilePath} configurado, pero el archivo no se pudo leer; continuando sin instrucciones inyectadas.`,
     );
     return notes;
   })();
@@ -461,7 +461,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
         exitCode: attempt.proc.exitCode,
         signal: attempt.proc.signal,
         timedOut: true,
-        errorMessage: `Timed out after ${timeoutSec}s`,
+        errorMessage: `Se agotó el tiempo de espera después de ${timeoutSec}s`,
         clearSession: clearSessionOnMissingSession,
       };
     }
@@ -481,7 +481,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     const fallbackErrorMessage =
       parsedError ||
       stderrLine ||
-      `Cursor exited with code ${attempt.proc.exitCode ?? -1}`;
+      `Cursor terminó con el código ${attempt.proc.exitCode ?? -1}`;
 
     return {
       exitCode: attempt.proc.exitCode,
@@ -518,7 +518,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   ) {
     await onLog(
       "stdout",
-      `[paperclip] Cursor resume session "${sessionId}" is unavailable; retrying with a fresh session.\n`,
+      `[paperclip] La sesión de reanudación de Cursor "${sessionId}" no está disponible; reintentando con una sesión nueva.\n`,
     );
     const retry = await runAttempt(null);
     return toResult(retry, true);

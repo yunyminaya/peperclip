@@ -155,10 +155,10 @@ function workspaceLabel(workspace: Workspace): string {
   const hasNameLabel = nameLabel.length > 0 && !UuidPattern.test(nameLabel);
   const baseLabel = hasPathLabel ? pathLabel : hasNameLabel ? nameLabel : "";
   if (!baseLabel) {
-    return workspace.isPrimary ? "(no workspace path) (primary)" : "(no workspace path)";
+    return workspace.isPrimary ? "(sin ruta de workspace) (principal)" : "(sin ruta de workspace)";
   }
 
-  return workspace.isPrimary ? `${baseLabel} (primary)` : baseLabel;
+  return workspace.isPrimary ? `${baseLabel} (principal)` : baseLabel;
 }
 
 function useIsMobile(breakpointPx = 768): boolean {
@@ -339,7 +339,8 @@ function ExpandedDirectoryChildren({
 }
 
 /**
- * Project sidebar item: link "Files" that opens the project detail with the Files plugin tab.
+ * Elemento de barra lateral del proyecto: enlace "Archivos" que abre el detalle
+ * del proyecto con la pestaña de plugin Archivos.
  */
 export function FilesLink({ context }: PluginProjectSidebarItemProps) {
   const { data: config, loading: configLoading } = usePluginData<PluginConfig>("plugin-config", {});
@@ -395,13 +396,14 @@ export function FilesLink({ context }: PluginProjectSidebarItemProps) {
           : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
       }`}
     >
-      Files
+      Archivos
     </a>
   );
 }
 
 /**
- * Project detail tab: workspace selector, file tree, and CodeMirror editor.
+ * Pestaña de detalle del proyecto: selector de workspace, árbol de archivos
+ * y editor CodeMirror.
  */
 export function FilesTab({ context }: PluginDetailTabProps) {
   const companyId = context.companyId;
@@ -436,7 +438,7 @@ export function FilesTab({ context }: PluginDetailTabProps) {
   );
   const entries = fileListData?.entries ?? [];
 
-  // Track the `?file=` query parameter across navigations (popstate).
+  // Rastrear el parámetro de consulta `?file=` a través de navegaciones (popstate).
   const [urlFilePath, setUrlFilePath] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return new URLSearchParams(window.location.search).get("file") || null;
@@ -460,7 +462,7 @@ export function FilesTab({ context }: PluginDetailTabProps) {
     lastConsumedFileRef.current = null;
   }, [selectedWorkspace?.id]);
 
-  // When a file path appears (or changes) in the URL and workspace is ready, select it.
+  // Cuando una ruta de archivo aparece (o cambia) en la URL y el workspace está listo, seleccionarla.
   useEffect(() => {
     if (!urlFilePath || !selectedWorkspace) return;
     if (lastConsumedFileRef.current === urlFilePath) return;
@@ -560,7 +562,7 @@ export function FilesTab({ context }: PluginDetailTabProps) {
       });
       loadedContentRef.current = content;
       setIsDirty(false);
-      setSaveMessage("Saved");
+      setSaveMessage("Guardado");
       refreshFileContent();
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : String(error));
@@ -606,12 +608,12 @@ export function FilesTab({ context }: PluginDetailTabProps) {
           style={{ display: isMobile && mobileView === "editor" ? "none" : "flex" }}
         >
           <div className="border-b border-border px-3 py-2 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
-            File Tree
+            Árbol de archivos
           </div>
           <div className="min-h-0 flex-1 overflow-auto p-2">
             {selectedWorkspace ? (
               fileListLoading ? (
-                <p className="px-2 py-3 text-sm text-muted-foreground">Loading files...</p>
+                <p className="px-2 py-3 text-sm text-muted-foreground">Cargando archivos…</p>
               ) : entries.length > 0 ? (
                 <ul className="space-y-0.5">
                   {entries.map((entry) => (
@@ -630,10 +632,10 @@ export function FilesTab({ context }: PluginDetailTabProps) {
                   ))}
                 </ul>
               ) : (
-                <p className="px-2 py-3 text-sm text-muted-foreground">No files found in this workspace.</p>
+                <p className="px-2 py-3 text-sm text-muted-foreground">No se encontraron archivos en este workspace.</p>
               )
             ) : (
-              <p className="px-2 py-3 text-sm text-muted-foreground">Select a workspace to browse files.</p>
+              <p className="px-2 py-3 text-sm text-muted-foreground">Selecciona un workspace para explorar archivos.</p>
             )}
           </div>
         </div>
@@ -649,10 +651,10 @@ export function FilesTab({ context }: PluginDetailTabProps) {
                 style={{ display: isMobile ? "inline-flex" : "none" }}
                 onClick={() => setMobileView("browser")}
               >
-                Back to files
+                Volver a archivos
               </button>
               <div className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">Editor</div>
-              <div className="truncate text-sm text-foreground">{selectedPath ?? "No file selected"}</div>
+              <div className="truncate text-sm text-foreground">{selectedPath ?? "Ningún archivo seleccionado"}</div>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -661,7 +663,7 @@ export function FilesTab({ context }: PluginDetailTabProps) {
                 disabled={!selectedWorkspace || !selectedPath || !isDirty || isSaving}
                 onClick={() => void handleSave()}
               >
-                {isSaving ? "Saving..." : "Save"}
+                {isSaving ? "Guardando…" : "Guardar"}
               </button>
             </div>
           </div>
@@ -672,11 +674,11 @@ export function FilesTab({ context }: PluginDetailTabProps) {
               ) : saveMessage ? (
                 <span className="text-emerald-600">{saveMessage}</span>
               ) : (
-                <span className="text-muted-foreground">Unsaved changes</span>
+                <span className="text-muted-foreground">Cambios sin guardar</span>
               )}
             </div>
           ) : null}
-          {selectedPath && fileContentData?.error && fileContentData.error !== "Missing file context" ? (
+          {selectedPath && fileContentData?.error && fileContentData.error !== "Falta el contexto del archivo" ? (
             <div className="border-b border-border px-4 py-2 text-xs text-destructive">{fileContentData.error}</div>
           ) : null}
           <div ref={editorRef} className="min-h-0 flex-1 overflow-auto overscroll-contain" />
@@ -687,7 +689,7 @@ export function FilesTab({ context }: PluginDetailTabProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Comment Annotation: renders detected file links below each comment
+// Anotación de comentario: renderiza enlaces de archivo detectados debajo de cada comentario
 // ---------------------------------------------------------------------------
 
 type PluginConfig = {
@@ -696,12 +698,12 @@ type PluginConfig = {
 };
 
 /**
- * Per-comment annotation showing file-path-like links extracted from the
- * comment body. Each link navigates to the project Files tab with the
- * matching path pre-selected.
+ * Anotación por comentario que muestra enlaces tipo ruta de archivo extraídos
+ * del cuerpo del comentario. Cada enlace navega a la pestaña Archivos del
+ * proyecto con la ruta coincidente preseleccionada.
  *
- * Respects the `commentAnnotationMode` instance config — hidden when mode
- * is `"contextMenu"` or `"none"`.
+ * Respeta la configuración de instancia `commentAnnotationMode`: se oculta cuando el
+ * modo es `"contextMenu"` o `"none"`.
  */
 function buildFileBrowserHref(prefix: string, projectId: string | null, filePath: string): string {
   if (!projectId) return "#";
@@ -743,7 +745,7 @@ export function CommentFileLinks({ context }: PluginCommentAnnotationProps) {
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Files:</span>
+      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Archivos:</span>
       {data.links.map((link) => {
         const href = buildFileBrowserHref(prefix, projectId, link);
         return (
@@ -752,7 +754,7 @@ export function CommentFileLinks({ context }: PluginCommentAnnotationProps) {
             href={href}
             onClick={(e) => navigateToFileBrowser(href, e)}
             className="inline-flex items-center rounded-md border border-border bg-accent/30 px-1.5 py-0.5 text-xs font-mono text-primary hover:bg-accent/60 hover:underline transition-colors"
-            title={`Open ${link} in file browser`}
+            title={`Abrir ${link} en el explorador de archivos`}
           >
             {link}
           </a>
@@ -763,16 +765,17 @@ export function CommentFileLinks({ context }: PluginCommentAnnotationProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Comment Context Menu Item: "Open in Files" action per comment
+// Elemento de menú contextual de comentario: acción "Abrir en archivos" por comentario
 // ---------------------------------------------------------------------------
 
 /**
- * Per-comment context menu item that appears in the comment "more" (⋮) menu.
- * Extracts file paths from the comment body and, if any are found, renders
- * a button to open the first file in the project Files tab.
+ * Elemento de menú contextual por comentario que aparece en el menú "más" (⋮)
+ * del comentario. Extrae rutas de archivo del cuerpo del comentario y, si se
+ * encuentra alguna, renderiza un botón para abrir el primer archivo en la
+ * pestaña Archivos del proyecto.
  *
- * Respects the `commentAnnotationMode` instance config — hidden when mode
- * is `"annotation"` or `"none"`.
+ * Respeta la configuración de instancia `commentAnnotationMode`: se oculta cuando el
+ * modo es `"annotation"` o `"none"`.
  */
 export function CommentOpenFiles({ context }: PluginCommentContextMenuItemProps) {
   const { data: config } = usePluginData<PluginConfig>("plugin-config", {});
@@ -793,7 +796,7 @@ export function CommentOpenFiles({ context }: PluginCommentContextMenuItemProps)
   return (
     <div>
       <div className="px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-        Files
+        Archivos
       </div>
       {data.links.map((link) => {
         const href = buildFileBrowserHref(prefix, projectId, link);
@@ -804,7 +807,7 @@ export function CommentOpenFiles({ context }: PluginCommentContextMenuItemProps)
             href={href}
             onClick={(e) => navigateToFileBrowser(href, e)}
             className="flex w-full items-center gap-2 rounded px-2 py-1 text-xs text-foreground hover:bg-accent transition-colors"
-            title={`Open ${link} in file browser`}
+            title={`Abrir ${link} en el explorador de archivos`}
           >
             <span className="truncate font-mono">{fileName}</span>
           </a>

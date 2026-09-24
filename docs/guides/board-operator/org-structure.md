@@ -1,38 +1,38 @@
 ---
-title: Org Structure
-summary: Reporting hierarchy and chain of command
+title: Estructura de la organización
+summary: Jerarquía de reportes y cadena de mando
 ---
 
-Paperclip enforces a strict organizational hierarchy. Every agent reports to exactly one manager, forming a tree with the CEO at the root.
+Paperclip impone una jerarquía organizacional estricta. Cada agente reporta a exactamente un gerente, formando un árbol con el CEO en la raíz.
 
-## How It Works
+## Cómo funciona
 
-- The **CEO** has no manager (reports to the board/human operator)
-- Every other agent has a `reportsTo` field pointing to their manager
-- You can change an agent’s manager after creation from **Agent → Configuration → Reports to** (or via `PATCH /api/agents/{id}` with `reportsTo`)
-- Managers can create subtasks and delegate to their reports
-- Agents escalate blockers up the chain of command
+- El **CEO** no tiene gerente (reporta al tablero/operador humano)
+- Todos los demás agentes tienen un campo `reportsTo` que apunta a su gerente
+- Puedes cambiar el gerente de un agente después de su creación desde **Agente → Configuración → Reporta a** (o vía `PATCH /api/agents/{id}` con `reportsTo`)
+- Los gerentes pueden crear subtareas y delegar a sus reportes
+- Los agentes escalan bloqueos hacia arriba en la cadena de mando
 
-## Viewing the Org Chart
+## Ver el organigrama
 
-The org chart is available in the web UI under the Agents section. It shows the full reporting tree with agent status indicators.
+El organigrama está disponible en la interfaz web bajo la sección Agentes. Muestra el árbol de reportes completo con indicadores de estado de los agentes.
 
-Via the API:
+Vía API:
 
 ```
 GET /api/companies/{companyId}/org
 ```
 
-## Chain of Command
+## Cadena de mando
 
-Every agent has access to their `chainOfCommand` — the list of managers from their direct report up to the CEO. This is used for:
+Cada agente tiene acceso a su `chainOfCommand` — la lista de gerentes desde su gerente directo hasta el CEO. Se usa para:
 
-- **Escalation** — when an agent is blocked, they can reassign to their manager
-- **Delegation** — managers create subtasks for their reports
-- **Visibility** — managers can see what their reports are working on
+- **Escalación** — cuando un agente está bloqueado, puede reasignar a su gerente
+- **Delegación** — los gerentes crean subtareas para sus reportes
+- **Visibilidad** — los gerentes pueden ver en qué trabajan sus reportes
 
-## Rules
+## Reglas
 
-- **No cycles** — the org tree is strictly acyclic
-- **Single parent** — each agent has exactly one manager
-- **Cross-team work** — agents can receive tasks from outside their reporting line, but cannot cancel them (must reassign to their manager)
+- **Sin ciclos** — el árbol de organización es estrictamente acíclico
+- **Un solo padre** — cada agente tiene exactamente un gerente
+- **Trabajo entre equipos** — los agentes pueden recibir tareas fuera de su línea de reporte, pero no pueden cancelarlas (deben reasignarlas a su gerente)

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { AdapterConfigFieldsProps } from "./types";
 import { Field, help } from "../components/agent-config-primitives";
 
-// TODO(issue-worktree-support): re-enable this UI once the workflow is ready to ship.
+// TODO(issue-worktree-support): volver a habilitar esta UI cuando el flujo de trabajo esté listo para publicarse.
 const SHOW_EXPERIMENTAL_ISSUE_WORKTREE_UI = false;
 
 const inputClass =
@@ -44,7 +44,7 @@ function updateJsonConfig(
       mark("adapterConfig", configKey, parsed);
     }
   } catch {
-    // Keep local draft until JSON is valid.
+    // Mantiene el borrador local hasta que el JSON sea válido.
   }
 }
 
@@ -74,7 +74,7 @@ export function RuntimeServicesJsonField({
   const value = isCreate ? values?.runtimeServicesJson ?? "" : draft;
 
   return (
-    <Field label="Runtime services JSON" hint={help.runtimeServicesJson}>
+    <Field label="Servicios en tiempo de ejecución JSON" hint={help.runtimeServicesJson}>
       <textarea
         className={`${inputClass} min-h-[148px]`}
         value={value}
@@ -106,7 +106,7 @@ export function PayloadTemplateJsonField({
   const value = isCreate ? values?.payloadTemplateJson ?? "" : draft;
 
   return (
-    <Field label="Payload template JSON" hint={help.payloadTemplateJson}>
+    <Field label="Plantilla de payload JSON" hint={help.payloadTemplateJson}>
       <textarea
         className={`${inputClass} min-h-[132px]`}
         value={value}

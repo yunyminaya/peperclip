@@ -37,7 +37,7 @@ function getStoredOrder(): string[] {
   try {
     const raw = localStorage.getItem(ORDER_STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
+  } catch { /* ignorar */ }
   return [];
 }
 
@@ -45,7 +45,7 @@ function saveOrder(ids: string[]) {
   localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(ids));
 }
 
-/** Sort companies by stored order, appending any new ones at the end. */
+/** Ordena las empresas según el orden guardado, agregando las nuevas al final. */
 function sortByStoredOrder(companies: Company[]): Company[] {
   const order = getStoredOrder();
   if (order.length === 0) return companies;
@@ -60,7 +60,7 @@ function sortByStoredOrder(companies: Company[]): Company[] {
       byId.delete(id);
     }
   }
-  // Append any companies not in stored order
+  // Agrega las empresas que no están en el orden guardado
   for (const c of byId.values()) {
     sorted.push(c);
   }
@@ -108,7 +108,7 @@ function SortableCompanyItem({
             }}
             className="relative flex items-center justify-center group overflow-visible"
           >
-            {/* Selection indicator pill */}
+            {/* Pastilla indicadora de selección */}
             <div
               className={cn(
                 "absolute left-[-14px] w-1 rounded-r-full bg-foreground transition-[height] duration-150",
@@ -195,14 +195,14 @@ export function CompanyRail() {
     return result;
   }, [companyIds, sidebarBadgeQueries]);
 
-  // Maintain sorted order in local state, synced from companies + localStorage
+  // Mantiene el orden en el estado local, sincronizado desde companies + localStorage
   const [orderedIds, setOrderedIds] = useState<string[]>(() =>
     sortByStoredOrder(sidebarCompanies).map((c) => c.id)
   );
 
-  // Re-sync orderedIds from localStorage whenever companies changes.
-  // Handles initial data load (companies starts as [] before query resolves)
-  // and subsequent refetches triggered by live updates.
+  // Vuelve a sincronizar orderedIds desde localStorage cada vez que cambian las empresas.
+  // Maneja la carga inicial de datos (companies empieza como [] antes de que la consulta se resuelva)
+  // y las recargas posteriores provocadas por actualizaciones en vivo.
   useEffect(() => {
     if (sidebarCompanies.length === 0) {
       setOrderedIds([]);
@@ -211,20 +211,20 @@ export function CompanyRail() {
     setOrderedIds(sortByStoredOrder(sidebarCompanies).map((c) => c.id));
   }, [sidebarCompanies]);
 
-  // Sync order across tabs via the native storage event
+  // Sincroniza el orden entre pestañas mediante el evento nativo de storage
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.key !== ORDER_STORAGE_KEY) return;
       try {
         const ids: string[] = e.newValue ? JSON.parse(e.newValue) : [];
         setOrderedIds(ids);
-      } catch { /* ignore malformed data */ }
+      } catch { /* ignorar datos malformados */ }
     };
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
-  // Re-derive when companies change (new company added/removed)
+  // Recalcula cuando cambian las empresas (empresa agregada/eliminada)
   const orderedCompanies = useMemo(() => {
     const byId = new Map(sidebarCompanies.map((c) => [c.id, c]));
     const result: Company[] = [];
@@ -235,14 +235,14 @@ export function CompanyRail() {
         byId.delete(id);
       }
     }
-    // Append any new companies not yet in our order
+    // Agrega las empresas nuevas que aún no están en nuestro orden
     for (const c of byId.values()) {
       result.push(c);
     }
     return result;
   }, [sidebarCompanies, orderedIds]);
 
-  // Require 8px of movement before starting a drag to avoid interfering with clicks
+  // Requiere 8px de movimiento antes de iniciar el arrastre para no interferir con los clics
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
@@ -268,12 +268,12 @@ export function CompanyRail() {
 
   return (
     <div className="flex flex-col items-center w-[72px] shrink-0 h-full bg-background border-r border-border">
-      {/* Paperclip icon - aligned with top sections (implied line, no visible border) */}
+      {/* Ícono de Paperclip, alineado con las secciones superiores (línea implícita, sin borde visible) */}
       <div className="flex items-center justify-center h-12 w-full shrink-0">
         <Paperclip className="h-5 w-5 text-foreground" />
       </div>
 
-      {/* Company list */}
+      {/* Lista de empresas */}
       <div className="flex-1 flex flex-col items-center gap-2 py-3 w-full overflow-y-auto overflow-x-hidden scrollbar-none">
         <DndContext
           sensors={sensors}
@@ -303,23 +303,23 @@ export function CompanyRail() {
         </DndContext>
       </div>
 
-      {/* Separator before add button */}
+      {/* Separador antes del botón de agregar */}
       <div className="w-8 h-px bg-border mx-auto shrink-0" />
 
-      {/* Add company button */}
+      {/* Botón para agregar empresa */}
       <div className="flex items-center justify-center py-2 shrink-0">
         <Tooltip delayDuration={300}>
           <TooltipTrigger asChild>
             <button
               onClick={() => openOnboarding()}
               className="flex items-center justify-center w-11 h-11 rounded-[22px] hover:rounded-[14px] border-2 border-dashed border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground transition-[border-color,color,border-radius] duration-150"
-              aria-label="Add company"
+              aria-label="Agregar empresa"
             >
               <Plus className="h-5 w-5" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="right" sideOffset={8}>
-            <p>Add company</p>
+            <p>Agregar empresa</p>
           </TooltipContent>
         </Tooltip>
       </div>

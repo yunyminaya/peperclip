@@ -19,26 +19,36 @@ const surfaceOptions: Array<{
 }> = [
   {
     id: "detail",
-    label: "Run Detail",
-    eyebrow: "Full transcript",
-    description: "The long-form run page with the `Nice | Raw` toggle and the most inspectable transcript view.",
+    label: "Detalle de la ejecución",
+    eyebrow: "Transcripción completa",
+    description: "La página de ejecución de formato largo con el interruptor `Bonita | Cruda` y la vista de transcripción más inspeccionable.",
     icon: MonitorCog,
   },
   {
     id: "live",
-    label: "Issue Widget",
-    eyebrow: "Live stream",
-    description: "The issue-detail live run widget, optimized for following an active run without leaving the task page.",
+    label: "Widget del issue",
+    eyebrow: "Transmisión en vivo",
+    description: "El widget de ejecución en vivo del detalle del issue, optimizado para seguir una ejecución activa sin salir de la página de la tarea.",
     icon: RadioTower,
   },
   {
     id: "dashboard",
-    label: "Dashboard Card",
-    eyebrow: "Dense card",
-    description: "The active-agents dashboard card, tuned for compact scanning while keeping the same transcript language.",
+    label: "Tarjeta del panel",
+    eyebrow: "Tarjeta densa",
+    description: "La tarjeta del panel de agentes activos, ajustada para un escaneo compacto manteniendo el mismo lenguaje de transcripción.",
     icon: PanelsTopLeft,
   },
 ];
+
+/** Etiquetas visibles en español para los valores internos de modo/densidad (los valores no cambian). */
+const transcriptModeLabels: Record<TranscriptMode, string> = {
+  nice: "Bonita",
+  raw: "Cruda",
+};
+const transcriptDensityLabels: Record<TranscriptDensity, string> = {
+  comfortable: "Cómoda",
+  compact: "Compacta",
+};
 
 function previewEntries(surface: SurfaceId) {
   if (surface === "dashboard") {
@@ -64,7 +74,7 @@ function RunDetailPreview({
       <div className="border-b border-border/60 bg-background/90 px-5 py-4">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" className="uppercase tracking-[0.18em] text-[10px]">
-            Run Detail
+            Detalle del run
           </Badge>
           <StatusBadge status={streaming ? "running" : "succeeded"} />
           <span className="text-xs text-muted-foreground">
@@ -72,7 +82,7 @@ function RunDetailPreview({
           </span>
         </div>
         <div className="mt-2 text-sm font-medium">
-          Transcript ({runTranscriptFixtureEntries.length})
+          Transcripción ({runTranscriptFixtureEntries.length})
         </div>
       </div>
       <div className="max-h-[720px] overflow-y-auto bg-[radial-gradient(circle_at_top_left,rgba(8,145,178,0.08),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(245,158,11,0.10),transparent_28%)] p-5">
@@ -100,10 +110,10 @@ function LiveWidgetPreview({
     <div className="overflow-hidden rounded-xl border border-cyan-500/25 bg-background/85 shadow-[0_20px_50px_rgba(6,182,212,0.10)]">
       <div className="border-b border-border/60 bg-cyan-500/[0.05] px-5 py-4">
         <div className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-300">
-          Live Runs
+          Runs en vivo
         </div>
         <div className="mt-1 text-xs text-muted-foreground">
-          Compact live transcript stream for the issue detail page.
+          Transmisión de transcripción en vivo compacta para la página de detalle del issue.
         </div>
       </div>
       <div className="px-5 py-4">
@@ -119,7 +129,7 @@ function LiveWidgetPreview({
             </div>
           </div>
           <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground">
-            Open run
+            Abrir run
             <ExternalLink className="h-3 w-3" />
           </span>
         </div>
@@ -165,7 +175,7 @@ function DashboardPreview({
                 <Identity name={runTranscriptFixtureMeta.agentName} size="sm" />
               </div>
               <div className="mt-2 text-[11px] text-muted-foreground">
-                {streaming ? "Live now" : "Finished 2m ago"}
+                {streaming ? "En vivo ahora" : "Terminó hace 2 min"}
               </div>
             </div>
             <span className="rounded-full border border-border/70 bg-background/70 px-2 py-1 text-[10px] text-muted-foreground">
@@ -208,9 +218,9 @@ export function RunTranscriptUxLab() {
                 <FlaskConical className="h-3.5 w-3.5" />
                 UX Lab
               </div>
-              <h1 className="mt-4 text-2xl font-semibold tracking-tight">Run Transcript Fixtures</h1>
+              <h1 className="mt-4 text-2xl font-semibold tracking-tight">Muestras de transcripción de ejecuciones</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Built from a real Paperclip development run, then sanitized so no secrets, local paths, or environment details survive into the fixture.
+                Construidas a partir de un run de desarrollo real de Paperclip, luego sanitizadas para que no sobreviva ningún secreto, ruta local ni detalle del entorno en la muestra.
               </p>
             </div>
 
@@ -263,7 +273,7 @@ export function RunTranscriptUxLab() {
 
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className="rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.18em]">
-                  Source run {runTranscriptFixtureMeta.sourceRunId.slice(0, 8)}
+                  Run de origen {runTranscriptFixtureMeta.sourceRunId.slice(0, 8)}
                 </Badge>
                 <Badge variant="outline" className="rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.18em]">
                   {runTranscriptFixtureMeta.issueIdentifier}
@@ -273,10 +283,10 @@ export function RunTranscriptUxLab() {
 
             <div className="mb-5 flex flex-wrap items-center gap-2">
               <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Controls
+                Controles
               </span>
               <div className="inline-flex rounded-full border border-border/70 bg-background/80 p-1">
-                {(["nice", "raw"] as const).map((mode) => (
+                {((["nice", "raw"] as const)).map((mode) => (
                   <button
                     key={mode}
                     type="button"
@@ -286,7 +296,7 @@ export function RunTranscriptUxLab() {
                     )}
                     onClick={() => setDetailMode(mode)}
                   >
-                    {mode}
+                    {transcriptModeLabels[mode]}
                   </button>
                 ))}
               </div>
@@ -301,7 +311,7 @@ export function RunTranscriptUxLab() {
                     )}
                     onClick={() => setDensity(nextDensity)}
                   >
-                    {nextDensity}
+                    {transcriptDensityLabels[nextDensity]}
                   </button>
                 ))}
               </div>
@@ -311,7 +321,7 @@ export function RunTranscriptUxLab() {
                 className="rounded-full"
                 onClick={() => setStreaming((value) => !value)}
               >
-                {streaming ? "Show settled state" : "Show streaming state"}
+                {streaming ? "Mostrar estado final" : "Mostrar estado de transmisión"}
               </Button>
             </div>
 

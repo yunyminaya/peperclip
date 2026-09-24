@@ -42,45 +42,45 @@ const ADVANCED_ADAPTER_OPTIONS: Array<{
     value: "claude_local",
     label: "Claude Code",
     icon: Sparkles,
-    desc: "Local Claude agent",
+    desc: "Agente local de Claude",
     recommended: true,
   },
   {
     value: "codex_local",
     label: "Codex",
     icon: Code,
-    desc: "Local Codex agent",
+    desc: "Agente local de Codex",
     recommended: true,
   },
   {
     value: "gemini_local",
     label: "Gemini CLI",
     icon: Gem,
-    desc: "Local Gemini agent",
+    desc: "Agente local de Gemini",
   },
   {
     value: "opencode_local",
     label: "OpenCode",
     icon: OpenCodeLogoIcon,
-    desc: "Local multi-provider agent",
+    desc: "Agente local multiproveedor",
   },
   {
     value: "pi_local",
     label: "Pi",
     icon: Terminal,
-    desc: "Local Pi agent",
+    desc: "Agente local de Pi",
   },
   {
     value: "cursor",
     label: "Cursor",
     icon: MousePointer2,
-    desc: "Local Cursor agent",
+    desc: "Agente local de Cursor",
   },
   {
     value: "openclaw_gateway",
     label: "OpenClaw Gateway",
     icon: Bot,
-    desc: "Invoke OpenClaw via gateway protocol",
+    desc: "Invocar OpenClaw mediante el protocolo gateway",
   },
 ];
 
@@ -102,8 +102,8 @@ export function NewAgentDialog() {
     closeNewAgent();
     openNewIssue({
       assigneeAgentId: ceoAgent?.id,
-      title: "Create a new agent",
-      description: "(type in what kind of agent you want here)",
+      title: "Crear un nuevo agente",
+      description: "(escribe aquí qué tipo de agente quieres)",
     });
   }
 
@@ -131,9 +131,9 @@ export function NewAgentDialog() {
         showCloseButton={false}
         className="sm:max-w-md p-0 gap-0 overflow-hidden"
       >
-        {/* Header */}
+        {/* Encabezado */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
-          <span className="text-sm text-muted-foreground">Add a new agent</span>
+          <span className="text-sm text-muted-foreground">Agregar un nuevo agente</span>
           <Button
             variant="ghost"
             size="icon-xs"
@@ -150,30 +150,30 @@ export function NewAgentDialog() {
         <div className="p-6 space-y-6">
           {!showAdvancedCards ? (
             <>
-              {/* Recommendation */}
+              {/* Recomendación */}
               <div className="text-center space-y-3">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent">
                   <Sparkles className="h-6 w-6 text-foreground" />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  We recommend letting your CEO handle agent setup — they know the
-                  org structure and can configure reporting, permissions, and
-                  adapters.
+                  Te recomendamos dejar que tu CEO configure los agentes: conoce
+                  el organigrama y puede configurar reportes, permisos y
+                  adaptadores.
                 </p>
               </div>
 
               <Button className="w-full" size="lg" onClick={handleAskCeo}>
                 <Bot className="h-4 w-4 mr-2" />
-                Ask the CEO to create a new agent
+                Pedir al CEO que cree un nuevo agente
               </Button>
 
-              {/* Advanced link */}
+              {/* Enlace avanzado */}
               <div className="text-center">
                 <button
                   className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
                   onClick={handleAdvancedConfig}
                 >
-                  I want advanced configuration myself
+                  Quiero la configuración avanzada yo mismo
                 </button>
               </div>
             </>
@@ -185,10 +185,10 @@ export function NewAgentDialog() {
                   onClick={() => setShowAdvancedCards(false)}
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
-                  Back
+                  Volver
                 </button>
                 <p className="text-sm text-muted-foreground">
-                  Choose your adapter type for advanced setup.
+                  Elige tu tipo de adaptador para la configuración avanzada.
                 </p>
               </div>
 
@@ -203,7 +203,7 @@ export function NewAgentDialog() {
                   >
                     {opt.recommended && (
                       <span className="absolute -top-1.5 right-1.5 bg-green-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none">
-                        Recommended
+                        Recomendado
                       </span>
                     )}
                     <opt.icon className="h-4 w-4" />

@@ -39,7 +39,7 @@ interface CommentThreadProps {
   issueStatus?: string;
   agentMap?: Map<string, Agent>;
   imageUploadHandler?: (file: File) => Promise<string>;
-  /** Callback to attach an image file to the parent issue (not inline in a comment). */
+  /** Callback para adjuntar un archivo de imagen al issue padre (no dentro de un comentario). */
   onAttachImage?: (file: File) => Promise<void>;
   draftKey?: string;
   liveRunSlot?: React.ReactNode;
@@ -68,7 +68,7 @@ function saveDraft(draftKey: string, value: string) {
       localStorage.removeItem(draftKey);
     }
   } catch {
-    // Ignore localStorage failures.
+    // Ignorar fallos de localStorage.
   }
 }
 
@@ -76,7 +76,7 @@ function clearDraft(draftKey: string) {
   try {
     localStorage.removeItem(draftKey);
   } catch {
-    // Ignore localStorage failures.
+    // Ignorar fallos de localStorage.
   }
 }
 
@@ -101,7 +101,7 @@ function CopyMarkdownButton({ text }: { text: string }) {
     <button
       type="button"
       className="text-muted-foreground hover:text-foreground transition-colors"
-      title="Copy as markdown"
+      title="Copiar como markdown"
       onClick={() => {
         navigator.clipboard.writeText(text).then(() => {
           setCopied(true);
@@ -132,7 +132,7 @@ const TimelineList = memo(function TimelineList({
   highlightCommentId?: string | null;
 }) {
   if (timeline.length === 0) {
-    return <p className="text-sm text-muted-foreground">No comments or runs yet.</p>;
+    return <p className="text-sm text-muted-foreground">Aún no hay comentarios ni ejecuciones.</p>;
   }
 
   return (
@@ -154,7 +154,7 @@ const TimelineList = memo(function TimelineList({
                 </span>
               </div>
               <div className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground">Run</span>
+                <span className="text-muted-foreground">Ejecución</span>
                 <Link
                   to={`/agents/${run.agentId}/runs/${run.runId}`}
                   className="inline-flex items-center rounded-md border border-border bg-accent/40 px-2 py-1 font-mono text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
@@ -184,7 +184,7 @@ const TimelineList = memo(function TimelineList({
                   />
                 </Link>
               ) : (
-                <Identity name="You" size="sm" />
+                <Identity name="Tú" size="sm" />
               )}
               <span className="flex items-center gap-1.5">
                 {companyId ? (
@@ -238,11 +238,11 @@ const TimelineList = memo(function TimelineList({
                     to={`/agents/${comment.runAgentId}/runs/${comment.runId}`}
                     className="inline-flex items-center rounded-md border border-border bg-accent/30 px-2 py-1 text-[10px] font-mono text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
                   >
-                    run {comment.runId.slice(0, 8)}
+                    ejecución {comment.runId.slice(0, 8)}
                   </Link>
                 ) : (
                   <span className="inline-flex items-center rounded-md border border-border bg-accent/30 px-2 py-1 text-[10px] font-mono text-muted-foreground">
-                    run {comment.runId.slice(0, 8)}
+                    ejecución {comment.runId.slice(0, 8)}
                   </span>
                 )}
               </div>
@@ -304,7 +304,7 @@ export function CommentThread({
     });
   }, [comments, linkedRuns]);
 
-  // Build mention options from agent map (exclude terminated agents)
+  // Construir opciones de mención desde el mapa de agentes (excluir agentes terminados)
   const mentions = useMemo<MentionOption[]>(() => {
     if (providedMentions) return providedMentions;
     if (!agentMap) return [];
@@ -342,19 +342,19 @@ export function CommentThread({
     setReassignTarget(effectiveSuggestedAssigneeValue);
   }, [effectiveSuggestedAssigneeValue]);
 
-  // Scroll to comment when URL hash matches #comment-{id}
+  // Desplazar al comentario cuando el hash de la URL coincida con #comment-{id}
   useEffect(() => {
     const hash = location.hash;
     if (!hash.startsWith("#comment-") || comments.length === 0) return;
     const commentId = hash.slice("#comment-".length);
-    // Only scroll once per hash
+    // Desplazar solo una vez por hash
     if (hasScrolledRef.current) return;
     const el = document.getElementById(`comment-${commentId}`);
     if (el) {
       hasScrolledRef.current = true;
       setHighlightCommentId(commentId);
       el.scrollIntoView({ behavior: "smooth", block: "center" });
-      // Clear highlight after animation
+      // Quitar el resaltado después de la animación
       const timer = setTimeout(() => setHighlightCommentId(null), 3000);
       return () => clearTimeout(timer);
     }
@@ -401,7 +401,7 @@ export function CommentThread({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold">Comments &amp; Runs ({timeline.length})</h3>
+      <h3 className="text-sm font-semibold">Comentarios y ejecuciones ({timeline.length})</h3>
 
       <TimelineList
         timeline={timeline}
@@ -418,7 +418,7 @@ export function CommentThread({
           ref={editorRef}
           value={body}
           onChange={setBody}
-          placeholder="Leave a comment..."
+          placeholder="Deja un comentario..."
           mentions={mentions}
           onSubmit={handleSubmit}
           imageUploadHandler={imageUploadHandler}
@@ -439,7 +439,7 @@ export function CommentThread({
                 size="icon-sm"
                 onClick={() => attachInputRef.current?.click()}
                 disabled={attaching}
-                title="Attach image"
+                title="Adjuntar imagen"
               >
                 <Paperclip className="h-4 w-4" />
               </Button>
@@ -452,20 +452,20 @@ export function CommentThread({
               onChange={(e) => setReopen(e.target.checked)}
               className="rounded border-border"
             />
-            Re-open
+            Reabrir
           </label>
           {enableReassign && reassignOptions.length > 0 && (
             <InlineEntitySelector
               value={reassignTarget}
               options={reassignOptions}
-              placeholder="Assignee"
-              noneLabel="No assignee"
-              searchPlaceholder="Search assignees..."
-              emptyMessage="No assignees found."
+              placeholder="Responsable"
+              noneLabel="Sin responsable"
+              searchPlaceholder="Buscar responsables..."
+              emptyMessage="No se encontraron responsables."
               onChange={setReassignTarget}
               className="text-xs h-8"
               renderTriggerValue={(option) => {
-                if (!option) return <span className="text-muted-foreground">Assignee</span>;
+                if (!option) return <span className="text-muted-foreground">Responsable</span>;
                 const agentId = option.id.startsWith("agent:") ? option.id.slice("agent:".length) : null;
                 const agent = agentId ? agentMap?.get(agentId) : null;
                 return (
@@ -493,7 +493,7 @@ export function CommentThread({
             />
           )}
           <Button size="sm" disabled={!canSubmit} onClick={handleSubmit}>
-            {submitting ? "Posting..." : "Comment"}
+            {submitting ? "Publicando…" : "Comentar"}
           </Button>
         </div>
       </div>

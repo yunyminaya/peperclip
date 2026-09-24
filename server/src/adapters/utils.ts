@@ -1,6 +1,7 @@
-// Re-export everything from the shared adapter-utils/server-utils package.
-// This file is kept as a convenience shim so existing in-tree
-// imports (process/, http/, heartbeat.ts) don't need rewriting.
+// Reexportar todo del paquete compartido adapter-utils/server-utils.
+// Este archivo se mantiene como un shim de conveniencia para que los
+// imports existentes dentro del árbol (process/, http/, heartbeat.ts)
+// no necesiten reescribirse.
 import { logger } from "../middleware/logger.js";
 export {
   type RunProcessResult,
@@ -24,7 +25,7 @@ export {
   ensureCommandResolvable,
 } from "@paperclipai/adapter-utils/server-utils";
 
-// Re-export runChildProcess with the server's pino logger wired in.
+// Reexportar runChildProcess con el logger pino del servidor conectado.
 import { runChildProcess as _runChildProcess } from "@paperclipai/adapter-utils/server-utils";
 import type { RunProcessResult } from "@paperclipai/adapter-utils/server-utils";
 

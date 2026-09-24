@@ -9,23 +9,23 @@ export function timeAgo(date: Date | string): string {
   const then = new Date(date).getTime();
   const seconds = Math.round((now - then) / 1000);
 
-  if (seconds < MINUTE) return "just now";
+  if (seconds < MINUTE) return "ahora mismo";
   if (seconds < HOUR) {
     const m = Math.floor(seconds / MINUTE);
-    return `${m}m ago`;
+    return `hace ${m} min`;
   }
   if (seconds < DAY) {
     const h = Math.floor(seconds / HOUR);
-    return `${h}h ago`;
+    return `hace ${h} h`;
   }
   if (seconds < WEEK) {
     const d = Math.floor(seconds / DAY);
-    return `${d}d ago`;
+    return `hace ${d} d`;
   }
   if (seconds < MONTH) {
     const w = Math.floor(seconds / WEEK);
-    return `${w}w ago`;
+    return `hace ${w} sem`;
   }
   const mo = Math.floor(seconds / MONTH);
-  return `${mo}mo ago`;
+  return `hace ${mo} meses`;
 }

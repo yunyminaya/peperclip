@@ -1,28 +1,31 @@
 /**
- * PluginLoader — discovery, installation, and runtime activation of plugins.
+ * PluginLoader — descubrimiento, instalación y activación en tiempo de
+ * ejecución de plugins.
  *
- * This service is the entry point for the plugin system's I/O boundary:
+ * Este servicio es el punto de entrada del límite de E/S del sistema de
+ * plugins:
  *
- * 1. **Discovery** — Scans the local plugin directory
- *    (`~/.paperclip/plugins/`) and `node_modules` for packages matching
- *    the `paperclip-plugin-*` naming convention. Aggregates results with
- *    path-based deduplication.
+ * 1. **Descubrimiento** — Escanea el directorio local de plugins
+ *    (`~/.paperclip/plugins/`) y `node_modules` buscando paquetes que
+ *    coincidan con la convención de nombres `paperclip-plugin-*`. Agrega
+ *    resultados con desduplicación basada en rutas.
  *
- * 2. **Installation** — `installPlugin()` downloads from npm (or reads a
- *    local path), validates the manifest, checks capability consistency,
- *    and persists the install record.
+ * 2. **Instalación** — `installPlugin()` descarga desde npm (o lee una
+ *    ruta local), valida el manifiesto, comprueba la consistencia de
+ *    capacidades y persiste el registro de instalación.
  *
- * 3. **Runtime activation** — `activatePlugin()` wires up a loaded plugin
- *    with all runtime services: resolves its entrypoint, builds
- *    capability-gated host handlers, spawns a worker process, syncs job
- *    declarations, registers event subscriptions, and discovers tools.
+ * 3. **Activación en tiempo de ejecución** — `activatePlugin()` conecta un
+ *    plugin cargado con todos los servicios de runtime: resuelve su
+ *    entrypoint, construye manejadores host con capacidades restringidas,
+ *    genera un proceso worker, sincroniza declaraciones de trabajos,
+ *    registra suscripciones de eventos y descubre herramientas.
  *
- * 4. **Shutdown** — `shutdownAll()` gracefully stops all active workers
- *    and unregisters runtime hooks.
+ * 4. **Apagado** — `shutdownAll()` detiene elegantemente todos los workers
+ *    activos y desregistra los hooks de runtime.
  *
- * @see PLUGIN_SPEC.md §8 — Plugin Discovery
- * @see PLUGIN_SPEC.md §10 — Package Contract
- * @see PLUGIN_SPEC.md §12 — Process Model
+ * @see PLUGIN_SPEC.md §8 — Descubrimiento de plugins
+ * @see PLUGIN_SPEC.md §10 — Contrato de paquete
+ * @see PLUGIN_SPEC.md §12 — Modelo de procesos
  */
 import { existsSync } from "node:fs";
 import { readdir, readFile, rm, stat } from "node:fs/promises";
@@ -53,22 +56,22 @@ const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ---------------------------------------------------------------------------
-// Constants
+// Constantes
 // ---------------------------------------------------------------------------
 
 /**
- * Naming convention for npm-published Paperclip plugins.
- * Packages matching this pattern are considered Paperclip plugins.
+ * Convención de nombres para plugins Paperclip publicados en npm.
+ * Los paquetes que coincidan con este patrón se consideran plugins Paperclip.
  *
- * @see PLUGIN_SPEC.md §10 — Package Contract
+ * @see PLUGIN_SPEC.md §10 — Contrato de paquete
  */
 export const NPM_PLUGIN_PACKAGE_PREFIX = "paperclip-plugin-";
 
 /**
- * Default local plugin directory.  The loader scans this directory for
- * locally-installed plugin packages.
+ * Directorio local predeterminado de plugins. El cargador escanea este
+ * directorio buscando paquetes de plugins instalados localmente.
  *
- * @see PLUGIN_SPEC.md §8.1 — On-Disk Layout
+ * @see PLUGIN_SPEC.md §8.1 — Disposición en disco
  */
 export const DEFAULT_LOCAL_PLUGIN_DIR = path.join(
   os.homedir(),
@@ -79,34 +82,35 @@ export const DEFAULT_LOCAL_PLUGIN_DIR = path.join(
 const DEV_TSX_LOADER_PATH = path.resolve(__dirname, "../../../cli/node_modules/tsx/dist/loader.mjs");
 
 // ---------------------------------------------------------------------------
-// Discovery result types
+// Tipos de resultado de descubrimiento
 // ---------------------------------------------------------------------------
 
 /**
- * A plugin package found during discovery from any source.
+ * Un paquete de plugin encontrado durante el descubrimiento desde cualquier
+ * fuente.
  */
 export interface DiscoveredPlugin {
-  /** Absolute path to the root of the npm package directory. */
+  /** Ruta absoluta a la raíz del directorio del paquete npm. */
   packagePath: string;
-  /** The npm package name as declared in package.json. */
+  /** El nombre del paquete npm declarado en package.json. */
   packageName: string;
-  /** Semver version from package.json. */
+  /** Versión semver de package.json. */
   version: string;
-  /** Source that found this package. */
+  /** Fuente que encontró este paquete. */
   source: PluginSource;
-  /** The parsed and validated manifest if available, null if discovery-only. */
+  /** El manifiesto parseado y validado si está disponible, null si es solo descubrimiento. */
   manifest: PaperclipPluginManifestV1 | null;
 }
 
 /**
- * Sources from which plugins can be discovered.
+ * Fuentes desde las que se pueden descubrir plugins.
  *
- * @see PLUGIN_SPEC.md §8.1 — On-Disk Layout
+ * @see PLUGIN_SPEC.md §8.1 — Disposición en disco
  */
 export type PluginSource =
-  | "local-filesystem"  // ~/.paperclip/plugins/ local directory
-  | "npm"               // npm packages matching paperclip-plugin-* convention
-  | "registry";         // future: remote plugin registry URL
+  | "local-filesystem"  // directorio local ~/.paperclip/plugins/
+  | "npm"               // paquetes npm que coinciden con la convención paperclip-plugin-*
+  | "registry";         // futuro: URL del registro remoto de plugins
 
 type ParsedSemver = {
   major: number;
@@ -116,14 +120,14 @@ type ParsedSemver = {
 };
 
 /**
- * Result of a discovery scan.
+ * Resultado de un escaneo de descubrimiento.
  */
 export interface PluginDiscoveryResult {
-  /** Plugins successfully discovered and validated. */
+  /** Plugins descubiertos y validados exitosamente. */
   discovered: DiscoveredPlugin[];
-  /** Packages found but with validation errors. */
+  /** Paquetes encontrados pero con errores de validación. */
   errors: Array<{ packagePath: string; packageName: string; error: string }>;
-  /** Source(s) that were scanned. */
+  /** Fuente(s) que fueron escaneadas. */
   sources: PluginSource[];
 }
 
@@ -134,112 +138,113 @@ function getDeclaredPageRoutePaths(manifest: PaperclipPluginManifestV1): string[
 }
 
 // ---------------------------------------------------------------------------
-// Loader options
+// Opciones del cargador
 // ---------------------------------------------------------------------------
 
 /**
- * Options for the plugin loader service.
+ * Opciones para el servicio cargador de plugins.
  */
 export interface PluginLoaderOptions {
   /**
-   * Path to the local plugin directory to scan.
-   * Defaults to ~/.paperclip/plugins/
+   * Ruta al directorio local de plugins a escanear.
+   * Por defecto es ~/.paperclip/plugins/
    */
   localPluginDir?: string;
 
   /**
-   * Whether to scan the local filesystem directory for plugins.
-   * Defaults to true.
+   * Si escanear el directorio del sistema de archivos local en busca de
+   * plugins. Por defecto es true.
    */
   enableLocalFilesystem?: boolean;
 
   /**
-   * Whether to discover installed npm packages matching the paperclip-plugin-*
-   * naming convention.
-   * Defaults to true.
+   * Si descubrir paquetes npm instalados que coincidan con la convención de
+   * nombres paperclip-plugin-*. Por defecto es true.
    */
   enableNpmDiscovery?: boolean;
 
   /**
-   * Future: URL of the remote plugin registry to query.
-   * When set, the loader will also fetch available plugins from this endpoint.
-   * Registry support is not yet implemented; this field is reserved.
+   * Futuro: URL del registro remoto de plugins a consultar.
+   * Cuando se fija, el cargador también obtendrá plugins disponibles desde
+   * este endpoint. El soporte de registro aún no está implementado; este
+   * campo está reservado.
    */
   registryUrl?: string;
 }
 
 // ---------------------------------------------------------------------------
-// Install options
+// Opciones de instalación
 // ---------------------------------------------------------------------------
 
 /**
- * Options for installing a single plugin package.
+ * Opciones para instalar un solo paquete de plugin.
  */
 export interface PluginInstallOptions {
   /**
-   * npm package name to install (e.g. "paperclip-plugin-linear" or "@acme/plugin-linear").
-   * Either packageName or localPath must be set.
+   * Nombre del paquete npm a instalar (p. ej. "paperclip-plugin-linear" o "@acme/plugin-linear").
+   * Debe fijarse packageName o localPath.
    */
   packageName?: string;
 
   /**
-   * Absolute or relative path to a local plugin directory for development installs.
-   * When set, the plugin is loaded from this path without npm install.
-   * Either packageName or localPath must be set.
+   * Ruta absoluta o relativa a un directorio local de plugin para
+   * instalaciones de desarrollo. Cuando se fija, el plugin se carga desde
+   * esta ruta sin npm install. Debe fijarse packageName o localPath.
    */
   localPath?: string;
 
   /**
-   * Version specifier passed to npm install (e.g. "^1.2.0", "latest").
-   * Ignored when localPath is set.
+   * Especificador de versión pasado a npm install (p. ej. "^1.2.0",
+   * "latest"). Se ignora cuando se fija localPath.
    */
   version?: string;
 
   /**
-   * Plugin install directory where packages are managed.
-   * Defaults to the localPluginDir configured on the service.
+   * Directorio de instalación de plugins donde se manejan los paquetes.
+   * Por defecto es el localPluginDir configurado en el servicio.
    */
   installDir?: string;
 }
 
 // ---------------------------------------------------------------------------
-// Runtime options — services needed for initializing loaded plugins
+// Opciones de runtime — servicios necesarios para inicializar plugins cargados
 // ---------------------------------------------------------------------------
 
 /**
- * Runtime services passed to the loader for plugin initialization.
+ * Servicios de runtime pasados al cargador para la inicialización de plugins.
  *
- * When these are provided, the loader can fully activate plugins (spawn
- * workers, register event subscriptions, sync jobs, register tools).
- * When omitted, the loader operates in discovery/install-only mode.
+ * Cuando se proveen, el cargador puede activar completamente los plugins
+ * (generar workers, registrar suscripciones de eventos, sincronizar
+ * trabajos, registrar herramientas). Cuando se omiten, el cargador opera en
+ * modo solo descubrimiento/instalación.
  *
- * @see PLUGIN_SPEC.md §8.3 — Install Process
- * @see PLUGIN_SPEC.md §12 — Process Model
+ * @see PLUGIN_SPEC.md §8.3 — Proceso de instalación
+ * @see PLUGIN_SPEC.md §12 — Modelo de procesos
  */
 export interface PluginRuntimeServices {
-  /** Worker process manager for spawning and managing plugin workers. */
+  /** Administrador de procesos worker para generar y manejar workers de plugins. */
   workerManager: PluginWorkerManager;
-  /** Event bus for registering plugin event subscriptions. */
+  /** Bus de eventos para registrar suscripciones de eventos de plugins. */
   eventBus: PluginEventBus;
-  /** Job scheduler for registering plugin cron jobs. */
+  /** Programador de trabajos para registrar trabajos cron de plugins. */
   jobScheduler: PluginJobScheduler;
-  /** Job store for syncing manifest job declarations to the DB. */
+  /** Almacén de trabajos para sincronizar declaraciones de trabajos del manifiesto a la BD. */
   jobStore: PluginJobStore;
-  /** Tool dispatcher for registering plugin-contributed agent tools. */
+  /** Despachador de herramientas para registrar herramientas de agente aportadas por plugins. */
   toolDispatcher: PluginToolDispatcher;
-  /** Lifecycle manager for state transitions and worker lifecycle events. */
+  /** Administrador de ciclo de vida para transiciones de estado y eventos del ciclo de vida del worker. */
   lifecycleManager: PluginLifecycleManager;
   /**
-   * Factory that creates worker-to-host RPC handlers for a given plugin.
+   * Fábrica que crea manejadores RPC worker→host para un plugin dado.
    *
-   * The returned handlers service worker→host calls (e.g. state.get,
-   * events.emit, config.get). Each plugin gets its own set of handlers
-   * scoped to its capabilities and plugin ID.
+   * Los manejadores devueltos sirven llamadas worker→host (p. ej.
+   * state.get, events.emit, config.get). Cada plugin obtiene su propio
+   * conjunto de manejadores con alcance a sus capacidades y ID de plugin.
    */
   buildHostHandlers: (pluginId: string, manifest: PaperclipPluginManifestV1) => WorkerToHostHandlers;
   /**
-   * Host instance information passed to the worker during initialization.
-   * Includes the instance ID and host version.
+   * Información de la instancia host pasada al worker durante la
+   * inicialización. Incluye el ID de instancia y la versión del host.
    */
   instanceInfo: {
     instanceId: string;
@@ -248,56 +253,58 @@ export interface PluginRuntimeServices {
 }
 
 // ---------------------------------------------------------------------------
-// Load results
+// Resultados de carga
 // ---------------------------------------------------------------------------
 
 /**
- * Result of activating (loading) a single plugin at runtime.
+ * Resultado de activar (cargar) un solo plugin en tiempo de ejecución.
  *
- * Contains the plugin record, activation status, and any error that
- * occurred during the process.
+ * Contiene el registro del plugin, el estado de activación y cualquier error
+ * que ocurriera durante el proceso.
  */
 export interface PluginLoadResult {
-  /** The plugin record from the database. */
+  /** El registro del plugin de la base de datos. */
   plugin: PluginRecord;
-  /** Whether the plugin was successfully activated. */
+  /** Si el plugin se activó exitosamente. */
   success: boolean;
-  /** Error message if activation failed. */
+  /** Mensaje de error si la activación falló. */
   error?: string;
-  /** Which subsystems were registered during activation. */
+  /** Qué subsistemas se registraron durante la activación. */
   registered: {
-    /** True if the worker process was started. */
+    /** True si se inició el proceso worker. */
     worker: boolean;
-    /** Number of event subscriptions registered (from manifest event declarations). */
+    /** Número de suscripciones de eventos registradas (de las declaraciones de eventos del manifiesto). */
     eventSubscriptions: number;
-    /** Number of job declarations synced to the database. */
+    /** Número de declaraciones de trabajos sincronizadas a la base de datos. */
     jobs: number;
-    /** Number of webhook endpoints declared in manifest. */
+    /** Número de endpoints de webhook declarados en el manifiesto. */
     webhooks: number;
-    /** Number of agent tools registered. */
+    /** Número de herramientas de agente registradas. */
     tools: number;
   };
 }
 
 /**
- * Result of activating all ready plugins at server startup.
+ * Resultado de activar todos los plugins en ready al arrancar el servidor.
  */
 export interface PluginLoadAllResult {
-  /** Total number of plugins that were attempted. */
+  /** Número total de plugins que se intentaron. */
   total: number;
-  /** Number of plugins successfully activated. */
+  /** Número de plugins activados exitosamente. */
   succeeded: number;
-  /** Number of plugins that failed to activate. */
+  /** Número de plugins que fallaron al activarse. */
   failed: number;
-  /** Per-plugin results. */
+  /** Resultados por plugin. */
   results: PluginLoadResult[];
 }
 
 /**
- * Normalized UI contribution metadata extracted from a plugin manifest.
+ * Metadatos normalizados de contribución de UI extraídos de un manifiesto de
+ * plugin.
  *
- * The host serves all plugin UI bundles from the manifest's `entrypoints.ui`
- * directory and currently expects the bundle entry module to be `index.js`.
+ * El host sirve todos los bundles de UI de plugins desde el directorio
+ * `entrypoints.ui` del manifiesto y actualmente espera que el módulo de
+ * entrada del bundle sea `index.js`.
  */
 export interface PluginUiContributionMetadata {
   uiEntryFile: string;
@@ -306,88 +313,95 @@ export interface PluginUiContributionMetadata {
 }
 
 // ---------------------------------------------------------------------------
-// Service interface
+// Interfaz del servicio
 // ---------------------------------------------------------------------------
 
 export interface PluginLoader {
   /**
-   * Discover all available plugins from configured sources.
+   * Descubre todos los plugins disponibles desde las fuentes configuradas.
    *
-   * This performs a non-destructive scan of all enabled sources and returns
-   * the discovered plugins with their parsed manifests.  No installs or DB
-   * writes happen during discovery.
+   * Esto realiza un escaneo no destructivo de todas las fuentes habilitadas
+   * y devuelve los plugins descubiertos con sus manifiestos parseados. No
+   * ocurre ninguna instalación ni escritura en BD durante el descubrimiento.
    *
-   * @param npmSearchDirs - Optional override for node_modules directories to search.
-   *   Passed through to discoverFromNpm. When omitted the defaults are used.
+   * @param npmSearchDirs - Anulación opcional de los directorios node_modules
+   *   a buscar. Se pasa a discoverFromNpm. Cuando se omite se usan los
+   *   predeterminados.
    *
-   * @see PLUGIN_SPEC.md §8.1 — On-Disk Layout
-   * @see PLUGIN_SPEC.md §8.3 — Install Process
+   * @see PLUGIN_SPEC.md §8.1 — Disposición en disco
+   * @see PLUGIN_SPEC.md §8.3 — Proceso de instalación
    */
   discoverAll(npmSearchDirs?: string[]): Promise<PluginDiscoveryResult>;
 
   /**
-   * Scan the local filesystem plugin directory for installed plugin packages.
+   * Escanea el directorio local del sistema de archivos de plugins buscando
+   * paquetes de plugins instalados.
    *
-   * Reads the plugin directory, attempts to load each subdirectory as an npm
-   * package, and validates the plugin manifest.
+   * Lee el directorio de plugins, intenta cargar cada subdirectorio como un
+   * paquete npm y valida el manifiesto del plugin.
    *
-   * @param dir - Directory to scan (defaults to configured localPluginDir).
+   * @param dir - Directorio a escanear (por defecto el localPluginDir configurado).
    */
   discoverFromLocalFilesystem(dir?: string): Promise<PluginDiscoveryResult>;
 
   /**
-   * Discover Paperclip plugins installed as npm packages in the current
-   * Node.js environment matching the "paperclip-plugin-*" naming convention.
+   * Descubre plugins Paperclip instalados como paquetes npm en el entorno
+   * Node.js actual que coincidan con la convención de nombres
+   * "paperclip-plugin-*".
    *
-   * Looks for packages in node_modules that match the naming convention.
+   * Busca paquetes en node_modules que coincidan con la convención de
+   * nombres.
    *
-   * @param searchDirs - node_modules directories to search (defaults to process cwd resolution).
+   * @param searchDirs - directorios node_modules a buscar (por defecto la resolución del cwd del proceso).
    */
   discoverFromNpm(searchDirs?: string[]): Promise<PluginDiscoveryResult>;
 
   /**
-   * Load and parse the plugin manifest from a package directory.
+   * Carga y parsea el manifiesto del plugin desde un directorio de paquete.
    *
-   * Reads the package.json, finds the manifest entrypoint declared under
-   * the "paperclipPlugin.manifest" key, loads the manifest module, and
-   * validates it against the plugin manifest schema.
+   * Lee el package.json, encuentra el entrypoint del manifiesto declarado
+   * bajo la clave "paperclipPlugin.manifest", carga el módulo del
+   * manifiesto y lo valida contra el esquema del manifiesto de plugin.
    *
-   * Returns null if the package is not a Paperclip plugin.
-   * Throws if the package is a Paperclip plugin but the manifest is invalid.
+   * Devuelve null si el paquete no es un plugin Paperclip.
+   * Lanza si el paquete es un plugin Paperclip pero el manifiesto es
+   * inválido.
    *
-   * @see PLUGIN_SPEC.md §10 — Package Contract
+   * @see PLUGIN_SPEC.md §10 — Contrato de paquete
    */
   loadManifest(packagePath: string): Promise<PaperclipPluginManifestV1 | null>;
 
   /**
-   * Install a plugin package and register it in the database.
+   * Instala un paquete de plugin y lo registra en la base de datos.
    *
-   * Follows the install process described in PLUGIN_SPEC.md §8.3:
-   * 1. Resolve npm package / local path.
-   * 2. Install into the plugin directory (npm install).
-   * 3. Read and validate plugin manifest.
-   * 4. Reject incompatible plugin API versions.
-   * 5. Validate manifest capabilities.
-   * 6. Persist install record in Postgres.
-   * 7. Return the discovered plugin for the caller to use.
+   * Sigue el proceso de instalación descrito en PLUGIN_SPEC.md §8.3:
+   * 1. Resolver paquete npm / ruta local.
+   * 2. Instalar en el directorio de plugins (npm install).
+   * 3. Leer y validar el manifiesto del plugin.
+   * 4. Rechazar versiones incompatibles de la API del plugin.
+   * 5. Validar las capacidades del manifiesto.
+   * 6. Persistir el registro de instalación en Postgres.
+   * 7. Devolver el plugin descubierto para que el llamador lo use.
    *
-   * Worker spawning and lifecycle management are handled by the caller
-   * (pluginLifecycleManager and the server startup orchestration).
+   * El generado de workers y la gestión del ciclo de vida los maneja el
+   * llamador (pluginLifecycleManager y la orquestación de arranque del
+   * servidor).
    *
-   * @see PLUGIN_SPEC.md §8.3 — Install Process
+   * @see PLUGIN_SPEC.md §8.3 — Proceso de instalación
    */
   installPlugin(options: PluginInstallOptions): Promise<DiscoveredPlugin>;
 
   /**
-   * Upgrade an already-installed plugin to a newer version.
+   * Actualiza un plugin ya instalado a una versión más nueva.
    *
-   * Similar to installPlugin, but:
-   * 1. Requires the plugin to already exist in the database.
-   * 2. Uses the existing packageName if not provided in options.
-   * 3. Updates the existing plugin record instead of creating a new one.
-   * 4. Returns the old and new manifests for capability comparison.
+   * Similar a installPlugin, pero:
+   * 1. Requiere que el plugin ya exista en la base de datos.
+   * 2. Usa el packageName existente si no se provee en las opciones.
+   * 3. Actualiza el registro existente del plugin en vez de crear uno nuevo.
+   * 4. Devuelve los manifiestos viejo y nuevo para la comparación de
+   *    capacidades.
    *
-   * @see PLUGIN_SPEC.md §25.3 — Upgrade Lifecycle
+   * @see PLUGIN_SPEC.md §25.3 — Ciclo de vida de actualización
    */
   upgradePlugin(pluginId: string, options: Omit<PluginInstallOptions, "installDir">): Promise<{
     oldManifest: PaperclipPluginManifestV1;
@@ -396,118 +410,132 @@ export interface PluginLoader {
   }>;
 
   /**
-   * Check whether a plugin API version is supported by this host.
+   * Comprueba si una versión de la API de plugin es soportada por este host.
    */
   isSupportedApiVersion(apiVersion: number): boolean;
 
   /**
-   * Remove runtime-managed on-disk install artifacts for a plugin.
+   * Elimina artefactos de instalación en disco manejados por el runtime para
+   * un plugin.
    *
-   * This only cleans files under the managed local plugin directory. Local-path
-   * source checkouts outside that directory are intentionally left alone.
+   * Esto solo limpia archivos bajo el directorio local de plugins
+   * manejado. Los checkouts de origen en rutas locales fuera de ese
+   * directorio se dejan intencionalmente intactos.
    */
   cleanupInstallArtifacts(plugin: PluginRecord): Promise<void>;
 
   /**
-   * Get the local plugin directory this loader is configured to use.
+   * Obtiene el directorio local de plugins que este cargador está
+   * configurado a usar.
    */
   getLocalPluginDir(): string;
 
   // -----------------------------------------------------------------------
-  // Runtime initialization (requires PluginRuntimeServices)
+  // Inicialización de runtime (requiere PluginRuntimeServices)
   // -----------------------------------------------------------------------
 
   /**
-   * Load and activate all plugins that are in `ready` status.
+   * Carga y activa todos los plugins que están en estado `ready`.
    *
-   * This is the main server-startup orchestration method. For each plugin
-   * that is persisted as `ready`, it:
-   * 1. Resolves the worker entrypoint from the manifest.
-   * 2. Spawns the worker process via the worker manager.
-   * 3. Syncs job declarations from the manifest to the `plugin_jobs` table.
-   * 4. Registers the plugin with the job scheduler.
-   * 5. Registers event subscriptions declared in the manifest (scoped via the event bus).
-   * 6. Registers agent tools from the manifest via the tool dispatcher.
+   * Este es el método principal de orquestación al arrancar el servidor.
+   * Para cada plugin persistido como `ready`:
+   * 1. Resuelve el entrypoint del worker desde el manifiesto.
+   * 2. Genera el proceso worker vía el administrador de workers.
+   * 3. Sincroniza las declaraciones de trabajos del manifiesto a la tabla
+   *    `plugin_jobs`.
+   * 4. Registra el plugin con el programador de trabajos.
+   * 5. Registra las suscripciones de eventos declaradas en el manifiesto
+   *    (con alcance vía el bus de eventos).
+   * 6. Registra las herramientas de agente del manifiesto vía el
+   *    despachador de herramientas.
    *
-   * Plugins that fail to activate are marked as `error` in the database.
-   * Activation failures are non-fatal — other plugins continue loading.
+   * Los plugins que fallan al activarse se marcan como `error` en la base de
+   * datos. Los fallos de activación no son fatales — los otros plugins
+   * continúan cargándose.
    *
-   * **Requires** `PluginRuntimeServices` to have been provided at construction.
-   * Throws if runtime services are not available.
+   * **Requiere** que se hayan provisto `PluginRuntimeServices` al momento de
+   * la construcción. Lanza si los servicios de runtime no están disponibles.
    *
-   * @returns Aggregated results for all attempted plugin loads.
+   * @returns Resultados agregados de todos los intentos de carga de plugins.
    *
-   * @see PLUGIN_SPEC.md §8.4 — Server-Start Plugin Loading
-   * @see PLUGIN_SPEC.md §12 — Process Model
+   * @see PLUGIN_SPEC.md §8.4 — Carga de plugins al arrancar el servidor
+   * @see PLUGIN_SPEC.md §12 — Modelo de procesos
    */
   loadAll(): Promise<PluginLoadAllResult>;
 
   /**
-   * Activate a single plugin that is in `installed` or `ready` status.
+   * Activa un solo plugin que esté en estado `installed` o `ready`.
    *
-   * Used after a fresh install (POST /api/plugins/install) or after
-   * enabling a previously disabled plugin. Performs the same subsystem
-   * registration as `loadAll()` but for a single plugin.
+   * Se usa tras una instalación fresca (POST /api/plugins/install) o tras
+   * activar un plugin previamente desactivado. Realiza el mismo registro de
+   * subsistemas que `loadAll()` pero para un solo plugin.
    *
-   * If the plugin is in `installed` status, transitions it to `ready`
-   * via the lifecycle manager before spawning the worker.
+   * Si el plugin está en estado `installed`, lo transiciona a `ready` vía el
+   * administrador de ciclo de vida antes de generar el worker.
    *
-   * **Requires** `PluginRuntimeServices` to have been provided at construction.
+   * **Requiere** que se hayan provisto `PluginRuntimeServices` al momento de
+   * la construcción.
    *
-   * @param pluginId - UUID of the plugin to activate
-   * @returns The activation result for this plugin
+   * @param pluginId - UUID del plugin a activar
+   * @returns El resultado de activación de este plugin
    *
-   * @see PLUGIN_SPEC.md §8.3 — Install Process
+   * @see PLUGIN_SPEC.md §8.3 — Proceso de instalación
    */
   loadSingle(pluginId: string): Promise<PluginLoadResult>;
 
   /**
-   * Deactivate a single plugin — stop its worker and unregister all
-   * subsystem registrations (events, jobs, tools).
+   * Desactiva un solo plugin — detiene su worker y desregistra todos los
+   * registros de subsistemas (eventos, trabajos, herramientas).
    *
-   * Used during plugin disable, uninstall, and before upgrade. Does NOT
-   * change the plugin's status in the database — that is the caller's
-   * responsibility (via the lifecycle manager).
+   * Se usa durante la desactivación, desinstalación y antes de actualizar un
+   * plugin. NO cambia el estado del plugin en la base de datos — eso es
+   * responsabilidad del llamador (vía el administrador de ciclo de vida).
    *
-   * **Requires** `PluginRuntimeServices` to have been provided at construction.
+   * **Requiere** que se hayan provisto `PluginRuntimeServices` al momento de
+   * la construcción.
    *
-   * @param pluginId - UUID of the plugin to deactivate
-   * @param pluginKey - The plugin key (manifest ID) for scoped cleanup
+   * @param pluginId - UUID del plugin a desactivar
+   * @param pluginKey - La clave del plugin (ID del manifiesto) para la limpieza con alcance
    *
-   * @see PLUGIN_SPEC.md §8.5 — Uninstall Process
+   * @see PLUGIN_SPEC.md §8.5 — Proceso de desinstalación
    */
   unloadSingle(pluginId: string, pluginKey: string): Promise<void>;
 
   /**
-   * Stop all managed plugin workers. Called during server shutdown.
+   * Detiene todos los workers de plugins manejados. Se llama durante el
+   * apagado del servidor.
    *
-   * Stops the job scheduler and then stops all workers via the worker
-   * manager. Does NOT change plugin statuses in the database — plugins
-   * remain in `ready` so they are restarted on next boot.
+   * Detiene el programador de trabajos y luego detiene todos los workers vía
+   * el administrador de workers. NO cambia los estados de plugins en la
+   * base de datos — los plugins permanecen en `ready` para reiniciarse en el
+   * próximo arranque.
    *
-   * **Requires** `PluginRuntimeServices` to have been provided at construction.
+   * **Requiere** que se hayan provisto `PluginRuntimeServices` al momento de
+   * la construcción.
    */
   shutdownAll(): Promise<void>;
 
   /**
-   * Whether runtime services are available for plugin activation.
+   * Si los servicios de runtime están disponibles para la activación de
+   * plugins.
    */
   hasRuntimeServices(): boolean;
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Utilidades
 // ---------------------------------------------------------------------------
 
 /**
- * Check whether a package name matches the Paperclip plugin naming convention.
- * Accepts both the "paperclip-plugin-" prefix and scoped "@scope/plugin-" packages.
+ * Comprueba si un nombre de paquete coincide con la convención de nombres de
+ * plugins Paperclip. Acepta tanto el prefijo "paperclip-plugin-" como
+ * paquetes con scope "@scope/plugin-".
  *
- * @see PLUGIN_SPEC.md §10 — Package Contract
+ * @see PLUGIN_SPEC.md §10 — Contrato de paquete
  */
 export function isPluginPackageName(name: string): boolean {
   if (name.startsWith(NPM_PLUGIN_PACKAGE_PREFIX)) return true;
-  // Also accept scoped packages like @acme/plugin-linear or @paperclipai/plugin-*
+  // También acepta paquetes con scope como @acme/plugin-linear o @paperclipai/plugin-*
   if (name.includes("/")) {
     const localPart = name.split("/")[1] ?? "";
     return localPart.startsWith("plugin-");
@@ -516,8 +544,8 @@ export function isPluginPackageName(name: string): boolean {
 }
 
 /**
- * Read and parse a package.json from a directory path.
- * Returns null if no package.json exists.
+ * Lee y parsea un package.json desde una ruta de directorio.
+ * Devuelve null si no existe package.json.
  */
 async function readPackageJson(
   dir: string,
@@ -534,12 +562,14 @@ async function readPackageJson(
 }
 
 /**
- * Resolve the manifest entrypoint from a package.json and package root.
+ * Resuelve el entrypoint del manifiesto desde un package.json y la raíz del
+ * paquete.
  *
- * The spec defines a "paperclipPlugin" key in package.json with a "manifest"
- * subkey pointing to the manifest module.  This helper resolves the path.
+ * La especificación define una clave "paperclipPlugin" en package.json con
+ * una subclave "manifest" que apunta al módulo del manifiesto. Esta
+ * utilidad resuelve la ruta.
  *
- * @see PLUGIN_SPEC.md §10 — Package Contract
+ * @see PLUGIN_SPEC.md §10 — Contrato de paquete
  */
 function resolveManifestPath(
   packageRoot: string,
@@ -555,20 +585,21 @@ function resolveManifestPath(
       "manifest"
     ];
     if (typeof manifestRelPath === "string") {
-      // NOTE: the resolved path is returned as-is even if the file does not yet
-      // exist on disk (e.g. the package has not been built).  Callers MUST guard
-      // with existsSync() before passing the path to loadManifestFromPath().
+      // NOTA: la ruta resuelta se devuelve tal cual aunque el archivo aún no
+      // exista en disco (p. ej. el paquete no se ha compilado). Los llamadores
+      // DEBEN protegerse con existsSync() antes de pasar la ruta a
+      // loadManifestFromPath().
       return path.resolve(packageRoot, manifestRelPath);
     }
   }
 
-  // Fallback: look for dist/manifest.js as a convention
+  // Alternativa: busca dist/manifest.js como convención
   const conventionalPath = path.join(packageRoot, "dist", "manifest.js");
   if (existsSync(conventionalPath)) {
     return conventionalPath;
   }
 
-  // Fallback: look for manifest.js at package root
+  // Alternativa: busca manifest.js en la raíz del paquete
   const rootManifestPath = path.join(packageRoot, "manifest.js");
   if (existsSync(rootManifestPath)) {
     return rootManifestPath;
@@ -609,7 +640,7 @@ function compareSemver(left: string, right: string): number {
   const rightParsed = parseSemver(right);
 
   if (!leftParsed || !rightParsed) {
-    throw new Error(`Invalid semver comparison: '${left}' vs '${right}'`);
+    throw new Error(`Comparación semver inválida: '${left}' vs '${right}'`);
   }
 
   const coreOrder = (
@@ -644,11 +675,12 @@ function getMinimumHostVersion(manifest: PaperclipPluginManifestV1): string | un
 }
 
 /**
- * Extract UI contribution metadata from a manifest for route serialization.
+ * Extrae los metadatos de contribución de UI de un manifiesto para la
+ * serialización de rutas.
  *
- * Returns `null` when the plugin does not declare any UI slots or launchers.
- * Launcher declarations are aggregated from both the legacy top-level
- * `launchers` field and the preferred `ui.launchers` field.
+ * Devuelve `null` cuando el plugin no declara slots de UI ni launchers.
+ * Las declaraciones de launchers se agregan tanto del campo heredado de
+ * nivel superior `launchers` como del campo preferido `ui.launchers`.
  */
 export function getPluginUiContributionMetadata(
   manifest: PaperclipPluginManifestV1,
@@ -671,36 +703,37 @@ export function getPluginUiContributionMetadata(
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// Fábrica
 // ---------------------------------------------------------------------------
 
 /**
- * Create a PluginLoader service.
+ * Crea un servicio PluginLoader.
  *
- * The loader is responsible for plugin discovery, installation, and runtime
- * activation.  It reads plugin packages from the local filesystem and npm,
- * validates their manifests, registers them in the database, and — when
- * runtime services are provided — initialises worker processes, event
- * subscriptions, job schedules, webhook endpoints, and agent tools.
+ * El cargador es responsable del descubrimiento, instalación y activación en
+ * tiempo de ejecución de plugins. Lee paquetes de plugins del sistema de
+ * archivos local y npm, valida sus manifiestos, los registra en la base de
+ * datos y — cuando se proveen servicios de runtime — inicializa procesos
+ * worker, suscripciones de eventos, programas de trabajos, endpoints de
+ * webhook y herramientas de agente.
  *
- * Usage (discovery & install only):
+ * Uso (solo descubrimiento e instalación):
  * ```ts
  * const loader = pluginLoader(db, { enableLocalFilesystem: true });
  *
- * // Discover all available plugins
+ * // Descubre todos los plugins disponibles
  * const result = await loader.discoverAll();
  * for (const plugin of result.discovered) {
  *   console.log(plugin.packageName, plugin.manifest?.id);
  * }
  *
- * // Install a specific plugin
+ * // Instala un plugin específico
  * const discovered = await loader.installPlugin({
  *   packageName: "paperclip-plugin-linear",
  *   version: "^1.0.0",
  * });
  * ```
  *
- * Usage (full runtime activation at server startup):
+ * Uso (activación completa de runtime al arrancar el servidor):
  * ```ts
  * const loader = pluginLoader(db, loaderOpts, {
  *   workerManager,
@@ -713,20 +746,20 @@ export function getPluginUiContributionMetadata(
  *   instanceInfo: { instanceId: "inst-1", hostVersion: "1.0.0" },
  * });
  *
- * // Load all ready plugins at startup
+ * // Carga todos los plugins en ready al arrancar
  * const loadResult = await loader.loadAll();
- * console.log(`Loaded ${loadResult.succeeded}/${loadResult.total} plugins`);
+ * console.log(`Cargados ${loadResult.succeeded}/${loadResult.total} plugins`);
  *
- * // Load a single plugin after install
+ * // Carga un solo plugin tras la instalación
  * const singleResult = await loader.loadSingle(pluginId);
  *
- * // Shutdown all plugin workers on server exit
+ * // Apaga todos los workers de plugins al salir del servidor
  * await loader.shutdownAll();
  * ```
  *
- * @see PLUGIN_SPEC.md §8.1 — On-Disk Layout
- * @see PLUGIN_SPEC.md §8.3 — Install Process
- * @see PLUGIN_SPEC.md §12 — Process Model
+ * @see PLUGIN_SPEC.md §8.1 — Disposición en disco
+ * @see PLUGIN_SPEC.md §8.3 — Proceso de instalación
+ * @see PLUGIN_SPEC.md §12 — Modelo de procesos
  */
 export function pluginLoader(
   db: Db,
@@ -751,7 +784,7 @@ export function pluginLoader(
 
     const uniqueRequested = new Set(requestedRoutePaths);
     if (uniqueRequested.size !== requestedRoutePaths.length) {
-      throw new Error(`Plugin ${manifest.id} declares duplicate page routePath values`);
+      throw new Error(`El plugin ${manifest.id} declara valores de routePath de página duplicados`);
     }
 
     const installedPlugins = await registry.listInstalled();
@@ -763,29 +796,31 @@ export function pluginLoader(
       const conflictingRoute = requestedRoutePaths.find((routePath) => installedRoutePaths.has(routePath));
       if (conflictingRoute) {
         throw new Error(
-          `Plugin ${manifest.id} routePath "${conflictingRoute}" conflicts with installed plugin ${plugin.pluginKey}`,
+          `El routePath "${conflictingRoute}" del plugin ${manifest.id} entra en conflicto con el plugin instalado ${plugin.pluginKey}`,
         );
       }
     }
   }
 
   // -------------------------------------------------------------------------
-  // Internal helpers
+  // Utilidades internas
   // -------------------------------------------------------------------------
 
   /**
-   * Fetch a plugin from npm or local path, then parse and validate its manifest.
+   * Obtiene un plugin de npm o de una ruta local, y luego parsea y valida su
+   * manifiesto.
    *
-   * This internal helper encapsulates the core plugin retrieval and validation
-   * logic used by both install and upgrade operations. It handles:
-   * 1. Resolving the package from npm or local filesystem.
-   * 2. Installing the package via npm if necessary.
-   * 3. Reading and parsing the plugin manifest.
-   * 4. Validating API version compatibility.
-   * 5. Validating manifest capabilities.
+   * Esta utilidad interna encapsula la lógica central de obtención y
+   * validación de plugins usada tanto por instalación como por
+   * actualización. Maneja:
+   * 1. Resolver el paquete desde npm o el sistema de archivos local.
+   * 2. Instalar el paquete vía npm si es necesario.
+   * 3. Leer y parsear el manifiesto del plugin.
+   * 4. Validar la compatibilidad de la versión de API.
+   * 5. Validar las capacidades del manifiesto.
    *
-   * @param installOptions - Options specifying the package to fetch.
-   * @returns A `DiscoveredPlugin` object containing the validated manifest.
+   * @param installOptions - Opciones que especifican el paquete a obtener.
+   * @returns Un objeto `DiscoveredPlugin` con el manifiesto validado.
    */
   async function fetchAndValidate(
     installOptions: PluginInstallOptions,
@@ -793,20 +828,20 @@ export function pluginLoader(
     const { packageName, localPath, version, installDir } = installOptions;
 
     if (!packageName && !localPath) {
-      throw new Error("Either packageName or localPath must be provided");
+      throw new Error("Debe proveerse packageName o localPath");
     }
 
     const targetInstallDir = installDir ?? localPluginDir;
 
-    // Step 1 & 2: Resolve and install package
+    // Paso 1 y 2: Resuelve e instala el paquete
     let resolvedPackagePath: string;
     let resolvedPackageName: string;
 
     if (localPath) {
-      // Local path install — validate the directory exists
+      // Instalación desde ruta local — valida que el directorio exista
       const absLocalPath = path.resolve(localPath);
       if (!existsSync(absLocalPath)) {
-        throw new Error(`Local plugin path does not exist: ${absLocalPath}`);
+        throw new Error(`La ruta local del plugin no existe: ${absLocalPath}`);
       }
       resolvedPackagePath = absLocalPath;
       const pkgJson = await readPackageJson(absLocalPath);
@@ -817,7 +852,7 @@ export function pluginLoader(
 
       log.info(
         { localPath: absLocalPath, packageName: resolvedPackageName },
-        "plugin-loader: fetching plugin from local path",
+        "plugin-loader: obteniendo plugin desde la ruta local",
       );
     } else {
       // npm install
@@ -825,27 +860,28 @@ export function pluginLoader(
 
       log.info(
         { spec, installDir: targetInstallDir },
-        "plugin-loader: fetching plugin from npm",
+        "plugin-loader: obteniendo plugin desde npm",
       );
 
       try {
-        // Use execFile (not exec) to avoid shell injection from package name/version.
-        // --ignore-scripts prevents preinstall/install/postinstall hooks from
-        // executing arbitrary code on the host before manifest validation.
+        // Usa execFile (no exec) para evitar inyección de shell desde el
+        // nombre/versión del paquete. --ignore-scripts evita que los hooks
+        // preinstall/install/postinstall ejecuten código arbitrario en el
+        // host antes de la validación del manifiesto.
         await execFileAsync(
           "npm",
           ["install", spec, "--prefix", targetInstallDir, "--save", "--ignore-scripts"],
-          { timeout: 120_000 }, // 2 minute timeout for npm install
+          { timeout: 120_000 }, // 2 minutos de timeout para npm install
         );
       } catch (err) {
-        throw new Error(`npm install failed for ${spec}: ${String(err)}`);
+        throw new Error(`npm install falló para ${spec}: ${String(err)}`);
       }
 
-      // Resolve the package path after installation
+      // Resuelve la ruta del paquete tras la instalación
       const nodeModulesPath = path.join(targetInstallDir, "node_modules");
       resolvedPackageName = packageName!;
 
-      // Handle scoped packages
+      // Maneja paquetes con scope
       if (resolvedPackageName.startsWith("@")) {
         const [scope, name] = resolvedPackageName.split("/");
         resolvedPackagePath = path.join(nodeModulesPath, scope!, name!);
@@ -855,56 +891,56 @@ export function pluginLoader(
 
       if (!existsSync(resolvedPackagePath)) {
         throw new Error(
-          `Package directory not found after installation: ${resolvedPackagePath}`,
+          `Directorio del paquete no encontrado tras la instalación: ${resolvedPackagePath}`,
         );
       }
     }
 
-    // Step 3: Read and validate plugin manifest
-    // Note: this.loadManifest (used via current context)
+    // Paso 3: Leer y validar el manifiesto del plugin
+    // Nota: this.loadManifest (usado vía el contexto actual)
     const pkgJson = await readPackageJson(resolvedPackagePath);
-    if (!pkgJson) throw new Error(`Missing package.json at ${resolvedPackagePath}`);
+    if (!pkgJson) throw new Error(`Falta package.json en ${resolvedPackagePath}`);
 
     const manifestPath = resolveManifestPath(resolvedPackagePath, pkgJson);
     if (!manifestPath || !existsSync(manifestPath)) {
       throw new Error(
-        `Package ${resolvedPackageName} at ${resolvedPackagePath} does not appear to be a Paperclip plugin (no manifest found).`,
+        `El paquete ${resolvedPackageName} en ${resolvedPackagePath} no parece ser un plugin Paperclip (no se encontró manifiesto).`,
       );
     }
 
     const manifest = await loadManifestFromPath(manifestPath);
 
-    // Step 4: Reject incompatible plugin API versions
+    // Paso 4: Rechaza versiones incompatibles de la API del plugin
     if (!manifestValidator.getSupportedVersions().includes(manifest.apiVersion)) {
       throw new Error(
-        `Plugin ${manifest.id} declares apiVersion ${manifest.apiVersion} which is not supported by this host. ` +
-          `Supported versions: ${manifestValidator.getSupportedVersions().join(", ")}`,
+        `El plugin ${manifest.id} declara apiVersion ${manifest.apiVersion} que no es soportada por este host. ` +
+          `Versiones soportadas: ${manifestValidator.getSupportedVersions().join(", ")}`,
       );
     }
 
-    // Step 5: Validate manifest capabilities are consistent
+    // Paso 5: Valida que las capacidades del manifiesto sean consistentes
     const capResult = capabilityValidator.validateManifestCapabilities(manifest);
     if (!capResult.allowed) {
       throw new Error(
-        `Plugin ${manifest.id} manifest has inconsistent capabilities. ` +
-          `Missing required capabilities for declared features: ${capResult.missing.join(", ")}`,
+        `El manifiesto del plugin ${manifest.id} tiene capacidades inconsistentes. ` +
+          `Faltan capacidades requeridas para las características declaradas: ${capResult.missing.join(", ")}`,
       );
     }
 
     await assertPageRoutePathsAvailable(manifest);
 
-    // Step 6: Reject plugins that require a newer host than the running server
+    // Paso 6: Rechaza plugins que requieren un host más nuevo que el servidor en ejecución
     const minimumHostVersion = getMinimumHostVersion(manifest);
     if (minimumHostVersion && hostVersion) {
       if (compareSemver(hostVersion, minimumHostVersion) < 0) {
         throw new Error(
-          `Plugin ${manifest.id} requires host version ${minimumHostVersion} or newer, ` +
-            `but this server is running ${hostVersion}`,
+          `El plugin ${manifest.id} requiere la versión de host ${minimumHostVersion} o más nueva, ` +
+            `pero este servidor ejecuta ${hostVersion}`,
         );
       }
     }
 
-    // Use the version declared in the manifest (required field per the spec)
+    // Usa la versión declarada en el manifiesto (campo requerido según la especificación)
     const resolvedVersion = manifest.version;
 
     return {
@@ -917,8 +953,9 @@ export function pluginLoader(
   }
 
   /**
-   * Attempt to load and validate a plugin manifest from a resolved path.
-   * Returns the manifest on success or throws with a descriptive error.
+   * Intenta cargar y validar un manifiesto de plugin desde una ruta
+   * resuelta. Devuelve el manifiesto en éxito o lanza con un error
+   * descriptivo.
    */
   async function loadManifestFromPath(
     manifestPath: string,
@@ -926,13 +963,13 @@ export function pluginLoader(
     let raw: unknown;
 
     try {
-      // Dynamic import works for both .js (ESM) and .cjs (CJS) manifests
+      // La importación dinámica funciona para manifiestos .js (ESM) y .cjs (CJS)
       const mod = await import(manifestPath) as Record<string, unknown>;
-      // The manifest may be the default export or the module itself
+      // El manifiesto puede ser el export default o el propio módulo
       raw = mod["default"] ?? mod;
     } catch (err) {
       throw new Error(
-        `Failed to load manifest module at ${manifestPath}: ${String(err)}`,
+        `No se pudo cargar el módulo del manifiesto en ${manifestPath}: ${String(err)}`,
       );
     }
 
@@ -940,8 +977,8 @@ export function pluginLoader(
   }
 
   /**
-   * Build a DiscoveredPlugin from a resolved package directory, or null
-   * if the package is not a Paperclip plugin.
+   * Construye un DiscoveredPlugin desde un directorio de paquete resuelto,
+   * o null si el paquete no es un plugin Paperclip.
    */
   async function buildDiscoveredPlugin(
     packagePath: string,
@@ -953,7 +990,7 @@ export function pluginLoader(
     const packageName = typeof pkgJson["name"] === "string" ? pkgJson["name"] : "";
     const version = typeof pkgJson["version"] === "string" ? pkgJson["version"] : "0.0.0";
 
-    // Determine if this is a plugin package at all
+    // Determina si este es un paquete de plugin
     const hasPaperclipPlugin = "paperclipPlugin" in pkgJson;
     const nameMatchesConvention = isPluginPackageName(packageName);
 
@@ -963,8 +1000,9 @@ export function pluginLoader(
 
     const manifestPath = resolveManifestPath(packagePath, pkgJson);
     if (!manifestPath || !existsSync(manifestPath)) {
-      // Found a potential plugin package but no manifest entry point — treat
-      // as a discovery-only result with no manifest
+      // Se encontró un posible paquete de plugin pero sin punto de entrada
+      // de manifiesto — se trata como resultado de solo descubrimiento sin
+      // manifiesto
       return {
         packagePath,
         packageName,
@@ -984,7 +1022,7 @@ export function pluginLoader(
         manifest,
       };
     } catch (err) {
-      // Rethrow with context — callers catch and route to the errors array
+      // Relanza con contexto — los llamadores capturan y derivan al array de errores
       throw new Error(
         `Plugin ${packageName}: ${String(err)}`,
       );
@@ -992,7 +1030,7 @@ export function pluginLoader(
   }
 
   // -------------------------------------------------------------------------
-  // Public API
+  // API pública
   // -------------------------------------------------------------------------
 
   return {
@@ -1025,12 +1063,12 @@ export function pluginLoader(
         allErrors.push(...npmResult.errors);
       }
 
-      // Future: registry source (options.registryUrl)
+      // Futuro: fuente de registro (options.registryUrl)
       if (options.registryUrl) {
         sources.push("registry");
         log.warn(
           { registryUrl: options.registryUrl },
-          "plugin-loader: remote registry discovery is not yet implemented",
+          "plugin-loader: el descubrimiento del registro remoto aún no está implementado",
         );
       }
 
@@ -1040,7 +1078,7 @@ export function pluginLoader(
           errors: allErrors.length,
           sources,
         },
-        "plugin-loader: discovery complete",
+        "plugin-loader: descubrimiento completo",
       );
 
       return { discovered: allDiscovered, errors: allErrors, sources };
@@ -1058,7 +1096,7 @@ export function pluginLoader(
       if (!existsSync(scanDir)) {
         log.debug(
           { dir: scanDir },
-          "plugin-loader: local plugin directory does not exist, skipping",
+          "plugin-loader: el directorio local de plugins no existe, se omite",
         );
         return { discovered, errors, sources: ["local-filesystem"] };
       }
@@ -1067,14 +1105,14 @@ export function pluginLoader(
       try {
         entries = await readdir(scanDir);
       } catch (err) {
-        log.warn({ dir: scanDir, err }, "plugin-loader: failed to read local plugin directory");
+        log.warn({ dir: scanDir, err }, "plugin-loader: no se pudo leer el directorio local de plugins");
         return { discovered, errors, sources: ["local-filesystem"] };
       }
 
       for (const entry of entries) {
         const entryPath = path.join(scanDir, entry);
 
-        // Check if entry is a directory
+        // Comprueba si la entrada es un directorio
         let entryStat;
         try {
           entryStat = await stat(entryPath);
@@ -1083,7 +1121,7 @@ export function pluginLoader(
         }
         if (!entryStat.isDirectory()) continue;
 
-        // Handle scoped packages: @scope/plugin-name is a subdirectory
+        // Maneja paquetes con scope: @scope/plugin-name es un subdirectorio
         if (entry.startsWith("@")) {
           let scopedEntries: string[];
           try {
@@ -1122,7 +1160,7 @@ export function pluginLoader(
 
       log.debug(
         { dir: scanDir, discovered: discovered.length, errors: errors.length },
-        "plugin-loader: local filesystem scan complete",
+        "plugin-loader: escaneo del sistema de archivos local completo",
       );
 
       return { discovered, errors, sources: ["local-filesystem"] };
@@ -1136,15 +1174,17 @@ export function pluginLoader(
       const discovered: DiscoveredPlugin[] = [];
       const errors: Array<{ packagePath: string; packageName: string; error: string }> = [];
 
-      // Determine the node_modules directories to search.
-      // When searchDirs is undefined OR empty, fall back to the conventional
-      // defaults (cwd/node_modules and localPluginDir/node_modules).
-      // To search nowhere explicitly, pass a non-empty array of non-existent paths.
+      // Determina los directorios node_modules a buscar.
+      // Cuando searchDirs es undefined O vacío, se vuelve a los
+      // predeterminados convencionales (cwd/node_modules y
+      // localPluginDir/node_modules). Para no buscar en ningún lado
+      // explícitamente, pase un array no vacío de rutas inexistentes.
       const dirsToSearch: string[] = searchDirs && searchDirs.length > 0 ? searchDirs : [];
 
       if (dirsToSearch.length === 0) {
-        // Default: search node_modules relative to the process working directory
-        // and also the local plugin dir's node_modules
+        // Predeterminado: busca node_modules relativo al directorio de
+        // trabajo del proceso y también el node_modules del directorio
+        // local de plugins
         const cwdNodeModules = path.join(process.cwd(), "node_modules");
         const localNodeModules = path.join(localPluginDir, "node_modules");
 
@@ -1165,7 +1205,7 @@ export function pluginLoader(
         for (const entry of entries) {
           const entryPath = path.join(nodeModulesDir, entry);
 
-          // Handle scoped packages (@scope/*)
+          // Maneja paquetes con scope (@scope/*)
           if (entry.startsWith("@")) {
             let scopedEntries: string[];
             try {
@@ -1192,7 +1232,7 @@ export function pluginLoader(
             continue;
           }
 
-          // Non-scoped packages: check naming convention
+          // Paquetes sin scope: comprueba la convención de nombres
           if (!isPluginPackageName(entry)) continue;
 
           let entryStat;
@@ -1217,7 +1257,7 @@ export function pluginLoader(
 
       log.debug(
         { searchDirs: dirsToSearch, discovered: discovered.length, errors: errors.length },
-        "plugin-loader: npm discovery scan complete",
+        "plugin-loader: escaneo de descubrimiento npm completo",
       );
 
       return { discovered, errors, sources: ["npm"] };
@@ -1252,7 +1292,9 @@ export function pluginLoader(
     async installPlugin(installOptions: PluginInstallOptions): Promise<DiscoveredPlugin> {
       const discovered = await fetchAndValidate(installOptions);
 
-      // Step 6: Persist install record in Postgres (include packagePath for local installs so the worker can be resolved)
+      // Paso 6: Persiste el registro de instalación en Postgres (incluye
+      // packagePath para instalaciones locales para que el worker pueda
+      // resolverse)
       await registry.install(
         {
           packageName: discovered.packageName,
@@ -1268,7 +1310,7 @@ export function pluginLoader(
           version: discovered.version,
           capabilities: discovered.manifest!.capabilities,
         },
-        "plugin-loader: plugin installed successfully",
+        "plugin-loader: plugin instalado exitosamente",
       );
 
       return discovered;
@@ -1279,17 +1321,20 @@ export function pluginLoader(
     // -----------------------------------------------------------------------
 
     /**
-     * Upgrade an already-installed plugin to a newer version.
+     * Actualiza un plugin ya instalado a una versión más nueva.
      *
-     * This method:
-     * 1. Fetches and validates the new plugin package using `fetchAndValidate`.
-     * 2. Ensures the new manifest ID matches the existing plugin ID for safety.
-     * 3. Updates the plugin record in the registry with the new version and manifest.
+     * Este método:
+     * 1. Obtiene y valida el nuevo paquete del plugin usando
+     *    `fetchAndValidate`.
+     * 2. Asegura que el ID del nuevo manifiesto coincida con el ID del
+     *    plugin existente por seguridad.
+     * 3. Actualiza el registro del plugin en el registro con la nueva
+     *    versión y manifiesto.
      *
-     * @param pluginId - The UUID of the plugin to upgrade.
-     * @param upgradeOptions - Options for the upgrade (packageName, localPath, version).
-     * @returns The old and new manifests, along with the discovery metadata.
-     * @throws {Error} If the plugin is not found or if the new manifest ID differs.
+     * @param pluginId - El UUID del plugin a actualizar.
+     * @param upgradeOptions - Opciones para la actualización (packageName, localPath, version).
+     * @returns Los manifiestos viejo y nuevo, junto con los metadatos de descubrimiento.
+     * @throws {Error} Si el plugin no se encuentra o si el ID del nuevo manifiesto difiere.
      */
     async upgradePlugin(
       pluginId: string,
@@ -1305,24 +1350,24 @@ export function pluginLoader(
         packagePath: string | null;
         manifestJson: PaperclipPluginManifestV1;
       } | null;
-      if (!plugin) throw new Error(`Plugin not found: ${pluginId}`);
+      if (!plugin) throw new Error(`Plugin no encontrado: ${pluginId}`);
 
       const oldManifest = plugin.manifestJson;
       const {
         packageName = plugin.packageName,
-        // For local-path installs, fall back to the stored packagePath so
-        // `upgradePlugin` can re-read the manifest from disk without needing
-        // the caller to re-supply the path every time.
+        // Para instalaciones en ruta local, vuelve al packagePath almacenado
+        // para que `upgradePlugin` pueda releer el manifiesto desde disco sin
+        // necesitar que el llamador vuelva a pasar la ruta cada vez.
         localPath = plugin.packagePath ?? undefined,
         version,
       } = upgradeOptions;
 
       log.info(
         { pluginId, packageName, version, localPath },
-        "plugin-loader: upgrading plugin",
+        "plugin-loader: actualizando plugin",
       );
 
-      // 1. Fetch/Install the new version
+      // 1. Obtiene/Instala la nueva versión
       const discovered = await fetchAndValidate({
         packageName,
         localPath,
@@ -1332,14 +1377,14 @@ export function pluginLoader(
 
       const newManifest = discovered.manifest!;
 
-      // 2. Validate it's the same plugin ID
+      // 2. Valida que sea el mismo ID de plugin
       if (newManifest.id !== oldManifest.id) {
         throw new Error(
-          `Upgrade failed: new manifest ID '${newManifest.id}' does not match existing plugin ID '${oldManifest.id}'`,
+          `La actualización falló: el ID del nuevo manifiesto '${newManifest.id}' no coincide con el ID del plugin existente '${oldManifest.id}'`,
         );
       }
 
-      // 3. Detect capability escalation — new capabilities not in the old manifest
+      // 3. Detecta escalada de capacidades — nuevas capacidades no presentes en el manifiesto viejo
       const oldCaps = new Set(oldManifest.capabilities ?? []);
       const newCaps = newManifest.capabilities ?? [];
       const escalated = newCaps.filter((c) => !oldCaps.has(c));
@@ -1347,16 +1392,16 @@ export function pluginLoader(
       if (escalated.length > 0) {
         log.warn(
           { pluginId, escalated, oldVersion: oldManifest.version, newVersion: newManifest.version },
-          "plugin-loader: upgrade introduces new capabilities — requires admin approval",
+          "plugin-loader: la actualización introduce nuevas capacidades — requiere aprobación del admin",
         );
         throw new Error(
-          `Upgrade for "${pluginId}" introduces new capabilities that require approval: ${escalated.join(", ")}. ` +
-            `The previous version declared [${[...oldCaps].join(", ")}]. ` +
-            `Please review and approve the capability escalation before upgrading.`,
+          `La actualización de "${pluginId}" introduce nuevas capacidades que requieren aprobación: ${escalated.join(", ")}. ` +
+            `La versión anterior declaraba [${[...oldCaps].join(", ")}]. ` +
+            `Revise y apruebe la escalada de capacidades antes de actualizar.`,
         );
       }
 
-      // 4. Update the existing record
+      // 4. Actualiza el registro existente
       await registry.update(pluginId, {
         packageName: discovered.packageName,
         version: discovered.version,
@@ -1411,7 +1456,7 @@ export function pluginLoader(
               packageName: plugin.packageName,
               err: err instanceof Error ? err.message : String(err),
             },
-            "plugin-loader: npm uninstall failed during cleanup, falling back to direct removal",
+            "plugin-loader: npm uninstall falló durante la limpieza, se recurre a la eliminación directa",
           );
         }
       }
@@ -1444,38 +1489,40 @@ export function pluginLoader(
     // -----------------------------------------------------------------------
 
     /**
-     * loadAll — Loads and activates all plugins that are currently in 'ready' status.
+     * loadAll — Carga y activa todos los plugins que están actualmente en
+     * estado 'ready'.
      *
-     * This method is typically called during server startup. It fetches all ready
-     * plugins from the registry and attempts to activate them in parallel using
-     * Promise.allSettled. Failures in individual plugins do not prevent others from loading.
+     * Este método típicamente se llama durante el arranque del servidor.
+     * Obtiene todos los plugins en ready del registro e intenta activarlos
+     * en paralelo usando Promise.allSettled. Los fallos en plugins
+     * individuales no impiden que los otros se carguen.
      *
-     * @returns A promise that resolves with summary statistics of the load operation.
+     * @returns Una promesa que resuelve con estadísticas resumidas de la operación de carga.
      */
     async loadAll(): Promise<PluginLoadAllResult> {
       if (!runtimeServices) {
         throw new Error(
-          "Cannot loadAll: no PluginRuntimeServices provided. " +
-            "Pass runtime services as the third argument to pluginLoader().",
+          "No se puede ejecutar loadAll: no se proveyeron PluginRuntimeServices. " +
+            "Pase los servicios de runtime como tercer argumento de pluginLoader().",
         );
       }
 
-      log.info("plugin-loader: loading all ready plugins");
+      log.info("plugin-loader: cargando todos los plugins en ready");
 
-      // Fetch all plugins in ready status, ordered by installOrder
+      // Obtiene todos los plugins en estado ready, ordenados por installOrder
       const readyPlugins = (await registry.listByStatus("ready")) as PluginRecord[];
 
       if (readyPlugins.length === 0) {
-        log.info("plugin-loader: no ready plugins to load");
+        log.info("plugin-loader: no hay plugins en ready para cargar");
         return { total: 0, succeeded: 0, failed: 0, results: [] };
       }
 
       log.info(
         { count: readyPlugins.length },
-        "plugin-loader: found ready plugins to load",
+        "plugin-loader: se encontraron plugins en ready para cargar",
       );
 
-      // Load plugins in parallel
+      // Carga los plugins en paralelo
       const results = await Promise.allSettled(
         readyPlugins.map((plugin) => activatePlugin(plugin))
       );
@@ -1499,7 +1546,7 @@ export function pluginLoader(
           succeeded,
           failed,
         },
-        "plugin-loader: loadAll complete",
+        "plugin-loader: loadAll completo",
       );
 
       return {
@@ -1515,37 +1562,38 @@ export function pluginLoader(
     // -----------------------------------------------------------------------
 
     /**
-     * loadSingle — Loads and activates a single plugin by its ID.
+     * loadSingle — Carga y activa un solo plugin por su ID.
      *
-     * This method retrieves the plugin from the registry, ensures it's in a valid
-     * state, and then calls activatePlugin to start its worker and register its
-     * capabilities (tools, jobs, etc.).
+     * Este método recupera el plugin del registro, asegura que esté en un
+     * estado válido, y luego llama a activatePlugin para iniciar su worker y
+     * registrar sus capacidades (herramientas, trabajos, etc.).
      *
-     * @param pluginId - The UUID of the plugin to load.
-     * @returns A promise that resolves with the result of the activation.
+     * @param pluginId - El UUID del plugin a cargar.
+     * @returns Una promesa que resuelve con el resultado de la activación.
      */
     async loadSingle(pluginId: string): Promise<PluginLoadResult> {
       if (!runtimeServices) {
         throw new Error(
-          "Cannot loadSingle: no PluginRuntimeServices provided. " +
-            "Pass runtime services as the third argument to pluginLoader().",
+          "No se puede ejecutar loadSingle: no se proveyeron PluginRuntimeServices. " +
+            "Pase los servicios de runtime como tercer argumento de pluginLoader().",
         );
       }
 
       const plugin = (await registry.getById(pluginId)) as PluginRecord | null;
       if (!plugin) {
-        throw new Error(`Plugin not found: ${pluginId}`);
+        throw new Error(`Plugin no encontrado: ${pluginId}`);
       }
 
-      // If the plugin is in 'installed' status, transition it to 'ready' first.
-      // lifecycleManager.load() transitions the status AND activates the plugin
-      // via activateReadyPlugin() → loadSingle() (recursive call with 'ready'
-      // status) → activatePlugin(). We must NOT call activatePlugin() again here,
-      // as that would double-start the worker and duplicate registrations.
+      // Si el plugin está en estado 'installed', primero transiciona a 'ready'.
+      // lifecycleManager.load() transiciona el estado Y activa el plugin
+      // vía activateReadyPlugin() → loadSingle() (llamada recursiva con estado
+      // 'ready') → activatePlugin(). NO debemos llamar activatePlugin() de
+      // nuevo aquí, ya que eso iniciaría el worker dos veces y duplicaría los
+      // registros.
       if (plugin.status === "installed") {
         await runtimeServices.lifecycleManager.load(pluginId);
         const updated = (await registry.getById(pluginId)) as PluginRecord | null;
-        if (!updated) throw new Error(`Plugin not found after status update: ${pluginId}`);
+        if (!updated) throw new Error(`Plugin no encontrado tras la actualización de estado: ${pluginId}`);
         return {
           plugin: updated,
           success: true,
@@ -1555,8 +1603,8 @@ export function pluginLoader(
 
       if (plugin.status !== "ready") {
         throw new Error(
-          `Cannot load plugin in status '${plugin.status}'. ` +
-            `Plugin must be in 'installed' or 'ready' status.`,
+          `No se puede cargar el plugin en estado '${plugin.status}'. ` +
+            `El plugin debe estar en estado 'installed' o 'ready'.`,
         );
       }
 
@@ -1570,13 +1618,13 @@ export function pluginLoader(
     async unloadSingle(pluginId: string, pluginKey: string): Promise<void> {
       if (!runtimeServices) {
         throw new Error(
-          "Cannot unloadSingle: no PluginRuntimeServices provided.",
+          "No se puede ejecutar unloadSingle: no se proveyeron PluginRuntimeServices.",
         );
       }
 
       log.info(
         { pluginId, pluginKey },
-        "plugin-loader: unloading single plugin",
+        "plugin-loader: descargando un solo plugin",
       );
 
       const {
@@ -1586,23 +1634,23 @@ export function pluginLoader(
         toolDispatcher,
       } = runtimeServices;
 
-      // 1. Unregister from job scheduler (cancels in-flight runs)
+      // 1. Desregistra del programador de trabajos (cancela ejecuciones en curso)
       try {
         await jobScheduler.unregisterPlugin(pluginId);
       } catch (err) {
         log.warn(
           { pluginId, err: err instanceof Error ? err.message : String(err) },
-          "plugin-loader: failed to unregister from job scheduler (best-effort)",
+          "plugin-loader: no se pudo desregistrar del programador de trabajos (mejor esfuerzo)",
         );
       }
 
-      // 2. Clear event subscriptions
+      // 2. Limpia las suscripciones de eventos
       eventBus.clearPlugin(pluginKey);
 
-      // 3. Unregister agent tools
+      // 3. Desregistra las herramientas de agente
       toolDispatcher.unregisterPluginTools(pluginKey);
 
-      // 4. Stop the worker process
+      // 4. Detiene el proceso worker
       try {
         if (workerManager.isRunning(pluginId)) {
           await workerManager.stopWorker(pluginId);
@@ -1610,13 +1658,13 @@ export function pluginLoader(
       } catch (err) {
         log.warn(
           { pluginId, err: err instanceof Error ? err.message : String(err) },
-          "plugin-loader: failed to stop worker during unload (best-effort)",
+          "plugin-loader: no se pudo detener el worker durante la descarga (mejor esfuerzo)",
         );
       }
 
       log.info(
         { pluginId, pluginKey },
-        "plugin-loader: plugin unloaded successfully",
+        "plugin-loader: plugin descargado exitosamente",
       );
     },
 
@@ -1627,35 +1675,36 @@ export function pluginLoader(
     async shutdownAll(): Promise<void> {
       if (!runtimeServices) {
         throw new Error(
-          "Cannot shutdownAll: no PluginRuntimeServices provided.",
+          "No se puede ejecutar shutdownAll: no se proveyeron PluginRuntimeServices.",
         );
       }
 
-      log.info("plugin-loader: shutting down all plugins");
+      log.info("plugin-loader: apagando todos los plugins");
 
       const { workerManager, jobScheduler } = runtimeServices;
 
-      // 1. Stop the job scheduler tick loop
+      // 1. Detiene el ciclo de tick del programador de trabajos
       jobScheduler.stop();
 
-      // 2. Stop all worker processes
+      // 2. Detiene todos los procesos worker
       await workerManager.stopAll();
 
-      log.info("plugin-loader: all plugins shut down");
+      log.info("plugin-loader: todos los plugins apagados");
     },
   };
 
   // -------------------------------------------------------------------------
-  // Internal: activatePlugin — shared logic for loadAll and loadSingle
+  // Interno: activatePlugin — lógica compartida para loadAll y loadSingle
   // -------------------------------------------------------------------------
 
   /**
-   * Activate a single plugin: spawn its worker, register event subscriptions,
-   * sync jobs, register tools.
+   * Activa un solo plugin: genera su worker, registra suscripciones de
+   * eventos, sincroniza trabajos, registra herramientas.
    *
-   * This is the core orchestration logic shared by `loadAll()` and `loadSingle()`.
-   * Failures are caught and reported in the result; the plugin is marked as
-   * `error` in the database when activation fails.
+   * Esta es la lógica central de orquestación compartida por `loadAll()` y
+   * `loadSingle()`. Los fallos se capturan y reportan en el resultado; el
+   * plugin se marca como `error` en la base de datos cuando la activación
+   * falla.
    */
   async function activatePlugin(plugin: PluginRecord): Promise<PluginLoadResult> {
     const manifest = plugin.manifestJson;
@@ -1670,12 +1719,13 @@ export function pluginLoader(
       tools: 0,
     };
 
-    // Guard: runtime services must exist (callers already checked)
+    // Guarda: los servicios de runtime deben existir (los llamadores ya lo
+    // comprobaron)
     if (!runtimeServices) {
       return {
         plugin,
         success: false,
-        error: "No runtime services available",
+        error: "No hay servicios de runtime disponibles",
         registered,
       };
     }
@@ -1694,21 +1744,21 @@ export function pluginLoader(
     try {
       log.info(
         { pluginId, pluginKey, version: plugin.version },
-        "plugin-loader: activating plugin",
+        "plugin-loader: activando plugin",
       );
 
       // ------------------------------------------------------------------
-      // 1. Resolve worker entrypoint
+      // 1. Resuelve el entrypoint del worker
       // ------------------------------------------------------------------
       const workerEntrypoint = resolveWorkerEntrypoint(plugin, localPluginDir);
 
       // ------------------------------------------------------------------
-      // 2. Build host handlers for this plugin
+      // 2. Construye los manejadores host para este plugin
       // ------------------------------------------------------------------
       const hostHandlers = buildHostHandlers(pluginId, manifest);
 
       // ------------------------------------------------------------------
-      // 3. Retrieve plugin config (if any)
+      // 3. Recupera la configuración del plugin (si hay)
       // ------------------------------------------------------------------
       let config: Record<string, unknown> = {};
       try {
@@ -1717,12 +1767,12 @@ export function pluginLoader(
           config = (configRow as { configJson: Record<string, unknown> }).configJson ?? {};
         }
       } catch {
-        // Config may not exist yet — use empty object
-        log.debug({ pluginId }, "plugin-loader: no config found, using empty config");
+        // La configuración puede no existir aún — usa un objeto vacío
+        log.debug({ pluginId }, "plugin-loader: no se encontró config, usando config vacía");
       }
 
       // ------------------------------------------------------------------
-      // 4. Spawn worker process
+      // 4. Genera el proceso worker
       // ------------------------------------------------------------------
       const workerOptions: WorkerStartOptions = {
         entrypointPath: workerEntrypoint,
@@ -1734,9 +1784,11 @@ export function pluginLoader(
         autoRestart: true,
       };
 
-      // Repo-local plugin installs can resolve workspace TS sources at runtime
-      // (for example @paperclipai/shared exports). Run those workers through
-      // the tsx loader so first-party example plugins work in development.
+      // Las instalaciones locales de plugins del repo pueden resolver
+      // fuentes TS del workspace en tiempo de ejecución (por ejemplo los
+      // exports de @paperclipai/shared). Ejecuta esos workers a través del
+      // loader de tsx para que los plugins de ejemplo de primera parte
+      // funcionen en desarrollo.
       if (plugin.packagePath && existsSync(DEV_TSX_LOADER_PATH)) {
         workerOptions.execArgv = ["--import", DEV_TSX_LOADER_PATH];
       }
@@ -1746,11 +1798,11 @@ export function pluginLoader(
 
       log.info(
         { pluginId, pluginKey },
-        "plugin-loader: worker started",
+        "plugin-loader: worker iniciado",
       );
 
       // ------------------------------------------------------------------
-      // 5. Sync job declarations and register with scheduler
+      // 5. Sincroniza las declaraciones de trabajos y registra con el programador
       // ------------------------------------------------------------------
       const jobDeclarations = manifest.jobs ?? [];
       if (jobDeclarations.length > 0) {
@@ -1760,42 +1812,44 @@ export function pluginLoader(
 
         log.info(
           { pluginId, pluginKey, jobs: jobDeclarations.length },
-          "plugin-loader: job declarations synced and plugin registered with scheduler",
+          "plugin-loader: declaraciones de trabajos sincronizadas y plugin registrado con el programador",
         );
       }
 
       // ------------------------------------------------------------------
-      // 6. Register event subscriptions
+      // 6. Registra suscripciones de eventos
       //
-      // Note: Event subscriptions are declared at runtime by the plugin
-      // worker via the SDK's ctx.events.on() calls. The event bus manages
-      // per-plugin subscription scoping. Here we ensure the event bus has
-      // a scoped handle ready for this plugin — the actual subscriptions
-      // are registered by the host handler layer when the worker calls
-      // events.subscribe via RPC.
+      // Nota: Las suscripciones de eventos las declara en tiempo de
+      // ejecución el worker del plugin vía las llamadas ctx.events.on() del
+      // SDK. El bus de eventos maneja el alcance de suscripciones por
+      // plugin. Aquí nos aseguramos de que el bus de eventos tenga un
+      // manejador con alcance listo para este plugin — las suscripciones
+      // reales las registra la capa de manejadores host cuando el worker
+      // llama a events.subscribe vía RPC.
       //
-      // The bus.forPlugin() call creates the scoped handle if needed;
-      // any previous subscriptions for this plugin are preserved if the
-      // worker is restarting.
+      // La llamada bus.forPlugin() crea el manejador con alcance si es
+      // necesario; cualquier suscripción previa de este plugin se preserva si
+      // el worker se está reiniciando.
       // ------------------------------------------------------------------
       const _scopedBus = eventBus.forPlugin(pluginKey);
       registered.eventSubscriptions = eventBus.subscriptionCount(pluginKey);
 
       log.debug(
         { pluginId, pluginKey },
-        "plugin-loader: event bus scoped handle ready",
+        "plugin-loader: manejador con alcance del bus de eventos listo",
       );
 
       // ------------------------------------------------------------------
-      // 7. Register webhook endpoints (manifest-declared)
+      // 7. Registra endpoints de webhook (declarados en el manifiesto)
       //
-      // Webhooks are statically declared in the manifest. The actual
-      // endpoint routing is handled by the plugin routes module which
-      // checks the manifest for declared webhooks. No explicit
-      // registration step is needed here — the manifest is persisted
-      // in the DB and the route handler reads it at request time.
+      // Los webhooks se declaran estáticamente en el manifiesto. El ruteo
+      // real de endpoints lo maneja el módulo de rutas de plugins que
+      // consulta el manifiesto en busca de webhooks declarados. No se
+      // necesita ningún paso de registro explícito aquí — el manifiesto se
+      // persiste en la BD y el manejador de rutas lo lee al momento de la
+      // petición.
       //
-      // We track the count for the result reporting.
+      // Llevamos el conteo para el reporte de resultados.
       // ------------------------------------------------------------------
       const webhookDeclarations = manifest.webhooks ?? [];
       registered.webhooks = webhookDeclarations.length;
@@ -1803,12 +1857,12 @@ export function pluginLoader(
       if (webhookDeclarations.length > 0) {
         log.info(
           { pluginId, pluginKey, webhooks: webhookDeclarations.length },
-          "plugin-loader: webhook endpoints declared in manifest",
+          "plugin-loader: endpoints de webhook declarados en el manifiesto",
         );
       }
 
       // ------------------------------------------------------------------
-      // 8. Register agent tools
+      // 8. Registra herramientas de agente
       // ------------------------------------------------------------------
       const toolDeclarations = manifest.tools ?? [];
       if (toolDeclarations.length > 0) {
@@ -1817,12 +1871,12 @@ export function pluginLoader(
 
         log.info(
           { pluginId, pluginKey, tools: toolDeclarations.length },
-          "plugin-loader: agent tools registered",
+          "plugin-loader: herramientas de agente registradas",
         );
       }
 
       // ------------------------------------------------------------------
-      // Done — plugin fully activated
+      // Listo — plugin completamente activado
       // ------------------------------------------------------------------
       log.info(
         {
@@ -1831,7 +1885,7 @@ export function pluginLoader(
           version: plugin.version,
           registered,
         },
-        "plugin-loader: plugin activated successfully",
+        "plugin-loader: plugin activado exitosamente",
       );
 
       return { plugin, success: true, registered };
@@ -1840,20 +1894,21 @@ export function pluginLoader(
 
       log.error(
         { pluginId, pluginKey, err: errorMessage },
-        "plugin-loader: failed to activate plugin",
+        "plugin-loader: falló la activación del plugin",
       );
 
-      // Mark the plugin as errored in the database so it is not retried
-      // automatically on next startup without operator intervention.
+      // Marca el plugin como con error en la base de datos para que no se
+      // reintente automáticamente en el próximo arranque sin intervención
+      // del operador.
       try {
-        await lifecycleManager.markError(pluginId, `Activation failed: ${errorMessage}`);
+        await lifecycleManager.markError(pluginId, `La activación falló: ${errorMessage}`);
       } catch (markErr) {
         log.error(
           {
             pluginId,
             err: markErr instanceof Error ? markErr.message : String(markErr),
           },
-          "plugin-loader: failed to mark plugin as error after activation failure",
+          "plugin-loader: no se pudo marcar el plugin como error tras el fallo de activación",
         );
       }
 
@@ -1868,18 +1923,19 @@ export function pluginLoader(
 }
 
 // ---------------------------------------------------------------------------
-// Worker entrypoint resolution
+// Resolución del entrypoint del worker
 // ---------------------------------------------------------------------------
 
 /**
- * Resolve the absolute path to a plugin's worker entrypoint from its manifest
- * and known install locations.
+ * Resuelve la ruta absoluta al entrypoint del worker de un plugin desde su
+ * manifiesto y ubicaciones de instalación conocidas.
  *
- * The manifest `entrypoints.worker` field is relative to the package root.
- * We check the local plugin directory (where the package was installed) and
- * also the package directory if it was a local-path install.
+ * El campo `entrypoints.worker` del manifiesto es relativo a la raíz del
+ * paquete. Revisamos el directorio local de plugins (donde se instaló el
+ * paquete) y también el directorio del paquete si fue una instalación en
+ * ruta local.
  *
- * @see PLUGIN_SPEC.md §10 — Package Contract
+ * @see PLUGIN_SPEC.md §10 — Contrato de paquete
  */
 function resolveWorkerEntrypoint(
   plugin: PluginRecord & { packagePath?: string | null },
@@ -1888,7 +1944,8 @@ function resolveWorkerEntrypoint(
   const manifest = plugin.manifestJson;
   const workerRelPath = manifest.entrypoints.worker;
 
-  // For local-path installs we persist the resolved package path; use it first
+  // Para instalaciones en ruta local persistimos la ruta resuelta del
+  // paquete; úsala primero
   if (plugin.packagePath && existsSync(plugin.packagePath)) {
     const entrypoint = path.resolve(plugin.packagePath, workerRelPath);
     if (entrypoint.startsWith(path.resolve(plugin.packagePath)) && existsSync(entrypoint)) {
@@ -1896,27 +1953,28 @@ function resolveWorkerEntrypoint(
     }
   }
 
-  // Try the local plugin directory (standard npm install location)
+  // Prueba el directorio local de plugins (ubicación estándar de npm install)
   const packageName = plugin.packageName;
   let packageDir: string;
 
   if (packageName.startsWith("@")) {
-    // Scoped package: @scope/plugin-name → localPluginDir/node_modules/@scope/plugin-name
+    // Paquete con scope: @scope/plugin-name → localPluginDir/node_modules/@scope/plugin-name
     const [scope, name] = packageName.split("/");
     packageDir = path.join(localPluginDir, "node_modules", scope!, name!);
   } else {
     packageDir = path.join(localPluginDir, "node_modules", packageName);
   }
 
-  // Also check if the package exists directly under localPluginDir
-  // (for direct local-path installs or symlinked packages)
+  // También comprueba si el paquete existe directamente bajo localPluginDir
+  // (para instalaciones directas en ruta local o paquetes con symlink)
   const directDir = path.join(localPluginDir, packageName);
 
-  // Try in order: node_modules path, direct path
+  // Prueba en orden: ruta node_modules, ruta directa
   for (const dir of [packageDir, directDir]) {
     const entrypoint = path.resolve(dir, workerRelPath);
 
-    // Security: ensure entrypoint is actually inside the directory (prevent path traversal)
+    // Seguridad: asegura que el entrypoint esté realmente dentro del
+    // directorio (evita path traversal)
     if (!entrypoint.startsWith(path.resolve(dir))) {
       continue;
     }
@@ -1926,15 +1984,16 @@ function resolveWorkerEntrypoint(
     }
   }
 
-  // Fallback: try the worker path as-is (absolute or relative to cwd)
-  // ONLY if it's already an absolute path and we trust the manifest (which we've already validated)
+  // Alternativa: prueba la ruta del worker tal cual (absoluta o relativa al
+  // cwd) SOLO si ya es una ruta absoluta y confiamos en el manifiesto (que
+  // ya validamos)
   if (path.isAbsolute(workerRelPath) && existsSync(workerRelPath)) {
     return workerRelPath;
   }
 
   throw new Error(
-    `Worker entrypoint not found for plugin "${plugin.pluginKey}". ` +
-      `Checked: ${path.resolve(packageDir, workerRelPath)}, ` +
+    `Entrypoint del worker no encontrado para el plugin "${plugin.pluginKey}". ` +
+      `Revisado: ${path.resolve(packageDir, workerRelPath)}, ` +
       `${path.resolve(directDir, workerRelPath)}`,
   );
 }

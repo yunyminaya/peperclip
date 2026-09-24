@@ -12,7 +12,7 @@ export function assertInstanceAdmin(req: Request) {
   if (req.actor.source === "local_implicit" || req.actor.isInstanceAdmin) {
     return;
   }
-  throw forbidden("Instance admin access required");
+  throw forbidden("Se requiere acceso de administrador de instancia");
 }
 
 export function assertCompanyAccess(req: Request, companyId: string) {
@@ -20,12 +20,12 @@ export function assertCompanyAccess(req: Request, companyId: string) {
     throw unauthorized();
   }
   if (req.actor.type === "agent" && req.actor.companyId !== companyId) {
-    throw forbidden("Agent key cannot access another company");
+    throw forbidden("La clave de agente no puede acceder a otra empresa");
   }
   if (req.actor.type === "board" && req.actor.source !== "local_implicit" && !req.actor.isInstanceAdmin) {
     const allowedCompanies = req.actor.companyIds ?? [];
     if (!allowedCompanies.includes(companyId)) {
-      throw forbidden("User does not have access to this company");
+      throw forbidden("El usuario no tiene acceso a esta empresa");
     }
   }
 }

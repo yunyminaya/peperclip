@@ -1,78 +1,78 @@
-# Instructions for writing the README.md
+# Instrucciones para escribir el README.md
 
-The readme should be visually interesting, to the point, not too long.
-Use the copy from the website in cases where we need some.
+El readme debe ser visualmente interesante, directo, no demasiado largo.
+Usa el texto del sitio web en los casos donde lo necesitemos.
 
-- gives the pitch why, e.g. from the homepage.
+- da el pitch del por qué, p. ej., desde la homepage.
 
-## Outline
+## Esquema
 
-- image header up top
+- encabezado de imagen arriba
 - Paperclip
-- Manage autonomous AI Businesses
-- The open-source AI-agent orchestrator teams of agents that run companies
+- Gestiona negocios de IA autónomos
+- El orquestador de agentes de IA open source para equipos de agentes que operan empresas
 
-- a video
+- un video
 
-# What is it
+# Qué es
 
-Paperclip is a node server & UI that orchestrates a team of agents to run businesses.
+Paperclip es un servidor node y UI que orquesta un equipo de agentes para operar negocios.
 
-Bring-your-own agents, assign goals, and track your agent's work and costs.
+Trae tus propios agentes, asigna objetivos y sigue el trabajo y los costos de tus agentes.
 
-It looks like a task manager but has specialized skills and agent coordination
+Parece un gestor de tareas pero tiene habilidades especializadas y coordinación de agentes
 
-**It's high taste, and feels good to use**
+**Es de alto gusto, y se siente bien de usar**
 
-# Paperclip is right for you if:
+# Paperclip es para ti si:
 
-- You want to build autonomous companies
-- You want to coordinate many different types agents (OpenClaw, Codex, Claude, Cursor, etc.) to collaborate towards a common goal
-- You have 20 simultaneous Claude Code terminals open (and lose track of what everyone is working on)
-- You want to let your agents run autonomously 24/7, but still audit their work and chime in when needed
-- You want to monitor costs
-- You want a process for managing your agents that feels like using a task manager
-- You want to manage your autonomous businesses from your phone
+- Quieres construir empresas autónomas
+- Quieres coordinar muchos tipos distintos de agentes (OpenClaw, Codex, Claude, Cursor, etc.) para colaborar hacia un objetivo común
+- Tienes 20 terminales de Claude Code simultáneas abiertas (y pierdes la pista de en qué está trabajando cada uno)
+- Quieres dejar que tus agentes se ejecuten autónomamente 24/7, pero aún así auditar su trabajo e intervenir cuando sea necesario
+- Quieres monitorear costos
+- Quieres un proceso para gestionar tus agentes que se sienta como usar un gestor de tareas
+- Quieres gestionar tus negocios autónomos desde tu teléfono
 
-# What is not
+# Qué no es
 
-Paperclip is not:
+Paperclip no es:
 
-- a code review tool
-- opinionated about what agent you use
+- una herramienta de revisión de código
+- opinado sobre qué agente usas
 
-# the problem
+# el problema
 
-If you want to be maximally effective with agents, you need to
+Si quieres ser máximamente efectivo con agentes, necesitas
 
-# quickstart
+# inicio rápido
 
-# faq
+# preguntas frecuentes
 
-# comparison
+# comparación
 
-# contributing
+# contribuir
 
-# community
+# comunidad
 
-# license
+# licencia
 
-# footer
+# pie de página
 
-## Examples:
+## Ejemplos:
 
-- https://github.com/klawsh/klaw.sh - nice header, nice tables
-  - what is it
-  - the problem
-  - quickstart
-  - faq
-  - comparison
-  - contributing
-  - community
-  - license
-  - footer
-- https://github.com/nearai/ironclaw - nice header
-  - philosophy
-- https://github.com/TinyAGI/tinyclaw - nice header, nice video
-- https://github.com/ryoppippi/ccusage - nice header,
-- https://github.com/can1357/oh-my-pi - a little long
+- https://github.com/klawsh/klaw.sh - buen encabezado, buenas tablas
+  - qué es
+  - el problema
+  - inicio rápido
+  - preguntas frecuentes
+  - comparación
+  - contribuir
+  - comunidad
+  - licencia
+  - pie de página
+- https://github.com/nearai/ironclaw - buen encabezado
+  - filosofía
+- https://github.com/TinyAGI/tinyclaw - buen encabezado, buen video
+- https://github.com/ryoppippi/ccusage - buen encabezado,
+- https://github.com/can1357/oh-my-pi - un poco largo

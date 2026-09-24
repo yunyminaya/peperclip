@@ -15,8 +15,8 @@ function getBridgeRegistry(): PluginBridgeRegistry | undefined {
 
 function missingBridgeValueError(name: string): Error {
   return new Error(
-    `Paperclip plugin UI runtime is not initialized for "${name}". ` +
-      'Ensure the host loaded the plugin bridge before rendering this UI module.',
+    `El runtime de interfaz de plugin de Paperclip no está inicializado para "${name}". ` +
+      'Asegurarse de que el host cargó el puente del plugin antes de renderizar este módulo de interfaz.',
   );
 }
 
@@ -47,5 +47,5 @@ export function renderSdkUiComponent<TProps>(
     return component(props);
   }
 
-  throw new Error(`Paperclip plugin UI component "${name}" is not callable`);
+  throw new Error(`El componente de interfaz de plugin de Paperclip "${name}" no es invocable`);
 }

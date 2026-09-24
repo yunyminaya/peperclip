@@ -1,49 +1,50 @@
-## Thinking Path
+## Ruta de razonamiento
 
 <!--
-  Required. Trace your reasoning from the top of the project down to this
-  specific change. Start with what Paperclip is, then narrow through the
-  subsystem, the problem, and why this PR exists. Use blockquote style.
-  Aim for 5–8 steps. See CONTRIBUTING.md for full examples.
+  Obligatorio. Traza tu razonamiento desde lo más alto del proyecto hasta este
+  cambio específico. Empieza con qué es Paperclip y luego enfócate en el
+  subsistema, el problema y por qué existe este PR. Usa estilo de cita.
+  Apunta a 5–8 pasos. Ver CONTRIBUTING.md para ejemplos completos.
 -->
 
-> - Paperclip orchestrates AI agents for zero-human companies
-> - [Which subsystem or capability is involved]
-> - [What problem or gap exists]
-> - [Why it needs to be addressed]
-> - This pull request ...
-> - The benefit is ...
+> - Paperclip orquesta agentes de IA para empresas sin humanos
+> - [Qué subsistema o capacidad está involucrada]
+> - [Qué problema o brecha existe]
+> - [Por qué necesita abordarse]
+> - Este pull request ...
+> - El beneficio es ...
 
-## What Changed
+## Qué cambió
 
-<!-- Bullet list of concrete changes. One bullet per logical unit. -->
+<!-- Lista con viñetas de cambios concretos. Una viñeta por unidad lógica. -->
 
 -
 
-## Verification
+## Verificación
 
 <!--
-  How can a reviewer confirm this works? Include test commands, manual
-  steps, or both. For UI changes, include before/after screenshots.
--->
-
--
-
-## Risks
-
-<!--
-  What could go wrong? Mention migration safety, breaking changes,
-  behavioral shifts, or "Low risk" if genuinely minor.
+  ¿Cómo puede un revisor confirmar que esto funciona? Incluir comandos de prueba,
+  pasos manuales o ambos. Para cambios de UI, incluir capturas de pantalla
+  antes/después.
 -->
 
 -
 
-## Checklist
+## Riesgos
 
-- [ ] I have included a thinking path that traces from project context to this change
-- [ ] I have run tests locally and they pass
-- [ ] I have added or updated tests where applicable
-- [ ] If this change affects the UI, I have included before/after screenshots
-- [ ] I have updated relevant documentation to reflect my changes
-- [ ] I have considered and documented any risks above
-- [ ] I will address all Greptile and reviewer comments before requesting merge
+<!--
+  ¿Qué podría salir mal? Mencionar seguridad de migración, cambios que rompen,
+  cambios de comportamiento o "Riesgo bajo" si es realmente menor.
+-->
+
+-
+
+## Lista de verificación
+
+- [ ] Incluí una ruta de razonamiento que va del contexto del proyecto a este cambio
+- [ ] Ejecuté las pruebas localmente y pasan
+- [ ] Agregué o actualicé pruebas donde aplica
+- [ ] Si este cambio afecta la UI, incluí capturas de pantalla antes/después
+- [ ] Actualicé la documentación relevante para reflejar mis cambios
+- [ ] Consideré y documenté cualquier riesgo arriba
+- [ ] Atenderé todos los comentarios de Greptile y de los revisores antes de solicitar el merge

@@ -12,16 +12,17 @@ import { notFound } from "../errors.js";
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Default namespace used when the plugin does not specify one. */
+/** Namespace predeterminado usado cuando el plugin no especifica uno. */
 const DEFAULT_NAMESPACE = "default";
 
 /**
- * Build the WHERE clause conditions for a scoped state lookup.
+ * Construye las condiciones de la cláusula WHERE para una búsqueda de estado
+ * con alcance.
  *
- * The five-part composite key is:
+ * La clave compuesta de cinco partes es:
  *   `(pluginId, scopeKind, scopeId, namespace, stateKey)`
  *
- * `scopeId` may be null (for `instance` scope) or a non-empty string.
+ * `scopeId` puede ser null (para alcance `instance`) o un string no vacío.
  */
 function scopeConditions(
   pluginId: string,
@@ -51,24 +52,26 @@ function scopeConditions(
 // ---------------------------------------------------------------------------
 
 /**
- * Plugin State Store — scoped key-value persistence for plugin workers.
+ * Plugin State Store — persistencia clave-valor con alcance para workers de
+ * plugins.
  *
- * Provides `get`, `set`, `delete`, and `list` operations over the
- * `plugin_state` table. Each plugin's data is strictly namespaced by
- * `pluginId` so plugins cannot read or write each other's state.
+ * Provee operaciones `get`, `set`, `delete` y `list` sobre la tabla
+ * `plugin_state`. Los datos de cada plugin están estrictamente
+ * namespaced por `pluginId` para que los plugins no puedan leer ni escribir
+ * el estado de otros.
  *
- * This service implements the server-side backing for the `ctx.state` SDK
- * client exposed to plugin workers. The host is responsible for:
- * - enforcing `plugin.state.read` capability before calling `get` / `list`
- * - enforcing `plugin.state.write` capability before calling `set` / `delete`
+ * Este servicio implementa el respaldo del lado servidor para el cliente SDK
+ * `ctx.state` expuesto a los workers de plugins. El host es responsable de:
+ * - exigir la capacidad `plugin.state.read` antes de llamar `get` / `list`
+ * - exigir la capacidad `plugin.state.write` antes de llamar `set` / `delete`
  *
- * @see PLUGIN_SPEC.md §14 — SDK Surface (`ctx.state`)
- * @see PLUGIN_SPEC.md §15.1 — Capabilities: Plugin State
- * @see PLUGIN_SPEC.md §21.3 — `plugin_state` table
+ * @see PLUGIN_SPEC.md §14 — Superficie del SDK (`ctx.state`)
+ * @see PLUGIN_SPEC.md §15.1 — Capacidades: estado de plugin
+ * @see PLUGIN_SPEC.md §21.3 — tabla `plugin_state`
  */
 export function pluginStateStore(db: Db) {
   // -----------------------------------------------------------------------
-  // Internal helpers
+  // Utilidades internas
   // -----------------------------------------------------------------------
 
   async function assertPluginExists(pluginId: string): Promise<void> {
@@ -77,28 +80,28 @@ export function pluginStateStore(db: Db) {
       .from(plugins)
       .where(eq(plugins.id, pluginId));
     if (rows.length === 0) {
-      throw notFound(`Plugin not found: ${pluginId}`);
+      throw notFound(`Plugin no encontrado: ${pluginId}`);
     }
   }
 
   // -----------------------------------------------------------------------
-  // Public API
+  // API pública
   // -----------------------------------------------------------------------
 
   return {
     /**
-     * Read a state value.
+     * Lee un valor de estado.
      *
-     * Returns the stored JSON value, or `null` if no entry exists for the
-     * given scope and key.
+     * Devuelve el valor JSON almacenado, o `null` si no existe entrada para
+     * el alcance y clave dados.
      *
-     * Requires `plugin.state.read` capability (enforced by the caller).
+     * Requiere la capacidad `plugin.state.read` (la exige el llamador).
      *
-     * @param pluginId - UUID of the owning plugin
-     * @param scopeKind - Granularity of the scope
-     * @param scopeId - Identifier for the scoped entity (null for `instance` scope)
-     * @param stateKey - The key to read
-     * @param namespace - Sub-namespace (defaults to `"default"`)
+     * @param pluginId - UUID del plugin propietario
+     * @param scopeKind - Granularidad del alcance
+     * @param scopeId - Identificador de la entidad con alcance (null para alcance `instance`)
+     * @param stateKey - La clave a leer
+     * @param namespace - Sub-namespace (por defecto `"default"`)
      */
     get: async (
       pluginId: string,
@@ -118,16 +121,16 @@ export function pluginStateStore(db: Db) {
     },
 
     /**
-     * Write (create or replace) a state value.
+     * Escribe (crea o reemplaza) un valor de estado.
      *
-     * Uses an upsert so the caller does not need to check for prior existence.
-     * On conflict (same composite key) the existing row's `value_json` and
-     * `updated_at` are overwritten.
+     * Usa un upsert para que el llamador no necesite verificar la existencia
+     * previa. En conflicto (misma clave compuesta) se sobrescriben el
+     * `value_json` y `updated_at` de la fila existente.
      *
-     * Requires `plugin.state.write` capability (enforced by the caller).
+     * Requiere la capacidad `plugin.state.write` (la exige el llamador).
      *
-     * @param pluginId - UUID of the owning plugin
-     * @param input - Scope key and value to store
+     * @param pluginId - UUID del plugin propietario
+     * @param input - Clave de alcance y valor a almacenar
      */
     set: async (pluginId: string, input: SetPluginState): Promise<void> => {
       await assertPluginExists(pluginId);
@@ -162,17 +165,18 @@ export function pluginStateStore(db: Db) {
     },
 
     /**
-     * Delete a state value.
+     * Elimina un valor de estado.
      *
-     * No-ops silently if the entry does not exist (idempotent by design).
+     * No hace nada silenciosamente si la entrada no existe (idempotente por
+     * diseño).
      *
-     * Requires `plugin.state.write` capability (enforced by the caller).
+     * Requiere la capacidad `plugin.state.write` (la exige el llamador).
      *
-     * @param pluginId - UUID of the owning plugin
-     * @param scopeKind - Granularity of the scope
-     * @param stateKey - The key to delete
-     * @param scopeId - Identifier for the scoped entity (null for `instance` scope)
-     * @param namespace - Sub-namespace (defaults to `"default"`)
+     * @param pluginId - UUID del plugin propietario
+     * @param scopeKind - Granularidad del alcance
+     * @param stateKey - La clave a eliminar
+     * @param scopeId - Identificador de la entidad con alcance (null para alcance `instance`)
+     * @param namespace - Sub-namespace (por defecto `"default"`)
      */
     delete: async (
       pluginId: string,
@@ -189,15 +193,16 @@ export function pluginStateStore(db: Db) {
     },
 
     /**
-     * List all state entries for a plugin, optionally filtered by scope.
+     * Lista todas las entradas de estado de un plugin, opcionalmente
+     * filtradas por alcance.
      *
-     * Returns all matching rows as `PluginStateRecord`-shaped objects.
-     * The `valueJson` field contains the stored value.
+     * Devuelve todas las filas coincidentes como objetos con forma de
+     * `PluginStateRecord`. El campo `valueJson` contiene el valor almacenado.
      *
-     * Requires `plugin.state.read` capability (enforced by the caller).
+     * Requiere la capacidad `plugin.state.read` (la exige el llamador).
      *
-     * @param pluginId - UUID of the owning plugin
-     * @param filter - Optional scope filters (scopeKind, scopeId, namespace)
+     * @param pluginId - UUID del plugin propietario
+     * @param filter - Filtros opcionales de alcance (scopeKind, scopeId, namespace)
      */
     list: async (pluginId: string, filter: ListPluginState = {}): Promise<typeof pluginState.$inferSelect[]> => {
       const conditions = [eq(pluginState.pluginId, pluginId)];
@@ -219,12 +224,13 @@ export function pluginStateStore(db: Db) {
     },
 
     /**
-     * Delete all state entries owned by a plugin.
+     * Elimina todas las entradas de estado propiedad de un plugin.
      *
-     * Called during plugin uninstall when `removeData = true`. Also useful
-     * for resetting a plugin's state during testing.
+     * Se llama durante la desinstalación del plugin cuando `removeData =
+     * true`. También útil para restablecer el estado de un plugin durante
+     * pruebas.
      *
-     * @param pluginId - UUID of the owning plugin
+     * @param pluginId - UUID del plugin propietario
      */
     deleteAll: async (pluginId: string): Promise<void> => {
       await db

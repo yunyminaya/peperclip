@@ -13,7 +13,7 @@ import { AgentIcon } from "../components/AgentIconPicker";
 import { Download, Network, Upload } from "lucide-react";
 import { AGENT_ROLE_LABELS, type Agent } from "@paperclipai/shared";
 
-// Layout constants
+// Constantes de layout
 const CARD_W = 200;
 const CARD_H = 100;
 const GAP_X = 32;
@@ -86,7 +86,7 @@ function layoutForest(roots: OrgNode[]): LayoutNode[] {
     x += w + GAP_X;
   }
 
-  // Compute bounds and return
+  // Calcular los límites y devolver
   return result;
 }
 
@@ -122,8 +122,8 @@ const adapterLabels: Record<string, string> = {
   gemini_local: "Gemini",
   opencode_local: "OpenCode",
   cursor: "Cursor",
-  openclaw_gateway: "OpenClaw Gateway",
-  process: "Process",
+  openclaw_gateway: "Pasarela de OpenClaw",
+  process: "Proceso",
   http: "HTTP",
 };
 
@@ -163,15 +163,15 @@ export function OrgChart() {
   }, [agents]);
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Org Chart" }]);
+    setBreadcrumbs([{ label: "Organigrama" }]);
   }, [setBreadcrumbs]);
 
-  // Layout computation
+  // Cálculo del layout
   const layout = useMemo(() => layoutForest(orgTree ?? []), [orgTree]);
   const allNodes = useMemo(() => flattenLayout(layout), [layout]);
   const edges = useMemo(() => collectEdges(layout), [layout]);
 
-  // Compute SVG bounds
+  // Calcular los límites del SVG
   const bounds = useMemo(() => {
     if (allNodes.length === 0) return { width: 800, height: 600 };
     let maxX = 0, maxY = 0;
@@ -182,14 +182,14 @@ export function OrgChart() {
     return { width: maxX + PADDING, height: maxY + PADDING };
   }, [allNodes]);
 
-  // Pan & zoom state
+  // Estado de paneo y zoom
   const containerRef = useRef<HTMLDivElement>(null);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
 
-  // Center the chart on first load
+  // Centrar el gráfico en la primera carga
   const hasInitialized = useRef(false);
   useEffect(() => {
     if (hasInitialized.current || allNodes.length === 0 || !containerRef.current) return;
@@ -199,7 +199,7 @@ export function OrgChart() {
     const containerW = container.clientWidth;
     const containerH = container.clientHeight;
 
-    // Fit chart to container
+    // Ajustar el gráfico al contenedor
     const scaleX = (containerW - 40) / bounds.width;
     const scaleY = (containerH - 40) / bounds.height;
     const fitZoom = Math.min(scaleX, scaleY, 1);
@@ -216,7 +216,7 @@ export function OrgChart() {
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return;
-    // Don't drag if clicking a card
+    // No arrastrar si se hace clic en una tarjeta
     const target = e.target as HTMLElement;
     if (target.closest("[data-org-card]")) return;
     setDragging(true);
@@ -246,7 +246,7 @@ export function OrgChart() {
     const factor = e.deltaY < 0 ? 1.1 : 0.9;
     const newZoom = Math.min(Math.max(zoom * factor, 0.2), 2);
 
-    // Zoom toward mouse position
+    // Zoom hacia la posición del mouse
     const scale = newZoom / zoom;
     setPan({
       x: mouseX - scale * (mouseX - pan.x),
@@ -256,7 +256,7 @@ export function OrgChart() {
   }, [zoom, pan]);
 
   if (!selectedCompanyId) {
-    return <EmptyState icon={Network} message="Select a company to view the org chart." />;
+    return <EmptyState icon={Network} message="Selecciona una empresa para ver el organigrama." />;
   }
 
   if (isLoading) {
@@ -264,7 +264,7 @@ export function OrgChart() {
   }
 
   if (orgTree && orgTree.length === 0) {
-    return <EmptyState icon={Network} message="No organizational hierarchy defined." />;
+    return <EmptyState icon={Network} message="No hay jerarquía organizacional definida." />;
   }
 
   return (
@@ -273,13 +273,13 @@ export function OrgChart() {
       <Link to="/company/import">
         <Button variant="outline" size="sm">
           <Upload className="mr-1.5 h-3.5 w-3.5" />
-          Import company
+          Importar empresa
         </Button>
       </Link>
       <Link to="/company/export">
         <Button variant="outline" size="sm">
           <Download className="mr-1.5 h-3.5 w-3.5" />
-          Export company
+          Exportar empresa
         </Button>
       </Link>
     </div>
@@ -308,7 +308,7 @@ export function OrgChart() {
             }
             setZoom(newZoom);
           }}
-          aria-label="Zoom in"
+          aria-label="Acercar"
         >
           +
         </button>
@@ -325,7 +325,7 @@ export function OrgChart() {
             }
             setZoom(newZoom);
           }}
-          aria-label="Zoom out"
+          aria-label="Alejar"
         >
           &minus;
         </button>
@@ -343,10 +343,10 @@ export function OrgChart() {
             setZoom(fitZoom);
             setPan({ x: (cW - chartW) / 2, y: (cH - chartH) / 2 });
           }}
-          title="Fit to screen"
-          aria-label="Fit chart to screen"
+          title="Ajustar a la pantalla"
+          aria-label="Ajustar el gráfico a la pantalla"
         >
-          Fit
+          Ajustar
         </button>
       </div>
 

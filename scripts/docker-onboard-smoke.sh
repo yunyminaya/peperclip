@@ -54,14 +54,14 @@ wait_for_http() {
       return 0
     fi
     if ! container_is_running; then
-      echo "Smoke bootstrap failed: container $CONTAINER_NAME exited before $url became ready" >&2
+      echo "La inicialización de smoke falló: el contenedor $CONTAINER_NAME salió antes de que $url estuviera lista" >&2
       docker logs "$CONTAINER_NAME" >&2 || true
       return 1
     fi
     sleep "$sleep_seconds"
   done
   if ! container_is_running; then
-    echo "Smoke bootstrap failed: container $CONTAINER_NAME exited before readiness check completed" >&2
+    echo "La inicialización de smoke falló: el contenedor $CONTAINER_NAME salió antes de completar la verificación de preparación" >&2
     docker logs "$CONTAINER_NAME" >&2 || true
   fi
   return 1
@@ -102,7 +102,7 @@ generate_bootstrap_invite_url() {
   fi
 
   if [[ $bootstrap_status -ne 0 && $bootstrap_status -ne 124 ]]; then
-    echo "Smoke bootstrap failed: could not run bootstrap-ceo inside container" >&2
+    echo "La inicialización de smoke falló: no se pudo ejecutar bootstrap-ceo dentro del contenedor" >&2
     printf '%s\n' "$bootstrap_output" >&2
     return 1
   fi
@@ -115,13 +115,13 @@ generate_bootstrap_invite_url() {
   )"
 
   if [[ -z "$invite_url" ]]; then
-    echo "Smoke bootstrap failed: bootstrap-ceo did not print an invite URL" >&2
+    echo "La inicialización de smoke falló: bootstrap-ceo no imprimió una URL de invitación" >&2
     printf '%s\n' "$bootstrap_output" >&2
     return 1
   fi
 
   if [[ $bootstrap_status -eq 124 ]]; then
-    echo "    Smoke bootstrap: bootstrap-ceo timed out after printing invite URL; continuing" >&2
+    echo "    Inicialización de smoke: bootstrap-ceo agotó el tiempo después de imprimir la URL de invitación; continuando" >&2
   fi
 
   printf '%s\n' "$invite_url"
@@ -160,7 +160,7 @@ sign_up_or_sign_in() {
     "{\"name\":\"$SMOKE_ADMIN_NAME\",\"email\":\"$SMOKE_ADMIN_EMAIL\",\"password\":\"$SMOKE_ADMIN_PASSWORD\"}" \
     "$signup_response")"
   if [[ "$signup_status" =~ ^2 ]]; then
-    echo "    Smoke bootstrap: created admin user $SMOKE_ADMIN_EMAIL"
+    echo "    Inicialización de smoke: usuario admin creado $SMOKE_ADMIN_EMAIL"
     return 0
   fi
 
@@ -171,15 +171,15 @@ sign_up_or_sign_in() {
     "{\"email\":\"$SMOKE_ADMIN_EMAIL\",\"password\":\"$SMOKE_ADMIN_PASSWORD\"}" \
     "$signin_response")"
   if [[ "$signin_status" =~ ^2 ]]; then
-    echo "    Smoke bootstrap: signed in existing admin user $SMOKE_ADMIN_EMAIL"
+    echo "    Inicialización de smoke: sesión iniciada con el usuario admin existente $SMOKE_ADMIN_EMAIL"
     return 0
   fi
 
-  echo "Smoke bootstrap failed: could not sign up or sign in admin user" >&2
-  echo "Sign-up response:" >&2
+  echo "La inicialización de smoke falló: no se pudo registrar o iniciar sesión con el usuario admin" >&2
+  echo "Respuesta del registro:" >&2
   cat "$signup_response" >&2 || true
   echo >&2
-  echo "Sign-in response:" >&2
+  echo "Respuesta del inicio de sesión:" >&2
   cat "$signin_response" >&2 || true
   echo >&2
   return 1
@@ -196,11 +196,11 @@ auto_bootstrap_authenticated_smoke() {
   sign_up_or_sign_in
 
   if [[ "$health_json" == *'"bootstrapStatus":"ready"'* ]]; then
-    echo "    Smoke bootstrap: instance already ready"
+    echo "    Inicialización de smoke: la instancia ya está lista"
   else
     local invite_url
     invite_url="$(generate_bootstrap_invite_url)"
-    echo "    Smoke bootstrap: generated bootstrap invite via auth bootstrap-ceo"
+    echo "    Inicialización de smoke: invitación de inicialización generada vía auth bootstrap-ceo"
 
     local invite_token="${invite_url##*/}"
     local accept_response="$TMP_DIR/accept.json"
@@ -210,18 +210,18 @@ auto_bootstrap_authenticated_smoke() {
       '{"requestType":"human"}' \
       "$accept_response")"
     if [[ ! "$accept_status" =~ ^2 ]]; then
-      echo "Smoke bootstrap failed: bootstrap invite acceptance returned HTTP $accept_status" >&2
+      echo "La inicialización de smoke falló: la aceptación de la invitación de inicialización devolvió HTTP $accept_status" >&2
       cat "$accept_response" >&2 || true
       echo >&2
       return 1
     fi
-    echo "    Smoke bootstrap: accepted bootstrap invite"
+    echo "    Inicialización de smoke: invitación de inicialización aceptada"
   fi
 
   local session_json
   session_json="$(get_with_cookies "$PAPERCLIP_PUBLIC_URL/api/auth/get-session")"
   if [[ "$session_json" != *'"userId"'* ]]; then
-    echo "Smoke bootstrap failed: no authenticated session after bootstrap" >&2
+    echo "La inicialización de smoke falló: no hay sesión autenticada después de la inicialización" >&2
     echo "$session_json" >&2
     return 1
   fi
@@ -229,16 +229,16 @@ auto_bootstrap_authenticated_smoke() {
   local companies_json
   companies_json="$(get_with_cookies "$PAPERCLIP_PUBLIC_URL/api/companies")"
   if [[ "${companies_json:0:1}" != "[" ]]; then
-    echo "Smoke bootstrap failed: board companies endpoint did not return JSON array" >&2
+    echo "La inicialización de smoke falló: el endpoint de empresas del panel no devolvió un arreglo JSON" >&2
     echo "$companies_json" >&2
     return 1
   fi
 
-  echo "    Smoke bootstrap: board session verified"
-  echo "    Smoke admin credentials: $SMOKE_ADMIN_EMAIL / $SMOKE_ADMIN_PASSWORD"
+  echo "    Inicialización de smoke: sesión del panel verificada"
+  echo "    Credenciales del admin de smoke: $SMOKE_ADMIN_EMAIL / $SMOKE_ADMIN_PASSWORD"
 }
 
-echo "==> Building onboard smoke image"
+echo "==> Compilando imagen de smoke de incorporación"
 docker build \
   --build-arg PAPERCLIPAI_VERSION="$PAPERCLIPAI_VERSION" \
   --build-arg HOST_UID="$HOST_UID" \
@@ -246,15 +246,15 @@ docker build \
   -t "$IMAGE_NAME" \
   "$REPO_ROOT"
 
-echo "==> Running onboard smoke container"
-echo "    UI should be reachable at: http://localhost:$HOST_PORT"
-echo "    Public URL: $PAPERCLIP_PUBLIC_URL"
-echo "    Smoke auto-bootstrap: $SMOKE_AUTO_BOOTSTRAP"
-echo "    Detached mode: $SMOKE_DETACH"
-echo "    Data dir: $DATA_DIR"
-echo "    Deployment: $PAPERCLIP_DEPLOYMENT_MODE/$PAPERCLIP_DEPLOYMENT_EXPOSURE"
+echo "==> Ejecutando contenedor de smoke de incorporación"
+echo "    La UI debería estar disponible en: http://localhost:$HOST_PORT"
+echo "    URL pública: $PAPERCLIP_PUBLIC_URL"
+echo "    Inicialización automática de smoke: $SMOKE_AUTO_BOOTSTRAP"
+echo "    Modo separado: $SMOKE_DETACH"
+echo "    Directorio de datos: $DATA_DIR"
+echo "    Despliegue: $PAPERCLIP_DEPLOYMENT_MODE/$PAPERCLIP_DEPLOYMENT_EXPOSURE"
 if [[ "$SMOKE_DETACH" != "true" ]]; then
-  echo "    Live output: onboard banner and server logs stream in this terminal (Ctrl+C to stop)"
+  echo "    Salida en vivo: el banner de incorporación y los logs del servidor se muestran en esta terminal (Ctrl+C para detener)"
 fi
 
 docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
@@ -279,7 +279,7 @@ TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/paperclip-onboard-smoke.XXXXXX")"
 COOKIE_JAR="$TMP_DIR/cookies.txt"
 
 if ! wait_for_http "$PAPERCLIP_PUBLIC_URL/api/health" 90 1; then
-  echo "Smoke bootstrap failed: server did not become ready at $PAPERCLIP_PUBLIC_URL/api/health" >&2
+  echo "La inicialización de smoke falló: el servidor no estuvo listo en $PAPERCLIP_PUBLIC_URL/api/health" >&2
   exit 1
 fi
 
@@ -291,11 +291,11 @@ write_metadata_file
 
 if [[ "$SMOKE_DETACH" == "true" ]]; then
   PRESERVE_CONTAINER_ON_EXIT="true"
-  echo "==> Smoke container ready for automation"
-  echo "    Smoke base URL: $PAPERCLIP_PUBLIC_URL"
-  echo "    Smoke admin credentials: $SMOKE_ADMIN_EMAIL / $SMOKE_ADMIN_PASSWORD"
+  echo "==> Contenedor de smoke listo para automatización"
+  echo "    URL base de smoke: $PAPERCLIP_PUBLIC_URL"
+  echo "    Credenciales del admin de smoke: $SMOKE_ADMIN_EMAIL / $SMOKE_ADMIN_PASSWORD"
   if [[ -n "$SMOKE_METADATA_FILE" ]]; then
-    echo "    Smoke metadata file: $SMOKE_METADATA_FILE"
+    echo "    Archivo de metadatos de smoke: $SMOKE_METADATA_FILE"
   fi
   exit 0
 fi

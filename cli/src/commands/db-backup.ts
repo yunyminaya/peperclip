@@ -37,7 +37,7 @@ function resolveConnectionString(configPath?: string): { value: string; source: 
 function normalizeRetentionDays(value: number | undefined, fallback: number): number {
   const candidate = value ?? fallback;
   if (!Number.isInteger(candidate) || candidate < 1) {
-    throw new Error(`Invalid retention days '${String(candidate)}'. Use a positive integer.`);
+    throw new Error(`Días de retención inválidos '${String(candidate)}'. Usa un entero positivo.`);
   }
   return candidate;
 }
@@ -63,12 +63,12 @@ export async function dbBackupCommand(opts: DbBackupOptions): Promise<void> {
   const filenamePrefix = opts.filenamePrefix?.trim() || "paperclip";
 
   p.log.message(pc.dim(`Config: ${configPath}`));
-  p.log.message(pc.dim(`Connection source: ${connection.source}`));
-  p.log.message(pc.dim(`Backup dir: ${backupDir}`));
-  p.log.message(pc.dim(`Retention: ${retentionDays} day(s)`));
+  p.log.message(pc.dim(`Fuente de conexión: ${connection.source}`));
+  p.log.message(pc.dim(`Carpeta de respaldo: ${backupDir}`));
+  p.log.message(pc.dim(`Retención: ${retentionDays} día(s)`));
 
   const spinner = p.spinner();
-  spinner.start("Creating database backup...");
+  spinner.start("Creando respaldo de la base de datos...");
   try {
     const result = await runDatabaseBackup({
       connectionString: connection.value,
@@ -76,7 +76,7 @@ export async function dbBackupCommand(opts: DbBackupOptions): Promise<void> {
       retentionDays,
       filenamePrefix,
     });
-    spinner.stop(`Backup saved: ${formatDatabaseBackupResult(result)}`);
+    spinner.stop(`Respaldo guardado: ${formatDatabaseBackupResult(result)}`);
 
     if (opts.json) {
       console.log(
@@ -94,9 +94,9 @@ export async function dbBackupCommand(opts: DbBackupOptions): Promise<void> {
         ),
       );
     }
-    p.outro(pc.green("Backup completed."));
+    p.outro(pc.green("Respaldo completado."));
   } catch (err) {
-    spinner.stop(pc.red("Backup failed."));
+    spinner.stop(pc.red("Respaldo fallido."));
     throw err;
   }
 }

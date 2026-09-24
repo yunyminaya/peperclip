@@ -27,11 +27,11 @@ import type {
 } from "./types.js";
 
 export interface TestHarnessOptions {
-  /** Plugin manifest used to seed capability checks and metadata. */
+  /** Manifiesto del plugin usado para sembrar verificaciones de capacidades y metadatos. */
   manifest: PaperclipPluginManifestV1;
-  /** Optional capability override. Defaults to `manifest.capabilities`. */
+  /** Sobrescritura opcional de capacidades. Por defecto `manifest.capabilities`. */
   capabilities?: PluginCapability[];
-  /** Initial config returned by `ctx.config.get()`. */
+  /** Configuración inicial devuelta por `ctx.config.get()`. */
   config?: Record<string, unknown>;
 }
 
@@ -42,9 +42,9 @@ export interface TestHarnessLogEntry {
 }
 
 export interface TestHarness {
-  /** Fully-typed in-memory plugin context passed to `plugin.setup(ctx)`. */
+  /** Contexto de plugin en memoria totalmente tipado pasado a `plugin.setup(ctx)`. */
   ctx: PluginContext;
-  /** Seed host entities for `ctx.companies/projects/issues/agents/goals` reads. */
+  /** Siembra entidades del host para lecturas de `ctx.companies/projects/issues/agents/goals`. */
   seed(input: {
     companies?: Company[];
     projects?: Project[];
@@ -54,19 +54,19 @@ export interface TestHarness {
     goals?: Goal[];
   }): void;
   setConfig(config: Record<string, unknown>): void;
-  /** Dispatch a host or plugin event to registered handlers. */
+  /** Despacha un evento de host o plugin a los manejadores registrados. */
   emit(eventType: PluginEventType | `plugin.${string}`, payload: unknown, base?: Partial<PluginEvent>): Promise<void>;
-  /** Execute a previously-registered scheduled job handler. */
+  /** Ejecuta un manejador de tarea programada previamente registrado. */
   runJob(jobKey: string, partial?: Partial<PluginJobContext>): Promise<void>;
-  /** Invoke a `ctx.data.register(...)` handler by key. */
+  /** Invoca un manejador `ctx.data.register(...)` por clave. */
   getData<T = unknown>(key: string, params?: Record<string, unknown>): Promise<T>;
-  /** Invoke a `ctx.actions.register(...)` handler by key. */
+  /** Invoca un manejador `ctx.actions.register(...)` por clave. */
   performAction<T = unknown>(key: string, params?: Record<string, unknown>): Promise<T>;
-  /** Execute a registered tool handler via `ctx.tools.execute(...)`. */
+  /** Ejecuta un manejador de herramienta registrado vía `ctx.tools.execute(...)`. */
   executeTool<T = ToolResult>(name: string, params: unknown, runCtx?: Partial<ToolRunContext>): Promise<T>;
-  /** Read raw in-memory state for assertions. */
+  /** Lee el estado en memoria sin procesar para assertions. */
   getState(input: ScopeKey): unknown;
-  /** Simulate a streaming event arriving for an active session. */
+  /** Simula un evento de flujo llegando para una sesión activa. */
   simulateSessionEvent(sessionId: string, event: Omit<AgentSessionEvent, "sessionId">): void;
   logs: TestHarnessLogEntry[];
   activity: Array<{ message: string; entityType?: string; entityId?: string; metadata?: Record<string, unknown> }>;
@@ -103,11 +103,11 @@ function allowsEvent(filter: EventFilter | undefined, event: PluginEvent): boole
 
 function requireCapability(manifest: PaperclipPluginManifestV1, allowed: Set<PluginCapability>, capability: PluginCapability) {
   if (allowed.has(capability)) return;
-  throw new Error(`Plugin '${manifest.id}' is missing required capability '${capability}' in test harness`);
+  throw new Error(`El plugin '${manifest.id}' no tiene la capacidad requerida '${capability}' en el harness de pruebas`);
 }
 
 function requireCompanyId(companyId?: string): string {
-  if (!companyId) throw new Error("companyId is required for this operation");
+  if (!companyId) throw new Error("companyId es requerido para esta operación");
   return companyId;
 }
 
@@ -119,10 +119,11 @@ function isInCompany<T extends { companyId: string | null | undefined }>(
 }
 
 /**
- * Create an in-memory host harness for plugin worker tests.
+ * Crea un harness de host en memoria para pruebas de workers de plugins.
  *
- * The harness enforces declared capabilities and simulates host APIs, so tests
- * can validate plugin behavior without spinning up the Paperclip server runtime.
+ * El harness exige las capacidades declaradas y simula las APIs del host, para
+ * que las pruebas puedan validar el comportamiento del plugin sin levantar el
+ * runtime del servidor de Paperclip.
  */
 export function createTestHarness(options: TestHarnessOptions): TestHarness {
   const manifest = options.manifest;
@@ -168,7 +169,7 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
         if (typeof filterOrFn === "function") {
           registration = { name, fn: filterOrFn };
         } else {
-          if (!maybeFn) throw new Error("event handler is required");
+          if (!maybeFn) throw new Error("se requiere un manejador de eventos");
           registration = { name, filter: filterOrFn, fn: maybeFn };
         }
         events.push(registration);
@@ -389,7 +390,7 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
       async update(issueId, patch, companyId) {
         requireCapability(manifest, capabilitySet, "issues.update");
         const record = issues.get(issueId);
-        if (!isInCompany(record, companyId)) throw new Error(`Issue not found: ${issueId}`);
+        if (!isInCompany(record, companyId)) throw new Error(`Issue no encontrado: ${issueId}`);
         const updated: Issue = {
           ...record,
           ...patch,
@@ -407,7 +408,7 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
         requireCapability(manifest, capabilitySet, "issue.comments.create");
         const parentIssue = issues.get(issueId);
         if (!isInCompany(parentIssue, companyId)) {
-          throw new Error(`Issue not found: ${issueId}`);
+          throw new Error(`Issue no encontrado: ${issueId}`);
         }
         const now = new Date();
         const comment: IssueComment = {
@@ -440,15 +441,15 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
           requireCapability(manifest, capabilitySet, "issue.documents.write");
           const parentIssue = issues.get(input.issueId);
           if (!isInCompany(parentIssue, input.companyId)) {
-            throw new Error(`Issue not found: ${input.issueId}`);
+            throw new Error(`Issue no encontrado: ${input.issueId}`);
           }
-          throw new Error("documents.upsert is not implemented in test context");
+          throw new Error("documents.upsert no está implementado en el contexto de pruebas");
         },
         async delete(issueId, _key, companyId) {
           requireCapability(manifest, capabilitySet, "issue.documents.write");
           const parentIssue = issues.get(issueId);
           if (!isInCompany(parentIssue, companyId)) {
-            throw new Error(`Issue not found: ${issueId}`);
+            throw new Error(`Issue no encontrado: ${issueId}`);
           }
         },
       },
@@ -473,8 +474,8 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
         requireCapability(manifest, capabilitySet, "agents.pause");
         const cid = requireCompanyId(companyId);
         const agent = agents.get(agentId);
-        if (!isInCompany(agent, cid)) throw new Error(`Agent not found: ${agentId}`);
-        if (agent!.status === "terminated") throw new Error("Cannot pause terminated agent");
+        if (!isInCompany(agent, cid)) throw new Error(`Agente no encontrado: ${agentId}`);
+        if (agent!.status === "terminated") throw new Error("No se puede pausar un agente terminado");
         const updated: Agent = { ...agent!, status: "paused", updatedAt: new Date() };
         agents.set(agentId, updated);
         return updated;
@@ -483,9 +484,9 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
         requireCapability(manifest, capabilitySet, "agents.resume");
         const cid = requireCompanyId(companyId);
         const agent = agents.get(agentId);
-        if (!isInCompany(agent, cid)) throw new Error(`Agent not found: ${agentId}`);
-        if (agent!.status === "terminated") throw new Error("Cannot resume terminated agent");
-        if (agent!.status === "pending_approval") throw new Error("Pending approval agents cannot be resumed");
+        if (!isInCompany(agent, cid)) throw new Error(`Agente no encontrado: ${agentId}`);
+        if (agent!.status === "terminated") throw new Error("No se puede reanudar un agente terminado");
+        if (agent!.status === "pending_approval") throw new Error("Los agentes pendientes de aprobación no se pueden reanudar");
         const updated: Agent = { ...agent!, status: "idle", updatedAt: new Date() };
         agents.set(agentId, updated);
         return updated;
@@ -494,13 +495,13 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
         requireCapability(manifest, capabilitySet, "agents.invoke");
         const cid = requireCompanyId(companyId);
         const agent = agents.get(agentId);
-        if (!isInCompany(agent, cid)) throw new Error(`Agent not found: ${agentId}`);
+        if (!isInCompany(agent, cid)) throw new Error(`Agente no encontrado: ${agentId}`);
         if (
           agent!.status === "paused" ||
           agent!.status === "terminated" ||
           agent!.status === "pending_approval"
         ) {
-          throw new Error(`Agent is not invokable in its current state: ${agent!.status}`);
+          throw new Error(`El agente no es invocable en su estado actual: ${agent!.status}`);
         }
         return { runId: randomUUID() };
       },
@@ -509,7 +510,7 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
           requireCapability(manifest, capabilitySet, "agent.sessions.create");
           const cid = requireCompanyId(companyId);
           const agent = agents.get(agentId);
-          if (!isInCompany(agent, cid)) throw new Error(`Agent not found: ${agentId}`);
+          if (!isInCompany(agent, cid)) throw new Error(`Agente no encontrado: ${agentId}`);
           const session: AgentSession = {
             sessionId: randomUUID(),
             agentId,
@@ -530,8 +531,8 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
         async sendMessage(sessionId, companyId, opts) {
           requireCapability(manifest, capabilitySet, "agent.sessions.send");
           const session = sessions.get(sessionId);
-          if (!session || session.status !== "active") throw new Error(`Session not found or closed: ${sessionId}`);
-          if (session.companyId !== companyId) throw new Error(`Session not found: ${sessionId}`);
+          if (!session || session.status !== "active") throw new Error(`Sesión no encontrada o cerrada: ${sessionId}`);
+          if (session.companyId !== companyId) throw new Error(`Sesión no encontrada: ${sessionId}`);
           if (opts.onEvent) {
             sessionEventCallbacks.set(sessionId, opts.onEvent);
           }
@@ -540,8 +541,8 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
         async close(sessionId, companyId) {
           requireCapability(manifest, capabilitySet, "agent.sessions.close");
           const session = sessions.get(sessionId);
-          if (!session) throw new Error(`Session not found: ${sessionId}`);
-          if (session.companyId !== companyId) throw new Error(`Session not found: ${sessionId}`);
+          if (!session) throw new Error(`Sesión no encontrada: ${sessionId}`);
+          if (session.companyId !== companyId) throw new Error(`Sesión no encontrada: ${sessionId}`);
           session.status = "closed";
           sessionEventCallbacks.delete(sessionId);
         },
@@ -585,7 +586,7 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
       async update(goalId, patch, companyId) {
         requireCapability(manifest, capabilitySet, "goals.update");
         const record = goals.get(goalId);
-        if (!isInCompany(record, companyId)) throw new Error(`Goal not found: ${goalId}`);
+        if (!isInCompany(record, companyId)) throw new Error(`Objetivo no encontrado: ${goalId}`);
         const updated: Goal = {
           ...record,
           ...patch,
@@ -612,7 +613,7 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
           channelCompanyMap.set(channel, companyId);
         },
         emit(_channel: string, _event: unknown) {
-          // No-op in test harness — events are not forwarded
+          // No-op en el harness de pruebas: los eventos no se reenvían
         },
         close(channel: string) {
           channelCompanyMap.delete(channel);
@@ -689,7 +690,7 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
     },
     async runJob(jobKey, partial = {}) {
       const handler = jobs.get(jobKey);
-      if (!handler) throw new Error(`No job handler registered for '${jobKey}'`);
+      if (!handler) throw new Error(`No hay manejador de tarea registrado para '${jobKey}'`);
       await handler({
         jobKey,
         runId: partial.runId ?? randomUUID(),
@@ -699,17 +700,17 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
     },
     async getData<T = unknown>(key: string, params: Record<string, unknown> = {}) {
       const handler = dataHandlers.get(key);
-      if (!handler) throw new Error(`No data handler registered for '${key}'`);
+      if (!handler) throw new Error(`No hay manejador de datos registrado para '${key}'`);
       return await handler(params) as T;
     },
     async performAction<T = unknown>(key: string, params: Record<string, unknown> = {}) {
       const handler = actionHandlers.get(key);
-      if (!handler) throw new Error(`No action handler registered for '${key}'`);
+      if (!handler) throw new Error(`No hay manejador de acción registrado para '${key}'`);
       return await handler(params) as T;
     },
     async executeTool<T = ToolResult>(name: string, params: unknown, runCtx: Partial<ToolRunContext> = {}) {
       const handler = toolHandlers.get(name);
-      if (!handler) throw new Error(`No tool handler registered for '${name}'`);
+      if (!handler) throw new Error(`No hay manejador de herramienta registrado para '${name}'`);
       const ctxToPass: ToolRunContext = {
         agentId: runCtx.agentId ?? "agent-test",
         runId: runCtx.runId ?? randomUUID(),
@@ -723,7 +724,7 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
     },
     simulateSessionEvent(sessionId, event) {
       const cb = sessionEventCallbacks.get(sessionId);
-      if (!cb) throw new Error(`No active session event callback for session: ${sessionId}`);
+      if (!cb) throw new Error(`No hay callback de evento de sesión activo para la sesión: ${sessionId}`);
       cb({ ...event, sessionId });
     },
     logs,

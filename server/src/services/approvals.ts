@@ -30,7 +30,7 @@ export function approvalService(db: Db) {
       .from(approvals)
       .where(eq(approvals.id, id))
       .then((rows) => rows[0] ?? null);
-    if (!existing) throw notFound("Approval not found");
+    if (!existing) throw notFound("Aprobación no encontrada");
     return existing;
   }
 
@@ -46,7 +46,7 @@ export function approvalService(db: Db) {
         return { approval: existing, applied: false };
       }
       throw unprocessable(
-        `Only pending or revision requested approvals can be ${targetStatus === "approved" ? "approved" : "rejected"}`,
+        `Solo las aprobaciones pendientes o con revisión solicitada se pueden ${targetStatus === "approved" ? "aprobar" : "rechazar"}`,
       );
     }
 
@@ -74,7 +74,7 @@ export function approvalService(db: Db) {
     }
 
     throw unprocessable(
-      `Only pending or revision requested approvals can be ${targetStatus === "approved" ? "approved" : "rejected"}`,
+      `Solo las aprobaciones pendientes o con revisión solicitada se pueden ${targetStatus === "approved" ? "aprobar" : "rechazar"}`,
     );
   }
 
@@ -117,7 +117,7 @@ export function approvalService(db: Db) {
           hireApprovedAgentId = payloadAgentId;
         } else {
           const created = await agentsSvc.create(updated.companyId, {
-            name: String(payload.name ?? "New Agent"),
+            name: String(payload.name ?? "Nuevo agente"),
             role: String(payload.role ?? "general"),
             title: typeof payload.title === "string" ? payload.title : null,
             reportsTo: typeof payload.reportsTo === "string" ? payload.reportsTo : null,
@@ -190,7 +190,7 @@ export function approvalService(db: Db) {
     requestRevision: async (id: string, decidedByUserId: string, decisionNote?: string | null) => {
       const existing = await getExistingApproval(id);
       if (existing.status !== "pending") {
-        throw unprocessable("Only pending approvals can request revision");
+        throw unprocessable("Solo las aprobaciones pendientes pueden solicitar revisión");
       }
 
       const now = new Date();
@@ -211,7 +211,7 @@ export function approvalService(db: Db) {
     resubmit: async (id: string, payload?: Record<string, unknown>) => {
       const existing = await getExistingApproval(id);
       if (existing.status !== "revision_requested") {
-        throw unprocessable("Only revision requested approvals can be resubmitted");
+        throw unprocessable("Solo las aprobaciones con revisión solicitada se pueden reenviar");
       }
 
       const now = new Date();

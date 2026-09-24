@@ -56,7 +56,7 @@ function defaultUserNames() {
   try {
     candidates.push(os.userInfo().username);
   } catch {
-    // Some environments do not expose userInfo; env vars are enough fallback.
+    // Algunos entornos no exponen userInfo; las variables de entorno bastan como alternativa.
   }
 
   return uniqueNonEmpty(candidates);
@@ -71,7 +71,7 @@ function defaultHomeDirs(userNames: string[]) {
   try {
     candidates.push(os.homedir());
   } catch {
-    // Ignore and fall back to env hints below.
+    // Ignorar y usar las pistas de entorno de abajo.
   }
 
   for (const userName of userNames) {

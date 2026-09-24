@@ -12,7 +12,7 @@ describe("formatEmbeddedPostgresError", () => {
       ],
     });
 
-    expect(error.message).toContain("could not allocate shared memory");
+    expect(error.message).toContain("No se pudo asignar memoria compartida");
     expect(error.message).toContain("kern.sysv.shm");
     expect(error.message).toContain("could not create shared memory segment");
   });

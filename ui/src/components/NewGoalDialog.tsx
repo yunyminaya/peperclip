@@ -24,13 +24,21 @@ import {
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { MarkdownEditor, type MarkdownEditorRef } from "./MarkdownEditor";
-import { StatusBadge } from "./StatusBadge";
+import { statusBadge, statusBadgeDefault } from "../lib/status-colors";
 
 const levelLabels: Record<string, string> = {
-  company: "Company",
-  team: "Team",
-  agent: "Agent",
-  task: "Task",
+  company: "Empresa",
+  team: "Equipo",
+  agent: "Agente",
+  task: "Tarea",
+};
+
+// etiquetas de visualización para los valores internos de GOAL_STATUSES
+const goalStatusLabels: Record<string, string> = {
+  planned: "Planificado",
+  active: "Activo",
+  achieved: "Logrado",
+  cancelled: "Cancelado",
 };
 
 export function NewGoalDialog() {
@@ -49,7 +57,7 @@ export function NewGoalDialog() {
   const [parentOpen, setParentOpen] = useState(false);
   const descriptionEditorRef = useRef<MarkdownEditorRef>(null);
 
-  // Apply defaults when dialog opens
+  // Aplicar valores predeterminados al abrir el diálogo
   const appliedParentId = parentId || newGoalDefaults.parentId || "";
 
   const { data: goals } = useQuery({
@@ -70,7 +78,7 @@ export function NewGoalDialog() {
 
   const uploadDescriptionImage = useMutation({
     mutationFn: async (file: File) => {
-      if (!selectedCompanyId) throw new Error("No company selected");
+      if (!selectedCompanyId) throw new Error("Ninguna empresa seleccionada");
       return assetsApi.uploadImage(selectedCompanyId, file, "goals/drafts");
     },
   });
@@ -119,7 +127,7 @@ export function NewGoalDialog() {
         className={cn("p-0 gap-0", expanded ? "sm:max-w-2xl" : "sm:max-w-lg")}
         onKeyDown={handleKeyDown}
       >
-        {/* Header */}
+        {/* Encabezado */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             {selectedCompany && (
@@ -128,7 +136,7 @@ export function NewGoalDialog() {
               </span>
             )}
             <span className="text-muted-foreground/60">&rsaquo;</span>
-            <span>{newGoalDefaults.parentId ? "New sub-goal" : "New goal"}</span>
+            <span>{newGoalDefaults.parentId ? "Nuevo subobjetivo" : "Nuevo objetivo"}</span>
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -150,11 +158,11 @@ export function NewGoalDialog() {
           </div>
         </div>
 
-        {/* Title */}
+        {/* Título */}
         <div className="px-4 pt-4 pb-2 shrink-0">
           <input
             className="w-full text-lg font-semibold bg-transparent outline-none placeholder:text-muted-foreground/50"
-            placeholder="Goal title"
+            placeholder="Título del objetivo"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
@@ -167,13 +175,13 @@ export function NewGoalDialog() {
           />
         </div>
 
-        {/* Description */}
+        {/* Descripción */}
         <div className="px-4 pb-2">
           <MarkdownEditor
             ref={descriptionEditorRef}
             value={description}
             onChange={setDescription}
-            placeholder="Add description..."
+            placeholder="Agregar descripción…"
             bordered={false}
             contentClassName={cn("text-sm text-muted-foreground", expanded ? "min-h-[220px]" : "min-h-[120px]")}
             imageUploadHandler={async (file) => {
@@ -183,13 +191,20 @@ export function NewGoalDialog() {
           />
         </div>
 
-        {/* Property chips */}
+        {/* Etiquetas de propiedades */}
         <div className="flex items-center gap-1.5 px-4 py-2 border-t border-border flex-wrap">
-          {/* Status */}
+          {/* Estado */}
           <Popover open={statusOpen} onOpenChange={setStatusOpen}>
             <PopoverTrigger asChild>
               <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors">
-                <StatusBadge status={status} />
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap shrink-0",
+                    statusBadge[status] ?? statusBadgeDefault
+                  )}
+                >
+                  {goalStatusLabels[status]}
+                </span>
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-40 p-1" align="start">
@@ -202,13 +217,13 @@ export function NewGoalDialog() {
                   )}
                   onClick={() => { setStatus(s); setStatusOpen(false); }}
                 >
-                  {s}
+                  {goalStatusLabels[s]}
                 </button>
               ))}
             </PopoverContent>
           </Popover>
 
-          {/* Level */}
+          {/* Nivel */}
           <Popover open={levelOpen} onOpenChange={setLevelOpen}>
             <PopoverTrigger asChild>
               <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors">
@@ -232,12 +247,12 @@ export function NewGoalDialog() {
             </PopoverContent>
           </Popover>
 
-          {/* Parent goal */}
+          {/* Objetivo principal */}
           <Popover open={parentOpen} onOpenChange={setParentOpen}>
             <PopoverTrigger asChild>
               <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors">
                 <Target className="h-3 w-3 text-muted-foreground" />
-                {currentParent ? currentParent.title : "Parent goal"}
+                {currentParent ? currentParent.title : "Objetivo principal"}
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-1" align="start">
@@ -248,7 +263,7 @@ export function NewGoalDialog() {
                 )}
                 onClick={() => { setParentId(""); setParentOpen(false); }}
               >
-                No parent
+                Sin principal
               </button>
               {(goals ?? []).map((g) => (
                 <button
@@ -266,14 +281,14 @@ export function NewGoalDialog() {
           </Popover>
         </div>
 
-        {/* Footer */}
+        {/* Pie */}
         <div className="flex items-center justify-end px-4 py-2.5 border-t border-border">
           <Button
             size="sm"
             disabled={!title.trim() || createGoal.isPending}
             onClick={handleSubmit}
           >
-            {createGoal.isPending ? "Creating…" : newGoalDefaults.parentId ? "Create sub-goal" : "Create goal"}
+            {createGoal.isPending ? "Creando…" : newGoalDefaults.parentId ? "Crear subobjetivo" : "Crear objetivo"}
           </Button>
         </div>
       </DialogContent>

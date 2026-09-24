@@ -6,24 +6,24 @@ TARGET_REF="${1:-HEAD}"
 
 usage() {
   cat <<'EOF'
-Usage:
+Uso:
   ./scripts/clean-onboard-ref.sh [git-ref]
 
-Examples:
+Ejemplos:
   ./scripts/clean-onboard-ref.sh
   ./scripts/clean-onboard-ref.sh HEAD
   ./scripts/clean-onboard-ref.sh v0.2.7
 
-Environment overrides:
-  KEEP_TEMP=1                 Keep the temp directory and detached worktree for debugging
-  PC_TEST_ROOT=/tmp/custom    Base temp directory to use
-  PC_DATA=/tmp/data           Paperclip data dir to use
-  PAPERCLIP_HOST=127.0.0.1    Host passed to the onboarded server
-  PAPERCLIP_PORT=3232         Port passed to the onboarded server
+Variables de entorno:
+  KEEP_TEMP=1                 Conserva el directorio temporal y el worktree separado para depuración
+  PC_TEST_ROOT=/tmp/custom    Directorio temporal base a usar
+  PC_DATA=/tmp/data           Directorio de datos de Paperclip a usar
+  PAPERCLIP_HOST=127.0.0.1    Host pasado al servidor incorporado
+  PAPERCLIP_PORT=3232         Puerto pasado al servidor incorporado
 
-Notes:
-  - Defaults to the current committed ref (HEAD), not uncommitted local edits.
-  - Creates an isolated temp HOME, npm cache, data dir, and detached git worktree.
+Notas:
+  - Usa por defecto la referencia actual con commit (HEAD), no los cambios locales sin commit.
+  - Crea un HOME temporal aislado, caché de npm, directorio de datos y worktree de git separado.
 EOF
 }
 

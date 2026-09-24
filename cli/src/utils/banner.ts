@@ -9,7 +9,7 @@ const PAPERCLIP_ART = [
   "╚═╝     ╚═╝  ╚═╝╚═╝     ╚══════╝╚═╝  ╚═╝ ╚═════╝╚══════╝╚═╝╚═╝     ",
 ] as const;
 
-const TAGLINE = "Open-source orchestration for zero-human companies";
+const TAGLINE = "Orquestación de código abierto para empresas sin humanos";
 
 export function printPaperclipCliBanner(): void {
   const lines = [

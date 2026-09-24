@@ -17,7 +17,7 @@ function decodeMasterKey(raw: string): Buffer | null {
     const decoded = Buffer.from(trimmed, "base64");
     if (decoded.length === 32) return decoded;
   } catch {
-    // ignored
+    // ignorado
   }
 
   if (Buffer.byteLength(trimmed, "utf8") === 32) {
@@ -38,10 +38,10 @@ function withStrictModeNote(
   return {
     ...base,
     status: "warn",
-    message: `${base.message}; strict secret mode is disabled for postgres deployment`,
+    message: `${base.message}; el modo estricto de secretos está desactivado para el despliegue postgres`,
     repairHint: base.repairHint
-      ? `${base.repairHint}. Consider enabling secrets.strictMode`
-      : "Consider enabling secrets.strictMode",
+      ? `${base.repairHint}. Considera activar secrets.strictMode`
+      : "Considera activar secrets.strictMode",
   };
 }
 
@@ -49,11 +49,11 @@ export function secretsCheck(config: PaperclipConfig, configPath?: string): Chec
   const provider = config.secrets.provider;
   if (provider !== "local_encrypted") {
     return {
-      name: "Secrets adapter",
+      name: "Adaptador de secretos",
       status: "fail",
-      message: `${provider} is configured, but this build only supports local_encrypted`,
+      message: `${provider} está configurado, pero esta versión solo admite local_encrypted`,
       canRepair: false,
-      repairHint: "Run `paperclipai configure --section secrets` and set provider to local_encrypted",
+      repairHint: "Ejecuta `paperclipai configure --section secrets` y establece el proveedor en local_encrypted",
     };
   }
 
@@ -61,20 +61,20 @@ export function secretsCheck(config: PaperclipConfig, configPath?: string): Chec
   if (envMasterKey && envMasterKey.trim().length > 0) {
     if (!decodeMasterKey(envMasterKey)) {
       return {
-        name: "Secrets adapter",
+        name: "Adaptador de secretos",
         status: "fail",
         message:
-          "PAPERCLIP_SECRETS_MASTER_KEY is invalid (expected 32-byte base64, 64-char hex, or raw 32-char string)",
+          "PAPERCLIP_SECRETS_MASTER_KEY no es válido (se esperaba base64 de 32 bytes, hexadecimal de 64 caracteres o cadena cruda de 32 caracteres)",
         canRepair: false,
-        repairHint: "Set PAPERCLIP_SECRETS_MASTER_KEY to a valid key or unset it to use a key file",
+        repairHint: "Establece PAPERCLIP_SECRETS_MASTER_KEY con una clave válida o elimínalo para usar un archivo de clave",
       };
     }
 
     return withStrictModeNote(
       {
-        name: "Secrets adapter",
+        name: "Adaptador de secretos",
         status: "pass",
-        message: "Local encrypted provider configured via PAPERCLIP_SECRETS_MASTER_KEY",
+        message: "Proveedor local cifrado configurado vía PAPERCLIP_SECRETS_MASTER_KEY",
       },
       config,
     );
@@ -90,9 +90,9 @@ export function secretsCheck(config: PaperclipConfig, configPath?: string): Chec
   if (!fs.existsSync(keyFilePath)) {
     return withStrictModeNote(
       {
-        name: "Secrets adapter",
+        name: "Adaptador de secretos",
         status: "warn",
-        message: `Secrets key file does not exist yet: ${keyFilePath}`,
+        message: `El archivo de clave de secretos aún no existe: ${keyFilePath}`,
         canRepair: true,
         repair: () => {
           fs.mkdirSync(path.dirname(keyFilePath), { recursive: true });
@@ -103,10 +103,10 @@ export function secretsCheck(config: PaperclipConfig, configPath?: string): Chec
           try {
             fs.chmodSync(keyFilePath, 0o600);
           } catch {
-            // best effort
+            // mejor esfuerzo
           }
         },
-        repairHint: "Run with --repair to create a local encrypted secrets key file",
+        repairHint: "Ejecuta con --repair para crear un archivo de clave de secretos local cifrado",
       },
       config,
     );
@@ -117,29 +117,29 @@ export function secretsCheck(config: PaperclipConfig, configPath?: string): Chec
     raw = fs.readFileSync(keyFilePath, "utf8");
   } catch (err) {
     return {
-      name: "Secrets adapter",
+      name: "Adaptador de secretos",
       status: "fail",
-      message: `Could not read secrets key file: ${err instanceof Error ? err.message : String(err)}`,
+      message: `No se pudo leer el archivo de clave de secretos: ${err instanceof Error ? err.message : String(err)}`,
       canRepair: false,
-      repairHint: "Check file permissions or set PAPERCLIP_SECRETS_MASTER_KEY",
+      repairHint: "Revisa los permisos de archivo o establece PAPERCLIP_SECRETS_MASTER_KEY",
     };
   }
 
   if (!decodeMasterKey(raw)) {
     return {
-      name: "Secrets adapter",
+      name: "Adaptador de secretos",
       status: "fail",
-      message: `Invalid key material in ${keyFilePath}`,
+      message: `Material de clave inválido en ${keyFilePath}`,
       canRepair: false,
-      repairHint: "Replace with valid key material or delete it and run doctor --repair",
+      repairHint: "Reemplázalo con material de clave válido o elimínalo y ejecuta doctor --repair",
     };
   }
 
   return withStrictModeNote(
     {
-      name: "Secrets adapter",
+      name: "Adaptador de secretos",
       status: "pass",
-      message: `Local encrypted provider configured with key file ${keyFilePath}`,
+      message: `Proveedor local cifrado configurado con el archivo de clave ${keyFilePath}`,
     },
     config,
   );

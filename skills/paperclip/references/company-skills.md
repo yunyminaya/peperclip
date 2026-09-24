@@ -1,26 +1,26 @@
-# Company Skills Workflow
+# Flujo de trabajo de habilidades de la empresa
 
-Use this reference when a board user, CEO, or manager asks you to find a skill, install it into the company library, or assign it to an agent.
+Usa esta referencia cuando un usuario del tablero, el CEO o un gerente te pida encontrar una habilidad, instalarla en la biblioteca de la empresa o asignarla a un agente.
 
-## What Exists
+## Qué existe
 
-- Company skill library: install, inspect, update, and read imported skills for the whole company.
-- Agent skill assignment: add or remove company skills on an existing agent.
-- Hire/create composition: pass `desiredSkills` when creating or hiring an agent so the same assignment model applies immediately.
+- Biblioteca de habilidades de la empresa: instalar, inspeccionar, actualizar y leer habilidades importadas para toda la empresa.
+- Asignación de habilidades a agentes: agregar o quitar habilidades de la empresa en un agente existente.
+- Composición de contratación/creación: pasa `desiredSkills` al crear o contratar un agente para que el mismo modelo de asignación se aplique de inmediato.
 
-The canonical model is:
+El modelo canónico es:
 
-1. install the skill into the company
-2. assign the company skill to the agent
-3. optionally do step 2 during hire/create with `desiredSkills`
+1. instalar la habilidad en la empresa
+2. asignar la habilidad de la empresa al agente
+3. opcionalmente hacer el paso 2 durante la contratación/creación con `desiredSkills`
 
-## Permission Model
+## Modelo de permisos
 
-- Company skill reads: any same-company actor
-- Company skill mutations: board, CEO, or an agent with the effective `agents:create` capability
-- Agent skill assignment: same permission model as updating that agent
+- Lecturas de habilidades de la empresa: cualquier actor de la misma empresa
+- Mutaciones de habilidades de la empresa: tablero, CEO o un agente con la capacidad efectiva `agents:create`
+- Asignación de habilidades a agentes: mismo modelo de permisos que actualizar ese agente
 
-## Core Endpoints
+## Endpoints principales
 
 - `GET /api/companies/:companyId/skills`
 - `GET /api/companies/:companyId/skills/:skillId`
@@ -32,22 +32,22 @@ The canonical model is:
 - `POST /api/companies/:companyId/agent-hires`
 - `POST /api/companies/:companyId/agents`
 
-## Install A Skill Into The Company
+## Instalar una habilidad en la empresa
 
-Import using a **skills.sh URL**, a key-style source string, a GitHub URL, or a local path.
+Importa usando una **URL de skills.sh**, una cadena de fuente estilo clave, una URL de GitHub o una ruta local.
 
-### Source types (in order of preference)
+### Tipos de fuente (en orden de preferencia)
 
-| Source format | Example | When to use |
+| Formato de fuente | Ejemplo | Cuándo usar |
 |---|---|---|
-| **skills.sh URL** | `https://skills.sh/google-labs-code/stitch-skills/design-md` | When a user gives you a `skills.sh` link. This is the managed skill registry — **always prefer it when available**. |
-| **Key-style string** | `google-labs-code/stitch-skills/design-md` | Shorthand for the same skill — `org/repo/skill-name` format. Equivalent to the skills.sh URL. |
-| **GitHub URL** | `https://github.com/vercel-labs/agent-browser` | When the skill is in a GitHub repo but not on skills.sh. |
-| **Local path** | `/abs/path/to/skill-dir` | When the skill is on disk (dev/testing only). |
+| **URL de skills.sh** | `https://skills.sh/google-labs-code/stitch-skills/design-md` | Cuando un usuario te da un enlace `skills.sh`. Este es el registro de habilidades gestionado — **prefiérelo siempre cuando esté disponible**. |
+| **Cadena estilo clave** | `google-labs-code/stitch-skills/design-md` | Forma abreviada de la misma habilidad — formato `org/repo/skill-name`. Equivalente a la URL de skills.sh. |
+| **URL de GitHub** | `https://github.com/vercel-labs/agent-browser` | Cuando la habilidad está en un repositorio de GitHub pero no en skills.sh. |
+| **Ruta local** | `/abs/path/to/skill-dir` | Cuando la habilidad está en disco (solo desarrollo/pruebas). |
 
-**Critical:** If a user gives you a `https://skills.sh/...` URL, use that URL or its key-style equivalent (`org/repo/skill-name`) as the `source`. Do **not** convert it to a GitHub URL — skills.sh is the managed registry and the source of truth for versioning, discovery, and updates.
+**Crítico:** Si un usuario te da una URL `https://skills.sh/...`, usa esa URL o su equivalente en estilo clave (`org/repo/skill-name`) como `source`. **No** la conviertas a una URL de GitHub — skills.sh es el registro gestionado y la fuente de verdad para versionado, descubrimiento y actualizaciones.
 
-### Example: skills.sh import (preferred)
+### Ejemplo: importación desde skills.sh (preferida)
 
 ```sh
 curl -sS -X POST "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/skills/import" \
@@ -58,7 +58,7 @@ curl -sS -X POST "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/skills/
   }'
 ```
 
-Or equivalently using the key-style string:
+O equivalentemente usando la cadena estilo clave:
 
 ```sh
 curl -sS -X POST "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/skills/import" \
@@ -69,7 +69,7 @@ curl -sS -X POST "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/skills/
   }'
 ```
 
-### Example: GitHub import
+### Ejemplo: importación desde GitHub
 
 ```sh
 curl -sS -X POST "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/skills/import" \
@@ -80,13 +80,13 @@ curl -sS -X POST "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/skills/
   }'
 ```
 
-You can also use source strings such as:
+También puedes usar cadenas de fuente como:
 
 - `google-labs-code/stitch-skills/design-md`
 - `vercel-labs/agent-browser/agent-browser`
 - `npx skills add https://github.com/vercel-labs/agent-browser --skill agent-browser`
 
-If the task is to discover skills from the company project workspaces first:
+Si la tarea es descubrir primero las habilidades de los espacios de trabajo de proyectos de la empresa:
 
 ```sh
 curl -sS -X POST "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/skills/scan-projects" \
@@ -95,14 +95,14 @@ curl -sS -X POST "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/skills/
   -d '{}'
 ```
 
-## Inspect What Was Installed
+## Inspeccionar lo instalado
 
 ```sh
 curl -sS "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/skills" \
   -H "Authorization: Bearer $PAPERCLIP_API_KEY"
 ```
 
-Read the skill entry and its `SKILL.md`:
+Lee la entrada de la habilidad y su `SKILL.md`:
 
 ```sh
 curl -sS "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/skills/<skill-id>" \
@@ -112,15 +112,15 @@ curl -sS "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/skills/<skill-i
   -H "Authorization: Bearer $PAPERCLIP_API_KEY"
 ```
 
-## Assign Skills To An Existing Agent
+## Asignar habilidades a un agente existente
 
-`desiredSkills` accepts:
+`desiredSkills` acepta:
 
-- exact company skill key
-- exact company skill id
-- exact slug when it is unique in the company
+- clave exacta de la habilidad de la empresa
+- id exacto de la habilidad de la empresa
+- slug exacto cuando es único en la empresa
 
-The server persists canonical company skill keys.
+El servidor persiste las claves canónicas de habilidades de la empresa.
 
 ```sh
 curl -sS -X POST "$PAPERCLIP_API_URL/api/agents/<agent-id>/skills/sync" \
@@ -133,16 +133,16 @@ curl -sS -X POST "$PAPERCLIP_API_URL/api/agents/<agent-id>/skills/sync" \
   }'
 ```
 
-If you need the current state first:
+Si primero necesitas el estado actual:
 
 ```sh
 curl -sS "$PAPERCLIP_API_URL/api/agents/<agent-id>/skills" \
   -H "Authorization: Bearer $PAPERCLIP_API_KEY"
 ```
 
-## Include Skills During Hire Or Create
+## Incluir habilidades al contratar o crear
 
-Use the same company skill keys or references in `desiredSkills` when hiring or creating an agent:
+Usa las mismas claves o referencias de habilidades de la empresa en `desiredSkills` al contratar o crear un agente:
 
 ```sh
 curl -sS -X POST "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/agent-hires" \
@@ -161,7 +161,7 @@ curl -sS -X POST "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/agent-h
   }'
 ```
 
-For direct create without approval:
+Para creación directa sin aprobación:
 
 ```sh
 curl -sS -X POST "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/agents" \
@@ -180,14 +180,14 @@ curl -sS -X POST "$PAPERCLIP_API_URL/api/companies/$PAPERCLIP_COMPANY_ID/agents"
   }'
 ```
 
-## Notes
+## Notas
 
-- Built-in Paperclip runtime skills are still added automatically when required by the adapter.
-- If a reference is missing or ambiguous, the API returns `422`.
-- Prefer linking back to the relevant issue, approval, and agent when you comment about skill changes.
-- Use company portability routes when you need whole-package import/export, not just a skill:
+- Las habilidades de runtime integradas de Paperclip aún se agregan automáticamente cuando el adaptador las requiere.
+- Si una referencia falta o es ambigua, la API devuelve `422`.
+- Prefiere enlazar al issue, la aprobación y el agente relevantes cuando comentes sobre cambios de habilidades.
+- Usa las rutas de portabilidad de empresa cuando necesites importación/exportación de todo el paquete, no solo una habilidad:
   - `POST /api/companies/:companyId/imports/preview`
   - `POST /api/companies/:companyId/imports/apply`
   - `POST /api/companies/:companyId/exports/preview`
   - `POST /api/companies/:companyId/exports`
-- Use skill-only import when the task is specifically to add a skill to the company library without importing the surrounding company/team/package structure.
+- Usa la importación solo de habilidad cuando la tarea sea específicamente agregar una habilidad a la biblioteca de la empresa sin importar la estructura de empresa/equipo/paquete circundante.

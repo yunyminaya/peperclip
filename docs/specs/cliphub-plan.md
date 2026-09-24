@@ -1,84 +1,84 @@
-# ClipHub: Marketplace for Paperclip Team Configurations
+# ClipHub: Marketplace para configuraciones de equipos de Paperclip
 
-> Supersession note: this marketplace plan predates the markdown-first company package direction. For the current package-format and import/export rollout plan, see `doc/plans/2026-03-13-company-import-export-v2.md` and `docs/companies/companies-spec.md`.
+> Nota de reemplazo: este plan de marketplace es anterior a la dirección de paquetes de empresa markdown-first. Para el plan actual de despliegue del formato de paquete e importación/exportación, ver `doc/plans/2026-03-13-company-import-export-v2.md` y `docs/companies/companies-spec.md`.
 
-> The "app store" for whole-company AI teams — pre-built Paperclip configurations, agent blueprints, skills, and governance templates that ship real work from day one.
+> La "tienda de aplicaciones" para equipos de IA de empresas completas: configuraciones prearmadas de Paperclip, blueprints de agentes, habilidades y plantillas de gobernanza que producen trabajo real desde el día uno.
 
-## 1. Vision & Positioning
+## 1. Visión y posicionamiento
 
-**ClipHub** sells **entire team configurations** — org charts, agent roles, inter-agent workflows, governance rules, and project templates — for Paperclip-managed companies.
+**ClipHub** vende **configuraciones de equipos completos** — organigramas, roles de agentes, flujos de trabajo entre agentes, reglas de gobernanza y plantillas de proyectos — para empresas gestionadas por Paperclip.
 
-| Dimension | ClipHub |
+| Dimensión | ClipHub |
 |---|---|
-| Unit of sale | Team blueprint (multi-agent org) |
-| Buyer | Founder / team lead spinning up an AI company |
-| Install target | Paperclip company (agents, projects, governance) |
-| Value prop | "Skip org design — get a shipping team in minutes" |
-| Price range | $0–$499 per blueprint (+ individual add-ons) |
+| Unidad de venta | Blueprint de equipo (organización multiagente) |
+| Comprador | Fundador / líder de equipo creando una empresa de IA |
+| Objetivo de instalación | Empresa de Paperclip (agentes, proyectos, gobernanza) |
+| Propuesta de valor | "Omite el diseño de la organización: obtén un equipo productivo en minutos" |
+| Rango de precios | $0–$499 por blueprint (+ complementos individuales) |
 
 ---
 
-## 2. Product Taxonomy
+## 2. Taxonomía de producto
 
-### 2.1 Team Blueprints (primary product)
+### 2.1 Blueprints de equipo (producto principal)
 
-A complete Paperclip company configuration:
+Una configuración completa de empresa de Paperclip:
 
-- **Org chart**: Agents with roles, titles, reporting chains, capabilities
-- **Agent configs**: Adapter type, model, prompt templates, instructions paths
-- **Governance rules**: Approval flows, budget limits, escalation chains
-- **Project templates**: Pre-configured projects with workspace settings
-- **Skills & instructions**: AGENTS.md / skill files bundled per agent
+- **Organigrama**: agentes con roles, títulos, cadenas de reporte, capacidades
+- **Configuraciones de agentes**: tipo de adaptador, modelo, plantillas de prompt, rutas de instrucciones
+- **Reglas de gobernanza**: flujos de aprobación, límites de presupuesto, cadenas de escalamiento
+- **Plantillas de proyectos**: proyectos preconfigurados con ajustes de workspace
+- **Habilidades e instrucciones**: AGENTS.md / archivos de habilidad incluidos por agente
 
-**Examples:**
+**Ejemplos:**
 - "SaaS Startup Team" — CEO, CTO, Engineer, CMO, Designer ($199)
 - "Content Agency" — Editor-in-Chief, 3 Writers, SEO Analyst, Social Manager ($149)
 - "Dev Shop" — CTO, 2 Engineers, QA, DevOps ($99)
 - "Solo Founder + Crew" — CEO agent + 3 ICs across eng/marketing/ops ($79)
 
-### 2.2 Agent Blueprints (individual agents within a team context)
+### 2.2 Blueprints de agentes (agentes individuales dentro de un contexto de equipo)
 
-Single-agent configurations designed to plug into a Paperclip org:
+Configuraciones de un solo agente diseñadas para conectarse a una organización de Paperclip:
 
-- Role definition, prompt template, adapter config
-- Reporting chain expectations (who they report to)
-- Skill bundles included
-- Governance defaults (budget, permissions)
+- Definición de rol, plantilla de prompt, configuración del adaptador
+- Expectativas de cadena de reporte (a quién reportan)
+- Paquetes de habilidades incluidos
+- Valores por defecto de gobernanza (presupuesto, permisos)
 
-**Examples:**
+**Ejemplos:**
 - "Staff Engineer" — ships production code, manages PRs ($29)
 - "Growth Marketer" — content pipeline, SEO, social ($39)
 - "DevOps Agent" — CI/CD, deployment, monitoring ($29)
 
-### 2.3 Skills (modular capabilities)
+### 2.3 Habilidades (capacidades modulares)
 
-Portable skill files that any Paperclip agent can use:
+Archivos de habilidad portables que cualquier agente de Paperclip puede usar:
 
-- Markdown skill files with instructions
-- Tool configurations and shell scripts
-- Compatible with Paperclip's skill loading system
+- Archivos de habilidad markdown con instrucciones
+- Configuraciones de herramientas y scripts de shell
+- Compatible con el sistema de carga de habilidades de Paperclip
 
-**Examples:**
-- "Git PR Workflow" — standardized PR creation and review (Free)
-- "Deployment Pipeline" — Cloudflare/Vercel deploy skill ($9)
-- "Customer Support Triage" — ticket classification and routing ($19)
+**Ejemplos:**
+- "Git PR Workflow" — creación y revisión estandarizada de PR (gratis)
+- "Deployment Pipeline" — habilidad de deploy para Cloudflare/Vercel ($9)
+- "Customer Support Triage" — clasificación y enrutamiento de tickets ($19)
 
-### 2.4 Governance Templates
+### 2.4 Plantillas de gobernanza
 
-Pre-built approval flows and policies:
+Flujos de aprobación y políticas prearmadas:
 
-- Budget thresholds and approval chains
-- Cross-team delegation rules
-- Escalation procedures
-- Billing code structures
+- Umbrales de presupuesto y cadenas de aprobación
+- Reglas de delegación entre equipos
+- Procedimientos de escalamiento
+- Estructuras de códigos de facturación
 
-**Examples:**
-- "Startup Governance" — lightweight, CEO approves > $50 (Free)
-- "Enterprise Governance" — multi-tier approval, audit trail ($49)
+**Ejemplos:**
+- "Startup Governance" — ligera, el CEO aprueba > $50 (gratis)
+- "Enterprise Governance" — aprobación multinivel, registro de auditoría ($49)
 
 ---
 
-## 3. Data Schemas
+## 3. Esquemas de datos
 
 ### 3.1 Listing
 
@@ -246,60 +246,60 @@ interface Review {
 
 ---
 
-## 4. Pages & Routes
+## 4. Páginas y rutas
 
-### 4.1 Public Pages
+### 4.1 Páginas públicas
 
-| Route | Page | Description |
+| Ruta | Página | Descripción |
 |---|---|---|
-| `/` | Homepage | Hero, featured blueprints, popular skills, how it works |
-| `/browse` | Marketplace browse | Filterable grid of all listings |
-| `/browse?type=team_blueprint` | Team blueprints | Filtered to team configs |
-| `/browse?type=agent_blueprint` | Agent blueprints | Single-agent configs |
-| `/browse?type=skill` | Skills | Skill listings |
-| `/browse?type=governance_template` | Governance | Policy templates |
-| `/listings/:slug` | Listing detail | Full product page |
-| `/creators/:slug` | Creator profile | Bio, all listings, stats |
-| `/about` | About ClipHub | Mission, how it works |
-| `/pricing` | Pricing & fees | Creator revenue share, buyer info |
+| `/` | Página principal | Hero, blueprints destacados, habilidades populares, cómo funciona |
+| `/browse` | Explorar marketplace | Cuadrícula filtrable de todos los listings |
+| `/browse?type=team_blueprint` | Blueprints de equipo | Filtrado a configuraciones de equipo |
+| `/browse?type=agent_blueprint` | Blueprints de agentes | Configuraciones de un solo agente |
+| `/browse?type=skill` | Habilidades | Listings de habilidades |
+| `/browse?type=governance_template` | Gobernanza | Plantillas de políticas |
+| `/listings/:slug` | Detalle de listing | Página de producto completa |
+| `/creators/:slug` | Perfil de creador | Bio, todos los listings, estadísticas |
+| `/about` | Acerca de ClipHub | Misión, cómo funciona |
+| `/pricing` | Precios y tarifas | Participación en ingresos del creador, información para compradores |
 
-### 4.2 Authenticated Pages
+### 4.2 Páginas autenticadas
 
-| Route | Page | Description |
+| Ruta | Página | Descripción |
 |---|---|---|
-| `/dashboard` | Buyer dashboard | Purchased items, installed blueprints |
-| `/dashboard/purchases` | Purchase history | All transactions |
-| `/dashboard/installs` | Installations | Deployed blueprints with status |
-| `/creator` | Creator dashboard | Listing management, analytics |
-| `/creator/listings/new` | Create listing | Multi-step listing wizard |
-| `/creator/listings/:id/edit` | Edit listing | Modify existing listing |
-| `/creator/analytics` | Analytics | Revenue, installs, views |
-| `/creator/payouts` | Payouts | Stripe Connect payout history |
+| `/dashboard` | Panel de comprador | Artículos comprados, blueprints instalados |
+| `/dashboard/purchases` | Historial de compras | Todas las transacciones |
+| `/dashboard/installs` | Instalaciones | Blueprints desplegados con estado |
+| `/creator` | Panel de creador | Gestión de listings, analítica |
+| `/creator/listings/new` | Crear listing | Asistente de creación de listings de varios pasos |
+| `/creator/listings/:id/edit` | Editar listing | Modificar un listing existente |
+| `/creator/analytics` | Analítica | Ingresos, instalaciones, vistas |
+| `/creator/payouts` | Pagos | Historial de pagos de Stripe Connect |
 
-### 4.3 API Routes
+### 4.3 Rutas de API
 
-| Method | Endpoint | Description |
+| Método | Endpoint | Descripción |
 |---|---|---|
-| `GET` | `/api/listings` | Browse listings (filters: type, category, price range, sort) |
-| `GET` | `/api/listings/:slug` | Get listing detail |
-| `POST` | `/api/listings` | Create listing (creator auth) |
-| `PATCH` | `/api/listings/:id` | Update listing |
-| `DELETE` | `/api/listings/:id` | Archive listing |
-| `POST` | `/api/listings/:id/purchase` | Purchase listing (Stripe checkout) |
-| `POST` | `/api/listings/:id/install` | Install to Paperclip company |
-| `GET` | `/api/listings/:id/reviews` | Get reviews |
-| `POST` | `/api/listings/:id/reviews` | Submit review |
-| `GET` | `/api/creators/:slug` | Creator profile |
-| `GET` | `/api/creators/me` | Current creator profile |
-| `POST` | `/api/creators` | Register as creator |
-| `GET` | `/api/purchases` | Buyer's purchase history |
-| `GET` | `/api/analytics` | Creator analytics |
+| `GET` | `/api/listings` | Explorar listings (filtros: tipo, categoría, rango de precios, orden) |
+| `GET` | `/api/listings/:slug` | Obtener detalle de listing |
+| `POST` | `/api/listings` | Crear listing (autenticación de creador) |
+| `PATCH` | `/api/listings/:id` | Actualizar listing |
+| `DELETE` | `/api/listings/:id` | Archivar listing |
+| `POST` | `/api/listings/:id/purchase` | Comprar listing (checkout de Stripe) |
+| `POST` | `/api/listings/:id/install` | Instalar en empresa de Paperclip |
+| `GET` | `/api/listings/:id/reviews` | Obtener reseñas |
+| `POST` | `/api/listings/:id/reviews` | Enviar reseña |
+| `GET` | `/api/creators/:slug` | Perfil de creador |
+| `GET` | `/api/creators/me` | Perfil de creador actual |
+| `POST` | `/api/creators` | Registrarse como creador |
+| `GET` | `/api/purchases` | Historial de compras del comprador |
+| `GET` | `/api/analytics` | Analítica del creador |
 
 ---
 
-## 5. User Flows
+## 5. Flujos de usuario
 
-### 5.1 Buyer: Browse → Purchase → Install
+### 5.1 Comprador: explorar → comprar → instalar
 
 ```
 Homepage → Browse marketplace → Filter by type/category
@@ -316,7 +316,7 @@ Homepage → Browse marketplace → Filter by type/category
   → Redirect to Paperclip dashboard with new team running
 ```
 
-### 5.2 Creator: Build → Publish → Earn
+### 5.2 Creador: crear → publicar → ganar
 
 ```
 Sign up as creator → Connect Stripe
@@ -331,7 +331,7 @@ Sign up as creator → Connect Stripe
   → Track installs, revenue, reviews on creator dashboard
 ```
 
-### 5.3 Creator: Export from Paperclip → Publish
+### 5.3 Creador: exportar desde Paperclip → publicar
 
 ```
 Running Paperclip company → "Export as Blueprint" (CLI or UI)
@@ -347,26 +347,26 @@ Running Paperclip company → "Export as Blueprint" (CLI or UI)
 
 ---
 
-## 6. UI Design Direction
+## 6. Dirección de diseño de UI
 
-### 6.1 Visual Language
+### 6.1 Lenguaje visual
 
-- **Color palette**: Dark ink primary, warm sand backgrounds, accent color for CTAs (Paperclip brand blue/purple)
-- **Typography**: Clean sans-serif, strong hierarchy, monospace for technical details
-- **Cards**: Rounded corners, subtle shadows, clear pricing badges
-- **Org chart visuals**: Interactive tree/graph showing agent relationships in team blueprints
+- **Paleta de colores**: tinta oscura primaria, fondos arena cálidos, color de acento para CTAs (azul/morado de la marca Paperclip)
+- **Tipografía**: sans-serif limpia, jerarquía fuerte, monoespaciado para detalles técnicos
+- **Tarjetas**: esquinas redondeadas, sombras sutiles, insignias de precio claras
+- **Visuales de organigrama**: árbol/grafo interactivo que muestra las relaciones de agentes en blueprints de equipo
 
-### 6.2 Key Design Elements
+### 6.2 Elementos clave de diseño
 
-| Element | ClipHub |
+| Elemento | ClipHub |
 |---|---|
-| Product card | Org chart mini-preview + agent count badge |
-| Detail page | Interactive org chart + per-agent breakdown |
-| Install flow | One-click deploy to Paperclip company |
-| Social proof | "X companies running this blueprint" |
-| Preview | Live demo sandbox (stretch goal) |
+| Tarjeta de producto | Mini-vista previa de organigrama + insignia de conteo de agentes |
+| Página de detalle | Organigrama interactivo + desglose por agente |
+| Flujo de instalación | Despliegue en un clic a la empresa de Paperclip |
+| Prueba social | "X empresas ejecutando este blueprint" |
+| Vista previa | Sandbox de demo en vivo (objetivo extra) |
 
-### 6.3 Listing Card Design
+### 6.3 Diseño de tarjeta de listing
 
 ```
 ┌─────────────────────────────────────┐
@@ -386,25 +386,22 @@ Running Paperclip company → "Export as Blueprint" (CLI or UI)
 └─────────────────────────────────────┘
 ```
 
-### 6.4 Detail Page Sections
+### 6.4 Secciones de la página de detalle
 
-1. **Hero**: Title, tagline, price, install button, creator info
-2. **Org Chart**: Interactive visualization of agent hierarchy
-3. **Agent Breakdown**: Expandable cards for each agent — role, capabilities, model, skills
-4. **Governance**: Approval flows, budget structure, escalation chain
-5. **Included Projects**: Project templates with workspace configs
-6. **README**: Full markdown documentation
-7. **Reviews**: Star ratings + written reviews
-8. **Related Blueprints**: Cross-sell similar team configs
-9. **Creator Profile**: Mini bio, other listings
+1. **Hero**: título, tagline, precio, botón de instalación, información del creador
+2. **Organigrama**: visualización interactiva de la jerarquía de agentes
+3. **Desglose de agentes**: tarjetas expandibles por agente: rol, capacidades, modelo, habilidades
+4. **Gobernanza**: flujos de aprobación, estructura de presupuesto, cadena de escalamiento
+5. **Proyectos incluidos**: plantillas de proyectos con configuraciones de workspace
+6. **README**: documentación markdown completa
+7. **Reseñas**: calificaciones con estrellas + reseñas escritas
+8. **Blueprints relacionados**: venta cruzada de configuraciones de equipo similares
+9. **Perfil de creador**: mini bio, otros listings
+## 7. Mecánica de instalación
 
----
+### 7.1 Flujo de API de instalación
 
-## 7. Installation Mechanics
-
-### 7.1 Install API Flow
-
-When a buyer clicks "Install to Company":
+Cuando un comprador hace clic en "Instalar en la empresa":
 
 ```
 POST /api/listings/:id/install
@@ -418,61 +415,61 @@ POST /api/listings/:id/install
 }
 ```
 
-The install handler:
+El manejador de instalación:
 
-1. Validates buyer owns the purchase
-2. Validates target company access
-3. For each agent in blueprint:
-   - `POST /api/companies/:id/agents` (if `paperclip-create-agent` supports it, or via approval flow)
-   - Sets adapter config, prompt template, instructions path
-4. Sets reporting chains
-5. Creates projects and workspaces
-6. Applies governance rules
-7. Deploys skill files to configured paths
-8. Returns summary of created resources
+1. Valida que el comprador sea dueño de la compra
+2. Valida el acceso a la empresa objetivo
+3. Para cada agente en el blueprint:
+   - `POST /api/companies/:id/agents` (si `paperclip-create-agent` lo admite, o vía flujo de aprobación)
+   - Establece la configuración del adaptador, la plantilla de prompt, la ruta de instrucciones
+4. Establece las cadenas de reporte
+5. Crea proyectos y workspaces
+6. Aplica las reglas de gobernanza
+7. Despliega los archivos de habilidad a las rutas configuradas
+8. Devuelve un resumen de los recursos creados
 
-### 7.2 Conflict Resolution
+### 7.2 Resolución de conflictos
 
-- **Agent name collision**: Append `-2`, `-3` suffix
-- **Project name collision**: Prompt buyer to rename or skip
-- **Adapter mismatch**: Warn if blueprint requires adapter not available locally
-- **Model availability**: Warn if required model not configured
+- **Colisión de nombre de agente**: agregar sufijo `-2`, `-3`
+- **Colisión de nombre de proyecto**: pedir al comprador que renombre u omita
+- **Adaptador incompatible**: advertir si el blueprint requiere un adaptador no disponible localmente
+- **Disponibilidad del modelo**: advertir si el modelo requerido no está configurado
 
 ---
 
-## 8. Revenue Model
+## 8. Modelo de ingresos
 
-| Fee | Amount | Notes |
+| Tarifa | Monto | Notas |
 |---|---|---|
-| Creator revenue share | 90% of sale price | Minus Stripe processing (~2.9% + $0.30) |
-| Platform fee | 10% of sale price | ClipHub's cut |
-| Free listings | $0 | No fees for free listings |
-| Stripe Connect | Standard rates | Handled by Stripe |
+| Participación en ingresos del creador | 90% del precio de venta | Menos el procesamiento de Stripe (~2.9% + $0.30) |
+| Tarifa de plataforma | 10% del precio de venta | La parte de ClipHub |
+| Listings gratis | $0 | Sin tarifas para listings gratis |
+| Stripe Connect | Tarifas estándar | Gestionado por Stripe |
 
 ---
 
-## 9. Technical Architecture
+## 9. Arquitectura técnica
 
 ### 9.1 Stack
 
-- **Frontend**: Next.js (React), Tailwind CSS, same UI framework as Paperclip
-- **Backend**: Node.js API (or extend Paperclip server)
-- **Database**: Postgres (can share Paperclip's DB or separate)
-- **Payments**: Stripe Connect (marketplace mode)
-- **Storage**: S3/R2 for listing bundles and images
-- **Auth**: Shared with Paperclip auth (or OAuth2)
+- **Frontend**: Next.js (React), Tailwind CSS, mismo framework de UI que Paperclip
+- **Backend**: API de Node.js (o extender el servidor de Paperclip)
+- **Base de datos**: Postgres (puede compartir la BD de Paperclip o ser separada)
+- **Pagos**: Stripe Connect (modo marketplace)
+- **Almacenamiento**: S3/R2 para paquetes de listing e imágenes
+- **Auth**: compartida con la autenticación de Paperclip (u OAuth2)
 
-### 9.2 Integration with Paperclip
+### 9.2 Integración con Paperclip
 
-ClipHub can be:
-- **Option A**: A separate app that calls Paperclip's API to install blueprints
-- **Option B**: A built-in section of the Paperclip UI (`/marketplace` route)
+ClipHub puede ser:
+- **Opción A**: una app separada que llama a la API de Paperclip para instalar blueprints
+- **Opción B**: una sección integrada de la UI de Paperclip (ruta `/marketplace`)
 
-Option B is simpler for MVP — adds routes to the existing Paperclip UI and API.
+La opción B es más simple para el MVP: agrega rutas a la UI y API existentes de Paperclip.
 
-### 9.3 Bundle Format
+### 9.3 Formato de paquete
 
-Listing bundles are ZIP/tar archives containing:
+Los paquetes de listing son archivos ZIP/tar que contienen:
 
 ```
 blueprint/
@@ -500,27 +497,27 @@ blueprint/
 
 ---
 
-## 10. MVP Scope
+## 10. Alcance del MVP
 
-### Phase 1: Foundation
-- [ ] Listing schema and CRUD API
-- [ ] Browse page with filters (type, category, price)
-- [ ] Listing detail page with org chart visualization
-- [ ] Creator registration and listing creation wizard
-- [ ] Free installs only (no payments yet)
-- [ ] Install flow: blueprint → Paperclip company
+### Fase 1: Fundación
+- [ ] Esquema de listing y API CRUD
+- [ ] Página de exploración con filtros (tipo, categoría, precio)
+- [ ] Página de detalle de listing con visualización de organigrama
+- [ ] Registro de creador y asistente de creación de listings
+- [ ] Solo instalaciones gratis (sin pagos todavía)
+- [ ] Flujo de instalación: blueprint → empresa de Paperclip
 
-### Phase 2: Payments & Social
-- [ ] Stripe Connect integration
-- [ ] Purchase flow
-- [ ] Review system
-- [ ] Creator analytics dashboard
-- [ ] "Export from Paperclip" CLI command
+### Fase 2: Pagos y social
+- [ ] Integración con Stripe Connect
+- [ ] Flujo de compra
+- [ ] Sistema de reseñas
+- [ ] Panel de analítica de creador
+- [ ] Comando CLI "Export from Paperclip"
 
-### Phase 3: Growth
-- [ ] Search with relevance ranking
-- [ ] Featured/trending listings
-- [ ] Creator verification program
-- [ ] Blueprint versioning and update notifications
-- [ ] Live demo sandbox
-- [ ] API for programmatic publishing
+### Fase 3: Crecimiento
+- [ ] Búsqueda con ranking de relevancia
+- [ ] Listings destacados/en tendencia
+- [ ] Programa de verificación de creadores
+- [ ] Versionado de blueprints y notificaciones de actualización
+- [ ] Sandbox de demo en vivo
+- [ ] API para publicación programática

@@ -78,11 +78,11 @@ const IMPORT_INCLUDE_OPTIONS: Array<{
   label: string;
   hint: string;
 }> = [
-  { value: "company", label: "Company", hint: "name, branding, and company settings" },
-  { value: "projects", label: "Projects", hint: "projects and workspace metadata" },
-  { value: "issues", label: "Tasks", hint: "tasks and recurring routines" },
-  { value: "agents", label: "Agents", hint: "agent records and org structure" },
-  { value: "skills", label: "Skills", hint: "company skill packages and references" },
+  { value: "company", label: "Empresa", hint: "nombre, marca y ajustes de la empresa" },
+  { value: "projects", label: "Proyectos", hint: "proyectos y metadatos del workspace" },
+  { value: "issues", label: "Tareas", hint: "tareas y rutinas recurrentes" },
+  { value: "agents", label: "Agentes", hint: "registros de agentes y estructura de la organización" },
+  { value: "skills", label: "Habilidades", hint: "paquetes de habilidades de la empresa y referencias" },
 ];
 
 const IMPORT_PREVIEW_SAMPLE_LIMIT = 6;
@@ -146,7 +146,7 @@ function parseInclude(
     skills: values.includes("skills"),
   };
   if (!include.company && !include.agents && !include.projects && !include.issues && !include.skills) {
-    throw new Error("Invalid --include value. Use one or more of: company,agents,projects,issues,tasks,skills");
+    throw new Error("Valor de --include inválido. Usa uno o más de: company,agents,projects,issues,tasks,skills");
   }
   return include;
 }
@@ -303,19 +303,19 @@ function countTotal(catalog: ImportSelectionCatalog, group: ImportSelectableGrou
 }
 
 function summarizeGroupSelection(catalog: ImportSelectionCatalog, state: ImportSelectionState, group: ImportSelectableGroup): string {
-  return `${countSelected(state, group)}/${countTotal(catalog, group)} selected`;
+  return `${countSelected(state, group)}/${countTotal(catalog, group)} seleccionados`;
 }
 
 function getGroupLabel(group: ImportSelectableGroup): string {
   switch (group) {
     case "projects":
-      return "Projects";
+      return "Proyectos";
     case "issues":
-      return "Tasks";
+      return "Tareas";
     case "agents":
-      return "Agents";
+      return "Agentes";
     case "skills":
-      return "Skills";
+      return "Habilidades";
   }
 }
 
@@ -359,7 +359,7 @@ export function buildDefaultImportAdapterOverrides(
       .map((agent) => [
         agent.slug,
         {
-          // TODO: replace this temporary claude_local fallback with adapter selection in the import TUI.
+          // TODO: reemplazar este fallback temporal claude_local con selección de adaptador en la TUI de importación.
           adapterType: "claude_local",
         },
       ]),
@@ -375,7 +375,7 @@ function buildDefaultImportAdapterMessages(
     .map((adapterType) => adapterType.replace(/_/g, "-"));
   const agentCount = Object.keys(overrides).length;
   return [
-    `Using ${adapterTypes.join(", ")} adapter${adapterTypes.length === 1 ? "" : "s"} for ${agentCount} imported ${pluralize(agentCount, "agent")} without an explicit adapter.`,
+    `Usando ${adapterTypes.join(", ")} ${adapterTypes.length === 1 ? "adaptador" : "adaptadores"} para ${agentCount} ${agentCount === 1 ? "agente importado" : "agentes importados"} sin un adaptador explícito.`,
   ];
 }
 
@@ -385,51 +385,51 @@ async function promptForImportSelection(preview: CompanyPortabilityPreviewResult
 
   while (true) {
     const choice = await p.select<ImportSelectableGroup | "company" | "confirm">({
-      message: "Select what Paperclip should import",
+      message: "Selecciona qué debe importar Paperclip",
       options: [
         {
           value: "company",
-          label: state.company ? "Company: included" : "Company: skipped",
-          hint: catalog.company.files.length > 0 ? "toggle company metadata" : "no company metadata in package",
+          label: state.company ? "Empresa: incluida" : "Empresa: omitida",
+          hint: catalog.company.files.length > 0 ? "alternar metadatos de la empresa" : "sin metadatos de empresa en el paquete",
         },
         {
           value: "projects",
-          label: "Select Projects",
+          label: "Seleccionar proyectos",
           hint: summarizeGroupSelection(catalog, state, "projects"),
         },
         {
           value: "issues",
-          label: "Select Tasks",
+          label: "Seleccionar tareas",
           hint: summarizeGroupSelection(catalog, state, "issues"),
         },
         {
           value: "agents",
-          label: "Select Agents",
+          label: "Seleccionar agentes",
           hint: summarizeGroupSelection(catalog, state, "agents"),
         },
         {
           value: "skills",
-          label: "Select Skills",
+          label: "Seleccionar habilidades",
           hint: summarizeGroupSelection(catalog, state, "skills"),
         },
         {
           value: "confirm",
-          label: "Confirm",
-          hint: `${buildSelectedFilesFromImportSelection(catalog, state).length} files selected`,
+          label: "Confirmar",
+          hint: `${buildSelectedFilesFromImportSelection(catalog, state).length} archivos seleccionados`,
         },
       ],
       initialValue: "confirm",
     });
 
     if (p.isCancel(choice)) {
-      p.cancel("Import cancelled.");
+      p.cancel("Importación cancelada.");
       process.exit(0);
     }
 
     if (choice === "confirm") {
       const selectedFiles = buildSelectedFilesFromImportSelection(catalog, state);
       if (selectedFiles.length === 0) {
-        p.note("Select at least one import target before confirming.", "Nothing selected");
+        p.note("Selecciona al menos un destino de importación antes de confirmar.", "Nada seleccionado");
         continue;
       }
       return selectedFiles;
@@ -437,7 +437,7 @@ async function promptForImportSelection(preview: CompanyPortabilityPreviewResult
 
     if (choice === "company") {
       if (catalog.company.files.length === 0) {
-        p.note("This package does not include company metadata to toggle.", "No company metadata");
+        p.note("Este paquete no incluye metadatos de empresa para alternar.", "Sin metadatos de empresa");
         continue;
       }
       state.company = !state.company;
@@ -447,12 +447,12 @@ async function promptForImportSelection(preview: CompanyPortabilityPreviewResult
     const group = choice;
     const groupItems = catalog[group];
     if (groupItems.length === 0) {
-      p.note(`This package does not include any ${getGroupLabel(group).toLowerCase()}.`, `No ${getGroupLabel(group)}`);
+      p.note(`Este paquete no incluye ${getGroupLabel(group).toLowerCase()}.`, `Sin ${getGroupLabel(group)}`);
       continue;
     }
 
     const selection = await p.multiselect<string>({
-      message: `${getGroupLabel(group)} to import. Space toggles, enter returns to the main menu.`,
+      message: `${getGroupLabel(group)} para importar. Espacio alterna, enter vuelve al menú principal.`,
       options: groupItems.map((item) => ({
         value: item.key,
         label: item.label,
@@ -462,7 +462,7 @@ async function promptForImportSelection(preview: CompanyPortabilityPreviewResult
     });
 
     if (p.isCancel(selection)) {
-      p.cancel("Import cancelled.");
+      p.cancel("Importación cancelada.");
       process.exit(0);
     }
 
@@ -474,14 +474,14 @@ function summarizeInclude(include: CompanyPortabilityInclude): string {
   const labels = IMPORT_INCLUDE_OPTIONS
     .filter((option) => include[option.value])
     .map((option) => option.label.toLowerCase());
-  return labels.length > 0 ? labels.join(", ") : "nothing selected";
+  return labels.length > 0 ? labels.join(", ") : "nada seleccionado";
 }
 
 function formatSourceLabel(source: { type: "inline"; rootPath?: string | null } | { type: "github"; url: string }): string {
   if (source.type === "github") {
     return `GitHub: ${source.url}`;
   }
-  return `Local package: ${source.rootPath?.trim() || "(current folder)"}`;
+  return `Paquete local: ${source.rootPath?.trim() || "(carpeta actual)"}`;
 }
 
 function formatTargetLabel(
@@ -493,7 +493,7 @@ function formatTargetLabel(
     const targetId = preview?.targetCompanyId?.trim() || target.companyId?.trim() || "unknown-company";
     return targetName ? `${targetName} (${targetId})` : targetId;
   }
-  return target.newCompanyName?.trim() || preview?.manifest.company?.name || "new company";
+  return target.newCompanyName?.trim() || preview?.manifest.company?.name || "nueva empresa";
 }
 
 function pluralize(count: number, singular: string, plural = `${singular}s`): string {
@@ -504,39 +504,39 @@ function summarizePlanCounts(
   plans: Array<{ action: "create" | "update" | "skip" }>,
   noun: string,
 ): string {
-  if (plans.length === 0) return `0 ${pluralize(0, noun)} selected`;
+  if (plans.length === 0) return `0 ${pluralize(0, noun)} sin seleccionar`;
   const createCount = plans.filter((plan) => plan.action === "create").length;
   const updateCount = plans.filter((plan) => plan.action === "update").length;
   const skipCount = plans.filter((plan) => plan.action === "skip").length;
   const parts: string[] = [];
-  if (createCount > 0) parts.push(`${createCount} create`);
-  if (updateCount > 0) parts.push(`${updateCount} update`);
-  if (skipCount > 0) parts.push(`${skipCount} skip`);
-  return `${plans.length} ${pluralize(plans.length, noun)} total (${parts.join(", ")})`;
+  if (createCount > 0) parts.push(`${createCount} para crear`);
+  if (updateCount > 0) parts.push(`${updateCount} para actualizar`);
+  if (skipCount > 0) parts.push(`${skipCount} para omitir`);
+  return `${plans.length} ${pluralize(plans.length, noun)} en total (${parts.join(", ")})`;
 }
 
 function summarizeImportAgentResults(agents: CompanyPortabilityImportResult["agents"]): string {
-  if (agents.length === 0) return "0 agents changed";
+  if (agents.length === 0) return "0 agentes sin cambios";
   const created = agents.filter((agent) => agent.action === "created").length;
   const updated = agents.filter((agent) => agent.action === "updated").length;
   const skipped = agents.filter((agent) => agent.action === "skipped").length;
   const parts: string[] = [];
-  if (created > 0) parts.push(`${created} created`);
-  if (updated > 0) parts.push(`${updated} updated`);
-  if (skipped > 0) parts.push(`${skipped} skipped`);
-  return `${agents.length} ${pluralize(agents.length, "agent")} total (${parts.join(", ")})`;
+  if (created > 0) parts.push(`${created} creados`);
+  if (updated > 0) parts.push(`${updated} actualizados`);
+  if (skipped > 0) parts.push(`${skipped} omitidos`);
+  return `${agents.length} ${pluralize(agents.length, "agente")} en total (${parts.join(", ")})`;
 }
 
 function summarizeImportProjectResults(projects: CompanyPortabilityImportResult["projects"]): string {
-  if (projects.length === 0) return "0 projects changed";
+  if (projects.length === 0) return "0 proyectos sin cambios";
   const created = projects.filter((project) => project.action === "created").length;
   const updated = projects.filter((project) => project.action === "updated").length;
   const skipped = projects.filter((project) => project.action === "skipped").length;
   const parts: string[] = [];
-  if (created > 0) parts.push(`${created} created`);
-  if (updated > 0) parts.push(`${updated} updated`);
-  if (skipped > 0) parts.push(`${skipped} skipped`);
-  return `${projects.length} ${pluralize(projects.length, "project")} total (${parts.join(", ")})`;
+  if (created > 0) parts.push(`${created} creados`);
+  if (updated > 0) parts.push(`${updated} actualizados`);
+  if (skipped > 0) parts.push(`${skipped} omitidos`);
+  return `${projects.length} ${pluralize(projects.length, "proyecto")} en total (${parts.join(", ")})`;
 }
 
 function actionChip(action: string): string {
@@ -571,7 +571,7 @@ function appendPreviewExamples(
     lines.push(`- ${actionChip(entry.action)} ${entry.label}${reason}`);
   }
   if (entries.length > shown.length) {
-    lines.push(pc.dim(`- +${entries.length - shown.length} more`));
+    lines.push(pc.dim(`- +${entries.length - shown.length} más`));
   }
 }
 
@@ -593,37 +593,37 @@ export function renderCompanyImportPreview(
   },
 ): string {
   const lines: string[] = [
-    `${pc.bold("Source")}  ${meta.sourceLabel}`,
-    `${pc.bold("Target")}  ${meta.targetLabel}`,
-    `${pc.bold("Include")} ${summarizeInclude(preview.include)}`,
-    `${pc.bold("Mode")}    ${preview.collisionStrategy} collisions`,
+    `${pc.bold("Origen")}  ${meta.sourceLabel}`,
+    `${pc.bold("Destino")}  ${meta.targetLabel}`,
+    `${pc.bold("Incluir")} ${summarizeInclude(preview.include)}`,
+    `${pc.bold("Modo")}    ${preview.collisionStrategy} colisiones`,
     "",
-    pc.bold("Package"),
-    `- company: ${preview.manifest.company?.name ?? preview.manifest.source?.companyName ?? "not included"}`,
-    `- agents: ${preview.manifest.agents.length}`,
-    `- projects: ${preview.manifest.projects.length}`,
-    `- tasks: ${preview.manifest.issues.length}`,
-    `- skills: ${preview.manifest.skills.length}`,
+    pc.bold("Paquete"),
+    `- empresa: ${preview.manifest.company?.name ?? preview.manifest.source?.companyName ?? "no incluida"}`,
+    `- agentes: ${preview.manifest.agents.length}`,
+    `- proyectos: ${preview.manifest.projects.length}`,
+    `- tareas: ${preview.manifest.issues.length}`,
+    `- habilidades: ${preview.manifest.skills.length}`,
   ];
 
   if (preview.envInputs.length > 0) {
     const requiredCount = preview.envInputs.filter((item) => item.requirement === "required").length;
-    lines.push(`- env inputs: ${preview.envInputs.length} (${requiredCount} required)`);
+    lines.push(`- entradas env: ${preview.envInputs.length} (${requiredCount} requeridas)`);
   }
 
   lines.push("");
   lines.push(pc.bold("Plan"));
-  lines.push(`- company: ${actionChip(preview.plan.companyAction === "none" ? "unchanged" : preview.plan.companyAction)}`);
-  lines.push(`- agents: ${summarizePlanCounts(preview.plan.agentPlans, "agent")}`);
-  lines.push(`- projects: ${summarizePlanCounts(preview.plan.projectPlans, "project")}`);
-  lines.push(`- tasks: ${summarizePlanCounts(preview.plan.issuePlans, "task")}`);
+  lines.push(`- empresa: ${actionChip(preview.plan.companyAction === "none" ? "sin cambios" : preview.plan.companyAction)}`);
+  lines.push(`- agentes: ${summarizePlanCounts(preview.plan.agentPlans, "agente")}`);
+  lines.push(`- proyectos: ${summarizePlanCounts(preview.plan.projectPlans, "proyecto")}`);
+  lines.push(`- tareas: ${summarizePlanCounts(preview.plan.issuePlans, "tarea")}`);
   if (preview.include.skills) {
-    lines.push(`- skills: ${preview.manifest.skills.length} ${pluralize(preview.manifest.skills.length, "skill")} packaged`);
+    lines.push(`- habilidades: ${preview.manifest.skills.length} ${pluralize(preview.manifest.skills.length, "habilidad")} ${preview.manifest.skills.length === 1 ? "empaquetada" : "empaquetadas"}`);
   }
 
   appendPreviewExamples(
     lines,
-    "Agent examples",
+    "Ejemplos de agentes",
     preview.plan.agentPlans.map((plan) => ({
       action: plan.action,
       label: `${plan.slug} -> ${plan.plannedName}`,
@@ -632,7 +632,7 @@ export function renderCompanyImportPreview(
   );
   appendPreviewExamples(
     lines,
-    "Project examples",
+    "Ejemplos de proyectos",
     preview.plan.projectPlans.map((plan) => ({
       action: plan.action,
       label: `${plan.slug} -> ${plan.plannedName}`,
@@ -641,7 +641,7 @@ export function renderCompanyImportPreview(
   );
   appendPreviewExamples(
     lines,
-    "Task examples",
+    "Ejemplos de tareas",
     preview.plan.issuePlans.map((plan) => ({
       action: plan.action,
       label: `${plan.slug} -> ${plan.plannedTitle}`,
@@ -650,8 +650,8 @@ export function renderCompanyImportPreview(
   );
 
   appendMessageBlock(lines, pc.cyan("Info"), meta.infoMessages ?? []);
-  appendMessageBlock(lines, pc.yellow("Warnings"), preview.warnings);
-  appendMessageBlock(lines, pc.red("Errors"), preview.errors);
+  appendMessageBlock(lines, pc.yellow("Advertencias"), preview.warnings);
+  appendMessageBlock(lines, pc.red("Errores"), preview.errors);
 
   return lines.join("\n");
 }
@@ -661,10 +661,10 @@ export function renderCompanyImportResult(
   meta: { targetLabel: string; companyUrl?: string; infoMessages?: string[] },
 ): string {
   const lines: string[] = [
-    `${pc.bold("Target")}  ${meta.targetLabel}`,
-    `${pc.bold("Company")} ${result.company.name} (${actionChip(result.company.action)})`,
-    `${pc.bold("Agents")}  ${summarizeImportAgentResults(result.agents)}`,
-    `${pc.bold("Projects")} ${summarizeImportProjectResults(result.projects)}`,
+    `${pc.bold("Destino")}  ${meta.targetLabel}`,
+    `${pc.bold("Empresa")} ${result.company.name} (${actionChip(result.company.action)})`,
+    `${pc.bold("Agentes")}  ${summarizeImportAgentResults(result.agents)}`,
+    `${pc.bold("Proyectos")} ${summarizeImportProjectResults(result.projects)}`,
   ];
 
   if (meta.companyUrl) {
@@ -673,7 +673,7 @@ export function renderCompanyImportResult(
 
   appendPreviewExamples(
     lines,
-    "Agent results",
+    "Resultados de agentes",
     result.agents.map((agent) => ({
       action: agent.action,
       label: `${agent.slug} -> ${agent.name}`,
@@ -682,7 +682,7 @@ export function renderCompanyImportResult(
   );
   appendPreviewExamples(
     lines,
-    "Project results",
+    "Resultados de proyectos",
     result.projects.map((project) => ({
       action: project.action,
       label: `${project.slug} -> ${project.name}`,
@@ -692,14 +692,16 @@ export function renderCompanyImportResult(
 
   if (result.envInputs.length > 0) {
     lines.push("");
-    lines.push(pc.bold("Env inputs"));
+    lines.push(pc.bold("Entradas env"));
     lines.push(
-      `- ${result.envInputs.length} ${pluralize(result.envInputs.length, "input")} may need values after import`,
+      result.envInputs.length === 1
+        ? `- 1 entrada puede necesitar valores después de la importación`
+        : `- ${result.envInputs.length} entradas pueden necesitar valores después de la importación`,
     );
   }
 
   appendMessageBlock(lines, pc.cyan("Info"), meta.infoMessages ?? []);
-  appendMessageBlock(lines, pc.yellow("Warnings"), result.warnings);
+  appendMessageBlock(lines, pc.yellow("Advertencias"), result.warnings);
 
   return lines.join("\n");
 }
@@ -721,7 +723,7 @@ export function resolveCompanyImportApiPath(input: {
   if (input.targetMode === "existing_company") {
     const companyId = input.companyId?.trim();
     if (!companyId) {
-      throw new Error("Existing-company imports require a companyId to resolve the API route.");
+      throw new Error("Las importaciones a empresa existente requieren un companyId para resolver la ruta de la API.");
     }
     return input.dryRun
       ? `/api/companies/${companyId}/imports/preview`
@@ -750,12 +752,12 @@ export function resolveCompanyImportApplyConfirmationMode(input: {
   }
   if (input.json) {
     throw new Error(
-      "Applying a company import with --json requires --yes. Use --dry-run first to inspect the preview.",
+      "Aplicar una importación de empresa con --json requiere --yes. Usa --dry-run primero para inspeccionar la vista previa.",
     );
   }
   if (!input.interactive) {
     throw new Error(
-      "Applying a company import from a non-interactive terminal requires --yes. Use --dry-run first to inspect the preview.",
+      "Aplicar una importación de empresa desde un terminal no interactivo requiere --yes. Usa --dry-run primero para inspeccionar la vista previa.",
     );
   }
   return "prompt";
@@ -835,7 +837,7 @@ export function normalizeGithubImportSource(input: string, refOverride?: string)
   }
 
   if (!isGithubUrl(trimmed)) {
-    throw new Error("GitHub source must be a github.com URL or owner/repo[/path] shorthand.");
+    throw new Error("La fuente GitHub debe ser una URL de github.com o la forma abreviada owner/repo[/path].");
   }
   if (!ref) {
     return trimmed;
@@ -844,7 +846,7 @@ export function normalizeGithubImportSource(input: string, refOverride?: string)
   const url = new URL(trimmed);
   const parts = url.pathname.split("/").filter(Boolean);
   if (parts.length < 2) {
-    throw new Error("Invalid GitHub URL.");
+    throw new Error("URL de GitHub inválida.");
   }
 
   const owner = parts[0]!;
@@ -942,23 +944,23 @@ async function confirmOverwriteExportDirectory(outDir: string): Promise<void> {
   const stats = await stat(root).catch(() => null);
   if (!stats) return;
   if (!stats.isDirectory()) {
-    throw new Error(`Export output path ${root} exists and is not a directory.`);
+    throw new Error(`La ruta de salida de exportación ${root} existe y no es un directorio.`);
   }
 
   const entries = await readdir(root);
   if (entries.length === 0) return;
 
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    throw new Error(`Export output directory ${root} already contains files. Re-run interactively or choose an empty directory.`);
+    throw new Error(`El directorio de salida de exportación ${root} ya contiene archivos. Vuelve a ejecutar de forma interactiva o elige un directorio vacío.`);
   }
 
   const confirmed = await p.confirm({
-    message: `Overwrite existing files in ${root}?`,
+    message: `¿Sobrescribir los archivos existentes en ${root}?`,
     initialValue: false,
   });
 
   if (p.isCancel(confirmed) || !confirmed) {
-    throw new Error("Export cancelled.");
+    throw new Error("Exportación cancelada.");
   }
 }
 
@@ -973,7 +975,7 @@ export function resolveCompanyForDeletion(
 ): Company {
   const selector = normalizeSelector(selectorRaw);
   if (!selector) {
-    throw new Error("Company selector is required.");
+    throw new Error("Se requiere el selector de empresa.");
   }
 
   const idMatch = companies.find((company) => company.id === selector);
@@ -981,21 +983,21 @@ export function resolveCompanyForDeletion(
 
   if (by === "id") {
     if (!idMatch) {
-      throw new Error(`No company found by ID '${selector}'.`);
+      throw new Error(`No se encontró empresa con ID '${selector}'.`);
     }
     return idMatch;
   }
 
   if (by === "prefix") {
     if (!prefixMatch) {
-      throw new Error(`No company found by shortname/prefix '${selector}'.`);
+      throw new Error(`No se encontró empresa con nombre corto/prefijo '${selector}'.`);
     }
     return prefixMatch;
   }
 
   if (idMatch && prefixMatch && idMatch.id !== prefixMatch.id) {
     throw new Error(
-      `Selector '${selector}' is ambiguous (matches both an ID and a shortname). Re-run with --by id or --by prefix.`,
+      `El selector '${selector}' es ambiguo (coincide con un ID y un nombre corto). Vuelve a ejecutar con --by id o --by prefix.`,
     );
   }
 
@@ -1003,19 +1005,19 @@ export function resolveCompanyForDeletion(
   if (prefixMatch) return prefixMatch;
 
   throw new Error(
-    `No company found for selector '${selector}'. Use company ID or issue prefix (for example PAP).`,
+    `No se encontró empresa para el selector '${selector}'. Usa el ID de empresa o el prefijo de issue (por ejemplo PAP).`,
   );
 }
 
 export function assertDeleteConfirmation(company: Company, opts: CompanyDeleteOptions): void {
   if (!opts.yes) {
-    throw new Error("Deletion requires --yes.");
+    throw new Error("La eliminación requiere --yes.");
   }
 
   const confirm = opts.confirm?.trim();
   if (!confirm) {
     throw new Error(
-      "Deletion requires --confirm <value> where value matches the company ID or issue prefix.",
+      "La eliminación requiere --confirm <valor> donde el valor coincide con el ID de empresa o el prefijo de issue.",
     );
   }
 
@@ -1023,29 +1025,29 @@ export function assertDeleteConfirmation(company: Company, opts: CompanyDeleteOp
   const confirmsByPrefix = confirm.toUpperCase() === company.issuePrefix.toUpperCase();
   if (!confirmsById && !confirmsByPrefix) {
     throw new Error(
-      `Confirmation '${confirm}' does not match target company. Expected ID '${company.id}' or prefix '${company.issuePrefix}'.`,
+      `La confirmación '${confirm}' no coincide con la empresa destino. Se esperaba el ID '${company.id}' o el prefijo '${company.issuePrefix}'.`,
     );
   }
 }
 
 function assertDeleteFlags(opts: CompanyDeleteOptions): void {
   if (!opts.yes) {
-    throw new Error("Deletion requires --yes.");
+    throw new Error("La eliminación requiere --yes.");
   }
   if (!opts.confirm?.trim()) {
     throw new Error(
-      "Deletion requires --confirm <value> where value matches the company ID or issue prefix.",
+      "La eliminación requiere --confirm <valor> donde el valor coincide con el ID de empresa o el prefijo de issue.",
     );
   }
 }
 
 export function registerCompanyCommands(program: Command): void {
-  const company = program.command("company").description("Company operations");
+  const company = program.command("company").description("Operaciones de empresas");
 
   addCommonClientOptions(
     company
       .command("list")
-      .description("List companies")
+      .description("Listar empresas")
       .action(async (opts: CompanyCommandOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -1080,8 +1082,8 @@ export function registerCompanyCommands(program: Command): void {
   addCommonClientOptions(
     company
       .command("get")
-      .description("Get one company")
-      .argument("<companyId>", "Company ID")
+      .description("Obtener una empresa")
+      .argument("<companyId>", "ID de empresa")
       .action(async (companyId: string, opts: CompanyCommandOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -1096,15 +1098,15 @@ export function registerCompanyCommands(program: Command): void {
   addCommonClientOptions(
     company
       .command("export")
-      .description("Export a company into a portable markdown package")
-      .argument("<companyId>", "Company ID")
-      .requiredOption("--out <path>", "Output directory")
-      .option("--include <values>", "Comma-separated include set: company,agents,projects,issues,tasks,skills", "company,agents")
-      .option("--skills <values>", "Comma-separated skill slugs/keys to export")
-      .option("--projects <values>", "Comma-separated project shortnames/ids to export")
-      .option("--issues <values>", "Comma-separated issue identifiers/ids to export")
-      .option("--project-issues <values>", "Comma-separated project shortnames/ids whose issues should be exported")
-      .option("--expand-referenced-skills", "Vendor skill contents instead of exporting upstream references", false)
+      .description("Exportar una empresa a un paquete markdown portátil")
+      .argument("<companyId>", "ID de empresa")
+      .requiredOption("--out <path>", "Directorio de salida")
+      .option("--include <values>", "Conjunto de inclusiones separado por comas: company,agents,projects,issues,tasks,skills", "company,agents")
+      .option("--skills <values>", "Slugs/claves de habilidades separados por comas a exportar")
+      .option("--projects <values>", "Nombres cortos/IDs de proyectos separados por comas a exportar")
+      .option("--issues <values>", "Identificadores/IDs de issues separados por comas a exportar")
+      .option("--project-issues <values>", "Nombres cortos/IDs de proyectos separados por comas cuyos issues se exportarán")
+      .option("--expand-referenced-skills", "Incluir el contenido de las habilidades en lugar de exportar referencias upstream", false)
       .action(async (companyId: string, opts: CompanyExportOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -1121,7 +1123,7 @@ export function registerCompanyCommands(program: Command): void {
             },
           );
           if (!exported) {
-            throw new Error("Export request returned no data");
+            throw new Error("La solicitud de exportación no devolvió datos");
           }
           await confirmOverwriteExportDirectory(opts.out!);
           await writeExportToFolder(opts.out!, exported);
@@ -1138,7 +1140,7 @@ export function registerCompanyCommands(program: Command): void {
           );
           if (!ctx.json && exported.warnings.length > 0) {
             for (const warning of exported.warnings) {
-              console.log(`warning=${warning}`);
+              console.log(`advertencia=${warning}`);
             }
           }
         } catch (err) {
@@ -1150,18 +1152,18 @@ export function registerCompanyCommands(program: Command): void {
   addCommonClientOptions(
     company
       .command("import")
-      .description("Import a portable markdown company package from local path, URL, or GitHub")
-      .argument("<fromPathOrUrl>", "Source path or URL")
-      .option("--include <values>", "Comma-separated include set: company,agents,projects,issues,tasks,skills")
-      .option("--target <mode>", "Target mode: new | existing")
-      .option("-C, --company-id <id>", "Existing target company ID")
-      .option("--new-company-name <name>", "Name override for --target new")
-      .option("--agents <list>", "Comma-separated agent slugs to import, or all", "all")
-      .option("--collision <mode>", "Collision strategy: rename | skip | replace", "rename")
-      .option("--ref <value>", "Git ref to use for GitHub imports (branch, tag, or commit)")
-      .option("--paperclip-url <url>", "Alias for --api-base on this command")
-      .option("--yes", "Accept default selection and skip the pre-import confirmation prompt", false)
-      .option("--dry-run", "Run preview only without applying", false)
+      .description("Importar un paquete markdown portátil de empresa desde ruta local, URL o GitHub")
+      .argument("<fromPathOrUrl>", "Ruta o URL de origen")
+      .option("--include <values>", "Conjunto de inclusiones separado por comas: company,agents,projects,issues,tasks,skills")
+      .option("--target <mode>", "Modo destino: new | existing")
+      .option("-C, --company-id <id>", "ID de empresa destino existente")
+      .option("--new-company-name <name>", "Nombre alternativo para --target new")
+      .option("--agents <list>", "Slugs de agentes separados por comas a importar, o all", "all")
+      .option("--collision <mode>", "Estrategia de colisión: rename | skip | replace", "rename")
+      .option("--ref <value>", "Ref Git a usar para importaciones de GitHub (rama, tag o commit)")
+      .option("--paperclip-url <url>", "Alias de --api-base en este comando")
+      .option("--yes", "Aceptar la selección por defecto y omitir el prompt de confirmación previo a la importación", false)
+      .option("--dry-run", "Ejecutar solo la vista previa sin aplicar", false)
       .action(async (fromPathOrUrl: string, opts: CompanyImportOptions) => {
         try {
           if (!opts.apiBase?.trim() && opts.paperclipUrl?.trim()) {
@@ -1171,20 +1173,20 @@ export function registerCompanyCommands(program: Command): void {
           const interactiveView = isInteractiveTerminal() && !ctx.json;
           const from = fromPathOrUrl.trim();
           if (!from) {
-            throw new Error("Source path or URL is required.");
+            throw new Error("Se requiere la ruta o URL de origen.");
           }
 
           const include = resolveImportInclude(opts.include);
           const agents = parseAgents(opts.agents);
           const collision = (opts.collision ?? "rename").toLowerCase() as CompanyCollisionMode;
           if (!["rename", "skip", "replace"].includes(collision)) {
-            throw new Error("Invalid --collision value. Use: rename, skip, replace");
+            throw new Error("Valor de --collision inválido. Usa: rename, skip, replace");
           }
 
           const inferredTarget = opts.target ?? (opts.companyId || ctx.companyId ? "existing" : "new");
           const target = inferredTarget.toLowerCase() as CompanyImportTargetMode;
           if (!["new", "existing"].includes(target)) {
-            throw new Error("Invalid --target value. Use: new | existing");
+            throw new Error("Valor de --target inválido. Usa: new | existing");
           }
 
           const existingTargetCompanyId = opts.companyId?.trim() || ctx.companyId;
@@ -1200,7 +1202,7 @@ export function registerCompanyCommands(program: Command): void {
                 };
 
           if (targetPayload.mode === "existing_company" && !targetPayload.companyId) {
-            throw new Error("Target existing company requires --company-id (or context default companyId).");
+            throw new Error("La empresa destino existente requiere --company-id (o companyId por defecto del contexto).");
           }
 
           let sourcePayload:
@@ -1213,14 +1215,14 @@ export function registerCompanyCommands(program: Command): void {
           if (isHttpUrl(from) || isGithubSource) {
             if (!isGithubUrl(from) && !isGithubShorthand(from)) {
               throw new Error(
-                "Only GitHub URLs and local paths are supported for import. " +
-                "Generic HTTP URLs are not supported. Use a GitHub URL (https://github.com/...) or a local directory path.",
+                "Solo se soportan URLs de GitHub y rutas locales para la importación. " +
+                "Las URLs HTTP genéricas no están soportadas. Usa una URL de GitHub (https://github.com/...) o una ruta de directorio local.",
               );
             }
             sourcePayload = { type: "github", url: normalizeGithubImportSource(from, opts.ref) };
           } else {
             if (opts.ref?.trim()) {
-              throw new Error("--ref is only supported for GitHub import sources.");
+              throw new Error("--ref solo está soportado para fuentes de importación de GitHub.");
             }
             const inline = await resolveInlineSourceFromPath(from);
             sourcePayload = {
@@ -1248,7 +1250,7 @@ export function registerCompanyCommands(program: Command): void {
               collisionStrategy: collision,
             });
             if (!initialPreview) {
-              throw new Error("Import preview returned no data.");
+              throw new Error("La vista previa de importación no devolvió datos.");
             }
             selectedFiles = await promptForImportSelection(initialPreview);
           }
@@ -1263,7 +1265,7 @@ export function registerCompanyCommands(program: Command): void {
           };
           const preview = await ctx.api.post<CompanyPortabilityPreviewResult>(previewApiPath, previewPayload);
           if (!preview) {
-            throw new Error("Import preview returned no data.");
+            throw new Error("La vista previa de importación no devolvió datos.");
           }
           const adapterOverrides = buildDefaultImportAdapterOverrides(preview);
           const adapterMessages = buildDefaultImportAdapterMessages(adapterOverrides);
@@ -1273,7 +1275,7 @@ export function registerCompanyCommands(program: Command): void {
               printOutput(preview, { json: true });
             } else {
               printCompanyImportView(
-                "Import Preview",
+                "Vista previa de importación",
                 renderCompanyImportPreview(preview, {
                   sourceLabel,
                   targetLabel: formatTargetLabel(targetPayload, preview),
@@ -1287,7 +1289,7 @@ export function registerCompanyCommands(program: Command): void {
 
           if (!ctx.json) {
             printCompanyImportView(
-              "Import Preview",
+              "Vista previa de importación",
               renderCompanyImportPreview(preview, {
                 sourceLabel,
                 targetLabel: formatTargetLabel(targetPayload, preview),
@@ -1304,11 +1306,11 @@ export function registerCompanyCommands(program: Command): void {
           });
           if (confirmationMode === "prompt") {
             const confirmed = await p.confirm({
-              message: "Apply this import? (y/N)",
+              message: "¿Aplicar esta importación? (s/N)",
               initialValue: false,
             });
             if (p.isCancel(confirmed) || !confirmed) {
-              p.log.warn("Import cancelled.");
+              p.log.warn("Importación cancelada.");
               return;
             }
           }
@@ -1323,7 +1325,7 @@ export function registerCompanyCommands(program: Command): void {
             adapterOverrides,
           });
           if (!imported) {
-            throw new Error("Import request returned no data.");
+            throw new Error("La solicitud de importación no devolvió datos.");
           }
           let companyUrl: string | undefined;
           if (!ctx.json) {
@@ -1341,7 +1343,7 @@ export function registerCompanyCommands(program: Command): void {
             printOutput(imported, { json: true });
           } else {
             printCompanyImportView(
-              "Import Result",
+              "Resultado de la importación",
               renderCompanyImportResult(imported, {
                 targetLabel,
                 companyUrl,
@@ -1351,14 +1353,14 @@ export function registerCompanyCommands(program: Command): void {
             );
             if (interactiveView && companyUrl) {
               const openImportedCompany = await p.confirm({
-                message: "Open the imported company in your browser?",
+                message: "¿Abrir la empresa importada en tu navegador?",
                 initialValue: true,
               });
               if (!p.isCancel(openImportedCompany) && openImportedCompany) {
                 if (openUrl(companyUrl)) {
-                  p.log.info(`Opened ${companyUrl}`);
+                  p.log.info(`Abierta ${companyUrl}`);
                 } else {
-                  p.log.warn(`Could not open your browser automatically. Open this URL manually:\n${companyUrl}`);
+                  p.log.warn(`No se pudo abrir tu navegador automáticamente. Abre esta URL manualmente:\n${companyUrl}`);
                 }
               }
             }
@@ -1372,23 +1374,23 @@ export function registerCompanyCommands(program: Command): void {
   addCommonClientOptions(
     company
       .command("delete")
-      .description("Delete a company by ID or shortname/prefix (destructive)")
-      .argument("<selector>", "Company ID or issue prefix (for example PAP)")
+      .description("Eliminar una empresa por ID o nombre corto/prefijo (destructivo)")
+      .argument("<selector>", "ID de empresa o prefijo de issue (por ejemplo PAP)")
       .option(
         "--by <mode>",
-        "Selector mode: auto | id | prefix",
+        "Modo de selector: auto | id | prefix",
         "auto",
       )
-      .option("--yes", "Required safety flag to confirm destructive action", false)
+      .option("--yes", "Flag de seguridad requerido para confirmar la acción destructiva", false)
       .option(
         "--confirm <value>",
-        "Required safety value: target company ID or shortname/prefix",
+        "Valor de seguridad requerido: ID de empresa destino o nombre corto/prefijo",
       )
       .action(async (selector: string, opts: CompanyDeleteOptions) => {
         try {
           const by = (opts.by ?? "auto").trim().toLowerCase() as CompanyDeleteSelectorMode;
           if (!["auto", "id", "prefix"].includes(by)) {
-            throw new Error(`Invalid --by mode '${opts.by}'. Expected one of: auto, id, prefix.`);
+            throw new Error(`Modo de --by inválido '${opts.by}'. Se esperaba uno de: auto, id, prefix.`);
           }
 
           const ctx = resolveCommandContext(opts);
@@ -1402,7 +1404,7 @@ export function registerCompanyCommands(program: Command): void {
             if (byId) {
               target = byId;
             } else if (by === "id") {
-              throw new Error(`No company found by ID '${normalizedSelector}'.`);
+              throw new Error(`No se encontró empresa con ID '${normalizedSelector}'.`);
             }
           }
 
@@ -1412,7 +1414,7 @@ export function registerCompanyCommands(program: Command): void {
               try {
                 target = resolveCompanyForDeletion([scoped], normalizedSelector, by);
               } catch {
-                // Fallback to board-wide lookup below.
+                // Fallback a la búsqueda en todo el panel abajo.
               }
             }
           }
@@ -1424,7 +1426,7 @@ export function registerCompanyCommands(program: Command): void {
             } catch (error) {
               if (error instanceof ApiRequestError && error.status === 403 && error.message.includes("Board access required")) {
                 throw new Error(
-                  "Board access is required to resolve companies across the instance. Use a company ID/prefix for your current company, or run with board authentication.",
+                  "Se requiere acceso de panel para resolver empresas en la instancia. Usa un ID/prefijo de empresa para tu empresa actual, o ejecuta con autenticación de panel.",
                 );
               }
               throw error;
@@ -1432,7 +1434,7 @@ export function registerCompanyCommands(program: Command): void {
           }
 
           if (!target) {
-            throw new Error(`No company found for selector '${normalizedSelector}'.`);
+            throw new Error(`No se encontró empresa para el selector '${normalizedSelector}'.`);
           }
 
           assertDeleteConfirmation(target, opts);

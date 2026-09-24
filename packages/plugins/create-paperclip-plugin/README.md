@@ -1,12 +1,12 @@
 # @paperclipai/create-paperclip-plugin
 
-Scaffolding tool for creating new Paperclip plugins.
+Herramienta de andamiaje para crear nuevos plugins de Paperclip.
 
 ```bash
 npx @paperclipai/create-paperclip-plugin my-plugin
 ```
 
-Or with options:
+O con opciones:
 
 ```bash
 npx @paperclipai/create-paperclip-plugin @acme/my-plugin \
@@ -17,21 +17,21 @@ npx @paperclipai/create-paperclip-plugin @acme/my-plugin \
   --author "Acme Inc"
 ```
 
-Supported templates: `default`, `connector`, `workspace`  
-Supported categories: `connector`, `workspace`, `automation`, `ui`
+Plantillas admitidas: `default`, `connector`, `workspace`  
+Categorías admitidas: `connector`, `workspace`, `automation`, `ui`
 
-Generates:
-- typed manifest + worker entrypoint
-- example UI widget using the supported `@paperclipai/plugin-sdk/ui` hooks
-- test file using `@paperclipai/plugin-sdk/testing`
-- `esbuild` and `rollup` config files using SDK bundler presets
-- dev server script for hot-reload (`paperclip-plugin-dev-server`)
+Genera:
+- manifiesto tipado + punto de entrada del worker
+- widget de UI de ejemplo que usa los hooks admitidos de `@paperclipai/plugin-sdk/ui`
+- archivo de prueba que usa `@paperclipai/plugin-sdk/testing`
+- archivos de configuración de `esbuild` y `rollup` que usan los presets del empaquetador del SDK
+- script de servidor de desarrollo para recarga en caliente (`paperclip-plugin-dev-server`)
 
-The scaffold intentionally uses plain React elements rather than host-provided UI kit components, because the current plugin runtime does not ship a stable shared component library yet.
+El andamiaje usa intencionalmente elementos React simples en lugar de componentes del kit de UI proporcionado por el host, porque el runtime actual de plugins aún no incluye una biblioteca estable de componentes compartidos.
 
-Inside this repo, the generated package uses `@paperclipai/plugin-sdk` via `workspace:*`.
+Dentro de este repositorio, el paquete generado usa `@paperclipai/plugin-sdk` mediante `workspace:*`.
 
-Outside this repo, the scaffold snapshots `@paperclipai/plugin-sdk` from your local Paperclip checkout into a `.paperclip-sdk/` tarball and points the generated package at that local file by default. You can override the SDK source explicitly:
+Fuera de este repositorio, el andamiaje toma una instantánea de `@paperclipai/plugin-sdk` de tu copia local de Paperclip en un tarball `.paperclip-sdk/` y apunta el paquete generado a ese archivo local por defecto. Puedes sobrescribir el origen del SDK explícitamente:
 
 ```bash
 node packages/plugins/create-paperclip-plugin/dist/index.js @acme/my-plugin \
@@ -39,14 +39,14 @@ node packages/plugins/create-paperclip-plugin/dist/index.js @acme/my-plugin \
   --sdk-path /absolute/path/to/paperclip/packages/plugins/sdk
 ```
 
-That gives you an outside-repo local development path before the SDK is published to npm.
+Eso te da una ruta de desarrollo local fuera del repositorio antes de que el SDK se publique en npm.
 
-## Workflow after scaffolding
+## Flujo de trabajo después del andamiaje
 
 ```bash
 cd my-plugin
 pnpm install
-pnpm dev       # watch worker + manifest + ui bundles
-pnpm dev:ui    # local UI preview server with hot-reload events
+pnpm dev       # observa los paquetes de worker + manifiesto + ui
+pnpm dev:ui    # servidor local de vista previa de UI con eventos de recarga en caliente
 pnpm test
 ```

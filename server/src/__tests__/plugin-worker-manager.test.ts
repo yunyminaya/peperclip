@@ -9,7 +9,7 @@ describe("plugin-worker-manager stderr failure context", () => {
         "TypeError: Unknown file extension \".ts\"",
       ),
     ).toBe(
-      "Worker process exited (code=1, signal=null)\n\nWorker stderr:\nTypeError: Unknown file extension \".ts\"",
+      "Worker process exited (code=1, signal=null)\n\nstderr del worker:\nTypeError: Unknown file extension \".ts\"",
     );
   });
 

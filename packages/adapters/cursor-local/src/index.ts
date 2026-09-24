@@ -50,34 +50,34 @@ export const agentConfigurationDoc = `# cursor agent configuration
 
 Adapter: cursor
 
-Use when:
-- You want Paperclip to run Cursor Agent CLI locally as the agent runtime
-- You want Cursor chat session resume across heartbeats via --resume
-- You want structured stream output in run logs via --output-format stream-json
+Úsalo cuando:
+- Quieres que Paperclip ejecute el Cursor Agent CLI localmente como runtime del agente
+- Quieres reanudación de sesión de chat de Cursor entre latidos vía --resume
+- Quieres salida de stream estructurada en los registros de ejecución vía --output-format stream-json
 
-Don't use when:
-- You need webhook-style external invocation (use openclaw_gateway or http)
-- You only need one-shot shell commands (use process)
-- Cursor Agent CLI is not installed on the machine
+No lo uses cuando:
+- Necesitas invocación externa estilo webhook (usa openclaw_gateway o http)
+- Solo necesitas comandos shell de una sola vez (usa process)
+- El Cursor Agent CLI no está instalado en la máquina
 
-Core fields:
-- cwd (string, optional): default absolute working directory fallback for the agent process (created if missing when possible)
-- instructionsFilePath (string, optional): absolute path to a markdown instructions file prepended to the run prompt
-- promptTemplate (string, optional): run prompt template
-- model (string, optional): Cursor model id (for example auto or gpt-5.3-codex)
-- mode (string, optional): Cursor execution mode passed as --mode (plan|ask). Leave unset for normal autonomous runs.
-- command (string, optional): defaults to "agent"
-- extraArgs (string[], optional): additional CLI args
-- env (object, optional): KEY=VALUE environment variables
+Campos principales:
+- cwd (string, optional): directorio de trabajo absoluto predeterminado para el proceso del agente (se crea si falta cuando es posible)
+- instructionsFilePath (string, optional): ruta absoluta a un archivo markdown de instrucciones que se antepone al prompt de ejecución
+- promptTemplate (string, optional): plantilla del prompt de ejecución
+- model (string, optional): id del modelo de Cursor (por ejemplo auto o gpt-5.3-codex)
+- mode (string, optional): modo de ejecución de Cursor pasado como --mode (plan|ask). Déjalo sin definir para ejecuciones autónomas normales.
+- command (string, optional): predeterminado "agent"
+- extraArgs (string[], optional): argumentos CLI adicionales
+- env (object, optional): variables de entorno KEY=VALUE
 
-Operational fields:
-- timeoutSec (number, optional): run timeout in seconds
-- graceSec (number, optional): SIGTERM grace period in seconds
+Campos operativos:
+- timeoutSec (number, optional): tiempo de espera de ejecución en segundos
+- graceSec (number, optional): período de gracia SIGTERM en segundos
 
-Notes:
-- Runs are executed with: agent -p --output-format stream-json ...
-- Prompts are piped to Cursor via stdin.
-- Sessions are resumed with --resume when stored session cwd matches current cwd.
-- Paperclip auto-injects local skills into "~/.cursor/skills" when missing, so Cursor can discover "$paperclip" and related skills on local runs.
-- Paperclip auto-adds --yolo unless one of --trust/--yolo/-f is already present in extraArgs.
+Notas:
+- Las ejecuciones se hacen con: agent -p --output-format stream-json ...
+- Los prompts se envían a Cursor vía stdin.
+- Las sesiones se reanudan con --resume cuando el cwd de la sesión guardada coincide con el cwd actual.
+- Paperclip auto-inyecta habilidades locales en "~/.cursor/skills" cuando faltan, para que Cursor pueda descubrir "$paperclip" y habilidades relacionadas en ejecuciones locales.
+- Paperclip agrega --yolo automáticamente a menos que --trust/--yolo/-f ya esté presente en extraArgs.
 `;

@@ -1,32 +1,32 @@
-# Paperclip Module System
+# Sistema de módulos de Paperclip
 
-> Supersession note: the company-template/package-format direction in this document is no longer current. For the current markdown-first company import/export plan, see `doc/plans/2026-03-13-company-import-export-v2.md` and `docs/companies/companies-spec.md`.
+> Nota de sustitución: la dirección de plantillas de empresa/formato de paquete en este documento ya no está vigente. Para el plan actual de importación/exportación de empresas centrado en markdown, ver `doc/plans/2026-03-13-company-import-export-v2.md` y `docs/companies/companies-spec.md`.
 
-## Overview
+## Descripción general
 
-Paperclip's module system lets you extend the control plane with new capabilities — revenue tracking, observability, notifications, dashboards — without forking core. Modules are self-contained packages that register routes, UI pages, database tables, and lifecycle hooks.
+El sistema de módulos de Paperclip te permite extender el plano de control con nuevas capacidades — seguimiento de ingresos, observabilidad, notificaciones, paneles — sin hacer fork del núcleo. Los módulos son paquetes autocontenidos que registran rutas, páginas de UI, tablas de base de datos y hooks de ciclo de vida.
 
-Separately, **Company Templates** are code-free data packages (agent teams, org charts, goal hierarchies) that you can import to bootstrap a new company.
+Por separado, las **plantillas de empresa** son paquetes de datos sin código (equipos de agentes, organigramas, jerarquías de objetivos) que puedes importar para arrancar una nueva empresa.
 
-Both are discoverable through the **Company Store**.
+Ambos se descubren a través de la **tienda de empresas**.
 
 ---
 
-## Concepts
+## Conceptos
 
-| Concept | What it is | Contains code? |
+| Concepto | Qué es | ¿Contiene código? |
 |---------|-----------|----------------|
-| **Module** | A package that extends Paperclip's API, UI, and data model | Yes |
-| **Company Template** | A data snapshot — agents, projects, goals, org structure | No (JSON only) |
-| **Company Store** | Registry for browsing/installing modules and templates | — |
-| **Hook** | A named event in the core that modules can subscribe to | — |
-| **Slot** | An exclusive category where only one module can be active (e.g., `observability`) | — |
+| **Módulo** | Un paquete que extiende la API, la UI y el modelo de datos de Paperclip | Sí |
+| **Plantilla de empresa** | Una instantánea de datos — agentes, proyectos, objetivos, estructura de la organización | No (solo JSON) |
+| **Tienda de empresas** | Registro para explorar/instalar módulos y plantillas | — |
+| **Hook** | Un evento nombrado en el núcleo al que los módulos pueden suscribirse | — |
+| **Slot** | Una categoría exclusiva donde solo un módulo puede estar activo (p. ej., `observability`) | — |
 
 ---
 
-## Module Architecture
+## Arquitectura de módulos
 
-### File Structure
+### Estructura de archivos
 
 ```
 modules/
@@ -43,9 +43,9 @@ modules/
         TokenDashboard.tsx
 ```
 
-Modules live in a top-level `modules/` directory. Each module is a pnpm workspace package.
+Los módulos viven en un directorio de nivel superior `modules/`. Cada módulo es un paquete workspace de pnpm.
 
-### Manifest (`paperclip.module.json`)
+### Manifiesto (`paperclip.module.json`)
 
 ```json
 {
@@ -104,20 +104,20 @@ Modules live in a top-level `modules/` directory. Each module is a pnpm workspac
 }
 ```
 
-Key fields:
+Campos clave:
 
-- **`id`**: Unique identifier, used as the npm package name suffix (`@paperclipai/mod-observability`)
-- **`slot`**: Optional exclusive category. If set, only one module with this slot can be active. Omit for modules that can coexist freely.
-- **`hooks`**: Which core events this module subscribes to. Declared upfront so the core knows what to emit.
-- **`routes.prefix`**: Mounted under `/api/modules/<prefix>`. The module owns this namespace.
-- **`ui.pages`**: Adds entries to the sidebar. Lazy-loaded React components.
-- **`ui.widgets`**: Injects components into existing pages (e.g., dashboard cards).
-- **`schema`**: Drizzle table definitions for module-owned tables. Prefixed with `mod_<id>_` to avoid collisions.
-- **`configSchema`**: JSON Schema for module configuration. Validated before the module loads.
+- **`id`**: Identificador único, usado como sufijo del nombre del paquete npm (`@paperclipai/mod-observability`)
+- **`slot`**: Categoría exclusiva opcional. Si se define, solo un módulo con este slot puede estar activo. Omítelo para módulos que pueden coexistir libremente.
+- **`hooks`**: A qué eventos del núcleo se suscribe este módulo. Se declara por adelantado para que el núcleo sepa qué emitir.
+- **`routes.prefix`**: Montado bajo `/api/modules/<prefix>`. El módulo es dueño de este espacio de nombres.
+- **`ui.pages`**: Agrega entradas a la barra lateral. Componentes React de carga diferida.
+- **`ui.widgets`**: Inyecta componentes en páginas existentes (p. ej., tarjetas del panel).
+- **`schema`**: Definiciones de tablas Drizzle para tablas propias del módulo. Con prefijo `mod_<id>_` para evitar colisiones.
+- **`configSchema`**: JSON Schema para la configuración del módulo. Se valida antes de que el módulo cargue.
 
-### Entry Point
+### Punto de entrada
 
-The module's `src/index.ts` exports a `register` function that receives the module API:
+El `src/index.ts` del módulo exporta una función `register` que recibe la API del módulo:
 
 ```typescript
 import type { ModuleAPI } from "@paperclipai/core";
@@ -143,7 +143,7 @@ export default function register(api: ModuleAPI) {
 }
 ```
 
-### Module API Surface
+### Superficie de la API del módulo
 
 ```typescript
 interface ModuleAPI {
@@ -177,33 +177,33 @@ interface ModuleAPI {
 }
 ```
 
-Modules get a scoped logger, access to the shared database, and read access to core services. They register their own routes and hook handlers. They do NOT monkey-patch core — they extend through defined interfaces.
+Los módulos reciben un logger con alcance, acceso a la base de datos compartida y acceso de lectura a los servicios del núcleo. Registran sus propias rutas y manejadores de hooks. NO modifican el núcleo con parches — se extienden a través de interfaces definidas.
 
 ---
 
-## Hook System
+## Sistema de hooks
 
-### Core Hook Points
+### Puntos de hook del núcleo
 
-Hooks are the primary integration point. The core emits events at well-defined moments. Modules subscribe in their `register` function.
+Los hooks son el punto de integración principal. El núcleo emite eventos en momentos bien definidos. Los módulos se suscriben en su función `register`.
 
-| Hook | Payload | When |
+| Hook | Carga útil | Cuándo |
 |------|---------|------|
-| `server:started` | `{ port }` | After the Express server begins listening |
-| `agent:created` | `{ agent }` | After a new agent is inserted |
-| `agent:updated` | `{ agent, changes }` | After an agent record is modified |
-| `agent:deleted` | `{ agent }` | After an agent is removed |
-| `agent:heartbeat` | `{ agentId, timestamp, meta }` | When an agent checks in. `meta` carries tokens_used, cost, latency, etc. |
-| `agent:status_changed` | `{ agent, from, to }` | When agent status transitions (idle→active, active→error, etc.) |
-| `issue:created` | `{ issue }` | After a new issue is inserted |
-| `issue:status_changed` | `{ issue, from, to }` | When issue moves between statuses |
-| `issue:assigned` | `{ issue, agent }` | When an issue is assigned to an agent |
-| `goal:created` | `{ goal }` | After a new goal is inserted |
-| `goal:completed` | `{ goal }` | When a goal's status becomes complete |
-| `budget:spend_recorded` | `{ agentId, amount, total }` | After spend is incremented |
-| `budget:threshold_crossed` | `{ agentId, budget, spent, percent }` | When an agent crosses 80%, 90%, or 100% of budget |
+| `server:started` | `{ port }` | Después de que el servidor Express comienza a escuchar |
+| `agent:created` | `{ agent }` | Después de que se inserta un nuevo agente |
+| `agent:updated` | `{ agent, changes }` | Después de que se modifica un registro de agente |
+| `agent:deleted` | `{ agent }` | Después de que se elimina un agente |
+| `agent:heartbeat` | `{ agentId, timestamp, meta }` | Cuando un agente se reporta. `meta` lleva tokens_used, cost, latency, etc. |
+| `agent:status_changed` | `{ agent, from, to }` | Cuando el estado del agente cambia (idle→active, active→error, etc.) |
+| `issue:created` | `{ issue }` | Después de que se inserta un nuevo issue |
+| `issue:status_changed` | `{ issue, from, to }` | Cuando el issue se mueve entre estados |
+| `issue:assigned` | `{ issue, agent }` | Cuando un issue se asigna a un agente |
+| `goal:created` | `{ goal }` | Después de que se inserta un nuevo objetivo |
+| `goal:completed` | `{ goal }` | Cuando el estado del objetivo se vuelve completo |
+| `budget:spend_recorded` | `{ agentId, amount, total }` | Después de que se incrementa el gasto |
+| `budget:threshold_crossed` | `{ agentId, budget, spent, percent }` | Cuando un agente cruza el 80%, 90% o 100% del presupuesto |
 
-### Hook Execution Model
+### Modelo de ejecución de hooks
 
 ```typescript
 // In the core — hook emitter
@@ -226,15 +226,15 @@ class HookBus {
 }
 ```
 
-Design rules:
-- **Hooks are fire-and-forget.** A failing hook handler never crashes or blocks the core operation.
-- **Hooks are concurrent.** All handlers for an event run in parallel via `Promise.allSettled`.
-- **Hooks are post-commit.** They fire after the database write succeeds, not before. No vetoing.
-- **Hooks receive immutable snapshots.** Handlers get a copy of the data, not a mutable reference.
+Reglas de diseño:
+- **Los hooks son fire-and-forget.** Un manejador de hook que falla nunca detiene ni bloquea la operación del núcleo.
+- **Los hooks son concurrentes.** Todos los manejadores de un evento se ejecutan en paralelo vía `Promise.allSettled`.
+- **Los hooks son post-commit.** Se disparan después de que la escritura en la base de datos tiene éxito, no antes. Sin vetos.
+- **Los hooks reciben instantáneas inmutables.** Los manejadores reciben una copia de los datos, no una referencia mutable.
 
-This keeps the core fast and resilient. If you need pre-commit validation (e.g., "reject this budget change"), that's a different mechanism (middleware/interceptor) we can add later if needed.
+Esto mantiene el núcleo rápido y resiliente. Si necesitas validación pre-commit (p. ej., "rechazar este cambio de presupuesto"), eso es un mecanismo diferente (middleware/interceptor) que podemos agregar más adelante si es necesario.
 
-### Observability Hook Example
+### Ejemplo de hook de observabilidad
 
 ```typescript
 // modules/observability/src/hooks.ts
@@ -262,15 +262,15 @@ export function createHeartbeatHandler(db: Db) {
 }
 ```
 
-Every heartbeat, the observability module records token usage into its own `mod_observability_token_metrics` table. The core doesn't know or care about this table — it just emits the hook.
+En cada latido, el módulo de observabilidad registra el uso de tokens en su propia tabla `mod_observability_token_metrics`. El núcleo no sabe ni le importa esta tabla — simplemente emite el hook.
 
 ---
 
-## Database Strategy for Modules
+## Estrategia de base de datos para módulos
 
-### Table Namespacing
+### Espacio de nombres de tablas
 
-Module tables are prefixed with `mod_<moduleId>_` to avoid collisions with core tables and other modules:
+Las tablas de los módulos llevan el prefijo `mod_<moduleId>_` para evitar colisiones con las tablas del núcleo y otros módulos:
 
 ```typescript
 // modules/observability/src/schema.ts
@@ -295,24 +295,24 @@ export const alertRules = pgTable("mod_observability_alert_rules", {
 });
 ```
 
-### Migration Strategy
+### Estrategia de migración
 
-Each module manages its own migrations in `src/migrations/`. The core migration runner discovers and applies them:
+Cada módulo gestiona sus propias migraciones en `src/migrations/`. El ejecutor de migraciones del núcleo las descubre y aplica:
 
-1. Core migrations run first (always)
-2. Module migrations run in dependency order
-3. Each module's migrations are tracked in a `mod_migrations` table with the module ID
-4. `pnpm db:migrate` runs everything. `pnpm db:migrate --module observability` runs one.
+1. Las migraciones del núcleo se ejecutan primero (siempre)
+2. Las migraciones de los módulos se ejecutan en orden de dependencia
+3. Las migraciones de cada módulo se rastrean en una tabla `mod_migrations` con el ID del módulo
+4. `pnpm db:migrate` ejecuta todo. `pnpm db:migrate --module observability` ejecuta una.
 
-Modules can reference core tables via foreign keys (e.g., `agent_id → agents.id`) but core tables never reference module tables. This is a strict one-way dependency.
+Los módulos pueden referenciar tablas del núcleo vía claves foráneas (p. ej., `agent_id → agents.id`) pero las tablas del núcleo nunca referencian tablas de módulos. Esto es una dependencia estricta de un solo sentido.
 
 ---
 
-## Module Loading & Lifecycle
+## Carga de módulos y ciclo de vida
 
-### Discovery
+### Descubrimiento
 
-On server startup:
+Al arrancar el servidor:
 
 ```
 1. Scan modules/ directory for paperclip.module.json manifests
@@ -328,9 +328,9 @@ On server startup:
 6. Emit server:started hook
 ```
 
-### Configuration
+### Configuración
 
-Module config lives in the server's environment or a config file:
+La configuración del módulo vive en el entorno del servidor o en un archivo de configuración:
 
 ```jsonc
 // paperclip.config.json (or env vars)
@@ -350,28 +350,28 @@ Module config lives in the server's environment or a config file:
 }
 ```
 
-`$ENV_VAR` references are resolved at load time. Secrets never go in the config file directly.
+Las referencias `$ENV_VAR` se resuelven al cargar. Los secretos nunca van directamente en el archivo de configuración.
 
-### Disabling a Module
+### Deshabilitar un módulo
 
-Setting a module's enabled state to false:
-1. Stops its background services
-2. Unmounts its routes (returns 404)
-3. Unsubscribes its hook handlers
-4. Does NOT drop its database tables (data is preserved)
+Al establecer el estado habilitado de un módulo en false:
+1. Detiene sus servicios en segundo plano
+2. Desmonta sus rutas (devuelve 404)
+3. Da de baja sus manejadores de hooks
+4. NO elimina sus tablas de base de datos (los datos se preservan)
 
 ---
 
-## UI Integration
+## Integración de UI
 
-### How Module UI Works
+### Cómo funciona la UI de los módulos
 
-The core UI shell provides:
-- A sidebar with slots for module-contributed nav items
-- A dashboard with widget mount points
-- A module settings page
+La shell de UI del núcleo provee:
+- Una barra lateral con slots para elementos de navegación aportados por módulos
+- Un panel con puntos de montaje para widgets
+- Una página de ajustes del módulo
 
-Modules declare pages and widgets in the manifest. The shell lazy-loads them:
+Los módulos declaran páginas y widgets en el manifiesto. La shell los carga de forma diferida:
 
 ```typescript
 // ui/src/modules/loader.ts
@@ -398,9 +398,9 @@ export const dashboardWidgets = [
 ];
 ```
 
-### Module UI Contract
+### Contrato de UI de módulos
 
-A module's UI entry exports named components:
+La entrada de UI de un módulo exporta componentes nombrados:
 
 ```typescript
 // modules/observability/src/ui/index.ts
@@ -408,7 +408,7 @@ export { default } from "./ObservabilityPage";
 export { TokenBurnRateWidget } from "./TokenBurnRateWidget";
 ```
 
-Module UI components receive a standard props interface:
+Los componentes de UI de los módulos reciben una interfaz de props estándar:
 
 ```typescript
 interface ModulePageProps {
@@ -423,15 +423,15 @@ interface ModuleWidgetProps {
 }
 ```
 
-Module UI hits the module's own API routes (`/api/modules/observability/*`) for data.
+La UI del módulo consulta las propias rutas de API del módulo (`/api/modules/observability/*`) para obtener datos.
 
 ---
 
-## Company Templates
+## Plantillas de empresa
 
-### Format
+### Formato
 
-A company template is a JSON file describing a full company structure:
+Una plantilla de empresa es un archivo JSON que describe una estructura de empresa completa:
 
 ```json
 {
@@ -453,7 +453,7 @@ A company template is a JSON file describing a full company structure:
       "ref": "eng-lead",
       "name": "Engineering Lead",
       "role": "engineer",
-      "reportsTo": "ceo",
+      "reportsTo": "eng-lead",
       "budgetCents": 50000
     },
     {
@@ -530,9 +530,9 @@ A company template is a JSON file describing a full company structure:
 }
 ```
 
-Templates use `ref` strings (not UUIDs) for internal cross-references. On import, the system maps refs to generated UUIDs.
+Las plantillas usan cadenas `ref` (no UUID) para referencias cruzadas internas. Al importar, el sistema mapea las refs a UUID generados.
 
-### Import Flow
+### Flujo de importación
 
 ```
 1. Parse and validate the template JSON
@@ -544,23 +544,23 @@ Templates use `ref` strings (not UUIDs) for internal cross-references. On import
 7. Log activity events for everything created
 ```
 
-### Export Flow
+### Flujo de exportación
 
-You can also export a running company as a template:
+También puedes exportar una empresa en ejecución como plantilla:
 
 ```
 GET /api/templates/export → downloads the current company as a template JSON
 ```
 
-This makes companies shareable and clonable.
+Esto hace que las empresas sean compartibles y clonables.
 
 ---
 
-## Company Store
+## Tienda de empresas
 
-The Company Store is a registry for discovering and installing modules and templates. For v1, it's a curated GitHub repo with a JSON index. Later it could become a hosted service.
+La tienda de empresas es un registro para descubrir e instalar módulos y plantillas. Para v1, es un repositorio de GitHub curado con un índice JSON. Más adelante podría convertirse en un servicio hospedado.
 
-### Index Format
+### Formato del índice
 
 ```json
 {
@@ -586,7 +586,7 @@ The Company Store is a registry for discovering and installing modules and templ
 }
 ```
 
-### CLI Commands
+### Comandos CLI
 
 ```bash
 pnpm paperclipai store list                    # browse available modules and templates
@@ -597,91 +597,91 @@ pnpm paperclipai store export                  # export current company as templ
 
 ---
 
-## Module Candidates
+## Candidatos a módulos
 
-### Tier 1 — Build first (core extensions)
+### Nivel 1 — Construir primero (extensiones del núcleo)
 
-| Module | What it does | Key hooks |
+| Módulo | Qué hace | Hooks clave |
 |--------|-------------|-----------|
-| **Observability** | Token usage tracking, cost metrics, agent performance dashboards, Prometheus export | `agent:heartbeat`, `budget:spend_recorded` |
-| **Revenue Tracking** | Connect Stripe/crypto wallets, track income, show P&L against agent costs | `budget:spend_recorded` |
-| **Notifications** | Slack/Discord/email alerts on configurable triggers | All hooks (configurable) |
+| **Observabilidad** | Seguimiento de uso de tokens, métricas de costo, paneles de rendimiento de agentes, exportación a Prometheus | `agent:heartbeat`, `budget:spend_recorded` |
+| **Seguimiento de ingresos** | Conecta billeteras de Stripe/cripto, rastrea ingresos, muestra P&L contra costos de agentes | `budget:spend_recorded` |
+| **Notificaciones** | Alertas de Slack/Discord/email con disparadores configurables | Todos los hooks (configurable) |
 
-### Tier 2 — High value
+### Nivel 2 — Alto valor
 
-| Module | What it does | Key hooks |
+| Módulo | Qué hace | Hooks clave |
 |--------|-------------|-----------|
-| **Analytics Dashboard** | Burn rate trends, agent utilization over time, goal velocity charts | `agent:heartbeat`, `issue:status_changed`, `goal:completed` |
-| **Workflow Automation** | If/then rules: "when issue is done, create follow-up", "when budget at 90%, pause agent" | `issue:status_changed`, `budget:threshold_crossed` |
-| **Knowledge Base** | Shared document store, vector search, agents read/write organizational knowledge | `agent:heartbeat` (for context injection) |
+| **Panel de analítica** | Tendencias de tasa de consumo, utilización de agentes en el tiempo, gráficos de velocidad de objetivos | `agent:heartbeat`, `issue:status_changed`, `goal:completed` |
+| **Automatización de flujos de trabajo** | Reglas si/entonces: "cuando un issue termina, crear seguimiento", "cuando el presupuesto llega al 90%, pausar agente" | `issue:status_changed`, `budget:threshold_crossed` |
+| **Base de conocimiento** | Almacén compartido de documentos, búsqueda vectorial, los agentes leen/escriben conocimiento organizacional | `agent:heartbeat` (para inyección de contexto) |
 
-### Tier 3 — Nice to have
+### Nivel 3 — Bueno tener
 
-| Module | What it does | Key hooks |
+| Módulo | Qué hace | Hooks clave |
 |--------|-------------|-----------|
-| **Audit & Compliance** | Immutable audit trail, approval workflows, spend authorization | All write hooks |
-| **Agent Logs / Replay** | Full execution traces per agent, token-by-token replay | `agent:heartbeat` |
-| **Multi-tenant** | Separate companies/orgs within one Paperclip instance | `server:started` |
+| **Auditoría y cumplimiento** | Registro de auditoría inmutable, flujos de trabajo de aprobación, autorización de gasto | Todos los hooks de escritura |
+| **Registros de agentes / reproducción** | Trazas de ejecución completas por agente, reproducción token por token | `agent:heartbeat` |
+| **Multi-inquilino** | Empresas/organizaciones separadas dentro de una instancia de Paperclip | `server:started` |
 
 ---
 
-## Implementation Plan
+## Plan de implementación
 
-### Phase 1: Core infrastructure
+### Fase 1: Infraestructura del núcleo
 
-Add to `@paperclipai/server`:
+Agregar a `@paperclipai/server`:
 
-1. **HookBus** — Event emitter with `register()` and `emit()`, using `Promise.allSettled`
-2. **Module loader** — Scans `modules/`, validates manifests, calls `register(api)`
-3. **Module API object** — `registerRoutes()`, `on()`, `registerService()`, logger, core service access
-4. **Module config** — `paperclip.config.json` with per-module config, env var interpolation
-5. **Module migration runner** — Extends `db:migrate` to discover and run module migrations
-6. **Emit hooks from core services** — Add `hookBus.emit()` calls to existing CRUD operations
+1. **HookBus** — Emisor de eventos con `register()` y `emit()`, usando `Promise.allSettled`
+2. **Cargador de módulos** — Escanea `modules/`, valida manifiestos, llama a `register(api)`
+3. **Objeto API del módulo** — `registerRoutes()`, `on()`, `registerService()`, logger, acceso a servicios del núcleo
+4. **Configuración de módulos** — `paperclip.config.json` con configuración por módulo, interpolación de variables de entorno
+5. **Ejecutor de migraciones de módulos** — Extiende `db:migrate` para descubrir y ejecutar migraciones de módulos
+6. **Emitir hooks desde los servicios del núcleo** — Agregar llamadas `hookBus.emit()` a las operaciones CRUD existentes
 
-Add to `@paperclipai/ui`:
+Agregar a `@paperclipai/ui`:
 
-7. **Module page loader** — Reads module manifests, generates lazy routes
-8. **Dashboard widget slots** — Render module-contributed widgets on the Dashboard page
-9. **Sidebar extension** — Dynamically add module nav items
+7. **Cargador de páginas de módulos** — Lee manifiestos de módulos, genera rutas diferidas
+8. **Slots de widgets del panel** — Renderiza widgets aportados por módulos en la página del panel
+9. **Extensión de la barra lateral** — Agrega dinámicamente elementos de navegación de módulos
 
-Add new package:
+Nuevo paquete:
 
-10. **`@paperclipai/module-sdk`** — TypeScript types for `ModuleAPI`, `HookEvent`, `HookHandler`, manifest schema
+10. **`@paperclipai/module-sdk`** — Tipos TypeScript para `ModuleAPI`, `HookEvent`, `HookHandler`, esquema del manifiesto
 
-### Phase 2: First module (observability)
+### Fase 2: Primer módulo (observabilidad)
 
-11. Build `modules/observability` as the reference implementation
-12. Token metrics table + migration
-13. Heartbeat hook handler recording token usage
-14. Dashboard widget showing burn rate
-15. API routes for querying metrics
+11. Construir `modules/observability` como implementación de referencia
+12. Tabla de métricas de tokens + migración
+13. Manejador del hook de latido que registra uso de tokens
+14. Widget del panel que muestra tasa de consumo
+15. Rutas de API para consultar métricas
 
-### Phase 3: Templates
+### Fase 3: Plantillas
 
-16. Template import endpoint (`POST /api/templates/import`)
-17. Template export endpoint (`GET /api/templates/export`)
-18. First template: "Startup in a Box"
+16. Endpoint de importación de plantillas (`POST /api/templates/import`)
+17. Endpoint de exportación de plantillas (`GET /api/templates/export`)
+18. Primera plantilla: "Startup in a Box"
 
-### Phase 4: Company Store
+### Fase 4: Tienda de empresas
 
-19. GitHub-based store index
-20. CLI commands for browse/install/import
-21. UI page for browsing the store
+19. Índice de tienda basado en GitHub
+20. Comandos CLI para explorar/instalar/importar
+21. Página de UI para explorar la tienda
 
 ---
 
-## Design Principles
+## Principios de diseño
 
-1. **Modules extend, never patch.** Modules add new routes, tables, and hook handlers. They never modify core tables or override core routes.
+1. **Los módulos extienden, nunca parchean.** Los módulos agregan nuevas rutas, tablas y manejadores de hooks. Nunca modifican tablas del núcleo ni sobrescriben rutas del núcleo.
 
-2. **Hooks are post-commit, fire-and-forget.** Module failures never break core operations.
+2. **Los hooks son post-commit, fire-and-forget.** Las fallas de módulos nunca rompen operaciones del núcleo.
 
-3. **One-way dependency.** Modules depend on core. Core never depends on modules. Module tables can FK to core tables, not the reverse.
+3. **Dependencia de un solo sentido.** Los módulos dependen del núcleo. El núcleo nunca depende de los módulos. Las tablas de módulos pueden tener FK hacia tablas del núcleo, no al revés.
 
-4. **Declarative manifest, imperative registration.** Static metadata in JSON (validated without running code). Runtime behavior registered via the API.
+4. **Manifiesto declarativo, registro imperativo.** Metadatos estáticos en JSON (validados sin ejecutar código). Comportamiento en tiempo de ejecución registrado vía la API.
 
-5. **Namespace isolation.** Module routes live under `/api/modules/<id>/`. Module tables are prefixed `mod_<id>_`. Module config is scoped to its ID.
+5. **Aislamiento de espacios de nombres.** Las rutas de módulos viven bajo `/api/modules/<id>/`. Las tablas de módulos llevan el prefijo `mod_<id>_`. La configuración de módulos tiene alcance a su ID.
 
-6. **Graceful degradation.** If a module fails to load, log the error and continue. The rest of the system works fine.
+6. **Degradación elegante.** Si un módulo no carga, registra el error y continúa. El resto del sistema funciona bien.
 
-7. **Data survives disable.** Disabling a module stops its code but preserves its data. Re-enabling picks up where it left off.
+7. **Los datos sobreviven al desactivar.** Deshabilitar un módulo detiene su código pero preserva sus datos. Reactivarlo continúa donde quedó.

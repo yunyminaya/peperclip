@@ -1,24 +1,28 @@
 /**
- * PluginToolDispatcher — orchestrates plugin tool discovery, lifecycle
- * integration, and execution routing for the agent service.
+ * PluginToolDispatcher — orquesta el descubrimiento de herramientas de
+ * plugins, la integración del ciclo de vida y el enrutamiento de ejecución
+ * para el servicio de agentes.
  *
- * This service sits between the agent service and the lower-level
- * `PluginToolRegistry` + `PluginWorkerManager`, providing a clean API that:
+ * Este servicio se sitúa entre el servicio de agentes y el
+ * `PluginToolRegistry` + `PluginWorkerManager` de más bajo nivel,
+ * proveyendo una API limpia que:
  *
- * - Discovers tools from loaded plugin manifests and registers them
- *   in the tool registry.
- * - Hooks into `PluginLifecycleManager` events to automatically register
- *   and unregister tools when plugins are enabled or disabled.
- * - Exposes the tool list in an agent-friendly format (with namespaced
- *   names, descriptions, parameter schemas).
- * - Routes `executeTool` calls to the correct plugin worker and returns
- *   structured results.
- * - Validates tool parameters against declared schemas before dispatch.
+ * - Descubre herramientas desde los manifiestos de plugins cargados y las
+ *   registra en el registro de herramientas.
+ * - Se engancha a los eventos de `PluginLifecycleManager` para registrar y
+ *   desregistrar automáticamente herramientas cuando los plugins se activan
+ *   o desactivan.
+ * - Expone la lista de herramientas en un formato amigable para agentes
+ *   (con nombres namespaced, descripciones, schemas de parámetros).
+ * - Enruta llamadas `executeTool` al worker correcto del plugin y devuelve
+ *   resultados estructurados.
+ * - Valida los parámetros de herramientas contra los schemas declarados
+ *   antes del despacho.
  *
- * The dispatcher is created once at server startup and shared across
- * the application.
+ * El dispatcher se crea una vez al arranque del servidor y se comparte en
+ * toda la aplicación.
  *
- * @see PLUGIN_SPEC.md §11 — Agent Tools
+ * @see PLUGIN_SPEC.md §11 — Herramientas de agente
  * @see PLUGIN_SPEC.md §13.10 — `executeTool`
  */
 
@@ -45,34 +49,34 @@ import { logger } from "../middleware/logger.js";
 // ---------------------------------------------------------------------------
 
 /**
- * An agent-facing tool descriptor — the shape returned when agents
- * query for available tools.
+ * Un descriptor de herramienta orientado a agentes — la forma devuelta
+ * cuando los agentes consultan herramientas disponibles.
  *
- * This is intentionally simpler than `RegisteredTool`, exposing only
- * what agents need to decide whether and how to call a tool.
+ * Es intencionalmente más simple que `RegisteredTool`, exponiendo solo lo
+ * que los agentes necesitan para decidir si llamar una herramienta y cómo.
  */
 export interface AgentToolDescriptor {
-  /** Fully namespaced tool name (e.g. `"acme.linear:search-issues"`). */
+  /** Nombre de herramienta completamente namespaced (p. ej. `"acme.linear:search-issues"`). */
   name: string;
-  /** Human-readable display name. */
+  /** Nombre legible para mostrar. */
   displayName: string;
-  /** Description for the agent — explains when and how to use this tool. */
+  /** Descripción para el agente — explica cuándo y cómo usar esta herramienta. */
   description: string;
-  /** JSON Schema describing the tool's input parameters. */
+  /** JSON Schema que describe los parámetros de entrada de la herramienta. */
   parametersSchema: Record<string, unknown>;
-  /** The plugin that provides this tool. */
+  /** El plugin que provee esta herramienta. */
   pluginId: string;
 }
 
 /**
- * Options for creating the plugin tool dispatcher.
+ * Opciones para crear el plugin tool dispatcher.
  */
 export interface PluginToolDispatcherOptions {
-  /** The worker manager used to dispatch RPC calls to plugin workers. */
+  /** El worker manager usado para despachar llamadas RPC a los workers de plugins. */
   workerManager?: PluginWorkerManager;
-  /** The lifecycle manager to listen for plugin state changes. */
+  /** El lifecycle manager al que escuchar cambios de estado de plugins. */
   lifecycleManager?: PluginLifecycleManager;
-  /** Database connection for looking up plugin records. */
+  /** Conexión de base de datos para buscar registros de plugins. */
   db?: Db;
 }
 
@@ -81,62 +85,66 @@ export interface PluginToolDispatcherOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * The plugin tool dispatcher — the primary integration point between the
- * agent service and the plugin tool system.
+ * El plugin tool dispatcher — el punto primario de integración entre el
+ * servicio de agentes y el sistema de herramientas de plugins.
  *
- * Agents use this service to:
- * 1. List all available tools (for prompt construction / tool choice)
- * 2. Execute a specific tool by its namespaced name
+ * Los agentes usan este servicio para:
+ * 1. Listar todas las herramientas disponibles (para construcción de prompt
+ *    / elección de herramienta)
+ * 2. Ejecutar una herramienta específica por su nombre namespaced
  *
- * The dispatcher handles lifecycle management internally — when a plugin
- * is loaded or unloaded, its tools are automatically registered or removed.
+ * El dispatcher maneja el lifecycle management internamente — cuando un
+ * plugin se carga o descarga, sus herramientas se registran o eliminan
+ * automáticamente.
  */
 export interface PluginToolDispatcher {
   /**
-   * Initialize the dispatcher — load tools from all currently-ready plugins
-   * and start listening for lifecycle events.
+   * Inicializa el dispatcher — carga herramientas desde todos los plugins
+   * actualmente listos y empieza a escuchar eventos del ciclo de vida.
    *
-   * Must be called once at server startup after the lifecycle manager
-   * and worker manager are ready.
+   * Debe llamarse una vez al arranque del servidor después de que el
+   * lifecycle manager y el worker manager estén listos.
    */
   initialize(): Promise<void>;
 
   /**
-   * Tear down the dispatcher — unregister lifecycle event listeners
-   * and clear all tool registrations.
+   * Desmantela el dispatcher — desregistra los listeners de eventos del
+   * ciclo de vida y limpia todos los registros de herramientas.
    *
-   * Called during server shutdown.
+   * Se llama durante el apagado del servidor.
    */
   teardown(): void;
 
   /**
-   * List all available tools for agents, optionally filtered.
+   * Lista todas las herramientas disponibles para agentes, opcionalmente
+   * filtradas.
    *
-   * Returns tool descriptors in an agent-friendly format.
+   * Devuelve descriptores de herramientas en un formato amigable para
+   * agentes.
    *
-   * @param filter - Optional filter criteria
-   * @returns Array of agent tool descriptors
+   * @param filter - Criterios opcionales de filtro
+   * @returns Array de descriptores de herramientas de agente
    */
   listToolsForAgent(filter?: ToolListFilter): AgentToolDescriptor[];
 
   /**
-   * Look up a tool by its namespaced name.
+   * Busca una herramienta por su nombre namespaced.
    *
-   * @param namespacedName - e.g. `"acme.linear:search-issues"`
-   * @returns The registered tool, or `null` if not found
+   * @param namespacedName - p. ej. `"acme.linear:search-issues"`
+   * @returns La herramienta registrada, o `null` si no se encuentra
    */
   getTool(namespacedName: string): RegisteredTool | null;
 
   /**
-   * Execute a tool by its namespaced name, routing to the correct
-   * plugin worker.
+   * Ejecuta una herramienta por su nombre namespaced, enrutando al worker
+   * correcto del plugin.
    *
-   * @param namespacedName - Fully qualified tool name
-   * @param parameters - Input parameters matching the tool's schema
-   * @param runContext - Agent run context
-   * @returns The execution result with routing metadata
-   * @throws {Error} if the tool is not found, the worker is not running,
-   *   or the tool execution fails
+   * @param namespacedName - Nombre totalmente calificado de la herramienta
+   * @param parameters - Parámetros de entrada que coinciden con el schema de la herramienta
+   * @param runContext - Contexto de ejecución del agente
+   * @returns El resultado de la ejecución con metadata de enrutamiento
+   * @throws {Error} si la herramienta no se encuentra, el worker no está
+   *   corriendo, o la ejecución de la herramienta falla
    */
   executeTool(
     namespacedName: string,
@@ -145,13 +153,14 @@ export interface PluginToolDispatcher {
   ): Promise<ToolExecutionResult>;
 
   /**
-   * Register all tools from a plugin manifest.
+   * Registra todas las herramientas desde un manifiesto de plugin.
    *
-   * This is called automatically when a plugin transitions to `ready`.
-   * Can also be called manually for testing or recovery scenarios.
+   * Se llama automáticamente cuando un plugin transiciona a `ready`.
+   * También puede llamarse manualmente para pruebas o escenarios de
+   * recuperación.
    *
-   * @param pluginId - The plugin's unique identifier
-   * @param manifest - The plugin manifest containing tool declarations
+   * @param pluginId - El identificador único del plugin
+   * @param manifest - El manifiesto del plugin que contiene declaraciones de herramientas
    */
   registerPluginTools(
     pluginId: string,
@@ -159,26 +168,27 @@ export interface PluginToolDispatcher {
   ): void;
 
   /**
-   * Unregister all tools for a plugin.
+   * Desregistra todas las herramientas de un plugin.
    *
-   * Called automatically when a plugin is disabled or unloaded.
+   * Se llama automáticamente cuando un plugin se desactiva o descarga.
    *
-   * @param pluginId - The plugin to unregister
+   * @param pluginId - El plugin a desregistrar
    */
   unregisterPluginTools(pluginId: string): void;
 
   /**
-   * Get the total number of registered tools, optionally scoped to a plugin.
+   * Obtiene el número total de herramientas registradas, opcionalmente
+   * limitado a un plugin.
    *
-   * @param pluginId - If provided, count only this plugin's tools
+   * @param pluginId - Si se provee, cuenta solo las herramientas de este plugin
    */
   toolCount(pluginId?: string): number;
 
   /**
-   * Access the underlying tool registry for advanced operations.
+   * Accede al registro de herramientas subyacente para operaciones avanzadas.
    *
-   * This escape hatch exists for internal use (e.g. diagnostics).
-   * Prefer the dispatcher's own methods for normal operations.
+   * Esta vía de escape existe para uso interno (p. ej. diagnósticos).
+   * Prefiere los propios métodos del dispatcher para operaciones normales.
    */
   getRegistry(): PluginToolRegistry;
 }
@@ -188,19 +198,21 @@ export interface PluginToolDispatcher {
 // ---------------------------------------------------------------------------
 
 /**
- * Create a new `PluginToolDispatcher`.
+ * Crea un nuevo `PluginToolDispatcher`.
  *
- * The dispatcher:
- * 1. Creates and owns a `PluginToolRegistry` backed by the given worker manager.
- * 2. Listens for lifecycle events (plugin.enabled, plugin.disabled, plugin.unloaded)
- *    to automatically register and unregister tools.
- * 3. On `initialize()`, loads tools from all currently-ready plugins via the DB.
+ * El dispatcher:
+ * 1. Crea y posee un `PluginToolRegistry` respaldado por el worker manager dado.
+ * 2. Escucha eventos del ciclo de vida (plugin.enabled, plugin.disabled,
+ *    plugin.unloaded) para registrar y desregistrar automáticamente
+ *    herramientas.
+ * 3. En `initialize()`, carga herramientas desde todos los plugins
+ *    actualmente listos vía la DB.
  *
- * @param options - Configuration options
+ * @param options - Opciones de configuración
  *
  * @example
  * ```ts
- * // At server startup
+ * // Al arranque del servidor
  * const dispatcher = createPluginToolDispatcher({
  *   workerManager,
  *   lifecycleManager,
@@ -208,10 +220,10 @@ export interface PluginToolDispatcher {
  * });
  * await dispatcher.initialize();
  *
- * // In agent service — list tools for prompt construction
+ * // En el servicio de agentes — lista herramientas para construcción de prompt
  * const tools = dispatcher.listToolsForAgent();
  *
- * // In agent service — execute a tool
+ * // En el servicio de agentes — ejecuta una herramienta
  * const result = await dispatcher.executeTool(
  *   "acme.linear:search-issues",
  *   { query: "auth bug" },
@@ -225,10 +237,11 @@ export function createPluginToolDispatcher(
   const { workerManager, lifecycleManager, db } = options;
   const log = logger.child({ service: "plugin-tool-dispatcher" });
 
-  // Create the underlying tool registry, backed by the worker manager
+  // Crea el registro de herramientas subyacente, respaldado por el worker manager
   const registry = createPluginToolRegistry(workerManager);
 
-  // Track lifecycle event listeners so we can remove them on teardown
+  // Rastrea los listeners de eventos del ciclo de vida para poder
+  // eliminarlos en teardown
   let enabledListener: ((payload: { pluginId: string; pluginKey: string }) => void) | null = null;
   let disabledListener: ((payload: { pluginId: string; pluginKey: string; reason?: string }) => void) | null = null;
   let unloadedListener: ((payload: { pluginId: string; pluginKey: string; removeData: boolean }) => void) | null = null;
@@ -240,14 +253,14 @@ export function createPluginToolDispatcher(
   // -----------------------------------------------------------------------
 
   /**
-   * Attempt to register tools for a plugin by looking up its manifest
-   * from the DB. No-ops gracefully if the plugin or manifest is missing.
+   * Intenta registrar herramientas para un plugin buscando su manifiesto
+   * desde la DB. No hace nada con gracia si el plugin o manifiesto faltan.
    */
   async function registerFromDb(pluginId: string): Promise<void> {
     if (!db) {
       log.warn(
         { pluginId },
-        "cannot register tools from DB — no database connection configured",
+        "no se pueden registrar herramientas desde la DB — no hay conexión de base de datos configurada",
       );
       return;
     }
@@ -256,13 +269,13 @@ export function createPluginToolDispatcher(
     const plugin = await pluginRegistry.getById(pluginId) as PluginRecord | null;
 
     if (!plugin) {
-      log.warn({ pluginId }, "plugin not found in registry, cannot register tools");
+      log.warn({ pluginId }, "plugin no encontrado en el registro, no se pueden registrar herramientas");
       return;
     }
 
     const manifest = plugin.manifestJson;
     if (!manifest) {
-      log.warn({ pluginId }, "plugin has no manifest, cannot register tools");
+      log.warn({ pluginId }, "el plugin no tiene manifiesto, no se pueden registrar herramientas");
       return;
     }
 
@@ -270,7 +283,7 @@ export function createPluginToolDispatcher(
   }
 
   /**
-   * Convert a `RegisteredTool` to an `AgentToolDescriptor`.
+   * Convierte un `RegisteredTool` a un `AgentToolDescriptor`.
    */
   function toAgentDescriptor(tool: RegisteredTool): AgentToolDescriptor {
     return {
@@ -287,24 +300,25 @@ export function createPluginToolDispatcher(
   // -----------------------------------------------------------------------
 
   function handlePluginEnabled(payload: { pluginId: string; pluginKey: string }): void {
-    log.debug({ pluginId: payload.pluginId, pluginKey: payload.pluginKey }, "plugin enabled — registering tools");
-    // Async registration from DB — we fire-and-forget since the lifecycle
-    // event handler must be synchronous. Any errors are logged.
+    log.debug({ pluginId: payload.pluginId, pluginKey: payload.pluginKey }, "plugin activado — registrando herramientas");
+    // Registro asíncrono desde la DB — disparamos y olvidamos ya que el
+    // manejador de eventos del ciclo de vida debe ser síncrono. Cualquier
+    // error se registra en logs.
     void registerFromDb(payload.pluginId).catch((err) => {
       log.error(
         { pluginId: payload.pluginId, err: err instanceof Error ? err.message : String(err) },
-        "failed to register tools after plugin enabled",
+        "falló el registro de herramientas tras activar el plugin",
       );
     });
   }
 
   function handlePluginDisabled(payload: { pluginId: string; pluginKey: string; reason?: string }): void {
-    log.debug({ pluginId: payload.pluginId, pluginKey: payload.pluginKey }, "plugin disabled — unregistering tools");
+    log.debug({ pluginId: payload.pluginId, pluginKey: payload.pluginKey }, "plugin desactivado — desregistrando herramientas");
     registry.unregisterPlugin(payload.pluginKey);
   }
 
   function handlePluginUnloaded(payload: { pluginId: string; pluginKey: string; removeData: boolean }): void {
-    log.debug({ pluginId: payload.pluginId, pluginKey: payload.pluginKey }, "plugin unloaded — unregistering tools");
+    log.debug({ pluginId: payload.pluginId, pluginKey: payload.pluginKey }, "plugin descargado — desregistrando herramientas");
     registry.unregisterPlugin(payload.pluginKey);
   }
 
@@ -315,13 +329,13 @@ export function createPluginToolDispatcher(
   return {
     async initialize(): Promise<void> {
       if (initialized) {
-        log.warn("dispatcher already initialized, skipping");
+        log.warn("el dispatcher ya está inicializado, omitiendo");
         return;
       }
 
-      log.info("initializing plugin tool dispatcher");
+      log.info("inicializando el plugin tool dispatcher");
 
-      // Step 1: Load tools from all currently-ready plugins
+      // Paso 1: Carga herramientas desde todos los plugins actualmente listos
       if (db) {
         const pluginRegistry = pluginRegistryService(db);
         const readyPlugins = await pluginRegistry.listByStatus("ready") as PluginRecord[];
@@ -337,11 +351,11 @@ export function createPluginToolDispatcher(
 
         log.info(
           { readyPlugins: readyPlugins.length, registeredTools: totalTools },
-          "loaded tools from ready plugins",
+          "herramientas cargadas desde plugins listos",
         );
       }
 
-      // Step 2: Subscribe to lifecycle events for dynamic updates
+      // Paso 2: Suscribe a eventos del ciclo de vida para actualizaciones dinámicas
       if (lifecycleManager) {
         enabledListener = handlePluginEnabled;
         disabledListener = handlePluginDisabled;
@@ -351,22 +365,22 @@ export function createPluginToolDispatcher(
         lifecycleManager.on("plugin.disabled", disabledListener);
         lifecycleManager.on("plugin.unloaded", unloadedListener);
 
-        log.debug("subscribed to lifecycle events");
+        log.debug("suscrito a eventos del ciclo de vida");
       } else {
-        log.warn("no lifecycle manager provided — tools will not auto-update on plugin state changes");
+        log.warn("no se proveyó lifecycle manager — las herramientas no se auto-actualizarán en cambios de estado de plugins");
       }
 
       initialized = true;
       log.info(
         { totalTools: registry.toolCount() },
-        "plugin tool dispatcher initialized",
+        "plugin tool dispatcher inicializado",
       );
     },
 
     teardown(): void {
       if (!initialized) return;
 
-      // Unsubscribe from lifecycle events
+      // Desuscribe de eventos del ciclo de vida
       if (lifecycleManager) {
         if (enabledListener) lifecycleManager.off("plugin.enabled", enabledListener);
         if (disabledListener) lifecycleManager.off("plugin.disabled", disabledListener);
@@ -377,12 +391,12 @@ export function createPluginToolDispatcher(
         unloadedListener = null;
       }
 
-      // Note: we do NOT clear the registry here because teardown may be
-      // called during graceful shutdown where in-flight tool calls should
-      // still be able to resolve their tool entries.
+      // Nota: NO limpiamos el registro aquí porque teardown puede llamarse
+      // durante un apagado gracioso donde las llamadas de herramientas en
+      // vuelo aún deberían poder resolver sus entradas de herramientas.
 
       initialized = false;
-      log.info("plugin tool dispatcher torn down");
+      log.info("plugin tool dispatcher desmantelado");
     },
 
     listToolsForAgent(filter?: ToolListFilter): AgentToolDescriptor[] {
@@ -404,7 +418,7 @@ export function createPluginToolDispatcher(
           agentId: runContext.agentId,
           runId: runContext.runId,
         },
-        "dispatching tool execution",
+        "despachando ejecución de herramienta",
       );
 
       const result = await registry.executeTool(
@@ -420,7 +434,7 @@ export function createPluginToolDispatcher(
           hasContent: !!result.result.content,
           hasError: !!result.result.error,
         },
-        "tool execution completed",
+        "ejecución de herramienta completada",
       );
 
       return result;

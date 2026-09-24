@@ -1,17 +1,19 @@
 /**
- * Paperclip plugin UI SDK — types for plugin frontend components.
+ * SDK de interfaz de plugin de Paperclip: tipos para componentes frontend de plugins.
  *
- * Plugin UI bundles import from `@paperclipai/plugin-sdk/ui`.  This subpath
- * provides the bridge hooks, component prop interfaces, and error types that
- * plugin React components use to communicate with the host.
+ * Los paquetes de interfaz de plugin importan desde `@paperclipai/plugin-sdk/ui`.
+ * Este subpath proporciona los hooks del puente, las interfaces de props de
+ * componentes y los tipos de error que los componentes React de plugins usan
+ * para comunicarse con el host.
  *
- * Plugin UI bundles are loaded as ES modules into designated extension slots.
- * All communication with the plugin worker goes through the host bridge — plugin
- * components must NOT access host internals or call host APIs directly.
+ * Los paquetes de interfaz de plugin se cargan como módulos ES en ranuras de
+ * extensión designadas. Toda la comunicación con el worker del plugin pasa por
+ * el puente del host: los componentes de plugin NO deben acceder a internos
+ * del host ni llamar a APIs del host directamente.
  *
- * @see PLUGIN_SPEC.md §19 — UI Extension Model
+ * @see PLUGIN_SPEC.md §19 — Modelo de extensión de interfaz
  * @see PLUGIN_SPEC.md §19.0.1 — Plugin UI SDK
- * @see PLUGIN_SPEC.md §29.2 — SDK Versioning
+ * @see PLUGIN_SPEC.md §29.2 — Versionado del SDK
  */
 
 import type {
@@ -25,7 +27,7 @@ import type {
   PluginRenderCloseEvent,
 } from "../protocol.js";
 
-// Re-export PluginBridgeErrorCode for plugin UI authors
+// Reexporta PluginBridgeErrorCode para autores de interfaz de plugins
 export type {
   PluginBridgeErrorCode,
   PluginLauncherBounds,
@@ -38,138 +40,138 @@ export type {
 } from "../protocol.js";
 
 // ---------------------------------------------------------------------------
-// Bridge error
+// Error del puente
 // ---------------------------------------------------------------------------
 
 /**
- * Structured error returned by the bridge when a UI → worker call fails.
+ * Error estructurado devuelto por el puente cuando falla una llamada de interfaz a worker.
  *
- * Plugin components receive this in `usePluginData()` as the `error` field
- * and may encounter it as a thrown value from `usePluginAction()`.
+ * Los componentes de plugin reciben esto en `usePluginData()` como el campo `error`
+ * y pueden encontrarlo como valor lanzado desde `usePluginAction()`.
  *
- * Error codes:
- * - `WORKER_UNAVAILABLE` — plugin worker is not running
- * - `CAPABILITY_DENIED` — plugin lacks the required capability
- * - `WORKER_ERROR` — worker returned an error from its handler
- * - `TIMEOUT` — worker did not respond within the configured timeout
- * - `UNKNOWN` — unexpected bridge-level failure
+ * Códigos de error:
+ * - `WORKER_UNAVAILABLE` — el worker del plugin no está en ejecución
+ * - `CAPABILITY_DENIED` — el plugin carece de la capacidad requerida
+ * - `WORKER_ERROR` — el worker devolvió un error desde su manejador
+ * - `TIMEOUT` — el worker no respondió dentro del tiempo configurado
+ * - `UNKNOWN` — fallo inesperado a nivel de puente
  *
- * @see PLUGIN_SPEC.md §19.7 — Error Propagation Through The Bridge
+ * @see PLUGIN_SPEC.md §19.7 — Propagación de errores a través del puente
  */
 export interface PluginBridgeError {
-  /** Machine-readable error code. */
+  /** Código de error legible por máquina. */
   code: PluginBridgeErrorCode;
-  /** Human-readable error message. */
+  /** Mensaje de error legible. */
   message: string;
   /**
-   * Original error details from the worker, if available.
-   * Only present when `code === "WORKER_ERROR"`.
+   * Detalles originales del error desde el worker, si están disponibles.
+   * Solo presente cuando `code === "WORKER_ERROR"`.
    */
   details?: unknown;
 }
 
 // ---------------------------------------------------------------------------
-// Host context available to all plugin components
+// Contexto del host disponible para todos los componentes de plugin
 // ---------------------------------------------------------------------------
 
 /**
- * Read-only host context passed to every plugin component via `useHostContext()`.
+ * Contexto de host de solo lectura pasado a cada componente de plugin vía `useHostContext()`.
  *
- * Plugin components use this to know which company, project, or entity is
- * currently active so they can scope their data requests accordingly.
+ * Los componentes de plugin lo usan para saber qué empresa, proyecto o entidad
+ * está activa actualmente y así acotar sus solicitudes de datos en consecuencia.
  *
- * @see PLUGIN_SPEC.md §19 — UI Extension Model
+ * @see PLUGIN_SPEC.md §19 — Modelo de extensión de interfaz
  */
 export interface PluginHostContext {
-  /** UUID of the currently active company, if any. */
+  /** UUID de la empresa actualmente activa, si la hay. */
   companyId: string | null;
-  /** URL prefix for the current company (e.g. `"my-company"`). */
+  /** Prefijo de URL para la empresa actual (p. ej. `"my-company"`). */
   companyPrefix: string | null;
-  /** UUID of the currently active project, if any. */
+  /** UUID del proyecto actualmente activo, si lo hay. */
   projectId: string | null;
-  /** UUID of the current entity (for detail tab contexts), if any. */
+  /** UUID de la entidad actual (para contextos de pestaña de detalle), si la hay. */
   entityId: string | null;
-  /** Type of the current entity (e.g. `"issue"`, `"agent"`). */
+  /** Tipo de la entidad actual (p. ej. `"issue"`, `"agent"`). */
   entityType: string | null;
   /**
-   * UUID of the parent entity when rendering nested slots.
-   * For `commentAnnotation` slots this is the issue ID containing the comment.
+   * UUID de la entidad padre al renderizar ranuras anidadas.
+   * Para ranuras `commentAnnotation` este es el ID del issue que contiene el comentario.
    */
   parentEntityId?: string | null;
-  /** UUID of the current authenticated user. */
+  /** UUID del usuario autenticado actual. */
   userId: string | null;
-  /** Runtime metadata for the host container currently rendering this plugin UI. */
+  /** Metadatos de runtime para el contenedor del host que renderiza actualmente esta interfaz de plugin. */
   renderEnvironment?: PluginRenderEnvironmentContext | null;
 }
 
 /**
- * Async-capable callback invoked during a host-managed close lifecycle.
+ * Callback compatible con async invocado durante un ciclo de vida de cierre gestionado por el host.
  */
 export type PluginRenderCloseHandler = (
   event: PluginRenderCloseEvent,
 ) => void | Promise<void>;
 
 /**
- * Close lifecycle hooks available when the plugin UI is rendered inside a
- * host-managed launcher environment.
+ * Hooks de ciclo de vida de cierre disponibles cuando la interfaz del plugin se
+ * renderiza dentro de un entorno de lanzador gestionado por el host.
  */
 export interface PluginRenderCloseLifecycle {
-  /** Register a callback before the host closes the current environment. */
+  /** Registra un callback antes de que el host cierre el entorno actual. */
   onBeforeClose?(handler: PluginRenderCloseHandler): () => void;
-  /** Register a callback after the host closes the current environment. */
+  /** Registra un callback después de que el host cierre el entorno actual. */
   onClose?(handler: PluginRenderCloseHandler): () => void;
 }
 
 /**
- * Runtime information about the host container currently rendering a plugin UI.
+ * Información de runtime sobre el contenedor del host que renderiza actualmente una interfaz de plugin.
  */
 export interface PluginRenderEnvironmentContext
   extends PluginLauncherRenderContextSnapshot {
-  /** Optional host callback for requesting new bounds while a modal is open. */
+  /** Callback opcional del host para solicitar nuevos límites mientras un modal está abierto. */
   requestModalBounds?(request: PluginModalBoundsRequest): Promise<void>;
-  /** Optional close lifecycle callbacks for host-managed overlays. */
+  /** Callbacks opcionales de ciclo de vida de cierre para superposiciones gestionadas por el host. */
   closeLifecycle?: PluginRenderCloseLifecycle | null;
 }
 
 // ---------------------------------------------------------------------------
-// Slot component prop interfaces
+// Interfaces de props de componentes de ranura
 // ---------------------------------------------------------------------------
 
 /**
- * Props passed to a plugin page component.
+ * Props pasadas a un componente de página de plugin.
  *
- * A page is a full-page extension at `/plugins/:pluginId` or `/:company/plugins/:pluginId`.
+ * Una página es una extensión de página completa en `/plugins/:pluginId` o `/:company/plugins/:pluginId`.
  *
  * @see PLUGIN_SPEC.md §19.1 — Global Operator Routes
  * @see PLUGIN_SPEC.md §19.2 — Company-Context Routes
  */
 export interface PluginPageProps {
-  /** The current host context. */
+  /** El contexto actual del host. */
   context: PluginHostContext;
 }
 
 /**
- * Props passed to a plugin dashboard widget component.
+ * Props pasadas a un componente de widget de panel de plugin.
  *
- * A dashboard widget is rendered as a card or section on the main dashboard.
+ * Un widget de panel se renderiza como tarjeta o sección en el panel principal.
  *
  * @see PLUGIN_SPEC.md §19.4 — Dashboard Widgets
  */
 export interface PluginWidgetProps {
-  /** The current host context. */
+  /** El contexto actual del host. */
   context: PluginHostContext;
 }
 
 /**
- * Props passed to a plugin detail tab component.
+ * Props pasadas a un componente de pestaña de detalle de plugin.
  *
- * A detail tab is rendered as an additional tab on a project, issue, agent,
- * goal, or run detail page.
+ * Una pestaña de detalle se renderiza como pestaña adicional en la página de
+ * detalle de un proyecto, issue, agente, objetivo o ejecución.
  *
  * @see PLUGIN_SPEC.md §19.3 — Detail Tabs
  */
 export interface PluginDetailTabProps {
-  /** The current host context, always including `entityId` and `entityType`. */
+  /** El contexto actual del host, incluyendo siempre `entityId` y `entityType`. */
   context: PluginHostContext & {
     entityId: string;
     entityType: string;
@@ -177,31 +179,32 @@ export interface PluginDetailTabProps {
 }
 
 /**
- * Props passed to a plugin sidebar component.
+ * Props pasadas a un componente de barra lateral de plugin.
  *
- * A sidebar entry adds a link or section to the application sidebar.
+ * Una entrada de barra lateral agrega un enlace o sección a la barra lateral de la aplicación.
  *
  * @see PLUGIN_SPEC.md §19.5 — Sidebar Entries
  */
 export interface PluginSidebarProps {
-  /** The current host context. */
+  /** El contexto actual del host. */
   context: PluginHostContext;
 }
 
 /**
- * Props passed to a plugin project sidebar item component.
+ * Props pasadas a un componente de elemento de barra lateral de proyecto de plugin.
  *
- * A project sidebar item is rendered **once per project** under that project's
- * row in the sidebar Projects list. The host passes the current project's id
- * in `context.entityId` and `context.entityType` is `"project"`.
+ * Un elemento de barra lateral de proyecto se renderiza **una vez por proyecto**
+ * bajo la fila de ese proyecto en la lista de Proyectos de la barra lateral. El
+ * host pasa el id del proyecto actual en `context.entityId` y `context.entityType`
+ * es `"project"`.
  *
- * Use this slot to add a link (e.g. "Files", "Linear Sync") that navigates to
- * the project detail with a plugin tab selected: `/projects/:projectRef?tab=plugin:key:slotId`.
+ * Usar esta ranura para agregar un enlace (p. ej. "Archivos", "Linear Sync") que navega
+ * al detalle del proyecto con una pestaña de plugin seleccionada: `/projects/:projectRef?tab=plugin:key:slotId`.
  *
- * @see PLUGIN_SPEC.md §19.5.1 — Project sidebar items
+ * @see PLUGIN_SPEC.md §19.5.1 — Elementos de barra lateral del proyecto
  */
 export interface PluginProjectSidebarItemProps {
-  /** Host context plus entityId (project id) and entityType "project". */
+  /** Contexto del host más entityId (id de proyecto) y entityType "project". */
   context: PluginHostContext & {
     entityId: string;
     entityType: "project";
@@ -209,99 +212,99 @@ export interface PluginProjectSidebarItemProps {
 }
 
 /**
- * Props passed to a plugin comment annotation component.
+ * Props pasadas a un componente de anotación de comentario de plugin.
  *
- * A comment annotation is rendered below each individual comment in the
- * issue detail timeline. The host passes the comment ID as `entityId`
- * and `"comment"` as `entityType`, plus the parent issue ID as
- * `parentEntityId` so the plugin can scope data fetches to both.
+ * Una anotación de comentario se renderiza debajo de cada comentario individual
+ * en la línea de tiempo del detalle del issue. El host pasa el ID del comentario
+ * como `entityId` y `"comment"` como `entityType`, más el ID del issue padre como
+ * `parentEntityId` para que el plugin pueda acotar las búsquedas de datos a ambos.
  *
- * Use this slot to augment comments with parsed file links, sentiment
- * badges, inline actions, or any per-comment metadata.
+ * Usar esta ranura para enriquecer comentarios con enlaces de archivo analizados,
+ * insignias de sentimiento, acciones en línea o cualquier metadato por comentario.
  *
  * @see PLUGIN_SPEC.md §19.6 — Comment Annotations
  */
 export interface PluginCommentAnnotationProps {
-  /** Host context with comment and parent issue identifiers. */
+  /** Contexto del host con identificadores de comentario e issue padre. */
   context: PluginHostContext & {
-    /** UUID of the comment being annotated. */
+    /** UUID del comentario que se está anotando. */
     entityId: string;
-    /** Always `"comment"` for comment annotation slots. */
+    /** Siempre `"comment"` para ranuras de anotación de comentario. */
     entityType: "comment";
-    /** UUID of the parent issue containing this comment. */
+    /** UUID del issue padre que contiene este comentario. */
     parentEntityId: string;
   };
 }
 
 /**
- * Props passed to a plugin comment context menu item component.
+ * Props pasadas a un componente de elemento de menú contextual de comentario de plugin.
  *
- * A comment context menu item is rendered in a "more" dropdown menu on
- * each comment in the issue detail timeline. The host passes the comment
- * ID as `entityId` and `"comment"` as `entityType`, plus the parent
- * issue ID as `parentEntityId`.
+ * Un elemento de menú contextual de comentario se renderiza en un menú desplegable
+ * "más" en cada comentario de la línea de tiempo del detalle del issue. El host
+ * pasa el ID del comentario como `entityId` y `"comment"` como `entityType`, más
+ * el ID del issue padre como `parentEntityId`.
  *
- * Use this slot to add per-comment actions such as "Create sub-issue from
- * comment", "Translate", "Flag for review", or any custom plugin action.
+ * Usar esta ranura para agregar acciones por comentario como "Crear sub-issue desde el
+ * comentario", "Traducir", "Marcar para revisión" o cualquier acción personalizada del plugin.
  *
- * @see PLUGIN_SPEC.md §19.7 — Comment Context Menu Items
+ * @see PLUGIN_SPEC.md §19.7 — Elementos de menú contextual de comentario
  */
 export interface PluginCommentContextMenuItemProps {
-  /** Host context with comment and parent issue identifiers. */
+  /** Contexto del host con identificadores de comentario e issue padre. */
   context: PluginHostContext & {
-    /** UUID of the comment this menu item acts on. */
+    /** UUID del comentario sobre el que actúa este elemento de menú. */
     entityId: string;
-    /** Always `"comment"` for comment context menu item slots. */
+    /** Siempre `"comment"` para ranuras de elemento de menú contextual de comentario. */
     entityType: "comment";
-    /** UUID of the parent issue containing this comment. */
+    /** UUID del issue padre que contiene este comentario. */
     parentEntityId: string;
   };
 }
 
 /**
- * Props passed to a plugin settings page component.
+ * Props pasadas a un componente de página de ajustes de plugin.
  *
- * Overrides the auto-generated JSON Schema form when the plugin declares
- * a `settingsPage` UI slot. The component is responsible for reading and
- * writing config through the bridge.
+ * Sobrescribe el formulario JSON Schema autogenerado cuando el plugin declara
+ * una ranura de interfaz `settingsPage`. El componente es responsable de leer y
+ * escribir la configuración a través del puente.
  *
  * @see PLUGIN_SPEC.md §19.8 — Plugin Settings UI
  */
 export interface PluginSettingsPageProps {
-  /** The current host context. */
+  /** El contexto actual del host. */
   context: PluginHostContext;
 }
 
 // ---------------------------------------------------------------------------
-// usePluginData hook return type
+// Tipo de retorno del hook usePluginData
 // ---------------------------------------------------------------------------
 
 /**
- * Return value of `usePluginData(key, params)`.
+ * Valor de retorno de `usePluginData(key, params)`.
  *
- * Mirrors a standard async data-fetching hook pattern:
- * exactly one of `data` or `error` is non-null at any time (unless `loading`).
+ * Refleja un patrón estándar de hook de obtención de datos asíncrona:
+ * exactamente uno de `data` o `error` es no nulo en cualquier momento (a menos que `loading`).
  *
- * @template T The type of the data returned by the worker handler
+ * @template T El tipo de los datos devueltos por el manejador del worker
  *
- * @see PLUGIN_SPEC.md §19.7 — Error Propagation Through The Bridge
+ * @see PLUGIN_SPEC.md §19.7 — Propagación de errores a través del puente
  */
 export interface PluginDataResult<T = unknown> {
-  /** The data returned by the worker's `getData` handler. `null` while loading or on error. */
+  /** Los datos devueltos por el manejador `getData` del worker. `null` mientras se carga o en caso de error. */
   data: T | null;
-  /** `true` while the initial request or a refresh is in flight. */
+  /** `true` mientras la solicitud inicial o una actualización está en curso. */
   loading: boolean;
-  /** Bridge error if the request failed. `null` on success or while loading. */
+  /** Error del puente si la solicitud falló. `null` en caso de éxito o mientras se carga. */
   error: PluginBridgeError | null;
   /**
-   * Manually trigger a data refresh.
-   * Useful for poll-based updates or post-action refreshes.
+   * Dispara manualmente una actualización de datos.
+   * Útil para actualizaciones por sondeo o después de acciones.
    */
   refresh(): void;
 }
 
 // ---------------------------------------------------------------------------
-// usePluginToast hook types
+// Tipos del hook usePluginToast
 // ---------------------------------------------------------------------------
 
 export type PluginToastTone = "info" | "success" | "warn" | "error";
@@ -324,57 +327,57 @@ export interface PluginToastInput {
 export type PluginToastFn = (input: PluginToastInput) => string | null;
 
 // ---------------------------------------------------------------------------
-// usePluginAction hook return type
+// Tipo de retorno del hook usePluginAction
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// usePluginStream hook return type
+// Tipo de retorno del hook usePluginStream
 // ---------------------------------------------------------------------------
 
 /**
- * Return value of `usePluginStream<T>(channel)`.
+ * Valor de retorno de `usePluginStream<T>(channel)`.
  *
- * Provides a growing array of events pushed from the plugin worker via SSE,
- * plus connection status metadata.
+ * Proporciona un arreglo creciente de eventos enviados desde el worker del plugin vía SSE,
+ * más metadatos de estado de conexión.
  *
- * @template T The type of each event emitted by the worker
+ * @template T El tipo de cada evento emitido por el worker
  *
  * @see PLUGIN_SPEC.md §19.8 — Real-Time Streaming
  */
 export interface PluginStreamResult<T = unknown> {
-  /** All events received so far, in arrival order. */
+  /** Todos los eventos recibidos hasta ahora, en orden de llegada. */
   events: T[];
-  /** The most recently received event, or `null` if none yet. */
+  /** El evento recibido más recientemente, o `null` si aún no hay ninguno. */
   lastEvent: T | null;
-  /** `true` while the SSE connection is being established. */
+  /** `true` mientras se establece la conexión SSE. */
   connecting: boolean;
-  /** `true` once the SSE connection is open and receiving events. */
+  /** `true` una vez que la conexión SSE está abierta y recibiendo eventos. */
   connected: boolean;
-  /** Error if the SSE connection failed or was interrupted. `null` otherwise. */
+  /** Error si la conexión SSE falló o se interrumpió. `null` en caso contrario. */
   error: Error | null;
-  /** Close the SSE connection and stop receiving events. */
+  /** Cierra la conexión SSE y deja de recibir eventos. */
   close(): void;
 }
 
 // ---------------------------------------------------------------------------
-// usePluginAction hook return type
+// Tipo de retorno del hook usePluginAction
 // ---------------------------------------------------------------------------
 
 /**
- * Return value of `usePluginAction(key)`.
+ * Valor de retorno de `usePluginAction(key)`.
  *
- * Returns an async function that, when called, sends an action request
- * to the worker's `performAction` handler and returns the result.
+ * Devuelve una función asíncrona que, al llamarse, envía una solicitud de acción
+ * al manejador `performAction` del worker y devuelve el resultado.
  *
- * On failure, the async function throws a `PluginBridgeError`.
+ * Si falla, la función asíncrona lanza un `PluginBridgeError`.
  *
- * @see PLUGIN_SPEC.md §19.7 — Error Propagation Through The Bridge
+ * @see PLUGIN_SPEC.md §19.7 — Propagación de errores a través del puente
  *
  * @example
  * ```tsx
  * const resync = usePluginAction("resync");
  * <button onClick={() => resync({ companyId }).catch(err => console.error(err))}>
- *   Resync Now
+ *   Resincronizar ahora
  * </button>
  * ```
  */

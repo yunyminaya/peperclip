@@ -11,16 +11,16 @@ import { plugins } from "./plugins.js";
 import type { PluginStateScopeKind } from "@paperclipai/shared";
 
 /**
- * `plugin_entities` table — persistent high-level mapping between Paperclip
- * objects and external plugin-defined entities.
+ * Tabla `plugin_entities`: mapeo persistente de alto nivel entre objetos de
+ * Paperclip y entidades externas definidas por plugins.
  *
- * This table is used by plugins (e.g. `linear`, `github`) to store pointers
- * to their respective external IDs for projects, issues, etc. and to store
- * their custom data.
+ * Esta tabla la usan los plugins (p. ej. `linear`, `github`) para almacenar punteros
+ * a sus respectivos IDs externos de proyectos, issues, etc., y para almacenar
+ * sus datos personalizados.
  *
- * Unlike `plugin_state`, which is for raw K-V persistence, `plugin_entities`
- * is intended for structured object mappings that the host can understand
- * and query for cross-plugin UI integration.
+ * A diferencia de `plugin_state`, que es para persistencia cruda de clave-valor,
+ * `plugin_entities` está pensada para mapeos estructurados de objetos que el host puede
+ * entender y consultar para la integración de la interfaz entre plugins.
  *
  * @see PLUGIN_SPEC.md §21.3
  */
@@ -33,8 +33,8 @@ export const pluginEntities = pgTable(
       .references(() => plugins.id, { onDelete: "cascade" }),
     entityType: text("entity_type").notNull(),
     scopeKind: text("scope_kind").$type<PluginStateScopeKind>().notNull(),
-    scopeId: text("scope_id"), // NULL for global scope (text to match plugin_state.scope_id)
-    externalId: text("external_id"), // ID in the external system
+    scopeId: text("scope_id"), // NULL para el alcance global (texto para coincidir con plugin_state.scope_id)
+    externalId: text("external_id"), // ID en el sistema externo
     title: text("title"),
     status: text("status"),
     data: jsonb("data").$type<Record<string, unknown>>().notNull().default({}),

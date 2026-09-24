@@ -27,8 +27,8 @@ const DEFAULT_SESSION_COMPACTION_POLICY: SessionCompactionPolicy = {
   maxSessionAgeHours: 72,
 };
 
-// Adapters with native context management still participate in session resume,
-// but Paperclip should not rotate them using threshold-based compaction.
+// Los adaptadores con gestión nativa de contexto siguen participando en la reanudación de sesiones,
+// pero Paperclip no debe rotarlos usando compactación basada en umbrales.
 const ADAPTER_MANAGED_SESSION_POLICY: SessionCompactionPolicy = {
   enabled: true,
   maxSessionRuns: 0,

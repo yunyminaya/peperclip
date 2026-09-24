@@ -68,7 +68,7 @@ async function ensurePiSkillsInjected(
   for (const skillName of removedSkills) {
     await onLog(
       "stderr",
-      `[paperclip] Removed maintainer-only Pi skill "${skillName}" from ${PI_AGENT_SKILLS_DIR}\n`,
+      `[paperclip] Se eliminó la habilidad de Pi solo de mantenimiento "${skillName}" de ${PI_AGENT_SKILLS_DIR}\n`,
     );
   }
 
@@ -80,12 +80,12 @@ async function ensurePiSkillsInjected(
       if (result === "skipped") continue;
       await onLog(
         "stderr",
-        `[paperclip] ${result === "repaired" ? "Repaired" : "Injected"} Pi skill "${entry.runtimeName}" into ${PI_AGENT_SKILLS_DIR}\n`,
+        `[paperclip] ${result === "repaired" ? "Reparada" : "Inyectada"} la habilidad de Pi "${entry.runtimeName}" into ${PI_AGENT_SKILLS_DIR}\n`,
       );
     } catch (err) {
       await onLog(
         "stderr",
-        `[paperclip] Failed to inject Pi skill "${entry.runtimeName}" into ${PI_AGENT_SKILLS_DIR}: ${err instanceof Error ? err.message : String(err)}\n`,
+        `[paperclip] No se pudo inyectar la habilidad de Pi "${entry.runtimeName}" en ${PI_AGENT_SKILLS_DIR}: ${err instanceof Error ? err.message : String(err)}\n`,
       );
     }
   }
@@ -116,7 +116,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const model = asString(config.model, "").trim();
   const thinking = asString(config.thinking, "").trim();
 
-  // Parse model into provider and model id
+  // Separar el modelo en proveedor e id de modelo
   const provider = parseModelProvider(model);
   const modelId = parseModelId(model);
 
@@ -138,15 +138,15 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const cwd = effectiveWorkspaceCwd || configuredCwd || process.cwd();
   await ensureAbsoluteDirectory(cwd, { createIfMissing: true });
   
-  // Ensure sessions directory exists
+  // Asegurarse de que el directorio de sesiones exista
   await ensureSessionsDir();
   
-  // Inject skills
+  // Inyectar habilidades
   const piSkillEntries = await readPaperclipRuntimeSkillEntries(config, __moduleDir);
   const desiredPiSkillNames = resolvePaperclipDesiredSkillNames(config, piSkillEntries);
   await ensurePiSkillsInjected(onLog, piSkillEntries, desiredPiSkillNames);
 
-  // Build environment
+  // Construir el entorno
   const envConfig = parseObject(config.env);
   const hasExplicitApiKey =
     typeof envConfig.PAPERCLIP_API_KEY === "string" && envConfig.PAPERCLIP_API_KEY.trim().length > 0;
@@ -205,7 +205,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   );
   await ensureCommandResolvable(command, cwd, runtimeEnv);
 
-  // Validate model is available before execution
+  // Validar que el modelo esté disponible antes de la ejecución
   await ensurePiModelConfiguredAndAvailable({
     model,
     command,
@@ -221,7 +221,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     return asStringArray(config.args);
   })();
 
-  // Handle session
+  // Manejar la sesión
   const runtimeSessionParams = parseObject(runtime.sessionParams);
   const runtimeSessionId = asString(runtimeSessionParams.sessionId, runtime.sessionId ?? "");
   const runtimeSessionCwd = asString(runtimeSessionParams.cwd, "");
@@ -233,23 +233,23 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   if (runtimeSessionId && !canResumeSession) {
     await onLog(
       "stdout",
-      `[paperclip] Pi session "${runtimeSessionId}" was saved for cwd "${runtimeSessionCwd}" and will not be resumed in "${cwd}".\n`,
+      `[paperclip] La sesión de Pi "${runtimeSessionId}" se guardó para el cwd "${runtimeSessionCwd}" y no se reanudará en "${cwd}".\n`,
     );
   }
 
-  // Ensure session file exists (Pi requires this on first run)
+  // Asegurarse de que el archivo de sesión exista (Pi lo requiere en la primera ejecución)
   if (!canResumeSession) {
     try {
       await fs.writeFile(sessionPath, "", { flag: "wx" });
     } catch (err) {
-      // File may already exist, that's ok
+      // El archivo puede ya existir, está bien
       if ((err as NodeJS.ErrnoException).code !== "EEXIST") {
         throw err;
       }
     }
   }
 
-  // Handle instructions file and build system prompt extension
+  // Manejar el archivo de instrucciones y construir la extensión del system prompt
   const instructionsFilePath = asString(config.instructionsFilePath, "").trim();
   const resolvedInstructionsFilePath = instructionsFilePath
     ? path.resolve(cwd, instructionsFilePath)
@@ -271,9 +271,9 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       const reason = err instanceof Error ? err.message : String(err);
       await onLog(
         "stdout",
-        `[paperclip] Warning: could not read agent instructions file "${resolvedInstructionsFilePath}": ${reason}\n`,
+        `[paperclip] Advertencia: no se pudo leer el archivo de instrucciones del agente "${resolvedInstructionsFilePath}": ${reason}\n`,
       );
-      // Fall back to base prompt template
+      // Volver a la plantilla de prompt base
       systemPromptExtension = promptTemplate;
     }
   } else {
@@ -314,23 +314,23 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     if (!resolvedInstructionsFilePath) return [] as string[];
     if (instructionsReadFailed) {
       return [
-        `Configured instructionsFilePath ${resolvedInstructionsFilePath}, but file could not be read; continuing without injected instructions.`,
+        `instructionsFilePath está configurado como ${resolvedInstructionsFilePath}, pero no se pudo leer el archivo; se continúa sin instrucciones inyectadas.`,
       ];
     }
     return [
-      `Loaded agent instructions from ${resolvedInstructionsFilePath}`,
-      `Appended instructions + path directive to system prompt (relative references from ${instructionsFileDir}).`,
+      `Instrucciones del agente cargadas desde ${resolvedInstructionsFilePath}`,
+      `Instrucciones y directiva de ruta agregadas al system prompt (referencias relativas desde ${instructionsFileDir}).`,
     ];
   })();
 
   const buildArgs = (sessionFile: string): string[] => {
     const args: string[] = [];
     
-    // Use JSON mode for structured output with print mode (non-interactive)
+    // Usar el modo JSON para salida estructurada con el modo print (no interactivo)
     args.push("--mode", "json");
-    args.push("-p"); // Non-interactive mode: process prompt and exit
+    args.push("-p"); // Modo no interactivo: procesar el prompt y salir
     
-    // Use --append-system-prompt to extend Pi's default system prompt
+    // Usar --append-system-prompt para extender el system prompt predeterminado de Pi
     args.push("--append-system-prompt", renderedSystemPromptExtension);
     
     if (provider) args.push("--provider", provider);
@@ -340,12 +340,12 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     args.push("--tools", "read,bash,edit,write,grep,find,ls");
     args.push("--session", sessionFile);
 
-    // Add Paperclip skills directory so Pi can load the paperclip skill
+    // Agregar el directorio de habilidades de Paperclip para que Pi pueda cargar la habilidad paperclip
     args.push("--skill", PI_AGENT_SKILLS_DIR);
 
     if (extraArgs.length > 0) args.push(...extraArgs);
     
-    // Add the user prompt as the last argument
+    // Agregar el prompt del usuario como último argumento
     args.push(userPrompt);
 
     return args;
@@ -424,7 +424,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
         exitCode: attempt.proc.exitCode,
         signal: attempt.proc.signal,
         timedOut: true,
-        errorMessage: `Timed out after ${timeoutSec}s`,
+        errorMessage: `Se agotó el tiempo después de ${timeoutSec}s`,
         clearSession: clearSessionOnMissingSession,
       };
     }
@@ -476,7 +476,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   ) {
     await onLog(
       "stdout",
-      `[paperclip] Pi session "${runtimeSessionId}" is unavailable; retrying with a fresh session.\n`,
+      `[paperclip] La sesión de Pi "${runtimeSessionId}" no está disponible; reintentando con una sesión nueva.\n`,
     );
     const newSessionPath = buildSessionPath(agent.id, new Date().toISOString());
     try {

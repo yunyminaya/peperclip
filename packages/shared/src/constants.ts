@@ -54,12 +54,12 @@ export const AGENT_ROLE_LABELS: Record<AgentRole, string> = {
   cto: "CTO",
   cmo: "CMO",
   cfo: "CFO",
-  engineer: "Engineer",
-  designer: "Designer",
+  engineer: "Ingeniero",
+  designer: "Diseñador",
   pm: "PM",
   qa: "QA",
   devops: "DevOps",
-  researcher: "Researcher",
+  researcher: "Investigador",
   general: "General",
 };
 
@@ -172,16 +172,16 @@ export const PAUSE_REASONS = ["manual", "budget", "system"] as const;
 export type PauseReason = (typeof PAUSE_REASONS)[number];
 
 export const PROJECT_COLORS = [
-  "#6366f1", // indigo
-  "#8b5cf6", // violet
-  "#ec4899", // pink
-  "#ef4444", // red
-  "#f97316", // orange
-  "#eab308", // yellow
-  "#22c55e", // green
-  "#14b8a6", // teal
-  "#06b6d4", // cyan
-  "#3b82f6", // blue
+  "#6366f1", // índigo
+  "#8b5cf6", // violeta
+  "#ec4899", // rosa
+  "#ef4444", // rojo
+  "#f97316", // naranja
+  "#eab308", // amarillo
+  "#22c55e", // verde
+  "#14b8a6", // verde azulado
+  "#06b6d4", // cian
+  "#3b82f6", // azul
 ] as const;
 
 export const APPROVAL_TYPES = ["hire_agent", "approve_ceo_strategy", "budget_override_required"] as const;
@@ -352,27 +352,27 @@ export const PERMISSION_KEYS = [
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
 
 // ---------------------------------------------------------------------------
-// Plugin System — see doc/plugins/PLUGIN_SPEC.md for the full specification
+// Sistema de plugins — ver doc/plugins/PLUGIN_SPEC.md para la especificación completa
 // ---------------------------------------------------------------------------
 
 /**
- * The current version of the Plugin API contract.
+ * La versión actual del contrato de la API de plugins.
  *
- * Increment this value whenever a breaking change is made to the plugin API
- * so that the host can reject incompatible plugin manifests.
+ * Incrementa este valor cada vez que se haga un cambio incompatible en la API
+ * de plugins para que el host pueda rechazar manifiestos de plugin incompatibles.
  *
  * @see PLUGIN_SPEC.md §4 — Versioning
  */
 export const PLUGIN_API_VERSION = 1 as const;
 
 /**
- * Lifecycle statuses for an installed plugin.
+ * Estados del ciclo de vida de un plugin instalado.
  *
- * State machine: installed → ready | error, ready → disabled | error | upgrade_pending | uninstalled,
+ * Máquina de estados: installed → ready | error, ready → disabled | error | upgrade_pending | uninstalled,
  * disabled → ready | uninstalled, error → ready | uninstalled,
- * upgrade_pending → ready | error | uninstalled, uninstalled → installed (reinstall).
+ * upgrade_pending → ready | error | uninstalled, uninstalled → installed (reinstalación).
  *
- * @see {@link PluginStatus} — inferred union type
+ * @see {@link PluginStatus} — tipo de unión inferido
  * @see PLUGIN_SPEC.md §21.3 `plugins.status`
  */
 export const PLUGIN_STATUSES = [
@@ -386,8 +386,8 @@ export const PLUGIN_STATUSES = [
 export type PluginStatus = (typeof PLUGIN_STATUSES)[number];
 
 /**
- * Plugin classification categories. A plugin declares one or more categories
- * in its manifest to describe its primary purpose.
+ * Categorías de clasificación de plugins. Un plugin declara una o más categorías
+ * en su manifiesto para describir su propósito principal.
  *
  * @see PLUGIN_SPEC.md §6.2
  */
@@ -400,17 +400,17 @@ export const PLUGIN_CATEGORIES = [
 export type PluginCategory = (typeof PLUGIN_CATEGORIES)[number];
 
 /**
- * Named permissions the host grants to a plugin. Plugins declare required
- * capabilities in their manifest; the host enforces them at runtime via the
- * plugin capability validator.
+ * Permisos con nombre que el host otorga a un plugin. Los plugins declaran las
+ * capacidades requeridas en su manifiesto; el host las aplica en tiempo de
+ * ejecución mediante el validador de capacidades del plugin.
  *
- * Grouped into: Data Read, Data Write, Plugin State, Runtime/Integration,
- * Agent Tools, and UI.
+ * Agrupadas en: Lectura de datos, Escritura de datos, Estado del plugin,
+ * Tiempo de ejecución/Integración, Herramientas del agente y UI.
  *
  * @see PLUGIN_SPEC.md §15 — Capability Model
  */
 export const PLUGIN_CAPABILITIES = [
-  // Data Read
+  // Lectura de datos
   "companies.read",
   "projects.read",
   "project.workspaces.read",
@@ -423,7 +423,7 @@ export const PLUGIN_CAPABILITIES = [
   "goals.update",
   "activity.read",
   "costs.read",
-  // Data Write
+  // Escritura de datos
   "issues.create",
   "issues.update",
   "issue.comments.create",
@@ -437,17 +437,17 @@ export const PLUGIN_CAPABILITIES = [
   "agent.sessions.close",
   "activity.log.write",
   "metrics.write",
-  // Plugin State
+  // Estado del plugin
   "plugin.state.read",
   "plugin.state.write",
-  // Runtime / Integration
+  // Tiempo de ejecución / Integración
   "events.subscribe",
   "events.emit",
   "jobs.schedule",
   "webhooks.receive",
   "http.outbound",
   "secrets.read-ref",
-  // Agent Tools
+  // Herramientas del agente
   "agent.tools.register",
   // UI
   "instance.settings.register",
@@ -461,8 +461,8 @@ export const PLUGIN_CAPABILITIES = [
 export type PluginCapability = (typeof PLUGIN_CAPABILITIES)[number];
 
 /**
- * UI extension slot types. Each slot type corresponds to a mount point in the
- * Paperclip UI where plugin components can be rendered.
+ * Tipos de ranura de extensión de UI. Cada tipo de ranura corresponde a un punto
+ * de montaje en la UI de Paperclip donde se pueden renderizar componentes de plugins.
  *
  * @see PLUGIN_SPEC.md §19 — UI Extension Model
  */
@@ -484,9 +484,10 @@ export const PLUGIN_UI_SLOT_TYPES = [
 export type PluginUiSlotType = (typeof PLUGIN_UI_SLOT_TYPES)[number];
 
 /**
- * Reserved company-scoped route segments that plugin page routes may not claim.
+ * Segmentos de ruta reservados con alcance de empresa que las rutas de página
+ * de plugins no pueden reclamar.
  *
- * These map to first-class host pages under `/:companyPrefix/...`.
+ * Corresponden a páginas principales del host bajo `/:companyPrefix/...`.
  */
 export const PLUGIN_RESERVED_COMPANY_ROUTE_SEGMENTS = [
   "dashboard",
@@ -511,10 +512,11 @@ export type PluginReservedCompanyRouteSegment =
   (typeof PLUGIN_RESERVED_COMPANY_ROUTE_SEGMENTS)[number];
 
 /**
- * Launcher placement zones describe where a plugin-owned launcher can appear
- * in the host UI. These are intentionally aligned with current slot surfaces
- * so manifest authors can describe launch intent without coupling to a single
- * component implementation detail.
+ * Las zonas de colocación del lanzador describen dónde puede aparecer un lanzador
+ * propio de un plugin en la UI del host. Están alineadas intencionalmente con las
+ * superficies de ranuras actuales para que los autores de manifiestos puedan
+ * describir la intención de lanzamiento sin acoplarse al detalle de
+ * implementación de un componente específico.
  */
 export const PLUGIN_LAUNCHER_PLACEMENT_ZONES = [
   "page",
@@ -534,7 +536,7 @@ export const PLUGIN_LAUNCHER_PLACEMENT_ZONES = [
 export type PluginLauncherPlacementZone = (typeof PLUGIN_LAUNCHER_PLACEMENT_ZONES)[number];
 
 /**
- * Launcher action kinds describe what the launcher does when activated.
+ * Los tipos de acción del lanzador describen lo que hace el lanzador al activarse.
  */
 export const PLUGIN_LAUNCHER_ACTIONS = [
   "navigate",
@@ -547,8 +549,9 @@ export const PLUGIN_LAUNCHER_ACTIONS = [
 export type PluginLauncherAction = (typeof PLUGIN_LAUNCHER_ACTIONS)[number];
 
 /**
- * Optional size hints the host can use when rendering plugin-owned launcher
- * destinations such as overlays, drawers, or full page handoffs.
+ * Sugerencias de tamaño opcionales que el host puede usar al renderizar destinos
+ * del lanzador propios del plugin, como superposiciones, paneles laterales o
+ * entregas de página completa.
  */
 export const PLUGIN_LAUNCHER_BOUNDS = [
   "inline",
@@ -560,8 +563,8 @@ export const PLUGIN_LAUNCHER_BOUNDS = [
 export type PluginLauncherBounds = (typeof PLUGIN_LAUNCHER_BOUNDS)[number];
 
 /**
- * Render environments describe the container a launcher expects after it is
- * activated. The current host may map these to concrete UI primitives.
+ * Los entornos de renderizado describen el contenedor que un lanzador espera
+ * después de activarse. El host actual puede asignarlos a primitivas concretas de UI.
  */
 export const PLUGIN_LAUNCHER_RENDER_ENVIRONMENTS = [
   "hostInline",
@@ -574,7 +577,7 @@ export type PluginLauncherRenderEnvironment =
   (typeof PLUGIN_LAUNCHER_RENDER_ENVIRONMENTS)[number];
 
 /**
- * Entity types that a `detailTab` UI slot can attach to.
+ * Tipos de entidad a los que una ranura de UI `detailTab` puede adjuntarse.
  *
  * @see PLUGIN_SPEC.md §19.3 — Detail Tabs
  */
@@ -589,8 +592,8 @@ export const PLUGIN_UI_SLOT_ENTITY_TYPES = [
 export type PluginUiSlotEntityType = (typeof PLUGIN_UI_SLOT_ENTITY_TYPES)[number];
 
 /**
- * Scope kinds for plugin state storage. Determines the granularity at which
- * a plugin stores key-value state data.
+ * Tipos de alcance para el almacenamiento de estado del plugin. Determinan la
+ * granularidad con la que un plugin almacena datos de estado clave-valor.
  *
  * @see PLUGIN_SPEC.md §21.3 `plugin_state.scope_kind`
  */
@@ -606,7 +609,7 @@ export const PLUGIN_STATE_SCOPE_KINDS = [
 ] as const;
 export type PluginStateScopeKind = (typeof PLUGIN_STATE_SCOPE_KINDS)[number];
 
-/** Statuses for a plugin's scheduled job definition. */
+/** Estados de la definición de trabajo programado de un plugin. */
 export const PLUGIN_JOB_STATUSES = [
   "active",
   "paused",
@@ -614,7 +617,7 @@ export const PLUGIN_JOB_STATUSES = [
 ] as const;
 export type PluginJobStatus = (typeof PLUGIN_JOB_STATUSES)[number];
 
-/** Statuses for individual job run executions. */
+/** Estados de ejecuciones individuales de trabajos. */
 export const PLUGIN_JOB_RUN_STATUSES = [
   "pending",
   "queued",
@@ -625,7 +628,7 @@ export const PLUGIN_JOB_RUN_STATUSES = [
 ] as const;
 export type PluginJobRunStatus = (typeof PLUGIN_JOB_RUN_STATUSES)[number];
 
-/** What triggered a particular job run. */
+/** Qué desencadenó una ejecución de trabajo específica. */
 export const PLUGIN_JOB_RUN_TRIGGERS = [
   "schedule",
   "manual",
@@ -633,7 +636,7 @@ export const PLUGIN_JOB_RUN_TRIGGERS = [
 ] as const;
 export type PluginJobRunTrigger = (typeof PLUGIN_JOB_RUN_TRIGGERS)[number];
 
-/** Statuses for inbound webhook deliveries. */
+/** Estados de entregas entrantes de webhooks. */
 export const PLUGIN_WEBHOOK_DELIVERY_STATUSES = [
   "pending",
   "success",
@@ -642,8 +645,8 @@ export const PLUGIN_WEBHOOK_DELIVERY_STATUSES = [
 export type PluginWebhookDeliveryStatus = (typeof PLUGIN_WEBHOOK_DELIVERY_STATUSES)[number];
 
 /**
- * Core domain event types that plugins can subscribe to via the
- * `events.subscribe` capability.
+ * Tipos de eventos principales del dominio a los que los plugins pueden suscribirse
+ * mediante la capacidad `events.subscribe`.
  *
  * @see PLUGIN_SPEC.md §16 — Event System
  */
@@ -675,7 +678,8 @@ export const PLUGIN_EVENT_TYPES = [
 export type PluginEventType = (typeof PLUGIN_EVENT_TYPES)[number];
 
 /**
- * Error codes returned by the plugin bridge when a UI → worker call fails.
+ * Códigos de error devueltos por el puente de plugins cuando falla una llamada
+ * de UI → worker.
  *
  * @see PLUGIN_SPEC.md §19.7 — Error Propagation Through The Bridge
  */

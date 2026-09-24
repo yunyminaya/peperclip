@@ -1,171 +1,171 @@
-# Task Management Data Model
+# Modelo de datos de gestión de tareas
 
-Reference for how task tracking works in Paperclip. Describes the entities, their
-relationships, and the rules governing task lifecycle. Written as a target model
--- some of this is already implemented, some is aspirational.
+Referencia de cómo funciona el seguimiento de tareas en Paperclip. Describe las entidades, sus
+relaciones y las reglas que rigen el ciclo de vida de las tareas. Escrito como modelo objetivo
+— parte de esto ya está implementado, parte es aspiracional.
 
 ---
 
-## Entity Hierarchy
+## Jerarquía de entidades
 
 ```
 Workspace
-  Initiatives          (roadmap-level objectives, span quarters)
-    Projects           (time-bound deliverables, can span teams)
-      Milestones       (stages within a project)
-        Issues         (units of work, the core entity)
-          Sub-issues   (broken-down work under a parent issue)
+  Initiatives          (objetivos a nivel de roadmap, abarcan trimestres)
+    Projects           (entregables con plazo definido, pueden abarcar equipos)
+      Milestones       (etapas dentro de un proyecto)
+        Issues         (unidades de trabajo, la entidad central)
+          Sub-issues   (trabajo desglosado bajo un issue padre)
 ```
 
-Everything flows down. An initiative contains projects; a project contains
-milestones and issues; an issue can have sub-issues. Each level adds
-granularity.
+Todo fluye hacia abajo. Una iniciativa contiene proyectos; un proyecto contiene
+hitos e issues; un issue puede tener sub-issues. Cada nivel agrega
+granularidad.
 
 ---
 
-## Issues (Core Entity)
+## Issues (entidad central)
 
-An issue is the fundamental unit of work.
+Un issue es la unidad fundamental de trabajo.
 
-### Fields
+### Campos
 
 | Field         | Type             | Required | Notes                                                             |
 | ------------- | ---------------- | -------- | ----------------------------------------------------------------- |
-| `id`          | uuid             | yes      | Primary key                                                       |
-| `identifier`  | string           | computed | Human-readable, e.g. `ENG-123` (team key + auto-increment number) |
-| `title`       | string           | yes      | Short summary                                                     |
-| `description` | text/markdown    | no       | Full description, supports markdown                               |
-| `status`      | WorkflowState FK | yes      | Defaults to team's default state                                  |
-| `priority`    | enum (0-4)       | no       | Defaults to 0 (none). See Priority section.                       |
-| `estimate`    | number           | no       | Complexity/size points                                            |
+| `id`          | uuid             | yes      | Clave primaria                                                    |
+| `identifier`  | string           | computed | Legible para humanos, p. ej. `ENG-123` (clave del equipo + número autoincremental) |
+| `title`       | string           | yes      | Resumen corto                                                     |
+| `description` | text/markdown    | no       | Descripción completa, admite markdown                             |
+| `status`      | WorkflowState FK | yes      | Por defecto, el estado predeterminado del equipo                  |
+| `priority`    | enum (0-4)       | no       | Por defecto 0 (ninguna). Ver sección Prioridad.                   |
+| `estimate`    | number           | no       | Puntos de complejidad/tamaño                                      |
 | `dueDate`     | date             | no       |                                                                   |
-| `teamId`      | uuid FK          | yes      | Every issue belongs to exactly one team                           |
-| `projectId`   | uuid FK          | no       | At most one project per issue                                     |
-| `milestoneId` | uuid FK          | no       | At most one milestone per issue                                   |
-| `assigneeId`  | uuid FK          | no       | **Single assignee.** See Assignees section.                       |
-| `creatorId`   | uuid FK          | no       | Who created it                                                    |
-| `parentId`    | uuid FK (self)   | no       | Parent issue, for sub-issue relationships                         |
-| `goalId`      | uuid FK          | no       | Linked objective/goal                                             |
-| `sortOrder`   | float            | no       | Ordering within views                                             |
+| `teamId`      | uuid FK          | yes      | Cada issue pertenece a exactamente un equipo                      |
+| `projectId`   | uuid FK          | no       | Como máximo un proyecto por issue                                 |
+| `milestoneId` | uuid FK          | no       | Como máximo un hito por issue                                     |
+| `assigneeId`  | uuid FK          | no       | **Un solo asignado.** Ver sección Asignados.                      |
+| `creatorId`   | uuid FK          | no       | Quién lo creó                                                     |
+| `parentId`    | uuid FK (self)   | no       | Issue padre, para relaciones de sub-issues                        |
+| `goalId`      | uuid FK          | no       | Objetivo vinculado                                                |
+| `sortOrder`   | float            | no       | Orden dentro de las vistas                                        |
 | `createdAt`   | timestamp        | yes      |                                                                   |
 | `updatedAt`   | timestamp        | yes      |                                                                   |
-| `startedAt`   | timestamp        | computed | When issue entered a "started" state                              |
-| `completedAt` | timestamp        | computed | When issue entered a "completed" state                            |
-| `cancelledAt` | timestamp        | computed | When issue entered a "cancelled" state                            |
-| `archivedAt`  | timestamp        | no       | Soft archive                                                      |
+| `startedAt`   | timestamp        | computed | Cuándo el issue entró a un estado "iniciado"                      |
+| `completedAt` | timestamp        | computed | Cuándo el issue entró a un estado "completado"                    |
+| `cancelledAt` | timestamp        | computed | Cuándo el issue entró a un estado "cancelado"                     |
+| `archivedAt`  | timestamp        | no       | Archivado suave                                                   |
 
 ---
 
-## Workflow States
+## Estados de flujo de trabajo
 
-Issue status is **not** a flat enum. It's a team-specific set of named states,
-each belonging to one of these fixed **categories**:
+El estado de un issue **no** es un enum plano. Es un conjunto de estados con nombre específico de cada equipo,
+cada uno perteneciente a una de estas **categorías** fijas:
 
-| Category      | Purpose                      | Example States                  |
-| ------------- | ---------------------------- | ------------------------------- |
-| **Triage**    | Incoming, needs review       | Triage                          |
-| **Backlog**   | Accepted, not ready for work | Backlog, Icebox                 |
-| **Unstarted** | Ready but not begun          | Todo, Ready                     |
-| **Started**   | Active work                  | In Progress, In Review, In QA   |
-| **Completed** | Done                         | Done, Shipped                   |
-| **Cancelled** | Rejected or abandoned        | Cancelled, Won't Fix, Duplicate |
+| Categoría   | Propósito                       | Estados de ejemplo                  |
+| ----------- | ------------------------------- | ----------------------------------- |
+| **Triaje**  | Entrante, necesita revisión     | Triaje                              |
+| **Backlog** | Aceptado, no listo para trabajar| Backlog, Icebox                     |
+| **Sin iniciar** | Listo pero no comenzado     | Pendiente, Listo                     |
+| **Iniciado**| Trabajo activo                  | En progreso, En revisión, En QA     |
+| **Completado** | Terminado                    | Terminado, Publicado                 |
+| **Cancelado** | Rechazado o abandonado        | Cancelado, No se arregla, Duplicado |
 
-### Rules
+### Reglas
 
-- Each team defines its own workflow states within these categories
-- Teams must have at least one state per category (Triage is optional)
-- Custom states can be added within any category (e.g. "In Review" under Started)
-- Categories are fixed and ordered -- you can reorder states _within_ a category
-  but not the categories themselves
-- New issues default to the team's first Backlog state
-- Moving an issue to a Started state auto-sets `startedAt`; Completed sets
-  `completedAt`; Cancelled sets `cancelledAt`
-- Marking an issue as a duplicate auto-moves it to a Cancelled state
+- Cada equipo define sus propios estados de flujo de trabajo dentro de estas categorías
+- Los equipos deben tener al menos un estado por categoría (Triaje es opcional)
+- Se pueden agregar estados personalizados dentro de cualquier categoría (p. ej. "En revisión" bajo Iniciado)
+- Las categorías son fijas y ordenadas — puedes reordenar los estados _dentro_ de una categoría
+  pero no las categorías en sí
+- Los issues nuevos usan por defecto el primer estado de Backlog del equipo
+- Mover un issue a un estado Iniciado establece automáticamente `startedAt`; Completado establece
+  `completedAt`; Cancelado establece `cancelledAt`
+- Marcar un issue como duplicado lo mueve automáticamente a un estado Cancelado
 
-### WorkflowState Fields
+### Campos de WorkflowState
 
 | Field         | Type    | Notes                                                                         |
 | ------------- | ------- | ----------------------------------------------------------------------------- |
 | `id`          | uuid    |                                                                               |
-| `name`        | string  | Display name, e.g. "In Review"                                                |
-| `type`        | enum    | One of: `triage`, `backlog`, `unstarted`, `started`, `completed`, `cancelled` |
-| `color`       | string  | Hex color                                                                     |
-| `description` | string  | Optional guidance text                                                        |
-| `position`    | float   | Ordering within the category                                                  |
-| `teamId`      | uuid FK | Each state belongs to one team                                                |
+| `name`        | string  | Nombre visible, p. ej. "En revisión"                                          |
+| `type`        | enum    | Uno de: `triage`, `backlog`, `unstarted`, `started`, `completed`, `cancelled` |
+| `color`       | string  | Color hexadecimal                                                             |
+| `description` | string  | Texto de guía opcional                                                        |
+| `position`    | float   | Orden dentro de la categoría                                                  |
+| `teamId`      | uuid FK | Cada estado pertenece a un equipo                                             |
 
 ---
 
-## Priority
+## Prioridad
 
-A fixed, non-customizable numeric scale:
+Una escala numérica fija, no personalizable:
 
-| Value | Label       | Notes                                  |
-| ----- | ----------- | -------------------------------------- |
-| 0     | No priority | Default. Sorts last in priority views. |
-| 1     | Urgent      | Could trigger immediate notification   |
-| 2     | High        |                                        |
-| 3     | Medium      |                                        |
-| 4     | Low         |                                        |
+| Value | Label        | Notes                                            |
+| ----- | ------------ | ------------------------------------------------ |
+| 0     | Sin prioridad| Por defecto. Se ordena al final en las vistas de prioridad. |
+| 1     | Urgente      | Podría activar una notificación inmediata        |
+| 2     | Alta         |                                                  |
+| 3     | Media        |                                                  |
+| 4     | Baja         |                                                  |
 
-The scale is intentionally small and fixed. Use labels for additional
-categorization rather than adding more priority levels.
+La escala es intencionalmente pequeña y fija. Usa etiquetas para categorización adicional
+en lugar de agregar más niveles de prioridad.
 
 ---
 
-## Teams
+## Equipos
 
-Teams are the primary organizational unit. Almost everything is scoped to a
-team.
+Los equipos son la unidad organizativa principal. Casi todo está limitado a un
+equipo.
 
 | Field         | Type   | Notes                                                          |
 | ------------- | ------ | -------------------------------------------------------------- |
 | `id`          | uuid   |                                                                |
-| `name`        | string | e.g. "Engineering"                                             |
-| `key`         | string | Short uppercase prefix, e.g. "ENG". Used in issue identifiers. |
+| `name`        | string | p. ej. "Ingeniería"                                            |
+| `key`         | string | Prefijo corto en mayúsculas, p. ej. "ENG". Usado en identificadores de issues. |
 | `description` | string |                                                                |
 
-### Team Scoping
+### Alcance por equipo
 
-- Each issue belongs to exactly one team
-- Workflow states are per-team
-- Labels can be team-scoped or workspace-wide
-- Projects can span multiple teams
+- Cada issue pertenece a exactamente un equipo
+- Los estados de flujo de trabajo son por equipo
+- Las etiquetas pueden estar limitadas a un equipo o ser de todo el workspace
+- Los proyectos pueden abarcar varios equipos
 
-In our context (AI company), teams map to functional areas. Each agent reports
-to a team based on role.
+En nuestro contexto (empresa de IA), los equipos corresponden a áreas funcionales. Cada agente reporta
+a un equipo según su rol.
 
 ---
 
-## Projects
+## Proyectos
 
-Projects group issues toward a specific, time-bound deliverable. They can span
-multiple teams.
+Los proyectos agrupan issues hacia un entregable específico con plazo definido. Pueden abarcar
+varios equipos.
 
 | Field         | Type      | Notes                                                         |
-| ------------- | --------- | ------------------------------------------------------------- |
+| ------------- | --------- | -------------------------------------------------------------- |
 | `id`          | uuid      |                                                               |
 | `name`        | string    |                                                               |
 | `description` | text      |                                                               |
-| `summary`     | string    | Short blurb                                                   |
+| `summary`     | string    | Resumen corto                                                 |
 | `status`      | enum      | `backlog`, `planned`, `in_progress`, `completed`, `cancelled` |
-| `leadId`      | uuid FK   | Single owner for accountability                               |
+| `leadId`      | uuid FK   | Un solo dueño para responsabilidad                            |
 | `startDate`   | date      |                                                               |
 | `targetDate`  | date      |                                                               |
 | `createdAt`   | timestamp |                                                               |
 | `updatedAt`   | timestamp |                                                               |
 
-### Rules
+### Reglas
 
-- An issue belongs to at most one project
-- Project status is **manually** updated (not auto-derived from issue states)
-- Projects can contain documents (specs, briefs) as linked entities
+- Un issue pertenece a como máximo un proyecto
+- El estado del proyecto se actualiza **manualmente** (no se deriva automáticamente de los estados de los issues)
+- Los proyectos pueden contener documentos (especificaciones, resúmenes) como entidades vinculadas
 
 ---
 
-## Milestones
+## Hitos
 
-Milestones subdivide a project into meaningful stages.
+Los hitos subdividen un proyecto en etapas significativas.
 
 | Field         | Type    | Notes                          |
 | ------------- | ------- | ------------------------------ |
@@ -173,42 +173,42 @@ Milestones subdivide a project into meaningful stages.
 | `name`        | string  |                                |
 | `description` | text    |                                |
 | `targetDate`  | date    |                                |
-| `projectId`   | uuid FK | Belongs to exactly one project |
+| `projectId`   | uuid FK | Pertenece a exactamente un proyecto |
 | `sortOrder`   | float   |                                |
 
-Issues within a project can optionally be assigned to a milestone.
+Los issues dentro de un proyecto pueden asignarse opcionalmente a un hito.
 
 ---
 
-## Labels / Tags
+## Etiquetas
 
-Labels provide categorical tagging. They exist at two scopes:
+Las etiquetas proporcionan categorización por etiquetas. Existen en dos alcances:
 
-- **Workspace labels** -- available across all teams
-- **Team labels** -- restricted to a specific team
+- **Etiquetas de workspace** — disponibles en todos los equipos
+- **Etiquetas de equipo** — restringidas a un equipo específico
 
-| Field         | Type           | Notes                           |
-| ------------- | -------------- | ------------------------------- |
-| `id`          | uuid           |                                 |
-| `name`        | string         |                                 |
-| `color`       | string         | Hex color                       |
-| `description` | string         | Contextual guidance             |
-| `teamId`      | uuid FK        | Null for workspace-level labels |
-| `groupId`     | uuid FK (self) | Parent label for grouping       |
+| Field         | Type           | Notes                               |
+| ------------- | -------------- | ----------------------------------- |
+| `id`          | uuid           |                                     |
+| `name`        | string         |                                     |
+| `color`       | string         | Color hexadecimal                   |
+| `description` | string         | Guía contextual                     |
+| `teamId`      | uuid FK        | Null para etiquetas a nivel de workspace |
+| `groupId`     | uuid FK (self) | Etiqueta padre para agrupar         |
 
-### Label Groups
+### Grupos de etiquetas
 
-Labels can be organized into one level of nesting (group -> labels):
+Las etiquetas se pueden organizar en un nivel de anidación (grupo -> etiquetas):
 
-- Labels within a group are **mutually exclusive** on an issue (only one can be
-  applied from each group)
-- Groups cannot contain other groups (single nesting level only)
-- Example: group "Type" contains labels "Bug", "Feature", "Chore" -- an issue
-  gets at most one
+- Las etiquetas dentro de un grupo son **mutuamente excluyentes** en un issue (solo se puede aplicar
+  una de cada grupo)
+- Los grupos no pueden contener otros grupos (solo un nivel de anidación)
+- Ejemplo: el grupo "Tipo" contiene las etiquetas "Error", "Funcionalidad", "Tarea" — un issue
+  recibe como máximo una
 
-### Issue-Label Junction
+### Unión issue-etiqueta
 
-Many-to-many via `issue_labels` join table:
+Muchos a muchos vía la tabla de unión `issue_labels`:
 
 | Field     | Type    |
 | --------- | ------- |
@@ -217,135 +217,135 @@ Many-to-many via `issue_labels` join table:
 
 ---
 
-## Issue Relations / Dependencies
+## Relaciones / dependencias de issues
 
-Four relation types between issues:
+Cuatro tipos de relación entre issues:
 
-| Type         | Meaning                          | Behavior                                      |
-| ------------ | -------------------------------- | --------------------------------------------- |
-| `related`    | General connection               | Informational link                            |
-| `blocks`     | This issue blocks another        | Blocked issue shown with flag                 |
-| `blocked_by` | This issue is blocked by another | Inverse of blocks                             |
-| `duplicate`  | This issue duplicates another    | Auto-moves the duplicate to a Cancelled state |
+| Type         | Meaning                               | Behavior                                      |
+| ------------ | ------------------------------------- | --------------------------------------------- |
+| `related`    | Conexión general                      | Enlace informativo                            |
+| `blocks`     | Este issue bloquea a otro             | El issue bloqueado se muestra con un indicador|
+| `blocked_by` | Este issue está bloqueado por otro    | Inverso de blocks                              |
+| `duplicate`  | Este issue duplica a otro             | Mueve automáticamente el duplicado a un estado Cancelado |
 
-### IssueRelation Fields
+### Campos de IssueRelation
 
 | Field            | Type    | Notes                                          |
 | ---------------- | ------- | ---------------------------------------------- |
 | `id`             | uuid    |                                                |
 | `type`           | enum    | `related`, `blocks`, `blocked_by`, `duplicate` |
-| `issueId`        | uuid FK | Source issue                                   |
-| `relatedIssueId` | uuid FK | Target issue                                   |
+| `issueId`        | uuid FK | Issue origen                                   |
+| `relatedIssueId` | uuid FK | Issue destino                                  |
 
-### Rules
+### Reglas
 
-- When a blocking issue is resolved, the relation becomes informational (flag
-  turns green)
-- Duplicate is one-directional (you mark the duplicate, not the canonical)
-- Blocking is **not transitive** at the system level (A blocks B, B blocks C
-  does not auto-block A->C)
-
----
-
-## Assignees
-
-**Single-assignee model** by design.
-
-- Each issue has at most one assignee at a time
-- This is deliberate: clear ownership prevents diffusion of responsibility
-- For collaborative work involving multiple people, use **sub-issues** with
-  different assignees
-
-In our context, agents are the assignees. The `assigneeId` FK on issues
-points to the `agents` table.
+- Cuando se resuelve un issue bloqueante, la relación pasa a ser informativa (el
+  indicador cambia a verde)
+- Duplicado es unidireccional (marcas el duplicado, no el canónico)
+- El bloqueo **no es transitivo** a nivel de sistema (A bloquea B, B bloquea C
+  no bloquea automáticamente A->C)
 
 ---
 
-## Sub-issues (Parent/Child)
+## Asignados
 
-Issues support parent/child nesting.
+Modelo de **un solo asignado** por diseño.
 
-- Setting `parentId` on an issue makes it a sub-issue
-- Sub-issues can themselves have sub-issues (multi-level nesting)
-- Sub-issues inherit **project** from their parent at creation
-  time (not retroactively), but NOT team, labels, or assignee
+- Cada issue tiene como máximo un asignado a la vez
+- Esto es deliberado: la responsabilidad clara evita la difusión de la responsabilidad
+- Para trabajo colaborativo que involucre a varias personas, usa **sub-issues** con
+  diferentes asignados
 
-### Auto-close
-
-- **Sub-issue auto-close**: when parent completes, remaining sub-issues
-  auto-complete
-
-### Conversions
-
-- Existing issues can be reparented (add or remove `parentId`)
-- A parent issue with many sub-issues can be "promoted" to a project
+En nuestro contexto, los agentes son los asignados. El FK `assigneeId` en los issues
+apunta a la tabla `agents`.
 
 ---
 
-## Estimates
+## Sub-issues (padre/hijo)
 
-Point-based estimation, configured per-team.
+Los issues admiten anidación padre/hijo.
 
-### Available Scales
+- Establecer `parentId` en un issue lo convierte en sub-issue
+- Los sub-issues pueden a su vez tener sub-issues (anidación multinivel)
+- Los sub-issues heredan el **proyecto** de su padre al momento de la creación
+  (no retroactivamente), pero NO el equipo, las etiquetas ni el asignado
+
+### Cierre automático
+
+- **Cierre automático de sub-issues**: cuando el padre se completa, los sub-issues restantes
+  se completan automáticamente
+
+### Conversiones
+
+- Los issues existentes pueden cambiar de padre (agregar o quitar `parentId`)
+- Un issue padre con muchos sub-issues puede "promoverse" a proyecto
+
+---
+
+## Estimaciones
+
+Estimación basada en puntos, configurada por equipo.
+
+### Escalas disponibles
 
 | Scale       | Values                   |
 | ----------- | ------------------------ |
 | Exponential | 1, 2, 4, 8, 16 (+32, 64) |
 
-Unestimated issues default to 1 point for progress/velocity calculations.
+Los issues sin estimar usan 1 punto por defecto para los cálculos de progreso/velocidad.
 
 ---
 
-## Comments
+## Comentarios
 
-| Field        | Type           | Notes                      |
-| ------------ | -------------- | -------------------------- |
-| `id`         | uuid           |                            |
-| `body`       | text/markdown  |                            |
-| `issueId`    | uuid FK        |                            |
-| `authorId`   | uuid FK        | Can be a user or agent     |
-| `parentId`   | uuid FK (self) | For threaded replies       |
-| `resolvedAt` | timestamp      | If the thread was resolved |
-| `createdAt`  | timestamp      |                            |
-| `updatedAt`  | timestamp      |                            |
+| Field        | Type           | Notes                        |
+| ------------ | -------------- | ---------------------------- |
+| `id`         | uuid           |                              |
+| `body`       | text/markdown  |                              |
+| `issueId`    | uuid FK        |                              |
+| `authorId`   | uuid FK        | Puede ser un usuario o agente |
+| `parentId`   | uuid FK (self) | Para respuestas en hilo      |
+| `resolvedAt` | timestamp      | Si el hilo fue resuelto      |
+| `createdAt`  | timestamp      |                              |
+| `updatedAt`  | timestamp      |                              |
 
 ---
 
-## Initiatives
+## Iniciativas
 
-The highest-level planning construct. Groups projects toward a strategic
-objective. Initiatives have strategic owners, and are typically measured by outcomes/OKRs, not “done/not done.”
+El constructo de planificación de más alto nivel. Agrupa proyectos hacia un
+objetivo estratégico. Las iniciativas tienen dueños estratégicos y normalmente se miden por resultados/OKR, no por "hecho/no hecho".
 
 | Field         | Type    | Notes                            |
 | ------------- | ------- | -------------------------------- |
 | `id`          | uuid    |                                  |
 | `name`        | string  |                                  |
 | `description` | text    |                                  |
-| `ownerId`     | uuid FK | Single owner                     |
+| `ownerId`     | uuid FK | Un solo dueño                    |
 | `status`      | enum    | `planned`, `active`, `completed` |
 | `targetDate`  | date    |                                  |
 
-Initiatives contain projects (many-to-many) and provide a rollup view of
-progress across all contained projects.
+Las iniciativas contienen proyectos (muchos a muchos) y proporcionan una vista consolidada de
+progreso de todos los proyectos contenidos.
 
 ---
 
-## Identifiers
+## Identificadores
 
-Issues use human-readable identifiers: `{TEAM_KEY}-{NUMBER}`
+Los issues usan identificadores legibles para humanos: `{TEAM_KEY}-{NUMBER}`
 
-- Team key: short uppercase string set per team (e.g. "ENG", "DES")
-- Number: auto-incrementing integer per team
-- Examples: `ENG-123`, `DES-45`, `OPS-7`
-- If an issue moves between teams, it gets a new identifier and the old one is
-  preserved in `previousIdentifiers`
+- Clave del equipo: cadena corta en mayúsculas definida por equipo (p. ej. "ENG", "DES")
+- Número: entero autoincremental por equipo
+- Ejemplos: `ENG-123`, `DES-45`, `OPS-7`
+- Si un issue cambia de equipo, recibe un nuevo identificador y el anterior se
+  conserva en `previousIdentifiers`
 
-This is far better for human communication than UUIDs. People say "grab ENG-42"
-not "grab 7f3a...".
+Esto es mucho mejor para la comunicación humana que los UUID. La gente dice "toma ENG-42"
+no "toma 7f3a...".
 
 ---
 
-## Entity Relationships
+## Relaciones de entidades
 
 ```
 Team (1) ----< (many) Issue
@@ -372,36 +372,35 @@ Initiative (many) >---- (1) Owner (Agent)
 
 ---
 
-## Implementation Priority
+## Prioridad de implementación
 
-Recommended build order, highest value first:
+Orden de construcción recomendado, de mayor valor primero:
 
-### High Value
+### Alto valor
 
-1. **Teams** -- `teams` table + `teamId` FK on issues. Foundation for
-   human-readable identifiers (`ENG-123`) and per-team workflow states. Most
-   other features depend on team scoping, so build this first.
-2. **Workflow states** -- `workflow_states` table + `stateId` FK on issues.
-   Per-team custom workflows with category-based state transitions.
-3. **Labels** -- `labels` + `issue_labels` tables. Categorization
-   (bug/feature/chore, area tags, etc.) without polluting the status field.
-4. **Issue Relations** -- `issue_relations` table. Blocking/blocked-by is
-   essential for agent coordination (agent A can't start until agent B finishes).
-5. **Sub-issues** -- `parentId` self-FK on `issues`. Lets agents break down
-   large tasks.
-6. **Comments** -- `comments` table. Agents need to communicate about issues
-   without overwriting the description.
+1. **Equipos** — tabla `teams` + FK `teamId` en issues. Base para
+   identificadores legibles para humanos (`ENG-123`) y estados de flujo de trabajo por equipo. La mayoría de las
+   otras funciones dependen del alcance por equipo, así que construye esto primero.
+2. **Estados de flujo de trabajo** — tabla `workflow_states` + FK `stateId` en issues.
+   Flujos de trabajo personalizados por equipo con transiciones de estado basadas en categorías.
+3. **Etiquetas** — tablas `labels` + `issue_labels`. Categorización
+   (error/funcionalidad/tarea, etiquetas de área, etc.) sin contaminar el campo de estado.
+4. **Relaciones de issues** — tabla `issue_relations`. Bloqueante/bloqueado por es
+   esencial para la coordinación de agentes (el agente A no puede empezar hasta que el agente B termine).
+5. **Sub-issues** — self-FK `parentId` en `issues`. Permite a los agentes desglosar
+   tareas grandes.
+6. **Comentarios** — tabla `comments`. Los agentes necesitan comunicarse sobre los issues
+   sin sobrescribir la descripción.
 
-### Medium Value
+### Valor medio
 
-7. **Transition timestamps** -- `startedAt`, `completedAt`, `cancelledAt` on
-   issues, auto-set by workflow state changes. Enables velocity tracking and SLA
-   measurement.
+7. **Marcas de tiempo de transición** — `startedAt`, `completedAt`, `cancelledAt` en
+   issues, establecidos automáticamente por los cambios de estado del flujo de trabajo. Permite el seguimiento de velocidad y la medición de SLA.
 
-### Lower Priority (For Later)
+### Menor prioridad (para después)
 
-8. **Milestones** -- Useful once projects get complex enough to need stages.
-9. **Initiatives** -- Useful once we have multiple projects that serve a common
-   strategic goal.
-10. **Estimates** -- Useful once we want to measure throughput and predict
-    capacity.
+8. **Hitos** — Útiles una vez que los proyectos sean lo suficientemente complejos como para necesitar etapas.
+9. **Iniciativas** — Útiles una vez que tengamos varios proyectos que sirvan a un
+   objetivo estratégico común.
+10. **Estimaciones** — Útiles una vez que queramos medir el rendimiento y predecir
+    la capacidad.

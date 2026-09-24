@@ -1,9 +1,9 @@
 /**
- * Shared color-contrast utilities for pill / badge / chip components.
+ * Utilidades compartidas de contraste de color para componentes pill / badge / chip.
  *
- * Uses WCAG 2.1 relative-luminance contrast ratios so text is always
- * readable, even on semi-transparent backgrounds composited over dark or
- * light page backgrounds.
+ * Usa razones de contraste de luminancia relativa WCAG 2.1 para que el texto
+ * sea siempre legible, incluso sobre fondos semitransparentes compuestos
+ * sobre fondos de página oscuros o claros.
  */
 
 const DARK_BG = { r: 24, g: 24, b: 27 }; // zinc-900 (#18181b)
@@ -54,7 +54,7 @@ function isDarkMode(): boolean {
 }
 
 /**
- * Composite a foreground RGB at the given alpha over a background RGB.
+ * Compone un RGB de primer plano con el alfa dado sobre un RGB de fondo.
  */
 function composite(
   fg: { r: number; g: number; b: number },
@@ -72,8 +72,8 @@ const TEXT_LIGHT = "#f8fafc";
 const TEXT_DARK = "#111827";
 
 /**
- * Pick a readable text color for a solid background.
- * Uses WCAG contrast ratios to choose between light and dark text.
+ * Elige un color de texto legible para un fondo sólido.
+ * Usa razones de contraste WCAG para elegir entre texto claro y oscuro.
  */
 export function pickTextColorForSolidBg(hexColor: string): string {
   const rgb = hexToRgb(hexColor);
@@ -87,11 +87,11 @@ export function pickTextColorForSolidBg(hexColor: string): string {
 }
 
 /**
- * Pick a readable text color for a semi-transparent pill background.
+ * Elige un color de texto legible para un fondo de pill semitransparente.
  *
- * Composites `rgba(hexColor, alpha)` over the current page background
- * (dark or light mode) and then picks the text color with better
- * WCAG contrast ratio.
+ * Compone `rgba(hexColor, alpha)` sobre el fondo de la página actual
+ * (modo oscuro o claro) y luego elige el color de texto con mejor
+ * razón de contraste WCAG.
  */
 export function pickTextColorForPillBg(hexColor: string, alpha = 0.22): string {
   const fg = hexToRgb(hexColor);

@@ -58,9 +58,9 @@ function buildPiModelDiscoveryFailureCheck(message: string): AdapterEnvironmentC
     return {
       code: "pi_package_install_failed",
       level: "warn",
-      message: "Pi startup failed while installing configured package `npm:pi-driver`.",
+      message: "Pi falló al iniciar mientras instalaba el paquete configurado `npm:pi-driver`.",
       detail: message,
-      hint: "Remove `npm:pi-driver` from ~/.pi/agent/settings.json or set adapter env HOME to a clean Pi profile, then retry `pi --list-models`.",
+      hint: "Elimina `npm:pi-driver` de ~/.pi/agent/settings.json o configura el env HOME del adaptador con un perfil limpio de Pi, y reintenta `pi --list-models`.",
     };
   }
 
@@ -68,7 +68,7 @@ function buildPiModelDiscoveryFailureCheck(message: string): AdapterEnvironmentC
     code: "pi_models_discovery_failed",
     level: "warn",
     message,
-    hint: "Run `pi --list-models` manually to verify provider auth and config.",
+    hint: "Ejecuta `pi --list-models` manualmente para verificar la autenticación y la configuración del proveedor.",
   };
 }
 
@@ -85,13 +85,13 @@ export async function testEnvironment(
     checks.push({
       code: "pi_cwd_valid",
       level: "info",
-      message: `Working directory is valid: ${cwd}`,
+      message: `El directorio de trabajo es válido: ${cwd}`,
     });
   } catch (err) {
     checks.push({
       code: "pi_cwd_invalid",
       level: "error",
-      message: err instanceof Error ? err.message : "Invalid working directory",
+      message: err instanceof Error ? err.message : "Directorio de trabajo no válido",
       detail: cwd,
     });
   }
@@ -108,7 +108,7 @@ export async function testEnvironment(
     checks.push({
       code: "pi_command_skipped",
       level: "warn",
-      message: "Skipped command check because working directory validation failed.",
+      message: "Se omitió la verificación del comando porque falló la validación del directorio de trabajo.",
       detail: command,
     });
   } else {
@@ -117,13 +117,13 @@ export async function testEnvironment(
       checks.push({
         code: "pi_command_resolvable",
         level: "info",
-        message: `Command is executable: ${command}`,
+        message: `El comando es ejecutable: ${command}`,
       });
     } catch (err) {
       checks.push({
         code: "pi_command_unresolvable",
         level: "error",
-        message: err instanceof Error ? err.message : "Command is not executable",
+        message: err instanceof Error ? err.message : "El comando no es ejecutable",
         detail: command,
       });
     }
@@ -139,20 +139,20 @@ export async function testEnvironment(
         checks.push({
           code: "pi_models_discovered",
           level: "info",
-          message: `Discovered ${discovered.length} model(s) from Pi.`,
+          message: `Se descubrieron ${discovered.length} modelo(s) de Pi.`,
         });
       } else {
         checks.push({
           code: "pi_models_empty",
           level: "warn",
-          message: "Pi returned no models.",
-          hint: "Run `pi --list-models` and verify provider authentication.",
+          message: "Pi no devolvió modelos.",
+          hint: "Ejecuta `pi --list-models` y verifica la autenticación del proveedor.",
         });
       }
     } catch (err) {
       checks.push(
         buildPiModelDiscoveryFailureCheck(
-          err instanceof Error ? err.message : "Pi model discovery failed.",
+          err instanceof Error ? err.message : "Falló el descubrimiento de modelos de Pi.",
         ),
       );
     }
@@ -163,11 +163,11 @@ export async function testEnvironment(
     checks.push({
       code: "pi_model_required",
       level: "error",
-      message: "Pi requires a configured model in provider/model format.",
-      hint: "Set adapterConfig.model using an ID from `pi --list-models`.",
+      message: "Pi requiere un modelo configurado en formato proveedor/modelo.",
+      hint: "Configura adapterConfig.model usando un ID de `pi --list-models`.",
     });
   } else if (canRunProbe) {
-    // Verify model is in the list
+    // Verificar que el modelo esté en la lista
     try {
       const discovered = await discoverPiModelsCached({ command, cwd, env: runtimeEnv });
       const modelExists = discovered.some((m: { id: string }) => m.id === configuredModel);
@@ -175,28 +175,28 @@ export async function testEnvironment(
         checks.push({
           code: "pi_model_configured",
           level: "info",
-          message: `Configured model: ${configuredModel}`,
+          message: `Modelo configurado: ${configuredModel}`,
         });
       } else {
         checks.push({
           code: "pi_model_not_found",
           level: "warn",
-          message: `Configured model "${configuredModel}" not found in available models.`,
-          hint: "Run `pi --list-models` and choose a currently available provider/model ID.",
+          message: `El modelo configurado "${configuredModel}" no se encontró entre los modelos disponibles.`,
+          hint: "Ejecuta `pi --list-models` y elige un ID de proveedor/modelo disponible actualmente.",
         });
       }
     } catch {
-      // If we can't verify, just note it
+      // Si no se puede verificar, solo registrarlo
       checks.push({
         code: "pi_model_configured",
         level: "info",
-        message: `Configured model: ${configuredModel}`,
+        message: `Modelo configurado: ${configuredModel}`,
       });
     }
   }
 
   if (canRunProbe && configuredModel) {
-    // Parse model for probe
+    // Analizar el modelo para la sonda
     const provider = configuredModel.includes("/") 
       ? configuredModel.slice(0, configuredModel.indexOf("/")) 
       : "";
@@ -239,8 +239,8 @@ export async function testEnvironment(
         checks.push({
           code: "pi_hello_probe_timed_out",
           level: "warn",
-          message: "Pi hello probe timed out.",
-          hint: "Retry the probe. If this persists, run Pi manually in this working directory.",
+          message: "La sonda hello de Pi agotó el tiempo de espera.",
+          hint: "Reintenta la sonda. Si persiste, ejecuta Pi manualmente en este directorio de trabajo.",
         });
       } else if ((probe.exitCode ?? 1) === 0 && parsed.errors.length === 0) {
         const summary = (parsed.finalMessage || parsed.messages.join(" ")).trim();
@@ -249,39 +249,39 @@ export async function testEnvironment(
           code: hasHello ? "pi_hello_probe_passed" : "pi_hello_probe_unexpected_output",
           level: hasHello ? "info" : "warn",
           message: hasHello
-            ? "Pi hello probe succeeded."
-            : "Pi probe ran but did not return `hello` as expected.",
+            ? "La sonda hello de Pi se completó correctamente."
+            : "La sonda de Pi se ejecutó, pero no devolvió `hello` como se esperaba.",
           ...(summary ? { detail: summary.replace(/\s+/g, " ").trim().slice(0, 240) } : {}),
           ...(hasHello
             ? {}
             : {
-                hint: "Run `pi --mode json` manually and prompt `Respond with hello` to inspect output.",
+                hint: "Ejecuta `pi --mode json` manualmente con el prompt `Respond with hello` para inspeccionar la salida.",
               }),
         });
       } else if (PI_AUTH_REQUIRED_RE.test(authEvidence)) {
         checks.push({
           code: "pi_hello_probe_auth_required",
           level: "warn",
-          message: "Pi is installed, but provider authentication is not ready.",
+          message: "Pi está instalado, pero la autenticación del proveedor no está lista.",
           ...(detail ? { detail } : {}),
-          hint: "Set provider API key environment variable (e.g., ANTHROPIC_API_KEY, XAI_API_KEY) and retry.",
+          hint: "Configura la variable de entorno de la clave de API del proveedor (p. ej., ANTHROPIC_API_KEY, XAI_API_KEY) y reintenta.",
         });
       } else {
         checks.push({
           code: "pi_hello_probe_failed",
           level: "error",
-          message: "Pi hello probe failed.",
+          message: "La sonda hello de Pi falló.",
           ...(detail ? { detail } : {}),
-          hint: "Run `pi --mode json` manually in this working directory to debug.",
+          hint: "Ejecuta `pi --mode json` manualmente en este directorio de trabajo para depurar.",
         });
       }
     } catch (err) {
       checks.push({
         code: "pi_hello_probe_failed",
         level: "error",
-        message: "Pi hello probe failed.",
+        message: "La sonda hello de Pi falló.",
         detail: err instanceof Error ? err.message : String(err),
-        hint: "Run `pi --mode json` manually in this working directory to debug.",
+        hint: "Ejecuta `pi --mode json` manualmente en este directorio de trabajo para depurar.",
       });
     }
   }

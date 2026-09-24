@@ -1,25 +1,25 @@
 /**
- * `@paperclipai/plugin-sdk` — Paperclip plugin worker-side SDK.
+ * `@paperclipai/plugin-sdk`: SDK del lado del worker de plugins de Paperclip.
  *
- * This is the main entrypoint for plugin worker code.  For plugin UI bundles,
- * import from `@paperclipai/plugin-sdk/ui` instead.
+ * Este es el punto de entrada principal para el código de worker de plugin. Para
+ * paquetes de interfaz de plugin, importar desde `@paperclipai/plugin-sdk/ui`.
  *
  * @example
  * ```ts
- * // Plugin worker entrypoint (dist/worker.ts)
+ * // Punto de entrada del worker del plugin (dist/worker.ts)
  * import { definePlugin, runWorker, z } from "@paperclipai/plugin-sdk";
  *
  * const plugin = definePlugin({
  *   async setup(ctx) {
- *     ctx.logger.info("Plugin starting up");
+ *     ctx.logger.info("Plugin iniciándose");
  *
  *     ctx.events.on("issue.created", async (event) => {
- *       ctx.logger.info("Issue created", { issueId: event.entityId });
+ *       ctx.logger.info("Issue creado", { issueId: event.entityId });
  *     });
  *
  *     ctx.jobs.register("full-sync", async (job) => {
- *       ctx.logger.info("Starting full sync", { runId: job.runId });
- *       // ... sync implementation
+ *       ctx.logger.info("Iniciando sincronización completa", { runId: job.runId });
+ *       // ... implementación de sincronización
  *     });
  *
  *     ctx.data.register("sync-health", async ({ companyId }) => {
@@ -41,12 +41,12 @@
  * runWorker(plugin, import.meta.url);
  * ```
  *
- * @see PLUGIN_SPEC.md §14 — SDK Surface
- * @see PLUGIN_SPEC.md §29.2 — SDK Versioning
+ * @see PLUGIN_SPEC.md §14 — Superficie SDK
+ * @see PLUGIN_SPEC.md §29.2 — Versionado del SDK
  */
 
 // ---------------------------------------------------------------------------
-// Main factory
+// Fábrica principal
 // ---------------------------------------------------------------------------
 
 export { definePlugin } from "./define-plugin.js";
@@ -60,7 +60,7 @@ export {
   CapabilityDeniedError,
 } from "./host-client-factory.js";
 
-// JSON-RPC protocol helpers and constants
+// Helpers y constantes del protocolo JSON-RPC
 export {
   JSONRPC_VERSION,
   JSONRPC_ERROR_CODES,
@@ -85,10 +85,10 @@ export {
 } from "./protocol.js";
 
 // ---------------------------------------------------------------------------
-// Type exports
+// Exports de tipos
 // ---------------------------------------------------------------------------
 
-// Plugin definition and lifecycle types
+// Tipos de definición y ciclo de vida del plugin
 export type {
   PluginDefinition,
   PaperclipPlugin,
@@ -119,7 +119,7 @@ export type {
   HostClientHandlers,
 } from "./host-client-factory.js";
 
-// JSON-RPC protocol types
+// Tipos del protocolo JSON-RPC
 export type {
   JsonRpcId,
   JsonRpcRequest,
@@ -155,7 +155,7 @@ export type {
   WorkerToHostNotificationName,
 } from "./protocol.js";
 
-// Plugin context and all client interfaces
+// Contexto del plugin y todas las interfaces de cliente
 export type {
   PluginContext,
   PluginConfigClient,
@@ -185,7 +185,7 @@ export type {
   PluginLogger,
 } from "./types.js";
 
-// Supporting types for context clients
+// Tipos de apoyo para clientes de contexto
 export type {
   ScopeKey,
   EventFilter,
@@ -206,9 +206,10 @@ export type {
   Goal,
 } from "./types.js";
 
-// Manifest and constant types re-exported from @paperclipai/shared
-// Plugin authors import manifest types from here so they have a single
-// dependency (@paperclipai/plugin-sdk) for all plugin authoring needs.
+// Tipos de manifiesto y constantes reexportados desde @paperclipai/shared
+// Los autores de plugins importan los tipos de manifiesto desde aquí para tener
+// una sola dependencia (@paperclipai/plugin-sdk) para todas las necesidades
+// de autoría de plugins.
 export type {
   PaperclipPluginManifestV1,
   PluginJobDeclaration,
@@ -242,14 +243,14 @@ export type {
 } from "./types.js";
 
 // ---------------------------------------------------------------------------
-// Zod re-export
+// Reexportación de Zod
 // ---------------------------------------------------------------------------
 
 /**
- * Zod is re-exported for plugin authors to use when defining their
- * `instanceConfigSchema` and tool `parametersSchema`.
+ * Zod se reexporta para que los autores de plugins lo usen al definir su
+ * `instanceConfigSchema` y el `parametersSchema` de herramientas.
  *
- * Plugin authors do not need to add a separate `zod` dependency.
+ * Los autores de plugins no necesitan agregar una dependencia `zod` separada.
  *
  * @see PLUGIN_SPEC.md §14.1 — Example SDK Shape
  *
@@ -258,7 +259,7 @@ export type {
  * import { z } from "@paperclipai/plugin-sdk";
  *
  * const configSchema = z.object({
- *   apiKey: z.string().describe("Your API key"),
+ *   apiKey: z.string().describe("Tu API key"),
  *   workspace: z.string().optional(),
  * });
  * ```
@@ -266,7 +267,7 @@ export type {
 export { z } from "zod";
 
 // ---------------------------------------------------------------------------
-// Constants re-exports (for plugin code that needs to check values at runtime)
+// Reexportaciones de constantes (para código de plugin que necesita verificar valores en tiempo de ejecución)
 // ---------------------------------------------------------------------------
 
 export {

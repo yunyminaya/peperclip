@@ -72,7 +72,7 @@ async function findAvailablePort(startPort: number): Promise<number> {
     if (!(await isPortInUse(port))) return port;
   }
   throw new Error(
-    `Embedded PostgreSQL could not find a free port from ${startPort} to ${startPort + maxLookahead - 1}`,
+    `Embedded PostgreSQL no encontró un puerto libre entre ${startPort} y ${startPort + maxLookahead - 1}`,
   );
 }
 
@@ -82,7 +82,7 @@ async function loadEmbeddedPostgresCtor(): Promise<EmbeddedPostgresCtor> {
     return mod.default as EmbeddedPostgresCtor;
   } catch {
     throw new Error(
-      "Embedded PostgreSQL support requires dependency `embedded-postgres`. Reinstall dependencies and try again.",
+      "Embedded PostgreSQL requiere la dependencia `embedded-postgres`. Reinstala las dependencias e inténtalo de nuevo.",
     );
   }
 }
@@ -107,11 +107,11 @@ async function ensureEmbeddedPostgresConnection(
         typeof actualDataDir === "string" &&
         path.resolve(actualDataDir) === path.resolve(dataDir);
       if (!matchesDataDir) {
-        throw new Error("reachable postgres does not use the expected embedded data directory");
+        throw new Error("el postgres accesible no usa el directorio de datos embebido esperado");
       }
       await ensurePostgresDatabase(preferredAdminConnectionString, "paperclip");
       process.emitWarning(
-        `Adopting an existing PostgreSQL instance on port ${preferredPort} for embedded data dir ${dataDir} because postmaster.pid is missing.`,
+        `Se usará la instancia existente de PostgreSQL en el puerto ${preferredPort} para el directorio de datos embebido ${dataDir} porque no se encontró postmaster.pid.`,
       );
       return {
         connectionString: `postgres://paperclip:paperclip@127.0.0.1:${preferredPort}/paperclip`,
@@ -119,7 +119,7 @@ async function ensureEmbeddedPostgresConnection(
         stop: async () => {},
       };
     } catch {
-      // Fall through and attempt to start the configured embedded cluster.
+      // Continuar e intentar arrancar el clúster embebido configurado.
     }
   }
 
@@ -151,7 +151,7 @@ async function ensureEmbeddedPostgresConnection(
     } catch (error) {
       throw formatEmbeddedPostgresError(error, {
         fallbackMessage:
-          `Failed to initialize embedded PostgreSQL cluster in ${dataDir} on port ${selectedPort}`,
+          `No se pudo inicializar el clúster de embedded PostgreSQL en ${dataDir} en el puerto ${selectedPort}`,
         recentLogs: logBuffer.getRecentLogs(),
       });
     }
@@ -163,7 +163,7 @@ async function ensureEmbeddedPostgresConnection(
     await instance.start();
   } catch (error) {
     throw formatEmbeddedPostgresError(error, {
-      fallbackMessage: `Failed to start embedded PostgreSQL on port ${selectedPort}`,
+      fallbackMessage: `No se pudo iniciar embedded PostgreSQL en el puerto ${selectedPort}`,
       recentLogs: logBuffer.getRecentLogs(),
     });
   }

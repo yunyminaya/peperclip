@@ -1,123 +1,122 @@
-# Agent Authentication & Onboarding
+# Autenticación e incorporación de agentes
 
-## Problem
+## Problema
 
-Agents need API keys to authenticate with Paperclip. The current approach
-(generate key in app, manually configure it as an environment variable) is
-laborious and doesn't scale. Different adapter types have different trust
-models, and we want to support a spectrum from "zero-config local" to
-"agent-driven self-registration."
+Los agentes necesitan API keys para autenticarse con Paperclip. El enfoque actual
+(generar la clave en la app, configurarla manualmente como variable de entorno) es
+laborioso y no escala. Los distintos tipos de adaptador tienen modelos de confianza
+diferentes, y queremos soportar un espectro desde "local cero configuración" hasta
+"auto-registro dirigido por el agente".
 
-## Design Principles
+## Principios de diseño
 
-1. **Match auth complexity to the trust boundary.** A local CLI adapter
-   shouldn't require the same ceremony as a remote webhook-based agent.
-2. **Agents should be able to onboard themselves.** Humans shouldn't have to
-   copy-paste credentials into agent environments when the agent is capable of
-   doing it.
-3. **Approval gates by default.** Self-registration must require explicit
-   approval (by a user or authorized agent) before the new agent can act within
-   a company.
+1. **Iguala la complejidad de la autenticación al límite de confianza.** Un adaptador CLI local
+   no debería requerir la misma ceremonia que un agente remoto basado en webhooks.
+2. **Los agentes deberían poder incorporarse solos.** Los humanos no deberían tener que
+   copiar y pegar credenciales en entornos de agentes cuando el agente es capaz de
+   hacerlo.
+3. **Puertas de aprobación por defecto.** El auto-registro debe requerir aprobación
+   explícita (por un usuario o un agente autorizado) antes de que el nuevo agente pueda actuar
+   dentro de una empresa.
 
 ---
 
-## Authentication Tiers
+## Niveles de autenticación
 
-### Tier 1: Local Adapter (claude-local, codex-local)
+### Nivel 1: Adaptador local (claude-local, codex-local)
 
-**Trust model:** The adapter process runs on the same machine as the Paperclip
-server (or is invoked directly by it). There is no meaningful network boundary.
+**Modelo de confianza:** El proceso del adaptador corre en la misma máquina que el
+servidor Paperclip (o es invocado directamente por él). No hay un límite de red significativo.
 
-**Approach:** Paperclip generates a token and passes it directly to the agent
-process as a parameter/env var at invocation time. No manual setup required.
+**Enfoque:** Paperclip genera un token y lo pasa directamente al proceso del agente
+como parámetro/variable de entorno al momento de la invocación. No se requiere configuración manual.
 
-**Token format:** Short-lived JWT issued per heartbeat invocation (or per
-session). The server mints the token, passes it in the adapter call, and
-accepts it back on API requests.
+**Formato del token:** JWT de vida corta emitido por invocación de latido (o por
+sesión). El servidor emite el token, lo pasa en la llamada del adaptador y
+lo acepta de vuelta en las solicitudes de API.
 
-**Token lifetime considerations:**
+**Consideraciones de vida del token:**
 
-- Coding agents can run for hours, so tokens can't expire too quickly.
-- Infinite-lived tokens are undesirable even in local contexts.
-- Use JWTs with a generous expiry (e.g. 48h) and overlap windows so a
-  heartbeat that starts near expiry still completes.
-- The server doesn't need to store these tokens -- it just validates the JWT
-  signature.
+- Los agentes de codificación pueden correr por horas, así que los tokens no pueden expirar demasiado rápido.
+- Los tokens de vida infinita son indeseables incluso en contextos locales.
+- Usar JWT con una expiración generosa (p. ej. 48h) y ventanas de solapamiento para que un
+  latido que comienza cerca de la expiración aún se complete.
+- El servidor no necesita almacenar estos tokens -- solo valida la firma del JWT.
 
-**Status:** Partially implemented. The local adapter already passes
-`PAPERCLIP_API_URL`, `PAPERCLIP_AGENT_ID`, `PAPERCLIP_COMPANY_ID`. We need to
-add a `PAPERCLIP_API_KEY` (JWT) to the set of injected env vars.
+**Estado:** Parcialmente implementado. El adaptador local ya pasa
+`PAPERCLIP_API_URL`, `PAPERCLIP_AGENT_ID`, `PAPERCLIP_COMPANY_ID`. Necesitamos
+agregar un `PAPERCLIP_API_KEY` (JWT) al conjunto de variables de entorno inyectadas.
 
-### Tier 2: CLI-Driven Key Exchange
+### Nivel 2: Intercambio de claves dirigido por CLI
 
-**Trust model:** A developer is setting up a remote or semi-remote agent and
-has shell access to it.
+**Modelo de confianza:** Un desarrollador está configurando un agente remoto o semi-remoto y
+tiene acceso shell a él.
 
-**Approach:** Similar to `claude setup-token` -- the developer runs a Paperclip CLI
-command that opens a browser URL for confirmation, then receives a token that
-gets stored in the agent's config automatically.
+**Enfoque:** Similar a `claude setup-token` -- el desarrollador ejecuta un comando del CLI de Paperclip
+que abre una URL del navegador para confirmación, luego recibe un token que
+se almacena automáticamente en la configuración del agente.
 
 ```
 paperclip auth login
 # Opens browser -> user confirms -> token stored at ~/.paperclip/credentials
 ```
 
-**Token format:** Long-lived API key (stored hashed on the server side).
+**Formato del token:** API key de vida larga (almacenada con hash en el servidor).
 
-**Status:** Future. Not needed until we have remote adapters that aren't
-managed by the Paperclip server itself.
+**Estado:** Futuro. No necesario hasta que tengamos adaptadores remotos que no sean
+gestionados por el propio servidor Paperclip.
 
-### Tier 3: Agent Self-Registration (Invite Link)
+### Nivel 3: Auto-registro del agente (enlace de invitación)
 
-**Trust model:** The agent is an autonomous external system (e.g. an OpenClaw
-agent, a SWE-agent instance). There is no human in the loop during setup. The
-agent receives an onboarding URL and negotiates its own registration.
+**Modelo de confianza:** El agente es un sistema externo autónomo (p. ej. un agente OpenClaw,
+una instancia de SWE-agent). No hay un humano en el loop durante la configuración. El
+agente recibe una URL de incorporación y negocia su propio registro.
 
-**Approach:**
+**Enfoque:**
 
-1. A company admin (user or agent) generates an **invite URL** from Paperclip.
-2. The invite URL is delivered to the target agent (via a message, a task
-   description, a webhook payload, etc.).
-3. The agent fetches the URL, which returns an **onboarding document**
-   containing:
-   - Company identity and context
-   - The Paperclip SKILL.md (or a link to it)
-   - What information Paperclip needs from the agent (e.g. webhook URL, adapter
-     type, capabilities, preferred name/role)
-   - A registration endpoint to POST the response to
-4. The agent responds with its configuration (e.g. "here's my webhook URL,
-   here's my name, here are my capabilities").
-5. Paperclip stores the pending registration.
-6. An approver (user or authorized agent) reviews and approves the new
-   employee. Approval includes assigning the agent's manager (chain of command)
-   and any initial role/permissions.
-7. On approval, Paperclip provisions the agent's credentials and sends the
-   first heartbeat.
+1. Un admin de la empresa (usuario o agente) genera una **URL de invitación** desde Paperclip.
+2. La URL de invitación se entrega al agente objetivo (vía un mensaje, una descripción
+   de tarea, un payload de webhook, etc.).
+3. El agente obtiene la URL, que devuelve un **documento de incorporación**
+   que contiene:
+   - Identidad y contexto de la empresa
+   - El SKILL.md de Paperclip (o un enlace a él)
+   - Qué información necesita Paperclip del agente (p. ej. URL de webhook, tipo de adaptador,
+     capacidades, nombre/rol preferido)
+   - Un endpoint de registro al que POSTear la respuesta
+4. El agente responde con su configuración (p. ej. "esta es mi URL de webhook,
+   este es mi nombre, estas son mis capacidades").
+5. Paperclip almacena el registro pendiente.
+6. Un aprobador (usuario o agente autorizado) revisa y aprueba al nuevo
+   empleado. La aprobación incluye asignar el gerente del agente (cadena de mando)
+   y cualquier rol/permisos iniciales.
+7. Al aprobar, Paperclip provisiona las credenciales del agente y envía el
+   primer latido.
 
-**Token format:** Paperclip issues an API key (or JWT) upon approval, delivered
-to the agent via its declared communication channel.
+**Formato del token:** Paperclip emite una API key (o JWT) al aprobar, entregada
+al agente vía su canal de comunicación declarado.
 
-**Inspiration:**
+**Inspiración:**
 
 - [Allium self-registration](https://agents.allium.so/skills/skill.md) --
-  agent collects credentials, polls for confirmation, stores key automatically.
-- [Allium x402](https://agents.allium.so/skills/x402-skill.md) -- multi-step
-  credential setup driven entirely by the agent.
-- [OpenClaw webhooks](https://docs.openclaw.ai/automation/webhook) -- external
-  systems trigger agent actions via authenticated webhook endpoints.
+  el agente recolecta credenciales, consulta por confirmación, almacena la clave automáticamente.
+- [Allium x402](https://agents.allium.so/skills/x402-skill.md) -- configuración
+  de credenciales de múltiples pasos dirigida enteramente por el agente.
+- [OpenClaw webhooks](https://docs.openclaw.ai/automation/webhook) -- sistemas externos
+  disparan acciones del agente vía endpoints de webhook autenticados.
 
 ---
 
-## Self-Registration: Onboarding Negotiation Protocol
+## Auto-registro: protocolo de negociación de incorporación
 
-The invite URL response should be a structured document (JSON or markdown) that
-is both human-readable and machine-parseable:
+La respuesta de la URL de invitación debería ser un documento estructurado (JSON o markdown)
+legible para humanos y parseable por máquinas:
 
 ```
 GET /api/invite/{inviteToken}
 ```
 
-Response:
+Respuesta:
 
 ```json
 {
@@ -139,7 +138,7 @@ Response:
 }
 ```
 
-The agent POSTs back:
+El agente responde con POST:
 
 ```json
 {
@@ -151,72 +150,70 @@ The agent POSTs back:
 }
 ```
 
-This goes into a `pending_approval` state until someone approves it.
+Esto entra en un estado `pending_approval` hasta que alguien lo aprueba.
 
 ---
 
-## OpenClaw as First External Integration
+## OpenClaw como primera integración externa
 
-OpenClaw is the ideal first target for Tier 3 because:
+OpenClaw es el objetivo ideal para el Nivel 3 porque:
 
-- It already has webhook support (`POST /hooks/agent`) for receiving tasks.
-- The webhook config (URL, auth token, session key) is exactly what we need the
-  agent to tell us during onboarding.
-- OpenClaw agents can read a URL, parse instructions, and make HTTP calls.
+- Ya tiene soporte de webhooks (`POST /hooks/agent`) para recibir tareas.
+- La configuración del webhook (URL, token de autenticación, clave de sesión) es exactamente lo que necesitamos que el
+  agente nos diga durante la incorporación.
+- Los agentes OpenClaw pueden leer una URL, parsear instrucciones y hacer llamadas HTTP.
 
-**Workflow:**
+**Flujo de trabajo:**
 
-1. Generate a Paperclip invite link for the company.
-2. Send the invite link to an OpenClaw agent (via their existing messaging
-   channel).
-3. The OpenClaw agent fetches the invite, reads the onboarding doc, and
-   responds with its webhook configuration.
-4. A Paperclip company member approves the new agent.
-5. Paperclip begins sending heartbeats to the OpenClaw webhook endpoint.
-
----
-
-## Approval Model
-
-All self-registration requires approval. This is non-negotiable for security.
-
-- **Default:** A human user in the company must approve.
-- **Delegated:** A manager-level agent with `approve_agents` permission can
-  approve (useful for scaling).
-- **Auto-approve (opt-in):** Companies can configure auto-approval for invite
-  links that were generated with a specific trust level (e.g. "I trust anyone
-  with this link"). Even then, the invite link itself is a secret.
-
-On approval, the approver sets:
-
-- `reportsTo` -- who the new agent reports to in the chain of command
-- `role` -- the agent's role within the company
-- `budget` -- initial budget allocation
+1. Generar un enlace de invitación de Paperclip para la empresa.
+2. Enviar el enlace de invitación a un agente OpenClaw (vía su canal de mensajería
+   existente).
+3. El agente OpenClaw obtiene la invitación, lee el documento de incorporación y
+   responde con su configuración de webhook.
+4. Un miembro de la empresa de Paperclip aprueba al nuevo agente.
+5. Paperclip comienza a enviar latidos al endpoint de webhook de OpenClaw.
 
 ---
 
-## Implementation Priorities
+## Modelo de aprobación
 
-| Priority | Item                              | Notes                                                                                            |
+Todo auto-registro requiere aprobación. Esto no es negociable por seguridad.
+
+- **Por defecto:** Un usuario humano en la empresa debe aprobar.
+- **Delegada:** Un agente de nivel gerente con permiso `approve_agents` puede
+  aprobar (útil para escalar).
+- **Auto-aprobación (opt-in):** Las empresas pueden configurar auto-aprobación para enlaces de invitación
+  que fueron generados con un nivel de confianza específico (p. ej. "confío en cualquiera
+  con este enlace"). Aun así, el enlace de invitación en sí es un secreto.
+
+Al aprobar, el aprobador define:
+
+- `reportsTo` -- a quién reporta el nuevo agente en la cadena de mando
+- `role` -- el rol del agente dentro de la empresa
+- `budget` -- asignación inicial de presupuesto
+
+---
+
+## Prioridades de implementación
+
+| Prioridad | Elemento                              | Notas                                                                                            |
 | -------- | --------------------------------- | ------------------------------------------------------------------------------------------------ |
-| **P0**   | Local adapter JWT injection       | Unblocks zero-config local auth. Mint a JWT per heartbeat, pass as `PAPERCLIP_API_KEY`.          |
-| **P1**   | Invite link + onboarding endpoint | `POST /api/companies/:id/invites`, `GET /api/invite/:token`, `POST /api/invite/:token/register`. |
-| **P1**   | Approval flow                     | UI + API for reviewing and approving pending agent registrations.                                |
-| **P2**   | OpenClaw integration              | First real external agent onboarding via invite link.                                            |
-| **P3**   | CLI auth flow                     | `paperclipai auth login` for developer-managed remote agents.                                      |
+| **P0**   | Inyección JWT del adaptador local       | Desbloquea autenticación local de cero configuración. Emitir un JWT por latido, pasarlo como `PAPERCLIP_API_KEY`.          |
+| **P1**   | Enlace de invitación + endpoint de incorporación | `POST /api/companies/:id/invites`, `GET /api/invite/:token`, `POST /api/invite/:token/register`. |
+| **P1**   | Flujo de aprobación                     | UI + API para revisar y aprobar registros de agentes pendientes.                                |
+| **P2**   | Integración OpenClaw              | Primera incorporación real de un agente externo vía enlace de invitación.                                            |
+| **P3**   | Flujo de autenticación CLI                     | `paperclipai auth login` para agentes remotos gestionados por desarrolladores.                                      |
 
-## P0 Implementation Plan
+## Plan de implementación P0
 
-See [`doc/plans/agent-authentication-implementation.md`](./agent-authentication-implementation.md) for the P0 local JWT execution plan.
+Ver [`doc/plans/agent-authentication-implementation.md`](./agent-authentication-implementation.md) para el plan de ejecución JWT local P0.
 
 ---
 
-## Open Questions
+## Preguntas abiertas
 
-- **JWT signing key rotation:** How do we rotate the signing key without
-  invalidating in-flight heartbeats?
-- **Invite link expiry:** Should invite links be single-use or multi-use? Time-limited?
-- **Adapter negotiation:** Should the onboarding doc support arbitrary adapter
-  types, or should we enumerate supported adapters and have the agent pick one?
-- **Credential renewal:** For long-lived external agents, how do we handle API
-  key rotation without downtime?
+- **Rotación de la clave de firma JWT:** ¿Cómo rotamos la clave de firma sin
+  invalidar latidos en curso?
+- **Expiración de enlaces de invitación:** ¿Deberían los enlaces de invitación ser de un solo uso o multiuso? ¿Con límite de tiempo?
+- **Negociación de adaptadores:** ¿Debería el documento de incorporación soportar tipos de adaptador arbitrarios, o deberíamos enumerar adaptadores soportados y que el agente elija uno?
+- **Renovación de credenciales:** Para agentes externos de vida larga, ¿cómo manejamos la rotación de API keys sin tiempo de inactividad?

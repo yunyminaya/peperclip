@@ -1,5 +1,5 @@
 /**
- * Generates README.md with Mermaid org chart for company exports.
+ * Genera README.md con el organigrama Mermaid para exportaciones de empresas.
  */
 import type { CompanyPortabilityManifest } from "@paperclipai/shared";
 
@@ -10,14 +10,14 @@ const ROLE_LABELS: Record<string, string> = {
   cfo: "CFO",
   coo: "COO",
   vp: "VP",
-  manager: "Manager",
-  engineer: "Engineer",
-  agent: "Agent",
+  manager: "Gerente",
+  engineer: "Ingeniero",
+  agent: "Agente",
 };
 
 /**
- * Generate a Mermaid flowchart (TD = top-down) representing the org chart.
- * Returns null if there are no agents.
+ * Genera un diagrama de flujo Mermaid (TD = de arriba hacia abajo) que representa el organigrama.
+ * Devuelve null si no hay agentes.
  */
 export function generateOrgChartMermaid(agents: CompanyPortabilityManifest["agents"]): string | null {
   if (agents.length === 0) return null;
@@ -26,14 +26,14 @@ export function generateOrgChartMermaid(agents: CompanyPortabilityManifest["agen
   lines.push("```mermaid");
   lines.push("graph TD");
 
-  // Node definitions with role labels
+  // Definiciones de nodos con etiquetas de rol
   for (const agent of agents) {
     const roleLabel = ROLE_LABELS[agent.role] ?? agent.role;
     const id = mermaidId(agent.slug);
     lines.push(`    ${id}["${mermaidEscape(agent.name)}<br/><small>${mermaidEscape(roleLabel)}</small>"]`);
   }
 
-  // Edges from parent to child
+  // Aristas de padre a hijo
   const slugSet = new Set(agents.map((a) => a.slug));
   for (const agent of agents) {
     if (agent.reportsToSlug && slugSet.has(agent.reportsToSlug)) {
@@ -45,20 +45,20 @@ export function generateOrgChartMermaid(agents: CompanyPortabilityManifest["agen
   return lines.join("\n");
 }
 
-/** Sanitize slug for use as a Mermaid node ID (alphanumeric + underscore). */
+/** Normaliza el slug para usarlo como ID de nodo Mermaid (alfanumérico + guion bajo). */
 function mermaidId(slug: string): string {
   return slug.replace(/[^a-zA-Z0-9_]/g, "_");
 }
 
-/** Escape text for Mermaid node labels. */
+/** Escapa el texto para las etiquetas de nodos Mermaid. */
 function mermaidEscape(s: string): string {
   return s.replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-/** Build a display label for a skill's source, linking to GitHub when available. */
+/** Construye una etiqueta visible para la fuente de una habilidad, enlazando a GitHub cuando está disponible. */
 function skillSourceLabel(skill: CompanyPortabilityManifest["skills"][number]): string {
   if (skill.sourceLocator) {
-    // For GitHub or URL sources, render as a markdown link
+    // Para fuentes de GitHub o URL, renderiza como un enlace markdown
     if (skill.sourceType === "github" || skill.sourceType === "skills_sh" || skill.sourceType === "url") {
       return `[${skill.sourceType}](${skill.sourceLocator})`;
     }
@@ -69,7 +69,7 @@ function skillSourceLabel(skill: CompanyPortabilityManifest["skills"][number]): 
 }
 
 /**
- * Generate the README.md content for a company export.
+ * Genera el contenido del README.md para una exportación de empresa.
  */
 export function generateReadme(
   manifest: CompanyPortabilityManifest,
@@ -87,26 +87,26 @@ export function generateReadme(
     lines.push("");
   }
 
-  // Org chart image (generated during export as images/org-chart.png)
+  // Imagen del organigrama (generada durante la exportación como images/org-chart.png)
   if (manifest.agents.length > 0) {
-    lines.push("![Org Chart](images/org-chart.png)");
+    lines.push("![Organigrama](images/org-chart.png)");
     lines.push("");
   }
 
-  // What's Inside table
-  lines.push("## What's Inside");
+  // Tabla de contenido
+  lines.push("## Contenido");
   lines.push("");
-  lines.push("> This is an [Agent Company](https://agentcompanies.io) package from [Paperclip](https://paperclip.ing)");
+  lines.push("> Este es un paquete de [empresa de agentes](https://agentcompanies.io) de [Paperclip](https://paperclip.ing)");
   lines.push("");
 
   const counts: Array<[string, number]> = [];
-  if (manifest.agents.length > 0) counts.push(["Agents", manifest.agents.length]);
-  if (manifest.projects.length > 0) counts.push(["Projects", manifest.projects.length]);
-  if (manifest.skills.length > 0) counts.push(["Skills", manifest.skills.length]);
-  if (manifest.issues.length > 0) counts.push(["Tasks", manifest.issues.length]);
+  if (manifest.agents.length > 0) counts.push(["Agentes", manifest.agents.length]);
+  if (manifest.projects.length > 0) counts.push(["Proyectos", manifest.projects.length]);
+  if (manifest.skills.length > 0) counts.push(["Habilidades", manifest.skills.length]);
+  if (manifest.issues.length > 0) counts.push(["Tareas", manifest.issues.length]);
 
   if (counts.length > 0) {
-    lines.push("| Content | Count |");
+    lines.push("| Contenido | Cantidad |");
     lines.push("|---------|-------|");
     for (const [label, count] of counts) {
       lines.push(`| ${label} | ${count} |`);
@@ -114,11 +114,11 @@ export function generateReadme(
     lines.push("");
   }
 
-  // Agents table
+  // Tabla de agentes
   if (manifest.agents.length > 0) {
-    lines.push("### Agents");
+    lines.push("### Agentes");
     lines.push("");
-    lines.push("| Agent | Role | Reports To |");
+    lines.push("| Agente | Rol | Reporta a |");
     lines.push("|-------|------|------------|");
     for (const agent of manifest.agents) {
       const roleLabel = ROLE_LABELS[agent.role] ?? agent.role;
@@ -128,9 +128,9 @@ export function generateReadme(
     lines.push("");
   }
 
-  // Projects list
+  // Lista de proyectos
   if (manifest.projects.length > 0) {
-    lines.push("### Projects");
+    lines.push("### Proyectos");
     lines.push("");
     for (const project of manifest.projects) {
       const desc = project.description ? ` \u2014 ${project.description}` : "";
@@ -139,11 +139,11 @@ export function generateReadme(
     lines.push("");
   }
 
-  // Skills list
+  // Lista de habilidades
   if (manifest.skills.length > 0) {
-    lines.push("### Skills");
+    lines.push("### Habilidades");
     lines.push("");
-    lines.push("| Skill | Description | Source |");
+    lines.push("| Habilidad | Descripción | Fuente |");
     lines.push("|-------|-------------|--------|");
     for (const skill of manifest.skills) {
       const desc = skill.description ?? "\u2014";
@@ -153,19 +153,19 @@ export function generateReadme(
     lines.push("");
   }
 
-  // Getting Started
-  lines.push("## Getting Started");
+  // Inicio rápido
+  lines.push("## Inicio rápido");
   lines.push("");
   lines.push("```bash");
   lines.push("pnpm paperclipai company import this-github-url-or-folder");
   lines.push("```");
   lines.push("");
-  lines.push("See [Paperclip](https://paperclip.ing) for more information.");
+  lines.push("Consulta [Paperclip](https://paperclip.ing) para más información.");
   lines.push("");
 
-  // Footer
+  // Pie de página
   lines.push("---");
-  lines.push(`Exported from [Paperclip](https://paperclip.ing) on ${new Date().toISOString().split("T")[0]}`);
+  lines.push(`Exportado de [Paperclip](https://paperclip.ing) el ${new Date().toISOString().split("T")[0]}`);
   lines.push("");
 
   return lines.join("\n");

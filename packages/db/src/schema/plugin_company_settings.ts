@@ -3,16 +3,16 @@ import { companies } from "./companies.js";
 import { plugins } from "./plugins.js";
 
 /**
- * `plugin_company_settings` table — stores operator-managed plugin settings
- * scoped to a specific company.
+ * Tabla `plugin_company_settings`: almacena los ajustes de plugins gestionados por el operador
+ * con alcance a una empresa específica.
  *
- * This is distinct from `plugin_config`, which stores instance-wide plugin
- * configuration. Each company can have at most one settings row per plugin.
+ * Se diferencia de `plugin_config`, que almacena la configuración de plugins
+ * a nivel de la instancia. Cada empresa puede tener como máximo una fila de ajustes por plugin.
  *
- * Rows represent explicit overrides from the default company behavior:
- * - no row => plugin is enabled for the company by default
- * - row with `enabled = false` => plugin is disabled for that company
- * - row with `enabled = true` => plugin remains enabled and stores company settings
+ * Las filas representan anulaciones explícitas del comportamiento predeterminado de la empresa:
+ * - sin fila => el plugin está habilitado para la empresa de forma predeterminada
+ * - fila con `enabled = false` => el plugin está deshabilitado para esa empresa
+ * - fila con `enabled = true` => el plugin sigue habilitado y almacena ajustes de la empresa
  */
 export const pluginCompanySettings = pgTable(
   "plugin_company_settings",

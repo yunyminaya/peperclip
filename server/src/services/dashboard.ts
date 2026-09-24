@@ -14,7 +14,7 @@ export function dashboardService(db: Db) {
         .where(eq(companies.id, companyId))
         .then((rows) => rows[0] ?? null);
 
-      if (!company) throw notFound("Company not found");
+      if (!company) throw notFound("Empresa no encontrada");
 
       const agentRows = await db
         .select({ status: agents.status, count: sql<number>`count(*)` })
@@ -42,7 +42,7 @@ export function dashboardService(db: Db) {
       };
       for (const row of agentRows) {
         const count = Number(row.count);
-        // "idle" agents are operational — count them as active
+        // Los agentes "idle" están operativos: se cuentan como activos
         const bucket = row.status === "idle" ? "active" : row.status;
         agentCounts[bucket] = (agentCounts[bucket] ?? 0) + count;
       }

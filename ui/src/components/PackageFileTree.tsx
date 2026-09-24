@@ -9,14 +9,14 @@ import {
   FolderOpen,
 } from "lucide-react";
 
-// ── Tree types ────────────────────────────────────────────────────────
+// ── Tipos de árbol ──────────────────────────────────────────────────────
 
 export type FileTreeNode = {
   name: string;
   path: string;
   kind: "dir" | "file";
   children: FileTreeNode[];
-  /** Optional per-node metadata (e.g. import action) */
+  /** Metadatos opcionales por nodo (p. ej. acción de importación) */
   action?: string | null;
 };
 
@@ -24,7 +24,7 @@ const TREE_BASE_INDENT = 16;
 const TREE_STEP_INDENT = 24;
 const TREE_ROW_HEIGHT_CLASS = "min-h-9";
 
-// ── Helpers ───────────────────────────────────────────────────────────
+// ── Ayudantes ───────────────────────────────────────────────────────────
 
 export function buildFileTree(
   files: Record<string, unknown>,
@@ -57,7 +57,7 @@ export function buildFileTree(
 
   function sortNode(node: FileTreeNode) {
     node.children.sort((a, b) => {
-      // Files before directories so PROJECT.md appears above tasks/
+      // Archivos antes que directorios para que PROJECT.md aparezca sobre tasks/
       if (a.kind !== b.kind) return a.kind === "file" ? -1 : 1;
       return a.name.localeCompare(b.name);
     });
@@ -94,7 +94,7 @@ function fileIcon(name: string) {
   return FileText;
 }
 
-// ── Frontmatter helpers ───────────────────────────────────────────────
+// ── Ayudantes de frontmatter ────────────────────────────────────────────
 
 export type FrontmatterData = Record<string, string | string[]>;
 
@@ -150,21 +150,21 @@ export function parseFrontmatter(content: string): { data: FrontmatterData; body
 }
 
 export const FRONTMATTER_FIELD_LABELS: Record<string, string> = {
-  name: "Name",
-  title: "Title",
-  kind: "Kind",
-  reportsTo: "Reports to",
-  skills: "Skills",
-  status: "Status",
-  description: "Description",
-  priority: "Priority",
-  assignee: "Assignee",
-  project: "Project",
-  recurring: "Recurring",
-  targetDate: "Target date",
+  name: "Nombre",
+  title: "Título",
+  kind: "Tipo",
+  reportsTo: "Reporta a",
+  skills: "Habilidades",
+  status: "Estado",
+  description: "Descripción",
+  priority: "Prioridad",
+  assignee: "Asignado",
+  project: "Proyecto",
+  recurring: "Recurrente",
+  targetDate: "Fecha objetivo",
 };
 
-// ── File tree component ───────────────────────────────────────────────
+// ── Componente de árbol de archivos ─────────────────────────────────────
 
 export function PackageFileTree({
   nodes,
@@ -186,9 +186,9 @@ export function PackageFileTree({
   onToggleDir: (path: string) => void;
   onSelectFile: (path: string) => void;
   onToggleCheck?: (path: string, kind: "file" | "dir") => void;
-  /** Optional extra content rendered at the end of each file row (e.g. action badge) */
+  /** Contenido extra opcional al final de cada fila de archivo (p. ej. insignia de acción) */
   renderFileExtra?: (node: FileTreeNode, checked: boolean) => ReactNode;
-  /** Optional additional className for file rows */
+  /** className adicional opcional para las filas de archivo */
   fileRowClassName?: (node: FileTreeNode, checked: boolean) => string | undefined;
   showCheckboxes?: boolean;
   depth?: number;

@@ -12,7 +12,7 @@ fail() {
 
 require_cmd() {
   local cmd="$1"
-  command -v "$cmd" >/dev/null 2>&1 || fail "missing required command: $cmd"
+  command -v "$cmd" >/dev/null 2>&1 || fail "falta el comando requerido: $cmd"
 }
 
 require_cmd curl
@@ -38,7 +38,7 @@ PAPERCLIP_APPROVAL_STATUS="${PAPERCLIP_APPROVAL_STATUS:-}"
 PAPERCLIP_LINKED_ISSUE_IDS="${PAPERCLIP_LINKED_ISSUE_IDS:-}"
 OPENCLAW_TEXT_PREFIX="${OPENCLAW_TEXT_PREFIX:-Standalone OpenClaw SSE smoke test.}"
 
-[[ -n "$OPENCLAW_URL" ]] || fail "OPENCLAW_URL is required"
+[[ -n "$OPENCLAW_URL" ]] || fail "Se requiere OPENCLAW_URL"
 
 read -r -d '' TEXT_BODY <<EOF || true
 ${OPENCLAW_TEXT_PREFIX}
@@ -116,31 +116,31 @@ if [[ -n "$OPENCLAW_AUTH_HEADER" ]]; then
   args=(-H "Authorization: $OPENCLAW_AUTH_HEADER" "${args[@]}")
 fi
 
-log "posting SSE wake payload to ${OPENCLAW_URL}"
+log "enviando payload SSE de activación a ${OPENCLAW_URL}"
 http_code="$(curl "${args[@]}" -w "%{http_code}")"
-log "http status: ${http_code}"
+log "estado http: ${http_code}"
 
 if [[ ! "$http_code" =~ ^2 ]]; then
   tail -n 80 "$body_file" >&2 || true
-  fail "non-success HTTP status: ${http_code}"
+  fail "estado HTTP no exitoso: ${http_code}"
 fi
 
 if ! grep -Eqi '^content-type:.*text/event-stream' "$headers_file"; then
   tail -n 40 "$body_file" >&2 || true
-  fail "response content-type was not text/event-stream"
+  fail "el content-type de la respuesta no fue text/event-stream"
 fi
 
 if grep -Eqi 'event:\s*(error|failed|cancel)|"status":"(failed|cancelled|error)"|"type":"[^"]*(failed|cancelled|error)"' "$body_file"; then
   tail -n 120 "$body_file" >&2 || true
-  fail "stream reported a failure event"
+  fail "el stream reportó un evento de fallo"
 fi
 
 if ! grep -Eqi 'event:\s*(done|completed|response\.completed)|\[DONE\]|"status":"(completed|succeeded|done)"|"type":"response\.completed"' "$body_file"; then
   tail -n 120 "$body_file" >&2 || true
-  fail "stream ended without a terminal completion marker"
+  fail "el stream terminó sin un marcador de finalización"
 fi
 
 event_count="$(grep -Ec '^event:' "$body_file" || true)"
-log "stream completed successfully (events=${event_count})"
+log "stream completado con éxito (eventos=${event_count})"
 echo
 tail -n 40 "$body_file"

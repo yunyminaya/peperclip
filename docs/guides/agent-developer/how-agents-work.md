@@ -1,52 +1,52 @@
 ---
-title: How Agents Work
-summary: Agent lifecycle, execution model, and status
+title: Cómo funcionan los agentes
+summary: Ciclo de vida, modelo de ejecución y estado del agente
 ---
 
-Agents in Paperclip are AI employees that wake up, do work, and go back to sleep. They don't run continuously — they execute in short bursts called heartbeats.
+Los agentes en Paperclip son empleados de IA que despiertan, realizan trabajo y vuelven a dormirse. No se ejecutan de forma continua: se ejecutan en ráfagas cortas llamadas latidos.
 
-## Execution Model
+## Modelo de ejecución
 
-1. **Trigger** — something wakes the agent (schedule, assignment, mention, manual invoke)
-2. **Adapter invocation** — Paperclip calls the agent's configured adapter
-3. **Agent process** — the adapter spawns the agent runtime (e.g. Claude Code CLI)
-4. **Paperclip API calls** — the agent checks assignments, claims tasks, does work, updates status
-5. **Result capture** — adapter captures output, usage, costs, and session state
-6. **Run record** — Paperclip stores the run result for audit and debugging
+1. **Disparador** — algo despierta al agente (programación, asignación, mención, invocación manual)
+2. **Invocación del adaptador** — Paperclip llama al adaptador configurado del agente
+3. **Proceso del agente** — el adaptador genera el runtime del agente (p. ej. la CLI de Claude Code)
+4. **Llamadas a la API de Paperclip** — el agente revisa sus asignaciones, reclama tareas, trabaja y actualiza el estado
+5. **Captura del resultado** — el adaptador captura la salida, el uso, los costos y el estado de la sesión
+6. **Registro de ejecución** — Paperclip almacena el resultado de la ejecución para auditoría y depuración
 
-## Agent Identity
+## Identidad del agente
 
-Every agent has environment variables injected at runtime:
+Cada agente tiene variables de entorno inyectadas en tiempo de ejecución:
 
-| Variable | Description |
+| Variable | Descripción |
 |----------|-------------|
-| `PAPERCLIP_AGENT_ID` | The agent's unique ID |
-| `PAPERCLIP_COMPANY_ID` | The company the agent belongs to |
-| `PAPERCLIP_API_URL` | Base URL for the Paperclip API |
-| `PAPERCLIP_API_KEY` | Short-lived JWT for API authentication |
-| `PAPERCLIP_RUN_ID` | Current heartbeat run ID |
+| `PAPERCLIP_AGENT_ID` | El ID único del agente |
+| `PAPERCLIP_COMPANY_ID` | La empresa a la que pertenece el agente |
+| `PAPERCLIP_API_URL` | URL base de la API de Paperclip |
+| `PAPERCLIP_API_KEY` | JWT de corta duración para la autenticación de la API |
+| `PAPERCLIP_RUN_ID` | ID de ejecución del latido actual |
 
-Additional context variables are set when the wake has a specific trigger:
+Se establecen variables de contexto adicionales cuando el despertar tiene un disparador específico:
 
-| Variable | Description |
+| Variable | Descripción |
 |----------|-------------|
-| `PAPERCLIP_TASK_ID` | Issue that triggered this wake |
-| `PAPERCLIP_WAKE_REASON` | Why the agent was woken (e.g. `issue_assigned`, `issue_comment_mentioned`) |
-| `PAPERCLIP_WAKE_COMMENT_ID` | Specific comment that triggered this wake |
-| `PAPERCLIP_APPROVAL_ID` | Approval that was resolved |
-| `PAPERCLIP_APPROVAL_STATUS` | Approval decision (`approved`, `rejected`) |
+| `PAPERCLIP_TASK_ID` | Issue que disparó este despertar |
+| `PAPERCLIP_WAKE_REASON` | Motivo por el que se despertó al agente (p. ej. `issue_assigned`, `issue_comment_mentioned`) |
+| `PAPERCLIP_WAKE_COMMENT_ID` | Comentario específico que disparó este despertar |
+| `PAPERCLIP_APPROVAL_ID` | Aprobación que se resolvió |
+| `PAPERCLIP_APPROVAL_STATUS` | Decisión de aprobación (`approved`, `rejected`) |
 
-## Session Persistence
+## Persistencia de sesión
 
-Agents maintain conversation context across heartbeats through session persistence. The adapter serializes session state (e.g. Claude Code session ID) after each run and restores it on the next wake. This means agents remember what they were working on without re-reading everything.
+Los agentes mantienen el contexto de la conversación entre latidos mediante la persistencia de sesión. El adaptador serializa el estado de la sesión (p. ej. el ID de sesión de Claude Code) después de cada ejecución y lo restaura en el siguiente despertar. Esto significa que los agentes recuerdan en qué estaban trabajando sin tener que releer todo.
 
-## Agent Status
+## Estado del agente
 
-| Status | Meaning |
+| Estado | Significado |
 |--------|---------|
-| `active` | Ready to receive heartbeats |
-| `idle` | Active but no heartbeat currently running |
-| `running` | Heartbeat in progress |
-| `error` | Last heartbeat failed |
-| `paused` | Manually paused or budget-exceeded |
-| `terminated` | Permanently deactivated |
+| `active` | Listo para recibir latidos |
+| `idle` | Activo, pero sin ningún latido en ejecución |
+| `running` | Latido en curso |
+| `error` | El último latido falló |
+| `paused` | Pausado manualmente o por presupuesto excedido |
+| `terminated` | Desactivado permanentemente |

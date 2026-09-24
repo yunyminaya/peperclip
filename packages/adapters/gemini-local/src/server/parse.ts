@@ -115,7 +115,7 @@ export function parseGeminiJsonl(stdout: string) {
               };
             }),
           };
-          break; // only one question per message
+          break; // solo una pregunta por mensaje
         }
       }
       continue;
@@ -212,7 +212,7 @@ function extractGeminiErrorMessages(parsed: Record<string, unknown>): string[] {
     try {
       messages.push(JSON.stringify(obj));
     } catch {
-      // skip non-serializable entry
+      // omitir entrada no serializable
     }
   }
 
@@ -224,7 +224,7 @@ export function describeGeminiFailure(parsed: Record<string, unknown>): string |
   const errors = extractGeminiErrorMessages(parsed);
 
   const detail = errors[0] ?? "";
-  const parts = ["Gemini run failed"];
+  const parts = ["Falló la ejecución de Gemini"];
   if (status) parts.push(`status=${status}`);
   if (detail) parts.push(detail);
   return parts.length > 1 ? parts.join(": ") : null;

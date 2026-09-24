@@ -18,9 +18,9 @@ const adapterLabels: Record<string, string> = {
   gemini_local: "Gemini CLI (local)",
   opencode_local: "OpenCode (local)",
   pi_local: "Pi (local)",
-  openclaw_gateway: "OpenClaw Gateway",
+  openclaw_gateway: "Pasarela de OpenClaw",
   cursor: "Cursor (local)",
-  process: "Process",
+  process: "Proceso",
   http: "HTTP",
 };
 
@@ -88,7 +88,7 @@ export function InviteLandingPage() {
 
   const acceptMutation = useMutation({
     mutationFn: async () => {
-      if (!invite) throw new Error("Invite not found");
+      if (!invite) throw new Error("Invitación no encontrada");
       if (invite.inviteType === "bootstrap_ceo") {
         return accessApi.acceptInvite(token, { requestType: "human" });
       }
@@ -111,25 +111,25 @@ export function InviteLandingPage() {
       setResult({ kind: asBootstrap ? "bootstrap" : "join", payload });
     },
     onError: (err) => {
-      setError(err instanceof Error ? err.message : "Failed to accept invite");
+      setError(err instanceof Error ? err.message : "No se pudo aceptar la invitación");
     },
   });
 
   if (!token) {
-    return <div className="mx-auto max-w-xl py-10 text-sm text-destructive">Invalid invite token.</div>;
+    return <div className="mx-auto max-w-xl py-10 text-sm text-destructive">Token de invitación inválido.</div>;
   }
 
   if (inviteQuery.isLoading || healthQuery.isLoading || sessionQuery.isLoading) {
-    return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading invite...</div>;
+    return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Cargando invitación…</div>;
   }
 
   if (inviteQuery.error || !invite) {
     return (
       <div className="mx-auto max-w-xl py-10">
         <div className="rounded-lg border border-border bg-card p-6">
-          <h1 className="text-lg font-semibold">Invite not available</h1>
+          <h1 className="text-lg font-semibold">Invitación no disponible</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            This invite may be expired, revoked, or already used.
+            Esta invitación puede haber expirado, haber sido revocada o ya haberse usado.
           </p>
         </div>
       </div>
@@ -140,12 +140,12 @@ export function InviteLandingPage() {
     return (
       <div className="mx-auto max-w-xl py-10">
         <div className="rounded-lg border border-border bg-card p-6">
-          <h1 className="text-lg font-semibold">Bootstrap complete</h1>
+          <h1 className="text-lg font-semibold">Arranque completo</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            The first instance admin is now configured. You can continue to the board.
+            El primer administrador de la instancia ya está configurado. Puedes continuar al panel.
           </p>
           <Button asChild className="mt-4">
-            <Link to="/">Open board</Link>
+            <Link to="/">Abrir panel</Link>
           </Button>
         </div>
       </div>
@@ -175,38 +175,38 @@ export function InviteLandingPage() {
     return (
       <div className="mx-auto max-w-xl py-10">
         <div className="rounded-lg border border-border bg-card p-6">
-          <h1 className="text-lg font-semibold">Join request submitted</h1>
+          <h1 className="text-lg font-semibold">Solicitud de unión enviada</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Your request is pending admin approval. You will not have access until approved.
+            Tu solicitud está pendiente de aprobación del administrador. No tendrás acceso hasta que se apruebe.
           </p>
           <div className="mt-4 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-            Request ID: <span className="font-mono">{payload.id}</span>
+            ID de solicitud: <span className="font-mono">{payload.id}</span>
           </div>
           {claimSecret && claimApiKeyPath && (
             <div className="mt-3 space-y-1 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground">One-time claim secret (save now)</p>
+              <p className="font-medium text-foreground">Secreto de reclamación de un solo uso (guárdalo ahora)</p>
               <p className="font-mono break-all">{claimSecret}</p>
               <p className="font-mono break-all">POST {claimApiKeyPath}</p>
             </div>
           )}
           {(onboardingSkillUrl || onboardingSkillPath || onboardingInstallPath) && (
             <div className="mt-3 space-y-1 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground">Paperclip skill bootstrap</p>
+              <p className="font-medium text-foreground">Arranque de la habilidad de Paperclip</p>
               {onboardingSkillUrl && <p className="font-mono break-all">GET {onboardingSkillUrl}</p>}
               {!onboardingSkillUrl && onboardingSkillPath && <p className="font-mono break-all">GET {onboardingSkillPath}</p>}
-              {onboardingInstallPath && <p className="font-mono break-all">Install to {onboardingInstallPath}</p>}
+              {onboardingInstallPath && <p className="font-mono break-all">Instalar en {onboardingInstallPath}</p>}
             </div>
           )}
           {(onboardingTextUrl || onboardingTextPath) && (
             <div className="mt-3 space-y-1 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground">Agent-readable onboarding text</p>
+              <p className="font-medium text-foreground">Texto de incorporación legible para agentes</p>
               {onboardingTextUrl && <p className="font-mono break-all">GET {onboardingTextUrl}</p>}
               {!onboardingTextUrl && onboardingTextPath && <p className="font-mono break-all">GET {onboardingTextPath}</p>}
             </div>
           )}
           {diagnostics.length > 0 && (
             <div className="mt-3 space-y-1 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground">Connectivity diagnostics</p>
+              <p className="font-medium text-foreground">Diagnósticos de conectividad</p>
               {diagnostics.map((diag, idx) => (
                 <div key={`${diag.code}:${idx}`} className="space-y-0.5">
                   <p className={diag.level === "warn" ? "text-amber-600 dark:text-amber-400" : undefined}>
@@ -226,9 +226,9 @@ export function InviteLandingPage() {
     <div className="mx-auto max-w-xl py-10">
       <div className="rounded-lg border border-border bg-card p-6">
         <h1 className="text-xl font-semibold">
-          {invite.inviteType === "bootstrap_ceo" ? "Bootstrap your Paperclip instance" : "Join this Paperclip company"}
+          {invite.inviteType === "bootstrap_ceo" ? "Configura tu instancia de Paperclip" : "Únete a esta empresa de Paperclip"}
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">Invite expires {dateTime(invite.expiresAt)}.</p>
+        <p className="mt-2 text-sm text-muted-foreground">La invitación vence el {dateTime(invite.expiresAt)}.</p>
 
         {invite.inviteType !== "bootstrap_ceo" && (
           <div className="mt-5 flex gap-2">
@@ -243,7 +243,7 @@ export function InviteLandingPage() {
                     : "border-border bg-background text-foreground"
                 }`}
               >
-                Join as {type}
+                Unirse como {type === "human" ? "humano" : "agente"}
               </button>
             ))}
           </div>
@@ -252,7 +252,7 @@ export function InviteLandingPage() {
         {joinType === "agent" && invite.inviteType !== "bootstrap_ceo" && (
           <div className="mt-4 space-y-3">
             <label className="block text-sm">
-              <span className="mb-1 block text-muted-foreground">Agent name</span>
+              <span className="mb-1 block text-muted-foreground">Nombre del agente</span>
               <input
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                 value={agentName}
@@ -260,7 +260,7 @@ export function InviteLandingPage() {
               />
             </label>
             <label className="block text-sm">
-              <span className="mb-1 block text-muted-foreground">Adapter type</span>
+              <span className="mb-1 block text-muted-foreground">Tipo de adaptador</span>
               <select
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                 value={adapterType}
@@ -268,13 +268,13 @@ export function InviteLandingPage() {
               >
                 {joinAdapterOptions.map((type) => (
                   <option key={type} value={type} disabled={!ENABLED_INVITE_ADAPTERS.has(type)}>
-                    {adapterLabels[type]}{!ENABLED_INVITE_ADAPTERS.has(type) ? " (Coming soon)" : ""}
+                    {adapterLabels[type]}{!ENABLED_INVITE_ADAPTERS.has(type) ? " (Próximamente)" : ""}
                   </option>
                 ))}
               </select>
             </label>
             <label className="block text-sm">
-              <span className="mb-1 block text-muted-foreground">Capabilities (optional)</span>
+              <span className="mb-1 block text-muted-foreground">Capacidades (opcional)</span>
               <textarea
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                 rows={4}
@@ -287,10 +287,10 @@ export function InviteLandingPage() {
 
         {requiresAuthForHuman && (
           <div className="mt-4 rounded-md border border-border bg-muted/30 p-3 text-sm">
-            Sign in or create an account before submitting a human join request.
+            Inicia sesión o crea una cuenta antes de enviar una solicitud de unión como humano.
             <div className="mt-2">
               <Button asChild size="sm" variant="outline">
-                <Link to={`/auth?next=${encodeURIComponent(`/invite/${token}`)}`}>Sign in / Create account</Link>
+                <Link to={`/auth?next=${encodeURIComponent(`/invite/${token}`)}`}>Iniciar sesión / Crear cuenta</Link>
               </Button>
             </div>
           </div>
@@ -308,10 +308,10 @@ export function InviteLandingPage() {
           onClick={() => acceptMutation.mutate()}
         >
           {acceptMutation.isPending
-            ? "Submitting…"
+            ? "Enviando…"
             : invite.inviteType === "bootstrap_ceo"
-              ? "Accept bootstrap invite"
-              : "Submit join request"}
+              ? "Aceptar invitación de arranque"
+              : "Enviar solicitud de unión"}
         </Button>
       </div>
     </div>

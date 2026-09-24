@@ -33,7 +33,16 @@ const boardStatuses = [
 ];
 
 function statusLabel(status: string): string {
-  return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const labels: Record<string, string> = {
+    backlog: "Backlog",
+    todo: "Por hacer",
+    in_progress: "En curso",
+    in_review: "En revisión",
+    blocked: "Bloqueado",
+    done: "Terminado",
+    cancelled: "Cancelado",
+  };
+  return labels[status] ?? status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 interface Agent {
@@ -48,7 +57,7 @@ interface KanbanBoardProps {
   onUpdateIssue: (id: string, data: Record<string, unknown>) => void;
 }
 
-/* ── Droppable Column ── */
+/* ── Columna receptora ── */
 
 function KanbanColumn({
   status,
@@ -98,7 +107,7 @@ function KanbanColumn({
   );
 }
 
-/* ── Draggable Card ── */
+/* ── Tarjeta arrastrable ── */
 
 function KanbanCard({
   issue,
@@ -144,7 +153,7 @@ function KanbanCard({
         to={`/issues/${issue.identifier ?? issue.id}`}
         className="block no-underline text-inherit"
         onClick={(e) => {
-          // Prevent navigation during drag
+          // Evitar la navegación durante el arrastre
           if (isDragging) e.preventDefault();
         }}
       >
@@ -178,7 +187,7 @@ function KanbanCard({
   );
 }
 
-/* ── Main Board ── */
+/* ── Tablero principal ── */
 
 export function KanbanBoard({
   issues,
@@ -223,14 +232,14 @@ export function KanbanBoard({
     const issue = issues.find((i) => i.id === issueId);
     if (!issue) return;
 
-    // Determine target status: the "over" could be a column id (status string)
-    // or another card's id. Find which column the "over" belongs to.
+    // Determinar el estado destino: el "over" puede ser el id de una columna (cadena de estado)
+    // o el id de otra tarjeta. Encontrar a qué columna pertenece el "over".
     let targetStatus: string | null = null;
 
     if (boardStatuses.includes(over.id as string)) {
       targetStatus = over.id as string;
     } else {
-      // It's a card - find which column it's in
+      // Es una tarjeta - encontrar en qué columna está
       const targetIssue = issues.find((i) => i.id === over.id);
       if (targetIssue) {
         targetStatus = targetIssue.status;
@@ -243,7 +252,7 @@ export function KanbanBoard({
   }
 
   function handleDragOver(_event: DragOverEvent) {
-    // Could be used for visual feedback; keeping simple for now
+    // Podría usarse para retroalimentación visual; se mantiene simple por ahora
   }
 
   return (

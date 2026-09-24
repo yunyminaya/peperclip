@@ -9,7 +9,7 @@ const ROOT_KEY = "instructionsRootPath";
 const ENTRY_KEY = "instructionsEntryFile";
 const FILE_KEY = "instructionsFilePath";
 const PROMPT_KEY = "promptTemplate";
-/** @deprecated Use the managed instructions bundle system instead. */
+/** @deprecated Usa el sistema administrado de paquetes de instrucciones en su lugar. */
 const BOOTSTRAP_PROMPT_KEY = "bootstrapPromptTemplate";
 const LEGACY_PROMPT_TEMPLATE_PATH = "promptTemplate.legacy.md";
 const IGNORED_INSTRUCTIONS_FILE_NAMES = new Set([".DS_Store", "Thumbs.db", "Desktop.ini"]);
@@ -114,7 +114,7 @@ function isMarkdown(relativePath: string) {
 function normalizeRelativeFilePath(candidatePath: string): string {
   const normalized = path.posix.normalize(candidatePath.replaceAll("\\", "/")).replace(/^\/+/, "");
   if (!normalized || normalized === "." || normalized === ".." || normalized.startsWith("../")) {
-    throw unprocessable("Instructions file path must stay within the bundle root");
+    throw unprocessable("La ruta del archivo de instrucciones debe permanecer dentro de la raíz del paquete");
   }
   return normalized;
 }
@@ -125,7 +125,7 @@ function resolvePathWithinRoot(rootPath: string, relativePath: string): string {
   const absolutePath = path.resolve(absoluteRoot, normalizedRelativePath);
   const relativeToRoot = path.relative(absoluteRoot, absolutePath);
   if (relativeToRoot === ".." || relativeToRoot.startsWith(`..${path.sep}`)) {
-    throw unprocessable("Instructions file path must stay within the bundle root");
+    throw unprocessable("La ruta del archivo de instrucciones debe permanecer dentro de la raíz del paquete");
   }
   return absolutePath;
 }
@@ -146,7 +146,7 @@ function resolveLegacyInstructionsPath(candidatePath: string, config: Record<str
   const cwd = asString(config.cwd);
   if (!cwd || !path.isAbsolute(cwd)) {
     throw unprocessable(
-      "Legacy relative instructionsFilePath requires adapterConfig.cwd to be set to an absolute path",
+      "El instructionsFilePath relativo heredado requiere que adapterConfig.cwd esté configurado como una ruta absoluta",
     );
   }
   return path.resolve(cwd, candidatePath);
@@ -216,7 +216,7 @@ async function readLegacyInstructions(agent: AgentLike, config: Record<string, u
       const resolvedPath = resolveLegacyInstructionsPath(instructionsFilePath, config);
       return await fs.readFile(resolvedPath, "utf8");
     } catch {
-      // Fall back to promptTemplate below.
+      // Recurre a promptTemplate a continuación.
     }
   }
   return asString(config[PROMPT_KEY]) ?? "";
@@ -238,7 +238,7 @@ function deriveBundleState(agent: AgentLike): BundleState {
     try {
       entryFile = normalizeRelativeFilePath(storedEntryRaw);
     } catch {
-      warnings.push(`Ignored invalid instructions entry file "${storedEntryRaw}".`);
+      warnings.push(`Se ignoró el archivo de entrada de instrucciones no válido "${storedEntryRaw}".`);
     }
   }
 
@@ -252,7 +252,7 @@ function deriveBundleState(agent: AgentLike): BundleState {
         ? "managed"
         : "external";
       if (!path.isAbsolute(legacyInstructionsPath)) {
-        warnings.push("Using legacy relative instructionsFilePath; migrate this agent to a managed or absolute external bundle.");
+        warnings.push("Se usa un instructionsFilePath relativo heredado; migra este agente a un paquete administrado o externo absoluto.");
       }
     } catch (err) {
       warnings.push(err instanceof Error ? err.message : String(err));
@@ -459,7 +459,7 @@ export function agentInstructionsService() {
     if (!stat?.isDirectory()) {
       return toBundle(agent, {
         ...state,
-        warnings: [...state.warnings, `Instructions root does not exist: ${state.rootPath}`],
+        warnings: [...state.warnings, `La raíz de instrucciones no existe: ${state.rootPath}`],
       }, []);
     }
     const files = await listFilesRecursive(state.rootPath);
@@ -471,7 +471,7 @@ export function agentInstructionsService() {
     const state = await recoverManagedBundleState(agent, deriveBundleState(agent));
     if (relativePath === LEGACY_PROMPT_TEMPLATE_PATH) {
       const content = asString(state.config[PROMPT_KEY]);
-      if (content === null) throw notFound("Instructions file not found");
+      if (content === null) throw notFound("Archivo de instrucciones no encontrado");
       return {
         path: LEGACY_PROMPT_TEMPLATE_PATH,
         size: content.length,
@@ -484,13 +484,13 @@ export function agentInstructionsService() {
         content,
       };
     }
-    if (!state.rootPath) throw notFound("Agent instructions bundle is not configured");
+    if (!state.rootPath) throw notFound("El paquete de instrucciones del agente no está configurado");
     const absolutePath = resolvePathWithinRoot(state.rootPath, relativePath);
     const [content, stat] = await Promise.all([
       fs.readFile(absolutePath, "utf8").catch(() => null),
       fs.stat(absolutePath).catch(() => null),
     ]);
-    if (content === null || !stat?.isFile()) throw notFound("Instructions file not found");
+    if (content === null || !stat?.isFile()) throw notFound("Archivo de instrucciones no encontrado");
     const normalizedPath = normalizeRelativeFilePath(relativePath);
     return {
       path: normalizedPath,
@@ -564,11 +564,11 @@ export function agentInstructionsService() {
     } else {
       const rootPath = asString(input.rootPath) ?? state.rootPath;
       if (!rootPath) {
-        throw unprocessable("External instructions bundles require an absolute rootPath");
+        throw unprocessable("Los paquetes de instrucciones externas requieren un rootPath absoluto");
       }
       const resolvedRoot = resolveHomeAwarePath(rootPath);
       if (!path.isAbsolute(resolvedRoot)) {
-        throw unprocessable("External instructions bundles require an absolute rootPath");
+        throw unprocessable("Los paquetes de instrucciones externas requieren un rootPath absoluto");
       }
       nextRootPath = resolvedRoot;
     }
@@ -639,12 +639,12 @@ export function agentInstructionsService() {
     const derived = deriveBundleState(agent);
     const state = await recoverManagedBundleState(agent, derived);
     if (relativePath === LEGACY_PROMPT_TEMPLATE_PATH) {
-      throw unprocessable("Cannot delete the legacy promptTemplate pseudo-file");
+      throw unprocessable("No se puede eliminar el pseudoarchivo promptTemplate heredado");
     }
-    if (!state.rootPath) throw notFound("Agent instructions bundle is not configured");
+    if (!state.rootPath) throw notFound("El paquete de instrucciones del agente no está configurado");
     const normalizedPath = normalizeRelativeFilePath(relativePath);
     if (normalizedPath === state.entryFile) {
-      throw unprocessable("Cannot delete the bundle entry file");
+      throw unprocessable("No se puede eliminar el archivo de entrada del paquete");
     }
     const absolutePath = resolvePathWithinRoot(state.rootPath, normalizedPath);
     await fs.rm(absolutePath, { force: true });
@@ -676,7 +676,7 @@ export function agentInstructionsService() {
 
     const legacyBody = await readLegacyInstructions(agent, state.config);
     return {
-      files: { [state.entryFile]: legacyBody || "_No AGENTS instructions were resolved from current agent config._" },
+      files: { [state.entryFile]: legacyBody || "_No se resolvieron instrucciones de AGENTS de la configuración actual del agente._" },
       entryFile: state.entryFile,
       warnings: state.warnings,
     };

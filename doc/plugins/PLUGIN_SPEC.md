@@ -1,245 +1,245 @@
-# Paperclip Plugin System Specification
+# Especificación del sistema de plugins de Paperclip
 
-Status: proposed complete spec for the post-V1 plugin system
+Estado: especificación completa propuesta para el sistema de plugins post-V1
 
-This document is the complete specification for Paperclip's plugin and extension architecture.
-It expands the brief plugin notes in [doc/SPEC.md](../SPEC.md) and should be read alongside the comparative analysis in [doc/plugins/ideas-from-opencode.md](./ideas-from-opencode.md).
+Este documento es la especificación completa de la arquitectura de plugins y extensiones de Paperclip.
+Amplía las breves notas sobre plugins de [doc/SPEC.md](../SPEC.md) y debe leerse junto con el análisis comparativo en [doc/plugins/ideas-from-opencode.md](./ideas-from-opencode.md).
 
-This is not part of the V1 implementation contract in [doc/SPEC-implementation.md](../SPEC-implementation.md).
-It is the full target architecture for the plugin system that should follow V1.
+Esto no forma parte del contrato de implementación de V1 en [doc/SPEC-implementation.md](../SPEC-implementation.md).
+Es la arquitectura objetivo completa para el sistema de plugins que debe seguir a V1.
 
-## Current implementation caveats
+## Advertencias de la implementación actual
 
-The code in this repo now includes an early plugin runtime and admin UI, but it does not yet deliver the full deployment model described in this spec.
+El código de este repo ahora incluye un runtime de plugins temprano y una UI de administración, pero aún no ofrece el modelo de despliegue completo descrito en esta especificación.
 
-Today, the practical deployment model is:
+Hoy, el modelo de despliegue práctico es:
 
 - single-tenant
 - self-hosted
-- single-node or otherwise filesystem-persistent
+- de un solo nodo o con persistencia en el sistema de archivos
 
-Current limitations to keep in mind:
+Limitaciones actuales a tener en cuenta:
 
-- Plugin UI bundles currently run as same-origin JavaScript inside the main Paperclip app. Treat plugin UI as trusted code, not a sandboxed frontend capability boundary.
-- Manifest capabilities currently gate worker-side host RPC calls. They do not prevent plugin UI code from calling ordinary Paperclip HTTP APIs directly.
-- Runtime installs assume a writable local filesystem for the plugin package directory and plugin data directory.
-- Runtime npm installs assume `npm` is available in the running environment and that the host can reach the configured package registry.
-- Published npm packages are the intended install artifact for deployed plugins.
-- The repo example plugins under `packages/plugins/examples/` are development conveniences. They work from a source checkout and should not be assumed to exist in a generic published build unless they are explicitly shipped with that build.
-- Dynamic plugin install is not yet cloud-ready for horizontally scaled or ephemeral deployments. There is no shared artifact store, install coordination, or cross-node distribution layer yet.
-- The current runtime does not yet ship a real host-provided plugin UI component kit, and it does not support plugin asset uploads/reads. Treat those as future-scope ideas in this spec, not current implementation promises.
+- Los bundles de UI de plugins actualmente se ejecutan como JavaScript del mismo origen dentro de la app principal de Paperclip. Trata la UI de los plugins como código confiable, no como un límite de capacidad de frontend con sandbox.
+- Las capacidades del manifiesto actualmente controlan las llamadas RPC del host en el lado del worker. No impiden que el código de UI del plugin llame directamente a las APIs HTTP ordinarias de Paperclip.
+- Las instalaciones del runtime asumen un sistema de archivos local escribible para el directorio del paquete del plugin y el directorio de datos del plugin.
+- Las instalaciones npm del runtime asumen que `npm` está disponible en el entorno de ejecución y que el host puede alcanzar el registro de paquetes configurado.
+- Los paquetes npm publicados son el artefacto de instalación previsto para los plugins desplegados.
+- Los plugins de ejemplo del repo bajo `packages/plugins/examples/` son comodidades de desarrollo. Funcionan desde un checkout del código fuente y no debe asumirse que existen en un build publicado genérico a menos que se incluyan explícitamente en ese build.
+- La instalación dinámica de plugins aún no está lista para la nube en despliegues escalados horizontalmente o efímeros. Aún no hay un almacén de artefactos compartido, coordinación de instalación ni capa de distribución entre nodos.
+- El runtime actual aún no incluye un kit real de componentes de UI para plugins provisto por el host, y no admite la subida/lectura de assets de plugins. Trátalos como ideas de alcance futuro en esta especificación, no como promesas de implementación actual.
 
-In practice, that means the current implementation is a good fit for local development and self-hosted persistent deployments, but not yet for multi-instance cloud plugin distribution.
+En la práctica, esto significa que la implementación actual es adecuada para el desarrollo local y despliegues self-hosted persistentes, pero aún no para la distribución de plugins en la nube con múltiples instancias.
 
-## 1. Scope
+## 1. Alcance
 
-This spec covers:
+Esta especificación cubre:
 
-- plugin packaging and installation
-- runtime model
-- trust model
-- capability system
-- UI extension surfaces
-- plugin settings UI
-- agent tool contributions
-- event, job, and webhook surfaces
-- plugin-to-plugin communication
-- local tooling approach for workspace plugins
-- Postgres persistence for extensions
-- uninstall and data lifecycle
-- plugin observability
-- plugin development and testing
-- operator workflows
-- hot plugin lifecycle (no server restart)
-- SDK versioning and compatibility rules
+- empaquetado e instalación de plugins
+- modelo de runtime
+- modelo de confianza
+- sistema de capacidades
+- superficies de extensión de UI
+- UI de ajustes de plugins
+- contribuciones de herramientas de agente
+- superficies de eventos, trabajos y webhooks
+- comunicación entre plugins
+- enfoque de tooling local para plugins de workspace
+- persistencia en Postgres para extensiones
+- desinstalación y ciclo de vida de datos
+- observabilidad de plugins
+- desarrollo y pruebas de plugins
+- flujos de trabajo del operador
+- ciclo de vida de plugins en caliente (sin reiniciar el servidor)
+- versionado del SDK y reglas de compatibilidad
 
-This spec does not cover:
+Esta especificación no cubre:
 
-- a public marketplace
-- cloud/SaaS multi-tenancy
-- arbitrary third-party schema migrations in the first plugin version
-- iframe-sandboxed plugin UI in the first plugin version (plugins render as ES modules in host extension slots)
+- un marketplace público
+- multi-tenancy en la nube/SaaS
+- migraciones arbitrarias de esquema de terceros en la primera versión del plugin
+- UI de plugins con sandbox en iframe en la primera versión del plugin (los plugins se renderizan como módulos ES en slots de extensión del host)
 
-## 2. Core Assumptions
+## 2. Supuestos centrales
 
-Paperclip plugin design is based on the following assumptions:
+El diseño de plugins de Paperclip se basa en los siguientes supuestos:
 
-1. Paperclip is single-tenant and self-hosted.
-2. Plugin installation is global to the instance.
-3. "Companies" remain core Paperclip business objects, but they are not plugin trust boundaries.
-4. Board governance, approval gates, budget hard-stops, and core task invariants remain owned by Paperclip core.
-5. Projects already have a real workspace model via `project_workspaces`, and local/runtime plugins should build on that instead of inventing a separate workspace abstraction.
+1. Paperclip es single-tenant y self-hosted.
+2. La instalación de plugins es global para la instancia.
+3. Las "empresas" siguen siendo objetos de negocio centrales de Paperclip, pero no son límites de confianza de los plugins.
+4. La gobernanza del panel, las puertas de aprobación, los topes duros de presupuesto y las invariantes centrales de tareas siguen siendo propiedad del núcleo de Paperclip.
+5. Los proyectos ya tienen un modelo de workspace real vía `project_workspaces`, y los plugins locales/de runtime deben construirse sobre eso en lugar de inventar una abstracción de workspace separada.
 
-## 3. Goals
+## 3. Objetivos
 
-The plugin system must:
+El sistema de plugins debe:
 
-1. Let operators install global instance-wide plugins.
-2. Let plugins add major capabilities without editing Paperclip core.
-3. Keep core governance and auditing intact.
-4. Support both local/runtime plugins and external SaaS connectors.
-5. Support future plugin categories such as:
-   - new agent adapters
-   - revenue tracking
-   - knowledge base
-   - issue tracker sync
-   - metrics/dashboards
-   - file/project tooling
-6. Use simple, explicit, typed contracts.
-7. Keep failures isolated so one plugin does not crash the entire instance.
+1. Permitir a los operadores instalar plugins globales para toda la instancia.
+2. Permitir a los plugins agregar capacidades importantes sin editar el núcleo de Paperclip.
+3. Mantener intactas la gobernanza central y la auditoría.
+4. Admitir tanto plugins locales/de runtime como conectores SaaS externos.
+5. Admitir futuras categorías de plugins como:
+   - nuevos adaptadores de agente
+   - seguimiento de ingresos
+   - base de conocimiento
+   - sincronización con issue trackers
+   - métricas/paneles
+   - tooling de archivos/proyectos
+6. Usar contratos simples, explícitos y tipados.
+7. Mantener los fallos aislados para que un plugin no tumbe toda la instancia.
 
-## 4. Non-Goals
+## 4. No objetivos
 
-The first plugin system must not:
+El primer sistema de plugins no debe:
 
-1. Allow arbitrary plugins to override core routes or core invariants.
-2. Allow arbitrary plugins to mutate approval, auth, issue checkout, or budget enforcement logic.
-3. Allow arbitrary third-party plugins to run free-form DB migrations.
-4. Depend on project-local plugin folders such as `.paperclip/plugins`.
-5. Depend on automatic install-and-execute behavior at server startup from arbitrary config files.
+1. Permitir que plugins arbitrarios sobrescriban rutas centrales o invariantes centrales.
+2. Permitir que plugins arbitrarios muten la lógica de aprobación, autenticación, checkout de issues o aplicación de presupuesto.
+3. Permitir que plugins arbitrarios de terceros ejecuten migraciones libres de la BD.
+4. Depender de carpetas de plugins locales al proyecto como `.paperclip/plugins`.
+5. Depender de comportamiento automático de instalación y ejecución al arrancar el servidor desde archivos de configuración arbitrarios.
 
-## 5. Terminology
+## 5. Terminología
 
-### 5.1 Instance
+### 5.1 Instancia
 
-The single Paperclip deployment an operator installs and controls.
+El único despliegue de Paperclip que un operador instala y controla.
 
-### 5.2 Company
+### 5.2 Empresa
 
-A first-class Paperclip business object inside the instance.
+Un objeto de negocio de primera clase de Paperclip dentro de la instancia.
 
-### 5.3 Project Workspace
+### 5.3 Workspace de proyecto
 
-A workspace attached to a project through `project_workspaces`.
-Plugins resolve workspace paths from this model to locate local directories for file, terminal, git, and process operations.
+Un workspace adjunto a un proyecto a través de `project_workspaces`.
+Los plugins resuelven rutas de workspace desde este modelo para localizar directorios locales para operaciones de archivos, terminal, git y procesos.
 
-### 5.4 Platform Module
+### 5.4 Módulo de plataforma
 
-A trusted in-process extension loaded directly by Paperclip core.
+Una extensión confiable en proceso cargada directamente por el núcleo de Paperclip.
 
-Examples:
+Ejemplos:
 
-- agent adapters
-- storage providers
-- secret providers
-- run-log backends
+- adaptadores de agente
+- proveedores de almacenamiento
+- proveedores de secretos
+- backends de registros de ejecución
 
 ### 5.5 Plugin
 
-An installable instance-wide extension package loaded through the Paperclip plugin runtime.
+Un paquete de extensión instalable para toda la instancia, cargado a través del runtime de plugins de Paperclip.
 
-Examples:
+Ejemplos:
 
-- Linear sync
-- GitHub Issues sync
-- Grafana widgets
-- Stripe revenue sync
-- file browser
+- Sincronización con Linear
+- Sincronización con GitHub Issues
+- Widgets de Grafana
+- Sincronización de ingresos con Stripe
+- explorador de archivos
 - terminal
-- git workflow
+- flujo de trabajo de git
 
-### 5.6 Plugin Worker
+### 5.6 Worker de plugin
 
-The runtime process used for a plugin.
-In this spec, third-party plugins run out-of-process by default.
+El proceso de runtime usado para un plugin.
+En esta especificación, los plugins de terceros se ejecutan fuera de proceso por defecto.
 
-### 5.7 Capability
+### 5.7 Capacidad
 
-A named permission the host grants to a plugin.
-Plugins may only call host APIs that are covered by granted capabilities.
+Un permiso nombrado que el host otorga a un plugin.
+Los plugins solo pueden llamar a APIs del host cubiertas por las capacidades otorgadas.
 
-## 6. Extension Classes
+## 6. Clases de extensión
 
-Paperclip has two extension classes.
+Paperclip tiene dos clases de extensión.
 
-## 6.1 Platform Modules
+## 6.1 Módulos de plataforma
 
-Platform modules are:
+Los módulos de plataforma son:
 
-- trusted
-- in-process
-- host-integrated
-- low-level
+- confiables
+- en proceso
+- integrados al host
+- de bajo nivel
 
-They use explicit registries, not the general plugin worker protocol.
+Usan registros explícitos, no el protocolo general de workers de plugins.
 
-Platform module surfaces:
+Superficies de módulos de plataforma:
 
 - `registerAgentAdapter()`
 - `registerStorageProvider()`
 - `registerSecretProvider()`
 - `registerRunLogStore()`
 
-Platform modules are the right place for:
+Los módulos de plataforma son el lugar adecuado para:
 
-- new agent adapter packages
-- new storage backends
-- new secret backends
-- other host-internal systems that need direct process or DB integration
+- nuevos paquetes de adaptadores de agente
+- nuevos backends de almacenamiento
+- nuevos backends de secretos
+- otros sistemas internos del host que necesitan integración directa con el proceso o la BD
 
 ## 6.2 Plugins
 
-Plugins are:
+Los plugins son:
 
-- globally installed per instance
-- loaded through the plugin runtime
-- additive
-- capability-gated
-- isolated from core via a stable SDK and host protocol
+- instalados globalmente por instancia
+- cargados a través del runtime de plugins
+- aditivos
+- controlados por capacidades
+- aislados del núcleo vía un SDK estable y un protocolo de host
 
-Plugin categories:
+Categorías de plugins:
 
 - `connector`
 - `workspace`
 - `automation`
 - `ui`
 
-A plugin may declare more than one category.
+Un plugin puede declarar más de una categoría.
 
-## 7. Project Workspaces
+## 7. Workspaces de proyecto
 
-Paperclip already has a concrete workspace model:
+Paperclip ya tiene un modelo de workspace concreto:
 
-- projects expose `workspaces`
-- projects expose `primaryWorkspace`
-- the database contains `project_workspaces`
-- project routes already manage workspaces
+- los proyectos exponen `workspaces`
+- los proyectos exponen `primaryWorkspace`
+- la base de datos contiene `project_workspaces`
+- las rutas de proyecto ya gestionan workspaces
 
-Plugins that need local tooling (file browsing, git, terminals, process tracking) can resolve workspace paths through the project workspace APIs and then operate on the filesystem, spawn processes, and run git commands directly. The host does not wrap these operations — plugins own their own implementations.
+Los plugins que necesitan tooling local (exploración de archivos, git, terminales, seguimiento de procesos) pueden resolver rutas de workspace a través de las APIs de workspace de proyecto y luego operar en el sistema de archivos, lanzar procesos y ejecutar comandos git directamente. El host no envuelve estas operaciones: los plugins son dueños de sus propias implementaciones.
 
-## 8. Installation Model
+## 8. Modelo de instalación
 
-Plugin installation is global and operator-driven.
+La instalación de plugins es global y la realiza el operador.
 
-There is no per-company install table and no per-company enable/disable switch.
+No hay tabla de instalación por empresa ni interruptor de activar/desactivar por empresa.
 
-If a plugin needs business-object-specific mappings, those are stored as plugin configuration or plugin state.
+Si un plugin necesita mapeos específicos de objetos de negocio, estos se almacenan como configuración del plugin o estado del plugin.
 
-Examples:
+Ejemplos:
 
-- one global Linear plugin install
-- mappings from company A to Linear team X and company B to Linear team Y
-- one global git plugin install
-- per-project workspace state stored under `project_workspace`
+- una instalación global del plugin de Linear
+- mapeos de la empresa A al equipo X de Linear y de la empresa B al equipo Y de Linear
+- una instalación global del plugin de git
+- estado de workspace por proyecto almacenado bajo `project_workspace`
 
-## 8.1 On-Disk Layout
+## 8.1 Disposición en disco
 
-Plugins live under the Paperclip instance directory.
+Los plugins viven bajo el directorio de instancia de Paperclip.
 
-Suggested layout:
+Disposición sugerida:
 
 - `~/.paperclip/instances/default/plugins/package.json`
 - `~/.paperclip/instances/default/plugins/node_modules/`
 - `~/.paperclip/instances/default/plugins/.cache/`
 - `~/.paperclip/instances/default/data/plugins/<plugin-id>/`
 
-The package install directory and the plugin data directory are separate.
+El directorio de instalación del paquete y el directorio de datos del plugin están separados.
 
-This on-disk model is the reason the current implementation expects a persistent writable host filesystem. Cloud-safe artifact replication is future work.
+Este modelo en disco es la razón por la que la implementación actual espera un sistema de archivos de host persistente y escribible. La replicación de artefactos segura para la nube es trabajo futuro.
 
-## 8.2 Operator Commands
+## 8.2 Comandos del operador
 
-Paperclip should add CLI commands:
+Paperclip debería agregar comandos CLI:
 
 - `pnpm paperclipai plugin list`
 - `pnpm paperclipai plugin install <package[@version]>`
@@ -247,51 +247,51 @@ Paperclip should add CLI commands:
 - `pnpm paperclipai plugin upgrade <plugin-id> [version]`
 - `pnpm paperclipai plugin doctor <plugin-id>`
 
-These commands are instance-level operations.
+Estos comandos son operaciones a nivel de instancia.
 
-## 8.3 Install Process
+## 8.3 Proceso de instalación
 
-The install process is:
+El proceso de instalación es:
 
-1. Resolve npm package and version.
-2. Install into the instance plugin directory.
-3. Read and validate plugin manifest.
-4. Reject incompatible plugin API versions.
-5. Display requested capabilities to the operator.
-6. Persist install record in Postgres.
-7. Start plugin worker and run health/validation.
-8. Mark plugin `ready` or `error`.
+1. Resolver el paquete npm y la versión.
+2. Instalar en el directorio de plugins de la instancia.
+3. Leer y validar el manifiesto del plugin.
+4. Rechazar versiones incompatibles de la API de plugins.
+5. Mostrar al operador las capacidades solicitadas.
+6. Persistir el registro de instalación en Postgres.
+7. Iniciar el worker del plugin y ejecutar salud/validación.
+8. Marcar el plugin como `ready` o `error`.
 
-For the current implementation, this install flow should be read as a single-host workflow. A successful install writes packages to the local host, and other app nodes will not automatically receive that plugin unless a future shared distribution mechanism is added.
+Para la implementación actual, este flujo de instalación debe leerse como un flujo de trabajo de un solo host. Una instalación exitosa escribe paquetes en el host local, y otros nodos de la app no recibirán ese plugin automáticamente a menos que se agregue un futuro mecanismo de distribución compartida.
 
-## 9. Load Order And Precedence
+## 9. Orden de carga y precedencia
 
-Load order must be deterministic.
+El orden de carga debe ser determinista.
 
-1. core platform modules
-2. built-in first-party plugins
-3. installed plugins sorted by:
-   - explicit operator-configured order if present
-   - otherwise manifest `id`
+1. módulos centrales de plataforma
+2. plugins first-party integrados
+3. plugins instalados ordenados por:
+   - orden explícito configurado por el operador si existe
+   - de lo contrario, el `id` del manifiesto
 
-Rules:
+Reglas:
 
-- plugin contributions are additive by default
-- plugins may not override core routes or core actions by name collision
-- UI slot IDs are automatically namespaced by plugin ID (e.g. `@paperclip/plugin-linear:sync-health-widget`), so cross-plugin collisions are structurally impossible
-- if a single plugin declares duplicate slot IDs within its own manifest, the host must reject at install time
+- las contribuciones de plugins son aditivas por defecto
+- los plugins no pueden sobrescribir rutas centrales ni acciones centrales por colisión de nombres
+- los IDs de slot de UI se nombran automáticamente con el espacio de nombres del ID del plugin (p. ej. `@paperclip/plugin-linear:sync-health-widget`), por lo que las colisiones entre plugins son estructuralmente imposibles
+- si un solo plugin declara IDs de slot duplicados dentro de su propio manifiesto, el host debe rechazarlo al momento de la instalación
 
-## 10. Package Contract
+## 10. Contrato del paquete
 
-Each plugin package must export a manifest, a worker entrypoint, and optionally a UI bundle.
+Cada paquete de plugin debe exportar un manifiesto, un entrypoint de worker y opcionalmente un bundle de UI.
 
-Suggested package layout:
+Disposición sugerida del paquete:
 
 - `dist/manifest.js`
 - `dist/worker.js`
-- `dist/ui/` (optional, contains the plugin's frontend bundle)
+- `dist/ui/` (opcional, contiene el bundle frontend del plugin)
 
-Suggested `package.json` keys:
+Claves sugeridas de `package.json`:
 
 ```json
 {
@@ -305,9 +305,9 @@ Suggested `package.json` keys:
 }
 ```
 
-## 10.1 Manifest Shape
+## 10.1 Forma del manifiesto
 
-Normative manifest shape:
+Forma normativa del manifiesto:
 
 ```ts
 export interface PaperclipPluginManifestV1 {
@@ -346,23 +346,23 @@ export interface PaperclipPluginManifestV1 {
 }
 ```
 
-Rules:
+Reglas:
 
-- `id` must be globally unique
-- `id` should normally equal the npm package name
-- `apiVersion` must match the host-supported plugin API version
-- `capabilities` must be static and install-time visible
-- config schema must be JSON Schema compatible
-- `entrypoints.ui` points to the directory containing the built UI bundle
-- `ui.slots` declares which extension slots the plugin fills, so the host knows what to mount without loading the bundle eagerly; each slot references an `exportName` from the UI bundle
+- `id` debe ser globalmente único
+- `id` normalmente debe ser igual al nombre del paquete npm
+- `apiVersion` debe coincidir con la versión de la API de plugins admitida por el host
+- `capabilities` debe ser estático y visible al momento de la instalación
+- el esquema de configuración debe ser compatible con JSON Schema
+- `entrypoints.ui` apunta al directorio que contiene el bundle de UI construido
+- `ui.slots` declara qué slots de extensión llena el plugin, para que el host sepa qué montar sin cargar el bundle de forma anticipada; cada slot referencia un `exportName` del bundle de UI
 
-## 11. Agent Tools
+## 11. Herramientas de agente
 
-Plugins may contribute tools that Paperclip agents can use during runs.
+Los plugins pueden contribuir herramientas que los agentes de Paperclip pueden usar durante las ejecuciones.
 
-### 11.1 Tool Declaration
+### 11.1 Declaración de herramientas
 
-Plugins declare tools in their manifest:
+Los plugins declaran herramientas en su manifiesto:
 
 ```ts
 tools?: Array<{
@@ -373,108 +373,108 @@ tools?: Array<{
 }>;
 ```
 
-Tool names are automatically namespaced by plugin ID at runtime (e.g. `linear:search-issues`), so plugins cannot shadow core tools or each other's tools.
+Los nombres de herramientas se nombran automáticamente con el espacio de nombres del ID del plugin en runtime (p. ej. `linear:search-issues`), por lo que los plugins no pueden ocultar herramientas centrales ni las herramientas de otros plugins.
 
-### 11.2 Tool Execution
+### 11.2 Ejecución de herramientas
 
-When an agent invokes a plugin tool during a run, the host routes the call to the plugin worker via a `executeTool` RPC method:
+Cuando un agente invoca una herramienta de plugin durante una ejecución, el host enruta la llamada al worker del plugin vía un método RPC `executeTool`:
 
-- `executeTool(input)` — receives tool name, parsed parameters, and run context (agent ID, run ID, company ID, project ID)
+- `executeTool(input)` — recibe el nombre de la herramienta, los parámetros parseados y el contexto de ejecución (ID de agente, ID de ejecución, ID de empresa, ID de proyecto)
 
-The worker executes the tool logic and returns a typed result. The host enforces capability gates — a plugin must declare `agent.tools.register` to contribute tools, and individual tools may require additional capabilities (e.g. `http.outbound` for tools that call external APIs).
+El worker ejecuta la lógica de la herramienta y devuelve un resultado tipado. El host aplica las puertas de capacidad: un plugin debe declarar `agent.tools.register` para contribuir herramientas, y las herramientas individuales pueden requerir capacidades adicionales (p. ej. `http.outbound` para herramientas que llaman a APIs externas).
 
-### 11.3 Tool Availability
+### 11.3 Disponibilidad de herramientas
 
-By default, plugin tools are available to all agents. The operator may restrict tool availability per agent or per project through plugin configuration.
+Por defecto, las herramientas de plugin están disponibles para todos los agentes. El operador puede restringir la disponibilidad de herramientas por agente o por proyecto a través de la configuración del plugin.
 
-Plugin tools appear in the agent's tool list alongside core tools but are visually distinguished in the UI as plugin-contributed.
+Las herramientas de plugin aparecen en la lista de herramientas del agente junto a las herramientas centrales, pero se distinguen visualmente en la UI como contribuidas por plugins.
 
-### 11.4 Constraints
+### 11.4 Restricciones
 
-- Plugin tools must not override or shadow core tools by name.
-- Plugin tools must be idempotent where possible.
-- Tool execution is subject to the same timeout and resource limits as other plugin worker calls.
-- Tool results are included in run logs.
+- Las herramientas de plugin no deben sobrescribir ni ocultar herramientas centrales por nombre.
+- Las herramientas de plugin deben ser idempotentes donde sea posible.
+- La ejecución de herramientas está sujeta a los mismos límites de timeout y recursos que otras llamadas al worker de plugins.
+- Los resultados de herramientas se incluyen en los registros de ejecución.
 
-## 12. Runtime Model
+## 12. Modelo de runtime
 
-## 12.1 Process Model
+## 12.1 Modelo de proceso
 
-Third-party plugins run out-of-process by default.
+Los plugins de terceros se ejecutan fuera de proceso por defecto.
 
-Default runtime:
+Runtime por defecto:
 
-- Paperclip server starts one worker process per installed plugin
-- the worker process is a Node process
-- host and worker communicate over JSON-RPC on stdio
+- El servidor de Paperclip inicia un proceso worker por plugin instalado
+- el proceso worker es un proceso Node
+- el host y el worker se comunican por JSON-RPC sobre stdio
 
-This design provides:
+Este diseño provee:
 
-- failure isolation
-- clearer logging boundaries
-- easier resource limits
-- a cleaner trust boundary than arbitrary in-process execution
+- aislamiento de fallos
+- límites de logging más claros
+- límites de recursos más fáciles
+- un límite de confianza más limpio que la ejecución arbitraria en proceso
 
-## 12.2 Host Responsibilities
+## 12.2 Responsabilidades del host
 
-The host is responsible for:
+El host es responsable de:
 
-- package install
-- manifest validation
-- capability enforcement
-- process supervision
-- job scheduling
-- webhook routing
-- activity log writes
-- secret resolution
-- UI route registration
+- instalación de paquetes
+- validación de manifiesto
+- aplicación de capacidades
+- supervisión de procesos
+- programación de trabajos
+- enrutamiento de webhooks
+- escrituras del registro de actividad
+- resolución de secretos
+- registro de rutas de UI
 
-## 12.3 Worker Responsibilities
+## 12.3 Responsabilidades del worker
 
-The plugin worker is responsible for:
+El worker del plugin es responsable de:
 
-- validating its own config
-- handling domain events
-- handling scheduled jobs
-- handling webhooks
-- serving data and handling actions for the plugin's own UI via `getData` and `performAction`
-- invoking host services through the SDK
-- reporting health information
+- validar su propia configuración
+- manejar eventos de dominio
+- manejar trabajos programados
+- manejar webhooks
+- servir datos y manejar acciones para la propia UI del plugin vía `getData` y `performAction`
+- invocar servicios del host a través del SDK
+- reportar información de salud
 
-## 12.4 Failure Policy
+## 12.4 Política de fallos
 
-If a worker fails:
+Si un worker falla:
 
-- mark plugin status `error`
-- surface error in plugin health UI
-- keep the rest of the instance running
-- retry start with bounded backoff
-- do not drop other plugins or core services
+- marcar el estado del plugin como `error`
+- mostrar el error en la UI de salud del plugin
+- mantener el resto de la instancia funcionando
+- reintentar el arranque con backoff limitado
+- no tumbar otros plugins ni servicios centrales
 
-## 12.5 Graceful Shutdown Policy
+## 12.5 Política de apagado ordenado
 
-When the host needs to stop a plugin worker (for upgrade, uninstall, or instance shutdown):
+Cuando el host necesita detener un worker de plugin (para actualización, desinstalación o apagado de la instancia):
 
-1. The host sends `shutdown()` to the worker.
-2. The worker has 10 seconds to finish in-flight work and exit cleanly.
-3. If the worker does not exit within the deadline, the host sends SIGTERM.
-4. If the worker does not exit within 5 seconds after SIGTERM, the host sends SIGKILL.
-5. Any in-flight job runs are marked `cancelled` with a note indicating forced shutdown.
-6. Any in-flight `getData` or `performAction` calls return an error to the bridge.
+1. El host envía `shutdown()` al worker.
+2. El worker tiene 10 segundos para terminar el trabajo en curso y salir limpiamente.
+3. Si el worker no sale dentro del plazo, el host envía SIGTERM.
+4. Si el worker no sale dentro de 5 segundos después de SIGTERM, el host envía SIGKILL.
+5. Cualquier ejecución de trabajo en curso se marca como `cancelled` con una nota que indica apagado forzado.
+6. Cualquier llamada en curso a `getData` o `performAction` devuelve un error al puente.
 
-The shutdown deadline should be configurable per-plugin in plugin config for plugins that need longer drain periods.
+El plazo de apagado debería ser configurable por plugin en la configuración del plugin para los plugins que necesitan períodos de drenaje más largos.
 
-## 13. Host-Worker Protocol
+## 13. Protocolo host-worker
 
-The host must support the following worker RPC methods.
+El host debe admitir los siguientes métodos RPC del worker.
 
-Required methods:
+Métodos requeridos:
 
 - `initialize(input)`
 - `health()`
 - `shutdown()`
 
-Optional methods:
+Métodos opcionales:
 
 - `validateConfig(input)`
 - `configChanged(input)`
@@ -487,94 +487,94 @@ Optional methods:
 
 ### 13.1 `initialize`
 
-Called once on worker startup.
+Se llama una vez al arrancar el worker.
 
-Input includes:
+La entrada incluye:
 
-- plugin manifest
-- resolved plugin config
-- instance info
-- host API version
+- manifiesto del plugin
+- configuración resuelta del plugin
+- información de la instancia
+- versión de la API del host
 
 ### 13.2 `health`
 
-Returns:
+Devuelve:
 
-- status
-- current error if any
-- optional plugin-reported diagnostics
+- estado
+- error actual si existe
+- diagnósticos opcionales reportados por el plugin
 
 ### 13.3 `validateConfig`
 
-Runs after config changes and startup.
+Se ejecuta después de cambios de configuración y al arrancar.
 
-Returns:
+Devuelve:
 
 - `ok`
-- warnings
-- errors
+- advertencias
+- errores
 
 ### 13.4 `configChanged`
 
-Called when the operator updates the plugin's instance config at runtime.
+Se llama cuando el operador actualiza la configuración de instancia del plugin en runtime.
 
-Input includes:
+La entrada incluye:
 
-- new resolved config
+- nueva configuración resuelta
 
-If the worker implements this method, it applies the new config without restarting. If the worker does not implement this method, the host restarts the worker process with the new config (graceful shutdown then restart).
+Si el worker implementa este método, aplica la nueva configuración sin reiniciar. Si el worker no implementa este método, el host reinicia el proceso worker con la nueva configuración (apagado ordenado y luego reinicio).
 
 ### 13.5 `onEvent`
 
-Receives one typed Paperclip domain event.
+Recibe un evento de dominio tipado de Paperclip.
 
-Delivery semantics:
+Semántica de entrega:
 
-- at least once
-- plugin must be idempotent
-- no global ordering guarantee across all event types
-- per-entity ordering is best effort but not guaranteed after retries
+- al menos una vez
+- el plugin debe ser idempotente
+- sin garantía de orden global entre todos los tipos de eventos
+- el orden por entidad es de mejor esfuerzo pero no garantizado después de reintentos
 
 ### 13.6 `runJob`
 
-Runs a declared scheduled job.
+Ejecuta un trabajo programado declarado.
 
-The host provides:
+El host provee:
 
-- job key
-- trigger source
-- run id
-- schedule metadata
+- clave del trabajo
+- origen del disparador
+- id de ejecución
+- metadatos de programación
 
 ### 13.7 `handleWebhook`
 
-Receives inbound webhook payload routed by the host.
+Recibe un payload de webhook entrante enrutado por el host.
 
-The host provides:
+El host provee:
 
-- endpoint key
-- headers
-- raw body
-- parsed body if applicable
-- request id
+- clave del endpoint
+- encabezados
+- cuerpo crudo
+- cuerpo parseado si aplica
+- id de solicitud
 
 ### 13.8 `getData`
 
-Returns plugin data requested by the plugin's own UI components.
+Devuelve datos del plugin solicitados por los propios componentes de UI del plugin.
 
-The plugin UI calls the host bridge, which forwards the request to the worker. The worker returns typed JSON that the plugin's own frontend components render.
+La UI del plugin llama al puente del host, que reenvía la solicitud al worker. El worker devuelve JSON tipado que los propios componentes frontend del plugin renderizan.
 
-Input includes:
+La entrada incluye:
 
-- data key (plugin-defined, e.g. `"sync-health"`, `"issue-detail"`)
-- context (company id, project id, entity id, etc.)
-- optional query parameters
+- clave de datos (definida por el plugin, p. ej. `"sync-health"`, `"issue-detail"`)
+- contexto (id de empresa, id de proyecto, id de entidad, etc.)
+- parámetros de consulta opcionales
 
 ### 13.9 `performAction`
 
-Runs an explicit plugin action initiated by the board UI.
+Ejecuta una acción explícita del plugin iniciada por la UI del panel.
 
-Examples:
+Ejemplos:
 
 - "resync now"
 - "link GitHub issue"
@@ -583,24 +583,23 @@ Examples:
 
 ### 13.10 `executeTool`
 
-Runs a plugin-contributed agent tool during a run.
+Ejecuta una herramienta de agente contribuida por el plugin durante una ejecución.
 
-The host provides:
+El host provee:
 
-- tool name (without plugin namespace prefix)
-- parsed parameters matching the tool's declared schema
-- run context: agent ID, run ID, company ID, project ID
+- nombre de la herramienta (sin el prefijo del espacio de nombres del plugin)
+- parámetros parseados que coinciden con el esquema declarado de la herramienta
+- contexto de ejecución: ID de agente, ID de ejecución, ID de empresa, ID de proyecto
 
-The worker executes the tool and returns a typed result (string content, structured data, or error).
+El worker ejecuta la herramienta y devuelve un resultado tipado (contenido de texto, datos estructurados o error).
+## 14. Superficie del SDK
 
-## 14. SDK Surface
+Los plugins no hablan directamente con la BD.
+Los plugins no leen material secreto crudo de la configuración persistida.
 
-Plugins do not talk to the DB directly.
-Plugins do not read raw secret material from persisted config.
+El SDK expuesto a los workers debe proveer clientes tipados del host.
 
-The SDK exposed to workers must provide typed host clients.
-
-Required SDK clients:
+Clientes SDK requeridos:
 
 - `ctx.config`
 - `ctx.events`
@@ -620,11 +619,11 @@ Required SDK clients:
 - `ctx.tools`
 - `ctx.logger`
 
-`ctx.data` and `ctx.actions` register handlers that the plugin's own UI calls through the host bridge. `ctx.data.register(key, handler)` backs `usePluginData(key)` on the frontend. `ctx.actions.register(key, handler)` backs `usePluginAction(key)`.
+`ctx.data` y `ctx.actions` registran manejadores que la propia UI del plugin llama a través del puente del host. `ctx.data.register(key, handler)` respalda `usePluginData(key)` en el frontend. `ctx.actions.register(key, handler)` respalda `usePluginAction(key)`.
 
-Plugins that need filesystem, git, terminal, or process operations handle those directly using standard Node APIs or libraries. The host provides project workspace metadata through `ctx.projects` so plugins can resolve workspace paths, but the host does not proxy low-level OS operations.
+Los plugins que necesitan operaciones de sistema de archivos, git, terminal o procesos las manejan directamente usando APIs estándar de Node o librerías. El host provee metadatos de workspace de proyecto a través de `ctx.projects` para que los plugins puedan resolver rutas de workspace, pero el host no actúa como proxy de operaciones de bajo nivel del SO.
 
-## 14.1 Example SDK Shape
+## 14.1 Ejemplo de forma del SDK
 
 ```ts
 /** Top-level helper for defining a plugin with type checking */
@@ -680,16 +679,16 @@ export interface EventFilter {
 }
 ```
 
-## 15. Capability Model
+## 15. Modelo de capacidades
 
-Capabilities are mandatory and static.
-Every plugin declares them up front.
+Las capacidades son obligatorias y estáticas.
+Cada plugin las declara por adelantado.
 
-The host enforces capabilities in the SDK layer and refuses calls outside the granted set.
+El host aplica las capacidades en la capa del SDK y rechaza llamadas fuera del conjunto otorgado.
 
-## 15.1 Capability Categories
+## 15.1 Categorías de capacidad
 
-### Data Read
+### Lectura de datos
 
 - `companies.read`
 - `projects.read`
@@ -701,7 +700,7 @@ The host enforces capabilities in the SDK layer and refuses calls outside the gr
 - `activity.read`
 - `costs.read`
 
-### Data Write
+### Escritura de datos
 
 - `issues.create`
 - `issues.update`
@@ -711,12 +710,12 @@ The host enforces capabilities in the SDK layer and refuses calls outside the gr
 - `activity.log.write`
 - `metrics.write`
 
-### Plugin State
+### Estado de plugin
 
 - `plugin.state.read`
 - `plugin.state.write`
 
-### Runtime / Integration
+### Runtime / Integración
 
 - `events.subscribe`
 - `events.emit`
@@ -725,7 +724,7 @@ The host enforces capabilities in the SDK layer and refuses calls outside the gr
 - `http.outbound`
 - `secrets.read-ref`
 
-### Agent Tools
+### Herramientas de agente
 
 - `agent.tools.register`
 
@@ -738,29 +737,29 @@ The host enforces capabilities in the SDK layer and refuses calls outside the gr
 - `ui.dashboardWidget.register`
 - `ui.action.register`
 
-## 15.2 Forbidden Capabilities
+## 15.2 Capacidades prohibidas
 
-The host must not expose capabilities for:
+El host no debe exponer capacidades para:
 
-- approval decisions
-- budget override
-- auth bypass
-- issue checkout lock override
-- direct DB access
+- decisiones de aprobación
+- anulación de presupuesto
+- evasión de autenticación
+- anulación del bloqueo de checkout de issues
+- acceso directo a la BD
 
-## 15.3 Upgrade Rules
+## 15.3 Reglas de actualización
 
-If a plugin upgrade adds capabilities:
+Si una actualización de plugin agrega capacidades:
 
-1. the host must mark the plugin `upgrade_pending`
-2. the operator must explicitly approve the new capability set
-3. the new version does not become `ready` until approval completes
+1. el host debe marcar el plugin como `upgrade_pending`
+2. el operador debe aprobar explícitamente el nuevo conjunto de capacidades
+3. la nueva versión no pasa a `ready` hasta que la aprobación se completa
 
-## 16. Event System
+## 16. Sistema de eventos
 
-The host must emit typed domain events that plugins may subscribe to.
+El host debe emitir eventos de dominio tipados a los que los plugins pueden suscribirse.
 
-Minimum event set:
+Conjunto mínimo de eventos:
 
 - `company.created`
 - `company.updated`
@@ -784,32 +783,32 @@ Minimum event set:
 - `cost_event.created`
 - `activity.logged`
 
-Each event must include:
+Cada evento debe incluir:
 
-- event id
-- event type
-- occurred at
-- actor metadata when applicable
-- primary entity metadata
-- typed payload
+- id de evento
+- tipo de evento
+- fecha de ocurrencia
+- metadatos del actor cuando aplique
+- metadatos de la entidad principal
+- payload tipado
 
-### 16.1 Event Filtering
+### 16.1 Filtrado de eventos
 
-Plugins may provide an optional filter when subscribing to events. The filter is evaluated by the host before dispatching to the worker, so filtered-out events never cross the process boundary.
+Los plugins pueden proveer un filtro opcional al suscribirse a eventos. El filtro es evaluado por el host antes de despachar al worker, por lo que los eventos filtrados nunca cruzan el límite del proceso.
 
-Supported filter fields:
+Campos de filtro admitidos:
 
-- `projectId` — only receive events for a specific project
-- `companyId` — only receive events for a specific company
-- `agentId` — only receive events for a specific agent
+- `projectId` — solo recibe eventos de un proyecto específico
+- `companyId` — solo recibe eventos de una empresa específica
+- `agentId` — solo recibe eventos de un agente específico
 
-Filters are optional. If omitted, the plugin receives all events of the subscribed type. Filters may be combined (e.g. filter by both company and project).
+Los filtros son opcionales. Si se omiten, el plugin recibe todos los eventos del tipo suscrito. Los filtros pueden combinarse (p. ej. filtrar por empresa y proyecto a la vez).
 
-### 16.2 Plugin-to-Plugin Events
+### 16.2 Eventos entre plugins
 
-Plugins may emit custom events using `ctx.events.emit(name, payload)`. Plugin-emitted events use a namespaced event type: `plugin.<pluginId>.<eventName>`.
+Los plugins pueden emitir eventos personalizados usando `ctx.events.emit(name, payload)`. Los eventos emitidos por plugins usan un tipo de evento con espacio de nombres: `plugin.<pluginId>.<eventName>`.
 
-Other plugins may subscribe to these events using the same `ctx.events.on()` API:
+Otros plugins pueden suscribirse a estos eventos usando la misma API `ctx.events.on()`:
 
 ```ts
 ctx.events.on("plugin.@paperclip/plugin-git.push-detected", async (event) => {
@@ -817,59 +816,59 @@ ctx.events.on("plugin.@paperclip/plugin-git.push-detected", async (event) => {
 });
 ```
 
-Rules:
+Reglas:
 
-- Plugin events require the `events.emit` capability.
-- Plugin events are not core domain events — they do not appear in the core activity log unless the emitting plugin explicitly logs them.
-- Plugin events follow the same at-least-once delivery semantics as core events.
-- The host must not allow plugins to emit events in the core namespace (events without the `plugin.` prefix).
+- Los eventos de plugin requieren la capacidad `events.emit`.
+- Los eventos de plugin no son eventos de dominio centrales: no aparecen en el registro de actividad central a menos que el plugin emisor los registre explícitamente.
+- Los eventos de plugin siguen la misma semántica de entrega de al menos una vez que los eventos centrales.
+- El host no debe permitir que los plugins emitan eventos en el espacio de nombres central (eventos sin el prefijo `plugin.`).
 
-## 17. Scheduled Jobs
+## 17. Trabajos programados
 
-Plugins may declare scheduled jobs in their manifest.
+Los plugins pueden declarar trabajos programados en su manifiesto.
 
-Job rules:
+Reglas de trabajos:
 
-1. Each job has a stable `job_key`.
-2. The host is the scheduler of record.
-3. The host prevents overlapping execution of the same plugin/job combination unless explicitly allowed later.
-4. Every job run is recorded in Postgres.
-5. Failed jobs are retryable.
+1. Cada trabajo tiene una `job_key` estable.
+2. El host es el programador de referencia.
+3. El host impide la ejecución traslapada de la misma combinación plugin/trabajo a menos que se permita explícitamente más adelante.
+4. Cada ejecución de trabajo se registra en Postgres.
+5. Los trabajos fallidos son reintentables.
 
 ## 18. Webhooks
 
-Plugins may declare webhook endpoints in their manifest.
+Los plugins pueden declarar endpoints de webhook en su manifiesto.
 
-Webhook route shape:
+Forma de la ruta de webhook:
 
 - `POST /api/plugins/:pluginId/webhooks/:endpointKey`
 
-Rules:
+Reglas:
 
-1. The host owns the public route.
-2. The worker receives the request body through `handleWebhook`.
-3. Signature verification happens in plugin code using secret refs resolved by the host.
-4. Every delivery is recorded.
-5. Webhook handling must be idempotent.
+1. El host es dueño de la ruta pública.
+2. El worker recibe el cuerpo de la solicitud a través de `handleWebhook`.
+3. La verificación de firma ocurre en el código del plugin usando referencias de secretos resueltas por el host.
+4. Cada entrega se registra.
+5. El manejo de webhooks debe ser idempotente.
 
-## 19. UI Extension Model
+## 19. Modelo de extensión de UI
 
-Plugins ship their own frontend UI as a bundled React module. The host loads plugin UI into designated extension slots and provides a bridge for the plugin frontend to communicate with its own worker backend and with host APIs.
+Los plugins envían su propia UI frontend como un módulo React empaquetado. El host carga la UI de plugins en slots de extensión designados y provee un puente para que el frontend del plugin se comunique con su propio worker backend y con las APIs del host.
 
-### How Plugin UI Publishing Works In Practice
+### Cómo funciona en la práctica la publicación de UI de plugins
 
-A plugin's `dist/ui/` directory contains a built React bundle. The host serves this bundle and loads it into the page when the user navigates to a plugin surface (a plugin page, a detail tab, a dashboard widget, etc.).
+El directorio `dist/ui/` de un plugin contiene un bundle React construido. El host sirve este bundle y lo carga en la página cuando el usuario navega a una superficie del plugin (una página de plugin, una pestaña de detalle, un widget de panel, etc.).
 
-**The host provides, the plugin renders:**
+**El host provee, el plugin renderiza:**
 
-1. The host defines **extension slots** — designated mount points in the UI where plugin components can appear (pages, tabs, widgets, sidebar entries, action bars).
-2. The plugin's UI bundle exports named components for each slot it wants to fill.
-3. The host mounts the plugin component into the slot, passing it a **host bridge** object.
-4. The plugin component uses the bridge to fetch data from its own worker (via `getData`), call actions (via `performAction`), read host context (current company, project, entity), and use shared host UI primitives (design tokens, common components).
+1. El host define **slots de extensión** — puntos de montaje designados en la UI donde pueden aparecer componentes de plugin (páginas, pestañas, widgets, entradas de barra lateral, barras de acción).
+2. El bundle de UI del plugin exporta componentes nombrados para cada slot que quiere llenar.
+3. El host monta el componente del plugin en el slot, pasándole un objeto **puente del host**.
+4. El componente del plugin usa el puente para obtener datos de su propio worker (vía `getData`), llamar acciones (vía `performAction`), leer el contexto del host (empresa actual, proyecto, entidad) y usar primitivas de UI compartidas del host (tokens de diseño, componentes comunes).
 
-**Concrete example: a Linear plugin ships a dashboard widget.**
+**Ejemplo concreto: un plugin de Linear envía un widget de panel.**
 
-The plugin's UI bundle exports:
+El bundle de UI del plugin exporta:
 
 ```tsx
 // dist/ui/index.tsx
@@ -893,124 +892,124 @@ export function DashboardWidget({ context }: PluginWidgetProps) {
 }
 ```
 
-**What happens at runtime:**
+**Qué pasa en runtime:**
 
-1. User opens the dashboard. The host sees that the Linear plugin registered a `DashboardWidget` export.
-2. The host mounts the plugin's `DashboardWidget` component into the dashboard widget slot, passing `context` (current company, user, etc.) and the bridge.
-3. `usePluginData("sync-health", ...)` calls through the bridge → host → plugin worker's `getData` RPC → returns JSON → the plugin component renders it however it wants.
-4. When the user clicks "Resync Now", `usePluginAction("resync")` calls through the bridge → host → plugin worker's `performAction` RPC.
+1. El usuario abre el panel. El host ve que el plugin de Linear registró una exportación `DashboardWidget`.
+2. El host monta el componente `DashboardWidget` del plugin en el slot de widget de panel, pasando `context` (empresa actual, usuario, etc.) y el puente.
+3. `usePluginData("sync-health", ...)` llama a través del puente → host → RPC `getData` del worker del plugin → devuelve JSON → el componente del plugin lo renderiza como quiera.
+4. Cuando el usuario hace clic en "Resync Now", `usePluginAction("resync")` llama a través del puente → host → RPC `performAction` del worker del plugin.
 
-**What the host controls:**
+**Lo que controla el host:**
 
-- The host decides **where** plugin components appear (which slots exist and when they mount).
-- The host provides the **bridge** — plugin UI cannot make arbitrary network requests or access host internals directly.
-- The host enforces **capability gates** — if a plugin's worker does not have a capability, the bridge rejects the call even if the UI requests it.
-- The host provides **design tokens and shared components** via `@paperclipai/plugin-sdk/ui` so plugins can match the host's visual language without being forced to.
+- El host decide **dónde** aparecen los componentes de plugin (qué slots existen y cuándo se montan).
+- El host provee el **puente** — la UI del plugin no puede hacer solicitudes de red arbitrarias ni acceder a internos del host directamente.
+- El host aplica **puertas de capacidad** — si el worker de un plugin no tiene una capacidad, el puente rechaza la llamada aunque la UI la solicite.
+- El host provee **tokens de diseño y componentes compartidos** vía `@paperclipai/plugin-sdk/ui` para que los plugins puedan igualar el lenguaje visual del host sin estar obligados.
 
-**What the plugin controls:**
+**Lo que controla el plugin:**
 
-- The plugin decides **how** to render its data — it owns its React components, layout, interactions, and state management.
-- The plugin decides **what data** to fetch and **what actions** to expose.
-- The plugin can use any React patterns (hooks, context, third-party component libraries) inside its bundle.
+- El plugin decide **cómo** renderizar sus datos — es dueño de sus componentes React, disposición, interacciones y gestión de estado.
+- El plugin decide **qué datos** obtener y **qué acciones** exponer.
+- El plugin puede usar cualquier patrón de React (hooks, contexto, librerías de componentes de terceros) dentro de su bundle.
 
-### 19.0.1 Plugin UI SDK (`@paperclipai/plugin-sdk/ui`)
+### 19.0.1 SDK de UI de plugin (`@paperclipai/plugin-sdk/ui`)
 
-The SDK includes a `ui` subpath export that plugin frontends import. This subpath provides:
+El SDK incluye una exportación de subruta `ui` que los frontends de plugins importan. Esta subruta provee:
 
-- **Bridge hooks**: `usePluginData(key, params)`, `usePluginAction(key)`, `useHostContext()`
-- **Design tokens**: colors, spacing, typography, shadows matching the host theme
-- **Shared components**: `MetricCard`, `StatusBadge`, `DataTable`, `LogView`, `ActionBar`, `Spinner`, etc.
-- **Type definitions**: `PluginPageProps`, `PluginWidgetProps`, `PluginDetailTabProps`
+- **Hooks de puente**: `usePluginData(key, params)`, `usePluginAction(key)`, `useHostContext()`
+- **Tokens de diseño**: colores, espaciado, tipografía, sombras que igualan el tema del host
+- **Componentes compartidos**: `MetricCard`, `StatusBadge`, `DataTable`, `LogView`, `ActionBar`, `Spinner`, etc.
+- **Definiciones de tipos**: `PluginPageProps`, `PluginWidgetProps`, `PluginDetailTabProps`
 
-Plugins are encouraged but not required to use the shared components. A plugin may render entirely custom UI as long as it communicates through the bridge.
+Se anima a los plugins a usar los componentes compartidos, pero no es obligatorio. Un plugin puede renderizar UI completamente personalizada siempre que se comunique a través del puente.
 
-### 19.0.2 Bundle Isolation
+### 19.0.2 Aislamiento de bundle
 
-Plugin UI bundles are loaded as standard ES modules, not iframed. This gives plugins full rendering performance and access to the host's design tokens.
+Los bundles de UI de plugins se cargan como módulos ES estándar, no en iframes. Esto da a los plugins rendimiento completo de renderizado y acceso a los tokens de diseño del host.
 
-Isolation rules:
+Reglas de aislamiento:
 
-- Plugin bundles must not import from host internals. They may only import from `@paperclipai/plugin-sdk/ui` and their own dependencies.
-- Plugin bundles must not access `window.fetch` or `XMLHttpRequest` directly for host API calls. All host communication goes through the bridge.
-- The host may enforce Content Security Policy rules that restrict plugin network access to the bridge endpoint only.
-- Plugin bundles must be statically analyzable — no dynamic `import()` of URLs outside the plugin's own bundle.
+- Los bundles de plugin no deben importar de internos del host. Solo pueden importar de `@paperclipai/plugin-sdk/ui` y sus propias dependencias.
+- Los bundles de plugin no deben acceder a `window.fetch` o `XMLHttpRequest` directamente para llamadas a la API del host. Toda la comunicación con el host pasa por el puente.
+- El host puede aplicar reglas de Content Security Policy que restringen el acceso de red del plugin solo al endpoint del puente.
+- Los bundles de plugin deben ser analizables estáticamente — sin `import()` dinámico de URLs fuera del propio bundle del plugin.
 
-If stronger isolation is needed later, the host can move to iframe-based mounting for untrusted plugins without changing the plugin's source code (the bridge API stays the same).
+Si más adelante se necesita aislamiento más fuerte, el host puede pasar a montaje basado en iframe para plugins no confiables sin cambiar el código fuente del plugin (la API del puente se mantiene igual).
 
-### 19.0.3 Bundle Serving
+### 19.0.3 Servido de bundle
 
-Plugin UI bundles must be pre-built ESM. The host does not compile or transform plugin UI code at runtime.
+Los bundles de UI de plugins deben ser ESM preconstruidos. El host no compila ni transforma código de UI de plugin en runtime.
 
-The host serves the plugin's `dist/ui/` directory as static assets under a namespaced path:
+El host sirve el directorio `dist/ui/` del plugin como assets estáticos bajo una ruta con espacio de nombres:
 
 - `/_plugins/:pluginId/ui/*`
 
-When the host renders an extension slot, it dynamically imports the plugin's UI entry module from this path, resolves the named export declared in `ui.slots[].exportName`, and mounts it into the slot.
+Cuando el host renderiza un slot de extensión, importa dinámicamente el módulo de entrada de UI del plugin desde esta ruta, resuelve la exportación nombrada declarada en `ui.slots[].exportName` y la monta en el slot.
 
-In development, the host may support a `devUiUrl` override in plugin config that points to a local dev server (e.g. Vite) so plugin authors can use hot-reload during development without rebuilding.
+En desarrollo, el host puede admitir una sobreescritura `devUiUrl` en la configuración del plugin que apunte a un servidor de desarrollo local (p. ej. Vite) para que los autores de plugins puedan usar hot-reload durante el desarrollo sin reconstruir.
 
-## 19.1 Global Operator Routes
+## 19.1 Rutas globales del operador
 
 - `/settings/plugins`
 - `/settings/plugins/:pluginId`
 
-These routes are instance-level.
+Estas rutas son a nivel de instancia.
 
-## 19.2 Company-Context Routes
+## 19.2 Rutas de contexto de empresa
 
 - `/:companyPrefix/plugins/:pluginId`
 
-These routes exist because the board UI is organized around companies even though plugin installation is global.
+Estas rutas existen porque la UI del panel está organizada alrededor de empresas aunque la instalación de plugins sea global.
 
-## 19.3 Detail Tabs
+## 19.3 Pestañas de detalle
 
-Plugins may add tabs to:
+Los plugins pueden agregar pestañas a:
 
-- project detail
-- issue detail
-- agent detail
-- goal detail
-- run detail
+- detalle de proyecto
+- detalle de issue
+- detalle de agente
+- detalle de objetivo
+- detalle de ejecución
 
-Recommended route pattern:
+Patrón de ruta recomendado:
 
 - `/:companyPrefix/<entity>/:id?tab=<plugin-tab-id>`
 
-## 19.4 Dashboard Widgets
+## 19.4 Widgets de panel
 
-Plugins may add cards or sections to the dashboard.
+Los plugins pueden agregar tarjetas o secciones al panel.
 
-## 19.5 Sidebar Entries
+## 19.5 Entradas de barra lateral
 
-Plugins may add sidebar links to:
+Los plugins pueden agregar enlaces de barra lateral a:
 
-- global plugin settings
-- company-context plugin pages
+- ajustes globales de plugin
+- páginas de plugin de contexto de empresa
 
-## 19.6 Shared Components In `@paperclipai/plugin-sdk/ui`
+## 19.6 Componentes compartidos en `@paperclipai/plugin-sdk/ui`
 
-The host SDK ships shared components that plugins can import to quickly build UIs that match the host's look and feel. These are convenience building blocks, not a requirement.
+El SDK del host incluye componentes compartidos que los plugins pueden importar para construir rápidamente UIs que igualen la apariencia del host. Son bloques de construcción de conveniencia, no un requisito.
 
-| Component | What it renders | Typical use |
+| Componente | Qué renderiza | Uso típico |
 |---|---|---|
-| `MetricCard` | Single number with label, optional trend/sparkline | KPIs, counts, rates |
-| `StatusBadge` | Inline status indicator (ok/warning/error/info) | Sync health, connection status |
-| `DataTable` | Rows and columns with optional sorting and pagination | Issue lists, job history, process lists |
-| `TimeseriesChart` | Line or bar chart with timestamped data points | Revenue trends, sync volume, error rates |
-| `MarkdownBlock` | Rendered markdown text | Descriptions, help text, notes |
-| `KeyValueList` | Label/value pairs in a definition-list layout | Entity metadata, config summary |
-| `ActionBar` | Row of buttons wired to `usePluginAction` | Resync, create branch, restart process |
-| `LogView` | Scrollable log output with timestamps | Webhook deliveries, job output, process logs |
-| `JsonTree` | Collapsible JSON tree for debugging | Raw API responses, plugin state inspection |
-| `Spinner` | Loading indicator | Data fetch states |
+| `MetricCard` | Un solo número con etiqueta, tendencia/sparkline opcional | KPIs, conteos, tasas |
+| `StatusBadge` | Indicador de estado en línea (ok/warning/error/info) | Salud de sincronización, estado de conexión |
+| `DataTable` | Filas y columnas con ordenamiento y paginación opcionales | Listas de issues, historial de trabajos, listas de procesos |
+| `TimeseriesChart` | Gráfico de líneas o barras con puntos de datos con marca de tiempo | Tendencias de ingresos, volumen de sincronización, tasas de error |
+| `MarkdownBlock` | Texto markdown renderizado | Descripciones, texto de ayuda, notas |
+| `KeyValueList` | Pares etiqueta/valor en disposición de lista de definición | Metadatos de entidad, resumen de configuración |
+| `ActionBar` | Fila de botones conectados a `usePluginAction` | Resincronizar, crear rama, reiniciar proceso |
+| `LogView` | Salida de log desplazable con marcas de tiempo | Entregas de webhooks, salida de trabajos, logs de procesos |
+| `JsonTree` | Árbol JSON colapsable para depuración | Respuestas crudas de API, inspección de estado de plugin |
+| `Spinner` | Indicador de carga | Estados de obtención de datos |
 
-Plugins may also use entirely custom components. The shared components exist to reduce boilerplate and keep visual consistency, not to limit what plugins can render.
+Los plugins también pueden usar componentes completamente personalizados. Los componentes compartidos existen para reducir boilerplate y mantener consistencia visual, no para limitar lo que los plugins pueden renderizar.
 
-## 19.7 Error Propagation Through The Bridge
+## 19.7 Propagación de errores a través del puente
 
-The bridge hooks must return structured errors so plugin UI can handle failures gracefully.
+Los hooks del puente deben devolver errores estructurados para que la UI del plugin pueda manejar fallos con elegancia.
 
-`usePluginData` returns:
+`usePluginData` devuelve:
 
 ```ts
 {
@@ -1020,9 +1019,9 @@ The bridge hooks must return structured errors so plugin UI can handle failures 
 }
 ```
 
-`usePluginAction` returns an async function that either resolves with the result or throws a `PluginBridgeError`.
+`usePluginAction` devuelve una función asíncrona que o bien resuelve con el resultado o lanza un `PluginBridgeError`.
 
-`PluginBridgeError` shape:
+Forma de `PluginBridgeError`:
 
 ```ts
 interface PluginBridgeError {
@@ -1033,60 +1032,60 @@ interface PluginBridgeError {
 }
 ```
 
-Error codes:
+Códigos de error:
 
-- `WORKER_UNAVAILABLE` — the plugin worker is not running (crashed, shutting down, not yet started)
-- `CAPABILITY_DENIED` — the plugin does not have the required capability for this operation
-- `WORKER_ERROR` — the worker returned an error from its `getData` or `performAction` handler
-- `TIMEOUT` — the worker did not respond within the configured timeout
-- `UNKNOWN` — unexpected bridge-level failure
+- `WORKER_UNAVAILABLE` — el worker del plugin no está en ejecución (falló, apagándose, aún no iniciado)
+- `CAPABILITY_DENIED` — el plugin no tiene la capacidad requerida para esta operación
+- `WORKER_ERROR` — el worker devolvió un error desde su manejador `getData` o `performAction`
+- `TIMEOUT` — el worker no respondió dentro del timeout configurado
+- `UNKNOWN` — fallo inesperado a nivel de puente
 
-The `@paperclipai/plugin-sdk/ui` subpath should also export an `ErrorBoundary` component that plugin authors can use to catch rendering errors without crashing the host page.
+La subruta `@paperclipai/plugin-sdk/ui` también debería exportar un componente `ErrorBoundary` que los autores de plugins pueden usar para atrapar errores de renderizado sin tumbar la página del host.
 
-## 19.8 Plugin Settings UI
+## 19.8 UI de ajustes de plugin
 
-Each plugin that declares an `instanceConfigSchema` in its manifest gets an auto-generated settings form at `/settings/plugins/:pluginId`. The host renders the form from the JSON Schema.
+Cada plugin que declare un `instanceConfigSchema` en su manifiesto obtiene un formulario de ajustes autogenerado en `/settings/plugins/:pluginId`. El host renderiza el formulario desde el JSON Schema.
 
-The auto-generated form supports:
+El formulario autogenerado admite:
 
-- text inputs, number inputs, toggles, select dropdowns derived from schema types and enums
-- nested objects rendered as fieldsets
-- arrays rendered as repeatable field groups with add/remove controls
-- secret ref fields: any schema property annotated with `"format": "secret-ref"` renders as a secret picker that resolves through the Paperclip secret provider system rather than a plain text input
-- validation messages derived from schema constraints (`required`, `minLength`, `pattern`, `minimum`, etc.)
-- a "Test Connection" action if the plugin declares a `validateConfig` RPC method — the host calls it and displays the result inline
+- entradas de texto, entradas numéricas, interruptores, desplegables de selección derivados de tipos de esquema y enums
+- objetos anidados renderizados como fieldsets
+- arreglos renderizados como grupos de campos repetibles con controles de agregar/eliminar
+- campos de referencia de secreto: cualquier propiedad de esquema anotada con `"format": "secret-ref"` se renderiza como un selector de secreto que resuelve a través del sistema de proveedores de secretos de Paperclip en lugar de una entrada de texto simple
+- mensajes de validación derivados de restricciones del esquema (`required`, `minLength`, `pattern`, `minimum`, etc.)
+- una acción "Test Connection" si el plugin declara un método RPC `validateConfig` — el host lo llama y muestra el resultado en línea
 
-For plugins that need richer settings UX beyond what JSON Schema can express, the plugin may declare a `settingsPage` slot in `ui.slots`. When present, the host renders the plugin's own React component instead of the auto-generated form. The plugin component communicates with its worker through the standard bridge to read and write config.
+Para plugins que necesitan UX de ajustes más rica más allá de lo que JSON Schema puede expresar, el plugin puede declarar un slot `settingsPage` en `ui.slots`. Cuando está presente, el host renderiza el propio componente React del plugin en lugar del formulario autogenerado. El componente del plugin se comunica con su worker a través del puente estándar para leer y escribir configuración.
 
-Both approaches coexist: a plugin can use the auto-generated form for simple config and add a custom settings page slot for advanced configuration or operational dashboards.
+Ambos enfoques coexisten: un plugin puede usar el formulario autogenerado para configuración simple y agregar un slot de página de ajustes personalizada para configuración avanzada o paneles operativos.
 
-## 20. Local Tooling
+## 20. Tooling local
 
-Plugins that need filesystem, git, terminal, or process operations implement those directly. The host does not wrap or proxy these operations.
+Los plugins que necesitan operaciones de sistema de archivos, git, terminal o procesos las implementan directamente. El host no envuelve ni actúa como proxy de estas operaciones.
 
-The host provides workspace metadata through `ctx.projects` (list workspaces, get primary workspace, resolve workspace from issue or agent/run). Plugins use this metadata to resolve local paths and then operate on the filesystem, spawn processes, shell out to `git`, or open PTY sessions using standard Node APIs or any libraries they choose.
+El host provee metadatos de workspace a través de `ctx.projects` (listar workspaces, obtener el workspace principal, resolver workspace desde issue o agente/ejecución). Los plugins usan estos metadatos para resolver rutas locales y luego operan en el sistema de archivos, lanzan procesos, ejecutan `git` en shell o abren sesiones PTY usando APIs estándar de Node o las librerías que elijan.
 
-This keeps the host lean — it does not need to maintain a parallel API surface for every OS-level operation a plugin might need. Plugins own their own logic for file browsing, git workflows, terminal sessions, and process management.
+Esto mantiene el host liviano: no necesita mantener una superficie de API paralela para cada operación a nivel de SO que un plugin pueda necesitar. Los plugins son dueños de su propia lógica para exploración de archivos, flujos de trabajo de git, sesiones de terminal y gestión de procesos.
 
-## 21. Persistence And Postgres
+## 21. Persistencia y Postgres
 
-## 21.1 Database Principles
+## 21.1 Principios de base de datos
 
-1. Core Paperclip data stays in first-party tables.
-2. Most plugin-owned data starts in generic extension tables.
-3. Plugin data should scope to existing Paperclip objects before new tables are introduced.
-4. Arbitrary third-party schema migrations are out of scope for the first plugin system.
+1. Los datos centrales de Paperclip permanecen en tablas first-party.
+2. La mayoría de los datos propiedad de plugins comienzan en tablas de extensión genéricas.
+3. Los datos de plugin deberían delimitarse a objetos Paperclip existentes antes de introducir nuevas tablas.
+4. Las migraciones arbitrarias de esquema de terceros están fuera del alcance del primer sistema de plugins.
 
-## 21.2 Core Table Reuse
+## 21.2 Reutilización de tablas centrales
 
-If data becomes part of the actual Paperclip product model, it should become a first-party table.
+Si los datos pasan a formar parte del modelo de producto real de Paperclip, deberían convertirse en una tabla first-party.
 
-Examples:
+Ejemplos:
 
-- `project_workspaces` is already first-party
-- if Paperclip later decides git state is core product data, it should become a first-party table too
+- `project_workspaces` ya es first-party
+- si Paperclip decide más adelante que el estado de git es dato de producto central, también debería convertirse en una tabla first-party
 
-## 21.3 Required Tables
+## 21.3 Tablas requeridas
 
 ### `plugins`
 
@@ -1103,7 +1102,7 @@ Examples:
 - `updated_at` timestamptz not null
 - `last_error` text null
 
-Indexes:
+Índices:
 
 - unique `plugin_key`
 - `status`
@@ -1128,17 +1127,17 @@ Indexes:
 - `value_json` jsonb not null
 - `updated_at` timestamptz not null
 
-Constraints:
+Restricciones:
 
 - unique `(plugin_id, scope_kind, scope_id, namespace, state_key)`
 
-Examples:
+Ejemplos:
 
-- Linear external IDs keyed by `issue`
-- GitHub sync cursors keyed by `project`
-- file browser preferences keyed by `project_workspace`
-- git branch metadata keyed by `project_workspace`
-- process metadata keyed by `project_workspace` or `run`
+- IDs externos de Linear delimitados por `issue`
+- cursores de sincronización de GitHub delimitados por `project`
+- preferencias del explorador de archivos delimitadas por `project_workspace`
+- metadatos de rama de git delimitados por `project_workspace`
+- metadatos de proceso delimitados por `project_workspace` o `run`
 
 ### `plugin_jobs`
 
@@ -1155,7 +1154,7 @@ Examples:
 - `last_succeeded_at` timestamptz null
 - `last_error` text null
 
-Constraints:
+Restricciones:
 
 - unique `(plugin_id, scope_kind, scope_id, job_key)`
 
@@ -1171,7 +1170,7 @@ Constraints:
 - `error` text null
 - `details_json` jsonb null
 
-Indexes:
+Índices:
 
 - `(plugin_id, started_at desc)`
 - `(plugin_job_id, started_at desc)`
@@ -1192,12 +1191,12 @@ Indexes:
 - `response_code` int null
 - `error` text null
 
-Indexes:
+Índices:
 
 - `(plugin_id, received_at desc)`
 - `(plugin_id, endpoint_key, received_at desc)`
 
-### `plugin_entities` (optional but recommended)
+### `plugin_entities` (opcional pero recomendada)
 
 - `id` uuid pk
 - `plugin_id` uuid fk `plugins.id` not null
@@ -1211,251 +1210,251 @@ Indexes:
 - `created_at` timestamptz not null
 - `updated_at` timestamptz not null
 
-Indexes:
+Índices:
 
-- `(plugin_id, entity_type, external_id)` unique when `external_id` is not null
+- `(plugin_id, entity_type, external_id)` unique cuando `external_id` no es null
 - `(plugin_id, scope_kind, scope_id, entity_type)`
 
-Use cases:
+Casos de uso:
 
-- imported Linear issues
-- imported GitHub issues
-- plugin-owned process records
-- plugin-owned external metric bindings
+- issues de Linear importados
+- issues de GitHub importados
+- registros de proceso propiedad del plugin
+- enlaces de métricas externas propiedad del plugin
 
-## 21.4 Activity Log Changes
+## 21.4 Cambios al registro de actividad
 
-The activity log should extend `actor_type` to include `plugin`.
+El registro de actividad debería extender `actor_type` para incluir `plugin`.
 
-New actor enum:
+Nuevo enum de actor:
 
 - `agent`
 - `user`
 - `system`
 - `plugin`
 
-Plugin-originated mutations should write:
+Las mutaciones originadas por plugins deberían escribir:
 
 - `actor_type = plugin`
 - `actor_id = <plugin-id>`
 
-## 21.5 Plugin Migrations
+## 21.5 Migraciones de plugin
 
-The first plugin system does not allow arbitrary third-party migrations.
+El primer sistema de plugins no permite migraciones arbitrarias de terceros.
 
-Later, if custom tables become necessary, the system may add a trusted-module-only migration path.
+Más adelante, si las tablas personalizadas se vuelven necesarias, el sistema puede agregar una ruta de migración solo para módulos confiables.
 
-## 22. Secrets
+## 22. Secretos
 
-Plugin config must never persist raw secret values.
+La configuración de plugin nunca debe persistir valores secretos crudos.
 
-Rules:
+Reglas:
 
-1. Plugin config stores secret refs only.
-2. Secret refs resolve through the existing Paperclip secret provider system.
-3. Plugin workers receive resolved secrets only at execution time.
-4. Secret values must never be written to:
-   - plugin config JSON
-   - activity logs
-   - webhook delivery rows
-   - error messages
+1. La configuración de plugin almacena solo referencias de secretos.
+2. Las referencias de secretos se resuelven a través del sistema existente de proveedores de secretos de Paperclip.
+3. Los workers de plugin reciben secretos resueltos solo al momento de la ejecución.
+4. Los valores de secretos nunca deben escribirse en:
+   - JSON de configuración de plugin
+   - registros de actividad
+   - filas de entrega de webhooks
+   - mensajes de error
 
-## 23. Auditing
+## 23. Auditoría
 
-All plugin-originated mutating actions must be auditable.
+Todas las acciones de mutación originadas por plugins deben ser auditables.
 
-Minimum requirements:
+Requisitos mínimos:
 
-- activity log entry for every mutation
-- job run history
-- webhook delivery history
-- plugin health page
-- install/upgrade history in `plugins`
+- entrada del registro de actividad para cada mutación
+- historial de ejecuciones de trabajos
+- historial de entregas de webhooks
+- página de salud del plugin
+- historial de instalación/actualización en `plugins`
 
-## 24. Operator UX
+## 24. UX del operador
 
-## 24.1 Global Settings
+## 24.1 Ajustes globales
 
-Global plugin settings page must show:
+La página global de ajustes de plugins debe mostrar:
 
-- installed plugins
-- versions
-- status
-- requested capabilities
-- current errors
-- install/upgrade/remove actions
+- plugins instalados
+- versiones
+- estado
+- capacidades solicitadas
+- errores actuales
+- acciones de instalar/actualizar/eliminar
 
-## 24.2 Plugin Settings Page
+## 24.2 Página de ajustes del plugin
 
-Each plugin may expose:
+Cada plugin puede exponer:
 
-- config form derived from `instanceConfigSchema`
-- health details
-- recent job history
-- recent webhook history
-- capability list
+- formulario de configuración derivado de `instanceConfigSchema`
+- detalles de salud
+- historial reciente de trabajos
+- historial reciente de webhooks
+- lista de capacidades
 
-Route:
+Ruta:
 
 - `/settings/plugins/:pluginId`
 
-## 24.3 Company-Context Plugin Page
+## 24.3 Página de plugin de contexto de empresa
 
-Each plugin may expose a company-context main page:
+Cada plugin puede exponer una página principal de contexto de empresa:
 
 - `/:companyPrefix/plugins/:pluginId`
 
-This page is where board users do most day-to-day work.
+Esta página es donde los usuarios del panel hacen la mayor parte del trabajo diario.
 
-## 25. Uninstall And Data Lifecycle
+## 25. Desinstalación y ciclo de vida de datos
 
-When a plugin is uninstalled, the host must handle plugin-owned data explicitly.
+Cuando un plugin se desinstala, el host debe manejar los datos propiedad del plugin de forma explícita.
 
-### 25.1 Uninstall Process
+### 25.1 Proceso de desinstalación
 
-1. The host sends `shutdown()` to the worker and follows the graceful shutdown policy.
-2. The host marks the plugin status `uninstalled` in the `plugins` table (soft delete).
-3. Plugin-owned data (`plugin_state`, `plugin_entities`, `plugin_jobs`, `plugin_job_runs`, `plugin_webhook_deliveries`, `plugin_config`) is retained for a configurable grace period (default: 30 days).
-4. During the grace period, the operator can reinstall the same plugin and recover its state.
-5. After the grace period, the host purges all plugin-owned data for the uninstalled plugin.
-6. The operator may force-purge immediately via CLI: `pnpm paperclipai plugin purge <plugin-id>`.
+1. El host envía `shutdown()` al worker y sigue la política de apagado ordenado.
+2. El host marca el estado del plugin como `uninstalled` en la tabla `plugins` (borrado lógico).
+3. Los datos propiedad del plugin (`plugin_state`, `plugin_entities`, `plugin_jobs`, `plugin_job_runs`, `plugin_webhook_deliveries`, `plugin_config`) se conservan por un período de gracia configurable (por defecto: 30 días).
+4. Durante el período de gracia, el operador puede reinstalar el mismo plugin y recuperar su estado.
+5. Después del período de gracia, el host purga todos los datos propiedad del plugin desinstalado.
+6. El operador puede forzar la purga inmediata vía CLI: `pnpm paperclipai plugin purge <plugin-id>`.
 
-### 25.2 Upgrade Data Considerations
+### 25.2 Consideraciones de datos en actualización
 
-Plugin upgrades do not automatically migrate plugin state. If a plugin's `value_json` shape changes between versions:
+Las actualizaciones de plugins no migran automáticamente el estado del plugin. Si la forma de `value_json` de un plugin cambia entre versiones:
 
-- The plugin worker is responsible for migrating its own state on first access after upgrade.
-- The host does not run plugin-defined schema migrations.
-- Plugins should version their state keys or use a schema version field inside `value_json` to detect and handle format changes.
+- El worker del plugin es responsable de migrar su propio estado en el primer acceso después de la actualización.
+- El host no ejecuta migraciones de esquema definidas por plugins.
+- Los plugins deberían versionar sus claves de estado o usar un campo de versión de esquema dentro de `value_json` para detectar y manejar cambios de formato.
 
-### 25.3 Upgrade Lifecycle
+### 25.3 Ciclo de vida de actualización
 
-When upgrading a plugin:
+Al actualizar un plugin:
 
-1. The host sends `shutdown()` to the old worker.
-2. The host waits for the old worker to drain in-flight work (respecting the shutdown deadline).
-3. Any in-flight jobs that do not complete within the deadline are marked `cancelled`.
-4. The host installs the new version and starts the new worker.
-5. If the new version adds capabilities, the plugin enters `upgrade_pending` and the operator must approve before the new worker becomes `ready`.
+1. El host envía `shutdown()` al worker viejo.
+2. El host espera a que el worker viejo drene el trabajo en curso (respetando el plazo de apagado).
+3. Cualquier trabajo en curso que no se complete dentro del plazo se marca como `cancelled`.
+4. El host instala la nueva versión e inicia el nuevo worker.
+5. Si la nueva versión agrega capacidades, el plugin entra en `upgrade_pending` y el operador debe aprobar antes de que el nuevo worker pase a `ready`.
 
-### 25.4 Hot Plugin Lifecycle
+### 25.4 Ciclo de vida de plugins en caliente
 
-Plugin install, uninstall, upgrade, and config changes **must** take effect without restarting the Paperclip server. This is a normative requirement, not optional.
+La instalación, desinstalación, actualización y cambios de configuración de plugins **deben** surtir efecto sin reiniciar el servidor de Paperclip. Esto es un requisito normativo, no opcional.
 
-The architecture already supports this — plugins run as out-of-process workers with dynamic ESM imports, IPC bridges, and host-managed routing tables. This section makes the requirement explicit so implementations do not regress.
+La arquitectura ya lo admite: los plugins se ejecutan como workers fuera de proceso con importaciones ESM dinámicas, puentes IPC y tablas de enrutamiento gestionadas por el host. Esta sección hace el requisito explícito para que las implementaciones no retrocedan.
 
-#### 25.4.1 Hot Install
+#### 25.4.1 Instalación en caliente
 
-When a plugin is installed at runtime:
+Cuando un plugin se instala en runtime:
 
-1. The host resolves and validates the manifest without stopping existing services.
-2. The host spawns a new worker process for the plugin.
-3. The host registers the plugin's event subscriptions, job schedules, webhook endpoints, and agent tool declarations in the live routing tables.
-4. The host loads the plugin's UI bundle path into the extension slot registry so the frontend can discover it on the next navigation or via a live notification.
-5. The plugin enters `ready` status (or `upgrade_pending` if capability approval is required).
+1. El host resuelve y valida el manifiesto sin detener los servicios existentes.
+2. El host lanza un nuevo proceso worker para el plugin.
+3. El host registra las suscripciones de eventos, programaciones de trabajos, endpoints de webhooks y declaraciones de herramientas de agente del plugin en las tablas de enrutamiento en vivo.
+4. El host carga la ruta del bundle de UI del plugin en el registro de slots de extensión para que el frontend pueda descubrirlo en la siguiente navegación o vía una notificación en vivo.
+5. El plugin entra en estado `ready` (o `upgrade_pending` si se requiere aprobación de capacidades).
 
-No other plugin or host service is interrupted.
+Ningún otro plugin ni servicio del host se interrumpe.
 
-#### 25.4.2 Hot Uninstall
+#### 25.4.2 Desinstalación en caliente
 
-When a plugin is uninstalled at runtime:
+Cuando un plugin se desinstala en runtime:
 
-1. The host sends `shutdown()` and follows the graceful shutdown policy (Section 12.5).
-2. The host removes the plugin's event subscriptions, job schedules, webhook endpoints, and agent tool declarations from the live routing tables.
-3. The host removes the plugin's UI bundle from the extension slot registry. Any currently mounted plugin UI components are unmounted and replaced with a placeholder or removed entirely.
-4. The host marks the plugin `uninstalled` and starts the data retention grace period (Section 25.1).
+1. El host envía `shutdown()` y sigue la política de apagado ordenado (Sección 12.5).
+2. El host elimina las suscripciones de eventos, programaciones de trabajos, endpoints de webhooks y declaraciones de herramientas de agente del plugin de las tablas de enrutamiento en vivo.
+3. El host elimina el bundle de UI del plugin del registro de slots de extensión. Cualquier componente de UI de plugin montado actualmente se desmonta y se reemplaza con un marcador de posición o se elimina por completo.
+4. El host marca el plugin como `uninstalled` e inicia el período de gracia de retención de datos (Sección 25.1).
 
-No server restart is needed.
+No se necesita reiniciar el servidor.
 
-#### 25.4.3 Hot Upgrade
+#### 25.4.3 Actualización en caliente
 
-When a plugin is upgraded at runtime:
+Cuando un plugin se actualiza en runtime:
 
-1. The host follows the upgrade lifecycle (Section 25.3) — shut down old worker, start new worker.
-2. If the new version changes event subscriptions, job schedules, webhook endpoints, or agent tools, the host atomically swaps the old registrations for the new ones.
-3. If the new version ships an updated UI bundle, the host invalidates any cached bundle assets and notifies the frontend to reload plugin UI components. Active users see the updated UI on next navigation or via a live refresh notification.
-4. If the manifest `apiVersion` is unchanged and no new capabilities are added, the upgrade completes without operator interaction.
+1. El host sigue el ciclo de vida de actualización (Sección 25.3): apaga el worker viejo, inicia el nuevo worker.
+2. Si la nueva versión cambia suscripciones de eventos, programaciones de trabajos, endpoints de webhooks o herramientas de agente, el host intercambia atómicamente los registros viejos por los nuevos.
+3. Si la nueva versión incluye un bundle de UI actualizado, el host invalida cualquier asset de bundle en caché y notifica al frontend para recargar los componentes de UI del plugin. Los usuarios activos ven la UI actualizada en la siguiente navegación o vía una notificación de recarga en vivo.
+4. Si el `apiVersion` del manifiesto no cambia y no se agregan nuevas capacidades, la actualización se completa sin interacción del operador.
 
-#### 25.4.4 Hot Config Change
+#### 25.4.4 Cambio de configuración en caliente
 
-When an operator updates a plugin's instance config at runtime:
+Cuando un operador actualiza la configuración de instancia de un plugin en runtime:
 
-1. The host writes the new config to `plugin_config`.
-2. The host sends a `configChanged` notification to the running worker via IPC.
-3. The worker receives the new config through `ctx.config` and applies it without restarting. If the plugin needs to re-initialize connections (e.g. a new API token), it does so internally.
-4. If the plugin does not handle `configChanged`, the host restarts the worker process with the new config (graceful shutdown then restart).
+1. El host escribe la nueva configuración en `plugin_config`.
+2. El host envía una notificación `configChanged` al worker en ejecución vía IPC.
+3. El worker recibe la nueva configuración a través de `ctx.config` y la aplica sin reiniciar. Si el plugin necesita reinicializar conexiones (p. ej. un nuevo token de API), lo hace internamente.
+4. Si el plugin no maneja `configChanged`, el host reinicia el proceso worker con la nueva configuración (apagado ordenado y luego reinicio).
 
-#### 25.4.5 Frontend Cache Invalidation
+#### 25.4.5 Invalidación de caché del frontend
 
-The host must version plugin UI bundle URLs (e.g. `/_plugins/:pluginId/ui/:version/*` or content-hash-based paths) so that browser caches do not serve stale bundles after upgrade or reinstall.
+El host debe versionar las URLs de los bundles de UI de plugins (p. ej. `/_plugins/:pluginId/ui/:version/*` o rutas basadas en hash de contenido) para que las cachés del navegador no sirvan bundles obsoletos después de una actualización o reinstalación.
 
-The host should emit a `plugin.ui.updated` event that the frontend listens for to trigger re-import of updated plugin modules without a full page reload.
+El host debería emitir un evento `plugin.ui.updated` que el frontend escucha para disparar la reimportación de módulos de plugin actualizados sin una recarga completa de la página.
 
-#### 25.4.6 Worker Process Management
+#### 25.4.6 Gestión de procesos worker
 
-The host's plugin process manager must support:
+El gestor de procesos de plugin del host debe admitir:
 
-- starting a worker for a newly installed plugin without affecting other workers
-- stopping a worker for an uninstalled plugin without affecting other workers
-- replacing a worker during upgrade (stop old, start new) atomically from the routing table's perspective
-- restarting a worker after crash without operator intervention (with backoff)
+- iniciar un worker para un plugin recién instalado sin afectar otros workers
+- detener un worker de un plugin desinstalado sin afectar otros workers
+- reemplazar un worker durante una actualización (detener el viejo, iniciar el nuevo) de forma atómica desde la perspectiva de la tabla de enrutamiento
+- reiniciar un worker después de un fallo sin intervención del operador (con backoff)
 
-Each worker process is independent. There is no shared process pool or batch restart mechanism.
+Cada proceso worker es independiente. No hay un pool de procesos compartido ni mecanismo de reinicio por lotes.
 
-## 26. Plugin Observability
+## 26. Observabilidad de plugins
 
 ### 26.1 Logging
 
-Plugin workers use `ctx.logger` to emit structured logs. The host captures these logs and stores them in a queryable format.
+Los workers de plugin usan `ctx.logger` para emitir logs estructurados. El host captura estos logs y los almacena en un formato consultable.
 
-Log storage rules:
+Reglas de almacenamiento de logs:
 
-- Plugin logs are stored in a `plugin_logs` table or appended to a log file under the plugin's data directory.
-- Each log entry includes: plugin ID, timestamp, level, message, and optional structured metadata.
-- Logs are queryable from the plugin settings page in the UI.
-- Logs have a configurable retention period (default: 7 days).
-- The host captures `stdout` and `stderr` from the worker process as fallback logs even if the worker does not use `ctx.logger`.
+- Los logs de plugin se almacenan en una tabla `plugin_logs` o se agregan a un archivo de log bajo el directorio de datos del plugin.
+- Cada entrada de log incluye: ID de plugin, marca de tiempo, nivel, mensaje y metadatos estructurados opcionales.
+- Los logs son consultables desde la página de ajustes del plugin en la UI.
+- Los logs tienen un período de retención configurable (por defecto: 7 días).
+- El host captura `stdout` y `stderr` del proceso worker como logs de respaldo aunque el worker no use `ctx.logger`.
 
-### 26.2 Health Dashboard
+### 26.2 Panel de salud
 
-The plugin settings page must show:
+La página de ajustes del plugin debe mostrar:
 
-- current worker status (running, error, stopped)
-- uptime since last restart
-- recent log entries
-- job run history with success/failure rates
-- webhook delivery history with success/failure rates
-- last health check result and diagnostics
-- resource usage if available (memory, CPU)
+- estado actual del worker (en ejecución, error, detenido)
+- tiempo activo desde el último reinicio
+- entradas de log recientes
+- historial de ejecuciones de trabajos con tasas de éxito/fallo
+- historial de entregas de webhooks con tasas de éxito/fallo
+- último resultado de chequeo de salud y diagnósticos
+- uso de recursos si está disponible (memoria, CPU)
 
-### 26.3 Alerting
+### 26.3 Alertas
 
-The host should emit internal events when plugin health degrades. These use the `plugin.*` namespace (not core domain events) and do not appear in the core activity log:
+El host debería emitir eventos internos cuando la salud del plugin se degrade. Estos usan el espacio de nombres `plugin.*` (no eventos de dominio centrales) y no aparecen en el registro de actividad central:
 
-- `plugin.health.degraded` — worker reporting errors or failing health checks
-- `plugin.health.recovered` — worker recovered from error state
-- `plugin.worker.crashed` — worker process exited unexpectedly
-- `plugin.worker.restarted` — worker restarted after crash
+- `plugin.health.degraded` — el worker reporta errores o falla chequeos de salud
+- `plugin.health.recovered` — el worker se recuperó de un estado de error
+- `plugin.worker.crashed` — el proceso worker terminó inesperadamente
+- `plugin.worker.restarted` — el worker se reinició después de un fallo
 
-These events can be consumed by other plugins (e.g. a notification plugin) or surfaced in the dashboard.
+Estos eventos pueden ser consumidos por otros plugins (p. ej. un plugin de notificaciones) o mostrarse en el panel.
 
-## 27. Plugin Development And Testing
+## 27. Desarrollo y pruebas de plugins
 
 ### 27.1 `@paperclipai/plugin-test-harness`
 
-The host should publish a test harness package that plugin authors use for local development and testing.
+El host debería publicar un paquete de test harness que los autores de plugins usan para desarrollo local y pruebas.
 
-The test harness provides:
+El test harness provee:
 
-- a mock host that implements the full SDK interface (`ctx.config`, `ctx.events`, `ctx.state`, etc.)
-- ability to send synthetic events and verify handler responses
-- ability to trigger job runs and verify side effects
-- ability to simulate `getData` and `performAction` calls as if coming from the UI bridge
-- ability to simulate `executeTool` calls as if coming from an agent run
-- in-memory state and entity stores for assertions
-- configurable capability sets for testing capability denial paths
+- un host simulado que implementa la interfaz completa del SDK (`ctx.config`, `ctx.events`, `ctx.state`, etc.)
+- capacidad de enviar eventos sintéticos y verificar respuestas de manejadores
+- capacidad de disparar ejecuciones de trabajos y verificar efectos secundarios
+- capacidad de simular llamadas `getData` y `performAction` como si vinieran del puente de UI
+- capacidad de simular llamadas `executeTool` como si vinieran de una ejecución de agente
+- almacenes de estado y entidades en memoria para assertions
+- conjuntos de capacidades configurables para probar rutas de denegación de capacidad
 
-Example usage:
+Ejemplo de uso:
 
 ```ts
 import { createTestHarness } from "@paperclipai/plugin-test-harness";
@@ -1477,30 +1476,29 @@ const data = await harness.getData("sync-health", { companyId: "comp-1" });
 expect(data.syncedCount).toBeGreaterThan(0);
 ```
 
-### 27.2 Local Plugin Development
+### 27.2 Desarrollo local de plugins
 
-For developing a plugin against a running Paperclip instance:
+Para desarrollar un plugin contra una instancia de Paperclip en ejecución:
 
-- The operator installs the plugin from a local path: `pnpm paperclipai plugin install ./path/to/plugin`
-- The host watches the plugin directory for changes and restarts the worker on rebuild.
-- `devUiUrl` in plugin config can point to a local Vite dev server for UI hot-reload.
-- The plugin settings page shows real-time logs from the worker for debugging.
+- El operador instala el plugin desde una ruta local: `pnpm paperclipai plugin install ./path/to/plugin`
+- El host observa el directorio del plugin en busca de cambios y reinicia el worker al reconstruir.
+- `devUiUrl` en la configuración del plugin puede apuntar a un servidor de desarrollo Vite local para hot-reload de UI.
+- La página de ajustes del plugin muestra logs en tiempo real del worker para depuración.
 
-### 27.3 Plugin Starter Template
+### 27.3 Plantilla inicial de plugin
 
-The host should publish a starter template (`create-paperclip-plugin`) that scaffolds:
+El host debería publicar una plantilla inicial (`create-paperclip-plugin`) que genere:
 
-- `package.json` with correct `paperclipPlugin` keys
-- manifest with placeholder values
-- worker entry with SDK type imports and example event handler
-- UI entry with example `DashboardWidget` using bridge hooks
-- test file using the test harness
-- build configuration (esbuild or similar) for both worker and UI bundles
-- `.gitignore` and `tsconfig.json`
+- `package.json` con las claves `paperclipPlugin` correctas
+- manifiesto con valores de marcador
+- entrada de worker con importaciones de tipos del SDK y ejemplo de manejador de eventos
+- entrada de UI con ejemplo de `DashboardWidget` usando hooks de puente
+- archivo de prueba usando el test harness
+- configuración de compilación (esbuild o similar) para ambos bundles, worker y UI
+- `.gitignore` y `tsconfig.json`
+## 28. Mapeos de ejemplo
 
-## 28. Example Mappings
-
-This spec directly supports the following plugin types:
+Esta especificación admite directamente los siguientes tipos de plugin:
 
 - `@paperclip/plugin-workspace-files`
 - `@paperclip/plugin-terminal`
@@ -1511,134 +1509,134 @@ This spec directly supports the following plugin types:
 - `@paperclip/plugin-runtime-processes`
 - `@paperclip/plugin-stripe`
 
-## 29. Compatibility And Versioning
+## 29. Compatibilidad y versionado
 
-### 29.1 API Version Rules
+### 29.1 Reglas de versión de API
 
-1. Host supports one or more explicit plugin API versions.
-2. Plugin manifest declares exactly one `apiVersion`.
-3. Host rejects unsupported versions at install time.
-4. Plugin upgrades are explicit operator actions.
-5. Capability expansion requires explicit operator approval.
+1. El host admite una o más versiones explícitas de la API de plugins.
+2. El manifiesto del plugin declara exactamente un `apiVersion`.
+3. El host rechaza versiones no admitidas al momento de la instalación.
+4. Las actualizaciones de plugins son acciones explícitas del operador.
+5. La expansión de capacidades requiere aprobación explícita del operador.
 
-### 29.2 SDK Versioning
+### 29.2 Versionado del SDK
 
-The host publishes a single SDK package for plugin authors:
+El host publica un único paquete SDK para autores de plugins:
 
-- `@paperclipai/plugin-sdk` — the complete plugin SDK
+- `@paperclipai/plugin-sdk` — el SDK completo de plugins
 
-The package uses subpath exports to separate worker and UI concerns:
+El paquete usa exportaciones de subruta para separar las preocupaciones de worker y UI:
 
-- `@paperclipai/plugin-sdk` — worker-side SDK (context, events, state, tools, logger, `definePlugin`, `z`)
-- `@paperclipai/plugin-sdk/ui` — frontend SDK (bridge hooks, shared components, design tokens)
+- `@paperclipai/plugin-sdk` — SDK del lado del worker (contexto, eventos, estado, herramientas, logger, `definePlugin`, `z`)
+- `@paperclipai/plugin-sdk/ui` — SDK frontend (hooks de puente, componentes compartidos, tokens de diseño)
 
-A single package simplifies dependency management for plugin authors — one dependency, one version, one changelog. The subpath exports keep bundle separation clean: worker code imports from the root, UI code imports from `/ui`. Build tools tree-shake accordingly so the worker bundle does not include React components and the UI bundle does not include worker-only code.
+Un solo paquete simplifica la gestión de dependencias para los autores de plugins: una dependencia, una versión, un changelog. Las exportaciones de subruta mantienen limpia la separación de bundles: el código del worker importa desde la raíz, el código de UI importa desde `/ui`. Las herramientas de compilación hacen tree-shaking en consecuencia para que el bundle del worker no incluya componentes React y el bundle de UI no incluya código solo de worker.
 
-Versioning rules:
+Reglas de versionado:
 
-1. **Semver**: The SDK follows strict semantic versioning. Major version bumps indicate breaking changes to either the worker or UI surface; minor versions add new features backwards-compatibly; patch versions are bug fixes only.
-2. **Tied to API version**: Each major SDK version corresponds to exactly one plugin `apiVersion`. When `@paperclipai/plugin-sdk@2.x` ships, it targets `apiVersion: 2`. Plugins built with SDK 1.x continue to declare `apiVersion: 1`.
-3. **Host multi-version support**: The host must support at least the current and one previous `apiVersion` simultaneously. This means plugins built against the previous SDK major version continue to work without modification. The host maintains separate IPC protocol handlers for each supported API version.
-4. **Minimum SDK version in manifest**: Plugins declare `sdkVersion` in the manifest as a semver range (e.g. `">=1.4.0 <2.0.0"`). The host validates this at install time and warns if the plugin's declared range is outside the host's supported SDK versions.
-5. **Deprecation timeline**: When a new `apiVersion` ships, the previous version enters a deprecation period of at least 6 months. During this period:
-   - The host continues to load plugins targeting the deprecated version.
-   - The host logs a deprecation warning at plugin startup.
-   - The plugin settings page shows a banner indicating the plugin should be upgraded.
-   - After the deprecation period ends, the host may drop support for the old version in a future release.
-6. **SDK changelog and migration guides**: Each major SDK release must include a migration guide documenting every breaking change, the new API surface, and a step-by-step upgrade path for plugin authors.
-7. **UI surface stability**: Breaking changes to shared UI components (removing a component, changing required props) or design tokens require a major version bump just like worker API changes. The single-package model means both surfaces are versioned together, avoiding drift between worker and UI compatibility.
+1. **Semver**: El SDK sigue versionado semántico estricto. Los saltos de versión mayor indican cambios disruptivos en la superficie del worker o de UI; las versiones menores agregan nuevas funciones de forma retrocompatible; las versiones de parche son solo correcciones de errores.
+2. **Atado a la versión de API**: Cada versión mayor del SDK corresponde a exactamente un `apiVersion` de plugin. Cuando `@paperclipai/plugin-sdk@2.x` se publique, apunta a `apiVersion: 2`. Los plugins construidos con SDK 1.x siguen declarando `apiVersion: 1`.
+3. **Soporte multiversión del host**: El host debe admitir al menos la versión actual y una anterior de `apiVersion` simultáneamente. Esto significa que los plugins construidos contra la versión mayor anterior del SDK siguen funcionando sin modificación. El host mantiene manejadores de protocolo IPC separados para cada versión de API admitida.
+4. **Versión mínima del SDK en el manifiesto**: Los plugins declaran `sdkVersion` en el manifiesto como un rango semver (p. ej. `">=1.4.0 <2.0.0"`). El host lo valida al momento de la instalación y advierte si el rango declarado del plugin está fuera de las versiones de SDK admitidas por el host.
+5. **Cronograma de deprecación**: Cuando se publica un nuevo `apiVersion`, la versión anterior entra en un período de deprecación de al menos 6 meses. Durante este período:
+   - El host sigue cargando plugins que apuntan a la versión deprecada.
+   - El host registra una advertencia de deprecación al arrancar el plugin.
+   - La página de ajustes del plugin muestra un banner indicando que el plugin debería actualizarse.
+   - Después de que termina el período de deprecación, el host puede dejar de admitir la versión vieja en una futura versión.
+6. **Changelog del SDK y guías de migración**: Cada versión mayor del SDK debe incluir una guía de migración que documente cada cambio disruptivo, la nueva superficie de API y una ruta de actualización paso a paso para autores de plugins.
+7. **Estabilidad de la superficie de UI**: Los cambios disruptivos a componentes de UI compartidos (eliminar un componente, cambiar props requeridos) o a tokens de diseño requieren un salto de versión mayor igual que los cambios de API del worker. El modelo de paquete único significa que ambas superficies se versionan juntas, evitando deriva entre la compatibilidad del worker y la de UI.
 
-### 29.3 Version Compatibility Matrix
+### 29.3 Matriz de compatibilidad de versiones
 
-The host should publish a compatibility matrix:
+El host debería publicar una matriz de compatibilidad:
 
-| Host Version | Supported API Versions | SDK Range |
+| Versión del host | Versiones de API admitidas | Rango de SDK |
 |---|---|---|
 | 1.0 | 1 | 1.x |
 | 2.0 | 1, 2 | 1.x, 2.x |
 | 3.0 | 2, 3 | 2.x, 3.x |
 
-This matrix is published in the host docs and queryable via `GET /api/plugins/compatibility`.
+Esta matriz se publica en los documentos del host y es consultable vía `GET /api/plugins/compatibility`.
 
-### 29.4 Plugin Author Workflow
+### 29.4 Flujo de trabajo del autor de plugin
 
-When a new SDK version is released:
+Cuando se publica una nueva versión del SDK:
 
-1. Plugin author updates `@paperclipai/plugin-sdk` dependency.
-2. Plugin author follows the migration guide to update code.
-3. Plugin author updates `apiVersion` and `sdkVersion` in the manifest.
-4. Plugin author publishes a new plugin version.
-5. Operators upgrade the plugin on their instances. The old version continues to work until explicitly upgraded.
+1. El autor del plugin actualiza la dependencia `@paperclipai/plugin-sdk`.
+2. El autor del plugin sigue la guía de migración para actualizar el código.
+3. El autor del plugin actualiza `apiVersion` y `sdkVersion` en el manifiesto.
+4. El autor del plugin publica una nueva versión del plugin.
+5. Los operadores actualizan el plugin en sus instancias. La versión vieja sigue funcionando hasta que se actualice explícitamente.
 
-## 30. Recommended Delivery Order
+## 30. Orden de entrega recomendado
 
-## Phase 1
+## Fase 1
 
-- plugin manifest
-- install/list/remove/upgrade CLI
-- global settings UI
-- plugin process manager
-- capability enforcement
+- manifiesto de plugin
+- CLI de instalación/listado/eliminación/actualización
+- UI global de ajustes
+- gestor de procesos de plugin
+- aplicación de capacidades
 - `plugins`, `plugin_config`, `plugin_state`, `plugin_jobs`, `plugin_job_runs`, `plugin_webhook_deliveries`
-- event bus
-- jobs
+- bus de eventos
+- trabajos
 - webhooks
-- settings page
-- plugin UI bundle loading, host bridge, and `@paperclipai/plugin-sdk/ui`
-- extension slot mounting for pages, tabs, widgets, sidebar entries
-- bridge error propagation (`PluginBridgeError`)
-- auto-generated settings form from `instanceConfigSchema`
-- plugin-contributed agent tools
-- plugin-to-plugin events (`plugin.<pluginId>.*` namespace)
-- event filtering
-- graceful shutdown with configurable deadlines
-- plugin logging and health dashboard
+- página de ajustes
+- carga de bundle de UI de plugin, puente del host y `@paperclipai/plugin-sdk/ui`
+- montaje de slots de extensión para páginas, pestañas, widgets, entradas de barra lateral
+- propagación de errores del puente (`PluginBridgeError`)
+- formulario de ajustes autogenerado desde `instanceConfigSchema`
+- herramientas de agente contribuidas por plugins
+- eventos entre plugins (espacio de nombres `plugin.<pluginId>.*`)
+- filtrado de eventos
+- apagado ordenado con plazos configurables
+- logging de plugin y panel de salud
 - `@paperclipai/plugin-test-harness`
-- `create-paperclip-plugin` starter template
-- uninstall with data retention grace period
-- hot plugin lifecycle (install, uninstall, upgrade, config change without server restart)
-- SDK versioning with multi-version host support and deprecation policy
+- plantilla inicial `create-paperclip-plugin`
+- desinstalación con período de gracia de retención de datos
+- ciclo de vida de plugins en caliente (instalación, desinstalación, actualización, cambio de configuración sin reiniciar el servidor)
+- versionado del SDK con soporte multiversión del host y política de deprecación
 
-This phase is enough for:
+Esta fase es suficiente para:
 
 - Linear
 - GitHub Issues
 - Grafana
 - Stripe
-- file browser
+- explorador de archivos
 - terminal
-- git workflow
-- process/server tracking
+- flujo de trabajo de git
+- seguimiento de procesos/servidores
 
-Workspace plugins (file browser, terminal, git, process tracking) do not require additional host APIs — they resolve workspace paths through `ctx.projects` and handle filesystem, git, PTY, and process operations directly.
+Los plugins de workspace (explorador de archivos, terminal, git, seguimiento de procesos) no requieren APIs adicionales del host: resuelven rutas de workspace a través de `ctx.projects` y manejan operaciones de sistema de archivos, git, PTY y procesos directamente.
 
-## Phase 2
+## Fase 2
 
-- optional `plugin_entities`
-- richer action systems
-- trusted-module migration path if truly needed
-- iframe-based isolation for untrusted plugin UI bundles
-- plugin ecosystem/distribution work
+- `plugin_entities` opcional
+- sistemas de acciones más ricos
+- ruta de migración para módulos confiables si realmente se necesita
+- aislamiento basado en iframe para bundles de UI de plugins no confiables
+- trabajo de ecosistema/distribución de plugins
 
-## 31. Final Design Decision
+## 31. Decisión final de diseño
 
-Paperclip should not implement a generic in-process hook bag modeled directly after local coding tools.
+Paperclip no debería implementar una bolsa genérica de hooks en proceso modelada directamente a partir de herramientas locales de programación.
 
-Paperclip should implement:
+Paperclip debería implementar:
 
-- trusted platform modules for low-level host integration
-- globally installed out-of-process plugins for additive instance-wide capabilities
-- plugin-contributed agent tools (namespaced, capability-gated)
-- plugin-shipped UI bundles rendered in host extension slots via a typed bridge with structured error propagation
-- auto-generated settings UI from config schema, with custom settings pages as an option
-- plugin-to-plugin events for cross-plugin coordination
-- server-side event filtering for efficient event routing
-- plugins own their local tooling logic (filesystem, git, terminal, processes) directly
-- generic extension tables for most plugin state
-- graceful shutdown, uninstall data lifecycle, and plugin observability
-- hot plugin lifecycle — install, uninstall, upgrade, and config changes without server restart
-- SDK versioning with multi-version host support and a clear deprecation policy
-- test harness and starter template for low authoring friction
-- strict preservation of core governance and audit rules
+- módulos de plataforma confiables para integración de bajo nivel con el host
+- plugins fuera de proceso instalados globalmente para capacidades aditivas de toda la instancia
+- herramientas de agente contribuidas por plugins (con espacio de nombres, controladas por capacidades)
+- bundles de UI enviados por plugins renderizados en slots de extensión del host vía un puente tipado con propagación estructurada de errores
+- UI de ajustes autogenerada desde el esquema de configuración, con páginas de ajustes personalizadas como opción
+- eventos entre plugins para coordinación entre plugins
+- filtrado de eventos en el lado del servidor para enrutamiento eficiente de eventos
+- los plugins son dueños de su propia lógica de tooling local (sistema de archivos, git, terminal, procesos) directamente
+- tablas de extensión genéricas para la mayoría del estado de plugins
+- apagado ordenado, ciclo de vida de datos de desinstalación y observabilidad de plugins
+- ciclo de vida de plugins en caliente: instalación, desinstalación, actualización y cambios de configuración sin reiniciar el servidor
+- versionado del SDK con soporte multiversión del host y una política de deprecación clara
+- test harness y plantilla inicial para baja fricción de autoría
+- preservación estricta de la gobernanza central y las reglas de auditoría
 
-That is the complete target design for the Paperclip plugin system.
+Ese es el diseño objetivo completo para el sistema de plugins de Paperclip.

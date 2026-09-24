@@ -1,117 +1,117 @@
-# Paperclip Memory Service Plan
+# Plan del servicio de memoria de Paperclip
 
-## Goal
+## Objetivo
 
-Define a Paperclip memory service and surface API that can sit above multiple memory backends, while preserving Paperclip's control-plane requirements:
+Definir un servicio de memoria de Paperclip y una API de superficie que pueda estar sobre múltiples backends de memoria, preservando los requisitos del plano de control de Paperclip:
 
-- company scoping
-- auditability
-- provenance back to Paperclip work objects
-- budget / cost visibility
-- plugin-first extensibility
+- alcance de empresa
+- auditabilidad
+- procedencia de vuelta a objetos de trabajo de Paperclip
+- visibilidad de presupuesto / costo
+- extensibilidad primero de plugins
 
-This plan is based on the external landscape summarized in `doc/memory-landscape.md` and on the current Paperclip architecture in:
+Este plan se basa en el panorama externo resumido en `doc/memory-landscape.md` y en la arquitectura actual de Paperclip en:
 
 - `doc/SPEC-implementation.md`
 - `doc/plugins/PLUGIN_SPEC.md`
 - `doc/plugins/PLUGIN_AUTHORING_GUIDE.md`
 - `packages/plugins/sdk/src/types.ts`
 
-## Recommendation In One Sentence
+## Recomendación en una oración
 
-Paperclip should not embed one opinionated memory engine into core. It should add a company-scoped memory control plane with a small normalized adapter contract, then let built-ins and plugins implement the provider-specific behavior.
+Paperclip no debería incrustar un motor de memoria opinado en el núcleo. Debería agregar un plano de control de memoria con alcance de empresa con un pequeño contrato de adaptador normalizado, y luego dejar que los incorporados y los plugins implementen el comportamiento específico del proveedor.
 
-## Product Decisions
+## Decisiones de producto
 
-### 1. Memory is company-scoped by default
+### 1. La memoria es de alcance de empresa por defecto
 
-Every memory binding belongs to exactly one company.
+Cada enlace de memoria pertenece exactamente a una empresa.
 
-That binding can then be:
+Ese enlace puede entonces ser:
 
-- the company default
-- an agent override
-- a project override later if we need it
+- el predeterminado de la empresa
+- una sobrescritura de agente
+- una sobrescritura de proyecto más adelante si la necesitamos
 
-No cross-company memory sharing in the initial design.
+Sin compartir memoria entre empresas en el diseño inicial.
 
-### 2. Providers are selected by key
+### 2. Los proveedores se seleccionan por clave
 
-Each configured memory provider gets a stable key inside a company, for example:
+Cada proveedor de memoria configurado obtiene una clave estable dentro de una empresa, por ejemplo:
 
 - `default`
 - `mem0-prod`
 - `local-markdown`
 - `research-kb`
 
-Agents and services resolve the active provider by key, not by hard-coded vendor logic.
+Los agentes y servicios resuelven el proveedor activo por clave, no por lógica de proveedor codificada.
 
-### 3. Plugins are the primary provider path
+### 3. Los plugins son la ruta principal de proveedor
 
-Built-ins are useful for a zero-config local path, but most providers should arrive through the existing Paperclip plugin runtime.
+Los incorporados son útiles para una ruta local sin configuración, pero la mayoría de los proveedores deberían llegar a través del tiempo de ejecución existente de plugins de Paperclip.
 
-That keeps the core small and matches the current direction that optional knowledge-like systems live at the edges.
+Eso mantiene el núcleo pequeño y coincide con la dirección actual de que los sistemas opcionales tipo conocimiento viven en los bordes.
 
-### 4. Paperclip owns routing, provenance, and accounting
+### 4. Paperclip es dueño del enrutamiento, la procedencia y la contabilidad
 
-Providers should not decide how Paperclip entities map to governance.
+Los proveedores no deberían decidir cómo las entidades de Paperclip se mapean a la gobernanza.
 
-Paperclip core should own:
+El núcleo de Paperclip debería ser dueño de:
 
-- who is allowed to call a memory operation
-- which company / agent / project scope is active
-- what issue / run / comment / document the operation belongs to
-- how usage gets recorded
+- quién tiene permitido llamar a una operación de memoria
+- qué alcance de empresa / agente / proyecto está activo
+- a qué issue / ejecución / comentario / documento pertenece la operación
+- cómo se registra el uso
 
-### 5. Automatic memory should be narrow at first
+### 5. La memoria automática debería ser estrecha al principio
 
-Automatic capture is useful, but broad silent capture is dangerous.
+La captura automática es útil, pero la captura silenciosa amplia es peligrosa.
 
-Initial automatic hooks should be:
+Los ganchos automáticos iniciales deberían ser:
 
-- post-run capture from agent runs
-- issue comment / document capture when the binding enables it
-- pre-run recall for agent context hydration
+- captura posterior a la ejecución desde ejecuciones de agentes
+- captura de comentarios/documentos de issue cuando el enlace la habilita
+- recuperación previa a la ejecución para hidratación de contexto del agente
 
-Everything else should start explicit.
+Todo lo demás debería comenzar explícito.
 
-## Proposed Concepts
+## Conceptos propuestos
 
-### Memory provider
+### Proveedor de memoria
 
-A built-in or plugin-supplied implementation that stores and retrieves memory.
+Una implementación incorporada o suministrada por plugin que almacena y recupera memoria.
 
-Examples:
+Ejemplos:
 
-- local markdown + vector index
-- mem0 adapter
-- supermemory adapter
-- MemOS adapter
+- markdown local + índice vectorial
+- adaptador mem0
+- adaptador supermemory
+- adaptador MemOS
 
-### Memory binding
+### Enlace de memoria
 
-A company-scoped configuration record that points to a provider and carries provider-specific config.
+Un registro de configuración con alcance de empresa que apunta a un proveedor y lleva configuración específica del proveedor.
 
-This is the object selected by key.
+Este es el objeto seleccionado por clave.
 
-### Memory scope
+### Alcance de memoria
 
-The normalized Paperclip scope passed into a provider request.
+El alcance normalizado de Paperclip pasado a una solicitud de proveedor.
 
-At minimum:
+Como mínimo:
 
 - `companyId`
-- optional `agentId`
-- optional `projectId`
-- optional `issueId`
-- optional `runId`
-- optional `subjectId` for external/user identity
+- `agentId` opcional
+- `projectId` opcional
+- `issueId` opcional
+- `runId` opcional
+- `subjectId` opcional para identidad externa/usuario
 
-### Memory source reference
+### Referencia de fuente de memoria
 
-The provenance handle that explains where a memory came from.
+El identificador de procedencia que explica de dónde vino una memoria.
 
-Supported source kinds should include:
+Los tipos de fuente admitidos deberían incluir:
 
 - `issue_comment`
 - `issue_document`
@@ -121,15 +121,15 @@ Supported source kinds should include:
 - `manual_note`
 - `external_document`
 
-### Memory operation
+### Operación de memoria
 
-A normalized write, query, browse, or delete action performed through Paperclip.
+Una acción normalizada de escritura, consulta, exploración o eliminación realizada a través de Paperclip.
 
-Paperclip should log every operation, whether the provider is local or external.
+Paperclip debería registrar cada operación, ya sea el proveedor local o externo.
 
-## Required Adapter Contract
+## Contrato requerido del adaptador
 
-The required core should be small enough to fit `memsearch`, `mem0`, `Memori`, `MemOS`, or `OpenViking`.
+El núcleo requerido debería ser lo suficientemente pequeño para ajustarse a `memsearch`, `mem0`, `Memori`, `MemOS` u `OpenViking`.
 
 ```ts
 export interface MemoryAdapterCapabilities {
@@ -230,51 +230,51 @@ export interface MemoryAdapter {
 }
 ```
 
-This contract intentionally does not force a provider to expose its internal graph, filesystem, or ontology.
+Este contrato intencionalmente no obliga a un proveedor a exponer su grafo interno, sistema de archivos u ontología.
 
-## Optional Adapter Surfaces
+## Superficies opcionales del adaptador
 
-These should be capability-gated, not required:
+Estas deberían estar controladas por capacidad, no requeridas:
 
-- `browse(scope, filters)` for file-system / graph / timeline inspection
-- `correct(handle, patch)` for natural-language correction flows
-- `profile(scope)` when the provider can synthesize stable preferences or summaries
-- `sync(source)` for connectors or background ingestion
-- `explain(queryResult)` for providers that can expose retrieval traces
+- `browse(scope, filters)` para inspección de sistema de archivos / grafo / línea de tiempo
+- `correct(handle, patch)` para flujos de corrección en lenguaje natural
+- `profile(scope)` cuando el proveedor puede sintetizar preferencias o resúmenes estables
+- `sync(source)` para conectores o ingesta en segundo plano
+- `explain(queryResult)` para proveedores que pueden exponer trazas de recuperación
 
-## What Paperclip Should Persist
+## Qué debería persistir Paperclip
 
-Paperclip should not mirror the full provider memory corpus into Postgres unless the provider is a Paperclip-managed local provider.
+Paperclip no debería espejar el corpus completo de memoria del proveedor en Postgres a menos que el proveedor sea un proveedor local gestionado por Paperclip.
 
-Paperclip core should persist:
+El núcleo de Paperclip debería persistir:
 
-- memory bindings and overrides
-- provider keys and capability metadata
-- normalized memory operation logs
-- provider record handles returned by operations when available
-- source references back to issue comments, documents, runs, and activity
-- usage and cost data
+- enlaces de memoria y sobrescrituras
+- claves de proveedor y metadatos de capacidad
+- registros normalizados de operaciones de memoria
+- identificadores de registro de proveedor devueltos por las operaciones cuando estén disponibles
+- referencias de fuente de vuelta a comentarios de issues, documentos, ejecuciones y actividad
+- datos de uso y costo
 
-For external providers, the memory payload itself can remain in the provider.
+Para proveedores externos, la carga útil de memoria misma puede permanecer en el proveedor.
 
-## Hook Model
+## Modelo de ganchos
 
-### Automatic hooks
+### Ganchos automáticos
 
-These should be low-risk and easy to reason about:
+Estos deberían ser de bajo riesgo y fáciles de razonar:
 
 1. `pre-run hydrate`
-   Before an agent run starts, Paperclip may call `query(... intent = "agent_preamble")` using the active binding.
+   Antes de que comience una ejecución de agente, Paperclip puede llamar a `query(... intent = "agent_preamble")` usando el enlace activo.
 
 2. `post-run capture`
-   After a run finishes, Paperclip may write a summary or transcript-derived note tied to the run.
+   Después de que termina una ejecución, Paperclip puede escribir un resumen o nota derivada de la transcripción ligada a la ejecución.
 
 3. `issue comment / document capture`
-   When enabled on the binding, Paperclip may capture selected issue comments or issue documents as memory sources.
+   Cuando está habilitada en el enlace, Paperclip puede capturar comentarios de issues o documentos de issues seleccionados como fuentes de memoria.
 
-### Explicit hooks
+### Ganchos explícitos
 
-These should be tool- or UI-driven first:
+Estos deberían ser primero impulsados por herramientas o UI:
 
 - `memory.search`
 - `memory.note`
@@ -282,145 +282,145 @@ These should be tool- or UI-driven first:
 - `memory.correct`
 - `memory.browse`
 
-### Not automatic in the first version
+### No automáticos en la primera versión
 
-- broad web crawling
-- silent import of arbitrary repo files
-- cross-company memory sharing
-- automatic destructive deletion
-- provider migration between bindings
+- rastreo web amplio
+- importación silenciosa de archivos de repositorio arbitrarios
+- compartir memoria entre empresas
+- eliminación destructiva automática
+- migración de proveedor entre enlaces
 
-## Agent UX Rules
+## Reglas de UX del agente
 
-Paperclip should give agents both automatic recall and explicit tools, with simple guidance:
+Paperclip debería dar a los agentes tanto recuperación automática como herramientas explícitas, con guía simple:
 
-- use `memory.search` when the task depends on prior decisions, people, projects, or long-running context that is not in the current issue thread
-- use `memory.note` when a durable fact, preference, or decision should survive this run
-- use `memory.correct` when the user explicitly says prior context is wrong
-- rely on post-run auto-capture for ordinary session residue so agents do not have to write memory notes for every trivial exchange
+- usar `memory.search` cuando la tarea dependa de decisiones previas, personas, proyectos o contexto de largo plazo que no esté en el hilo actual del issue
+- usar `memory.note` cuando un hecho, preferencia o decisión durable deba sobrevivir a esta ejecución
+- usar `memory.correct` cuando el usuario diga explícitamente que el contexto previo es incorrecto
+- confiar en la captura automática posterior a la ejecución para el residuo ordinario de sesión para que los agentes no tengan que escribir notas de memoria para cada intercambio trivial
 
-This keeps memory available without forcing every agent prompt to become a memory-management protocol.
+Esto mantiene la memoria disponible sin forzar a cada prompt de agente a convertirse en un protocolo de gestión de memoria.
 
-## Browse And Inspect Surface
+## Superficie de exploración e inspección
 
-Paperclip needs a first-class UI for memory, otherwise providers become black boxes.
+Paperclip necesita una UI de primera clase para la memoria, de lo contrario los proveedores se convierten en cajas negras.
 
-The initial browse surface should support:
+La superficie inicial de exploración debería admitir:
 
-- active binding by company and agent
-- recent memory operations
-- recent write sources
-- query results with source backlinks
-- filters by agent, issue, run, source kind, and date
-- provider usage / cost / latency summaries
+- enlace activo por empresa y agente
+- operaciones de memoria recientes
+- fuentes de escritura recientes
+- resultados de consulta con enlaces de vuelta a la fuente
+- filtros por agente, issue, ejecución, tipo de fuente y fecha
+- resúmenes de uso / costo / latencia del proveedor
 
-When a provider supports richer browsing, the plugin can add deeper views through the existing plugin UI surfaces.
+Cuando un proveedor admite exploración más rica, el plugin puede agregar vistas más profundas a través de las superficies de UI de plugins existentes.
 
-## Cost And Evaluation
+## Costo y evaluación
 
-Every adapter response should be able to return usage records.
+Cada respuesta del adaptador debería poder retornar registros de uso.
 
-Paperclip should roll up:
+Paperclip debería acumular:
 
-- memory inference tokens
-- embedding tokens
-- external provider cost
-- latency
-- query count
-- write count
+- tokens de inferencia de memoria
+- tokens de embedding
+- costo de proveedor externo
+- latencia
+- conteo de consultas
+- conteo de escrituras
 
-It should also record evaluation-oriented metrics where possible:
+También debería registrar métricas orientadas a evaluación donde sea posible:
 
-- recall hit rate
-- empty query rate
-- manual correction count
-- per-binding success / failure counts
+- tasa de aciertos de recuperación
+- tasa de consultas vacías
+- conteo de correcciones manuales
+- conteos de éxito / falla por enlace
 
-This is important because a memory system that "works" but silently burns budget is not acceptable in Paperclip.
+Esto es importante porque un sistema de memoria que "funciona" pero quema presupuesto silenciosamente no es aceptable en Paperclip.
 
-## Suggested Data Model Additions
+## Adiciones sugeridas al modelo de datos
 
-At the control-plane level, the likely new core tables are:
+A nivel de plano de control, las probables nuevas tablas centrales son:
 
 - `memory_bindings`
-  - company-scoped key
-  - provider id / plugin id
-  - config blob
-  - enabled status
+  - clave con alcance de empresa
+  - id de proveedor / id de plugin
+  - blob de configuración
+  - estado habilitado
 
 - `memory_binding_targets`
-  - target type (`company`, `agent`, later `project`)
-  - target id
-  - binding id
+  - tipo de objetivo (`company`, `agent`, más adelante `project`)
+  - id de objetivo
+  - id de enlace
 
 - `memory_operations`
-  - company id
-  - binding id
-  - operation type (`write`, `query`, `forget`, `browse`, `correct`)
-  - scope fields
-  - source refs
-  - usage / latency / cost
-  - success / error
+  - id de empresa
+  - id de enlace
+  - tipo de operación (`write`, `query`, `forget`, `browse`, `correct`)
+  - campos de alcance
+  - referencias de fuente
+  - uso / latencia / costo
+  - éxito / error
 
-Provider-specific long-form state should stay in plugin state or the provider itself unless a built-in local provider needs its own schema.
+El estado de largo plazo específico del proveedor debería permanecer en el estado del plugin o en el proveedor mismo a menos que un proveedor local incorporado necesite su propio esquema.
 
-## Recommended First Built-In
+## Primer incorporado recomendado
 
-The best zero-config built-in is a local markdown-first provider with optional semantic indexing.
+El mejor incorporado sin configuración es un proveedor local markdown-first con indexación semántica opcional.
 
-Why:
+Por qué:
 
-- it matches Paperclip's local-first posture
-- it is inspectable
-- it is easy to back up and debug
-- it gives the system a baseline even without external API keys
+- coincide con la postura local-first de Paperclip
+- es inspeccionable
+- es fácil de respaldar y depurar
+- le da al sistema una base incluso sin claves de API externas
 
-The design should still treat that built-in as just another provider behind the same control-plane contract.
+El diseño aún debería tratar ese incorporado como solo otro proveedor detrás del mismo contrato de plano de control.
 
-## Rollout Phases
+## Fases de despliegue
 
-### Phase 1: Control-plane contract
+### Fase 1: Contrato de plano de control
 
-- add memory binding models and API types
-- add plugin capability / registration surface for memory providers
-- add operation logging and usage reporting
+- agregar modelos de enlace de memoria y tipos de API
+- agregar superficie de capacidad / registro de plugins para proveedores de memoria
+- agregar registro de operaciones e informes de uso
 
-### Phase 2: One built-in + one plugin example
+### Fase 2: Un incorporado + un ejemplo de plugin
 
-- ship a local markdown-first provider
-- ship one hosted adapter example to validate the external-provider path
+- entregar un proveedor local markdown-first
+- entregar un ejemplo de adaptador alojado para validar la ruta de proveedor externo
 
-### Phase 3: UI inspection
+### Fase 3: Inspección de UI
 
-- add company / agent memory settings
-- add a memory operation explorer
-- add source backlinks to issues and runs
+- agregar ajustes de memoria de empresa / agente
+- agregar un explorador de operaciones de memoria
+- agregar enlaces de vuelta a la fuente hacia issues y ejecuciones
 
-### Phase 4: Automatic hooks
+### Fase 4: Ganchos automáticos
 
-- pre-run hydrate
-- post-run capture
-- selected issue comment / document capture
+- hidratación previa a la ejecución
+- captura posterior a la ejecución
+- captura seleccionada de comentarios / documentos de issue
 
-### Phase 5: Rich capabilities
+### Fase 5: Capacidades ricas
 
-- correction flows
-- provider-native browse / graph views
-- project-level overrides if needed
-- evaluation dashboards
+- flujos de corrección
+- vistas de exploración / grafo nativas del proveedor
+- sobrescrituras a nivel de proyecto si se necesitan
+- paneles de evaluación
 
-## Open Questions
+## Preguntas abiertas
 
-- Should project overrides exist in V1 of the memory service, or should we force company default + agent override first?
-- Do we want Paperclip-managed extraction pipelines at all, or should built-ins be the only place where Paperclip owns extraction?
-- Should memory usage extend the current `cost_events` model directly, or should memory operations keep a parallel usage log and roll up into `cost_events` secondarily?
-- Do we want provider install / binding changes to require approvals for some companies?
+- ¿Las sobrescrituras de proyecto deberían existir en V1 del servicio de memoria, o deberíamos forzar primero predeterminado de empresa + sobrescritura de agente?
+- ¿Queremos en absoluto pipelines de extracción gestionados por Paperclip, o los incorporados deberían ser el único lugar donde Paperclip es dueño de la extracción?
+- ¿El uso de memoria debería extender directamente el modelo actual de `cost_events`, o las operaciones de memoria deberían mantener un registro de uso paralelo y acumularse en `cost_events` secundariamente?
+- ¿Queremos que los cambios de instalación / enlace de proveedor requieran aprobaciones para algunas empresas?
 
-## Bottom Line
+## Conclusión
 
-The right abstraction is:
+La abstracción correcta es:
 
-- Paperclip owns memory bindings, scopes, provenance, governance, and usage reporting.
-- Providers own extraction, ranking, storage, and provider-native memory semantics.
+- Paperclip es dueño de los enlaces de memoria, alcances, procedencia, gobernanza e informes de uso.
+- Los proveedores son dueños de la extracción, el ranking, el almacenamiento y la semántica de memoria nativa del proveedor.
 
-That gives Paperclip a stable "memory service" without locking the product to one memory philosophy or one vendor.
+Eso le da a Paperclip un "servicio de memoria" estable sin atar el producto a una filosofía de memoria o a un proveedor.

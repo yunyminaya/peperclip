@@ -35,7 +35,7 @@ export async function doctor(opts: {
   loadPaperclipEnvFile(configPath);
   const results: CheckResult[] = [];
 
-  // 1. Config check (must pass before others)
+  // 1. Chequeo de config (debe pasar antes que los demás)
   const cfgResult = configCheck(opts.config);
   results.push(cfgResult);
   printResult(cfgResult);
@@ -49,11 +49,11 @@ export async function doctor(opts: {
     config = readConfig(opts.config)!;
   } catch (err) {
     const readResult: CheckResult = {
-      name: "Config file",
+      name: "Archivo de config",
       status: "fail",
-      message: `Could not read config: ${err instanceof Error ? err.message : String(err)}`,
+      message: `No se pudo leer la config: ${err instanceof Error ? err.message : String(err)}`,
       canRepair: false,
-      repairHint: "Run `paperclipai configure --section database` or `paperclipai onboard`",
+      repairHint: "Ejecuta `paperclipai configure --section database` o `paperclipai onboard`",
     };
     results.push(readResult);
     printResult(readResult);
@@ -120,7 +120,7 @@ export async function doctor(opts: {
   results.push(portResult);
   printResult(portResult);
 
-  // Summary
+  // Resumen
   return printSummary(results);
 }
 
@@ -142,7 +142,7 @@ async function maybeRepair(
   let shouldRepair = opts.yes;
   if (!shouldRepair) {
     const answer = await p.confirm({
-      message: `Repair "${result.name}"?`,
+      message: `¿Reparar "${result.name}"?`,
       initialValue: true,
     });
     if (p.isCancel(answer)) return false;
@@ -152,10 +152,10 @@ async function maybeRepair(
   if (shouldRepair) {
     try {
       await result.repair();
-      p.log.success(`Repaired: ${result.name}`);
+      p.log.success(`Reparado: ${result.name}`);
       return true;
     } catch (err) {
-      p.log.error(`Repair failed: ${err instanceof Error ? err.message : String(err)}`);
+      p.log.error(`Reparación fallida: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
   return false;
@@ -172,7 +172,7 @@ async function runRepairableCheck(input: {
   const repaired = await maybeRepair(result, input.opts);
   if (!repaired) return result;
 
-  // Repairs may create/update the adjacent .env file or other local resources.
+  // Las reparaciones pueden crear/actualizar el archivo .env adyacente u otros recursos locales.
   loadPaperclipEnvFile(input.configPath);
   result = await input.run();
   printResult(result);
@@ -185,18 +185,18 @@ function printSummary(results: CheckResult[]): { passed: number; warned: number;
   const failed = results.filter((r) => r.status === "fail").length;
 
   const parts: string[] = [];
-  parts.push(pc.green(`${passed} passed`));
-  if (warned) parts.push(pc.yellow(`${warned} warnings`));
-  if (failed) parts.push(pc.red(`${failed} failed`));
+  parts.push(pc.green(`${passed} pasados`));
+  if (warned) parts.push(pc.yellow(`${warned} advertencias`));
+  if (failed) parts.push(pc.red(`${failed} fallidos`));
 
-  p.note(parts.join(", "), "Summary");
+  p.note(parts.join(", "), "Resumen");
 
   if (failed > 0) {
-    p.outro(pc.red("Some checks failed. Fix the issues above and re-run doctor."));
+    p.outro(pc.red("Algunos chequeos fallaron. Corrige los problemas de arriba y vuelve a ejecutar doctor."));
   } else if (warned > 0) {
-    p.outro(pc.yellow("All critical checks passed with some warnings."));
+    p.outro(pc.yellow("Todos los chequeos críticos pasaron con algunas advertencias."));
   } else {
-    p.outro(pc.green("All checks passed!"));
+    p.outro(pc.green("¡Todos los chequeos pasaron!"));
   }
 
   return { passed, warned, failed };

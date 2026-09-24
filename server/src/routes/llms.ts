@@ -17,11 +17,11 @@ export function llmRoutes(db: Db) {
   async function assertCanRead(req: Request) {
     if (req.actor.type === "board") return;
     if (req.actor.type !== "agent" || !req.actor.agentId) {
-      throw forbidden("Board or permitted agent authentication required");
+      throw forbidden("Se requiere autenticación de board o de agente permitido");
     }
     const actorAgent = await agentsSvc.getById(req.actor.agentId);
     if (!actorAgent || !hasCreatePermission(actorAgent)) {
-      throw forbidden("Missing permission to read agent configuration reflection");
+      throw forbidden("Falta el permiso para leer el reflejo de configuración de agentes");
     }
   }
 
@@ -29,22 +29,22 @@ export function llmRoutes(db: Db) {
     await assertCanRead(req);
     const adapters = listServerAdapters().sort((a, b) => a.type.localeCompare(b.type));
     const lines = [
-      "# Paperclip Agent Configuration Index",
+      "# Índice de configuración de agentes de Paperclip",
       "",
-      "Installed adapters:",
+      "Adaptadores instalados:",
       ...adapters.map((adapter) => `- ${adapter.type}: /llms/agent-configuration/${adapter.type}.txt`),
       "",
-      "Related API endpoints:",
+      "Endpoints de API relacionados:",
       "- GET /api/companies/:companyId/agent-configurations",
       "- GET /api/agents/:id/configuration",
       "- POST /api/companies/:companyId/agent-hires",
       "",
-      "Agent identity references:",
+      "Referencias de identidad de agentes:",
       "- GET /llms/agent-icons.txt",
       "",
-      "Notes:",
-      "- Sensitive values are redacted in configuration read APIs.",
-      "- New hires may be created in pending_approval state depending on company settings.",
+      "Notas:",
+      "- Los valores sensibles se redactan en las APIs de lectura de configuración.",
+      "- Las nuevas contrataciones pueden crearse en estado pending_approval según los ajustes de la empresa.",
       "",
     ];
     res.type("text/plain").send(lines.join("\n"));
@@ -53,12 +53,12 @@ export function llmRoutes(db: Db) {
   router.get("/llms/agent-icons.txt", async (req, res) => {
     await assertCanRead(req);
     const lines = [
-      "# Paperclip Agent Icon Names",
+      "# Nombres de íconos de agentes de Paperclip",
       "",
-      "Set the `icon` field on hire/create payloads to one of:",
+      "Establece el campo `icon` en los payloads de hire/create a uno de:",
       ...AGENT_ICON_NAMES.map((name) => `- ${name}`),
       "",
-      "Example:",
+      "Ejemplo:",
       '{ "name": "SearchOps", "role": "researcher", "icon": "search" }',
       "",
     ];
@@ -70,14 +70,14 @@ export function llmRoutes(db: Db) {
     const adapterType = req.params.adapterType as string;
     const adapter = listServerAdapters().find((entry) => entry.type === adapterType);
     if (!adapter) {
-      res.status(404).type("text/plain").send(`Unknown adapter type: ${adapterType}`);
+      res.status(404).type("text/plain").send(`Tipo de adaptador desconocido: ${adapterType}`);
       return;
     }
     res
       .type("text/plain")
       .send(
         adapter.agentConfigurationDoc ??
-          `# ${adapterType} agent configuration\n\nNo adapter-specific documentation registered.`,
+          `# Configuración de agentes ${adapterType}\n\nNo hay documentación específica del adaptador registrada.`,
       );
   });
 

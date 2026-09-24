@@ -1,17 +1,17 @@
 import type { PluginWidgetProps } from "@paperclipai/plugin-sdk/ui";
 
-const WIDGET_LABEL = "Hello world plugin widget";
+const WIDGET_LABEL = "Widget de plugin hola mundo";
 
 /**
- * Example dashboard widget showing the smallest possible UI contribution.
+ * Widget de panel de ejemplo que muestra la contribución de interfaz más pequeña posible.
  */
 export function HelloWorldDashboardWidget({ context }: PluginWidgetProps) {
   return (
     <section aria-label={WIDGET_LABEL}>
-      <strong>Hello world</strong>
-      <div>This widget was added by @paperclipai/plugin-hello-world-example.</div>
-      {/* Include host context so authors can see where scoped IDs come from. */}
-      <div>Company context: {context.companyId}</div>
+      <strong>Hola mundo</strong>
+      <div>Este widget fue agregado por @paperclipai/plugin-hello-world-example.</div>
+      {/* Incluir el contexto del host para que los autores vean de dónde vienen los IDs con alcance. */}
+      <div>Contexto de empresa: {context.companyId}</div>
     </section>
   );
 }

@@ -104,7 +104,7 @@ export async function startServer(): Promise<StartedServer> {
     const prompt = createInterface({ input: stdin, output: stdout });
     try {
       const answer = (await prompt.question(
-        `Apply pending migrations (${formatPendingMigrationSummary(migrations)}) now? (y/N): `,
+        `¿Aplicar migraciones pendientes (${formatPendingMigrationSummary(migrations)}) ahora? (y/N): `,
       )).trim().toLowerCase();
       return answer === "y" || answer === "yes";
     } finally {
@@ -128,7 +128,7 @@ export async function startServer(): Promise<StartedServer> {
       if (repair.repairedMigrations.length > 0) {
         logger.warn(
           { repairedMigrations: repair.repairedMigrations },
-          `${label} had drifted migration history; repaired migration journal entries from existing schema state.`,
+          `${label} tenía historial de migraciones desviado; se repararon las entradas del diario de migraciones a partir del estado actual del esquema.`,
         );
         state = await inspectMigrations(connectionString);
         if (state.status === "upToDate") return "already applied";
@@ -138,17 +138,17 @@ export async function startServer(): Promise<StartedServer> {
     if (state.status === "needsMigrations" && state.reason === "no-migration-journal-non-empty-db") {
       logger.warn(
         { tableCount: state.tableCount },
-        `${label} has existing tables but no migration journal. Run migrations manually to sync schema.`,
+        `${label} tiene tablas existentes pero no diario de migraciones. Ejecuta las migraciones manualmente para sincronizar el esquema.`,
       );
       const apply = autoApply ? true : await promptApplyMigrations(state.pendingMigrations);
       if (!apply) {
         throw new Error(
-          `${label} has pending migrations (${formatPendingMigrationSummary(state.pendingMigrations)}). ` +
-            "Refusing to start against a stale schema. Run pnpm db:migrate or set PAPERCLIP_MIGRATION_AUTO_APPLY=true.",
+          `${label} tiene migraciones pendientes (${formatPendingMigrationSummary(state.pendingMigrations)}). ` +
+            "Rehusando arrancar contra un esquema desactualizado. Ejecuta pnpm db:migrate o configura PAPERCLIP_MIGRATION_AUTO_APPLY=true.",
         );
       }
   
-      logger.info({ pendingMigrations: state.pendingMigrations }, `Applying ${state.pendingMigrations.length} pending migrations for ${label}`);
+      logger.info({ pendingMigrations: state.pendingMigrations }, `Aplicando ${state.pendingMigrations.length} migraciones pendientes para ${label}`);
       await applyPendingMigrations(connectionString);
       return "applied (pending migrations)";
     }
@@ -156,12 +156,12 @@ export async function startServer(): Promise<StartedServer> {
     const apply = autoApply ? true : await promptApplyMigrations(state.pendingMigrations);
     if (!apply) {
       throw new Error(
-        `${label} has pending migrations (${formatPendingMigrationSummary(state.pendingMigrations)}). ` +
-          "Refusing to start against a stale schema. Run pnpm db:migrate or set PAPERCLIP_MIGRATION_AUTO_APPLY=true.",
+        `${label} tiene migraciones pendientes (${formatPendingMigrationSummary(state.pendingMigrations)}). ` +
+          "Rehusando arrancar contra un esquema desactualizado. Ejecuta pnpm db:migrate o configura PAPERCLIP_MIGRATION_AUTO_APPLY=true.",
       );
     }
   
-    logger.info({ pendingMigrations: state.pendingMigrations }, `Applying ${state.pendingMigrations.length} pending migrations for ${label}`);
+    logger.info({ pendingMigrations: state.pendingMigrations }, `Aplicando ${state.pendingMigrations.length} migraciones pendientes para ${label}`);
     await applyPendingMigrations(connectionString);
     return "applied (pending migrations)";
   }
@@ -256,7 +256,7 @@ export async function startServer(): Promise<StartedServer> {
     migrationSummary = await ensureMigrations(config.databaseUrl, "PostgreSQL");
   
     db = createDb(config.databaseUrl);
-    logger.info("Using external PostgreSQL via DATABASE_URL/config");
+    logger.info("Usando PostgreSQL externo vía DATABASE_URL/config");
     activeDatabaseConnectionString = config.databaseUrl;
     startupDbInfo = { mode: "external-postgres", connectionString: config.databaseUrl };
   } else {
@@ -267,7 +267,7 @@ export async function startServer(): Promise<StartedServer> {
       EmbeddedPostgres = mod.default as EmbeddedPostgresCtor;
     } catch {
       throw new Error(
-        "Embedded PostgreSQL mode requires dependency `embedded-postgres`. Reinstall dependencies (without omitting required packages), or set DATABASE_URL for external Postgres.",
+        "El modo embedded PostgreSQL requiere la dependencia `embedded-postgres`. Reinstala las dependencias (sin omitir los paquetes requeridos), o configura DATABASE_URL para Postgres externo.",
       );
     }
   
@@ -301,13 +301,13 @@ export async function startServer(): Promise<StartedServer> {
             recentLogs,
             err,
           },
-          "Embedded PostgreSQL failed; showing buffered startup logs",
+          "PostgreSQL embebido falló; mostrando los logs de arranque en búfer",
         );
       }
     };
   
     if (config.databaseMode === "postgres") {
-      logger.warn("Database mode is postgres but no connection string was set; falling back to embedded PostgreSQL");
+      logger.warn("El modo de base de datos es postgres pero no se configuró una cadena de conexión; usando PostgreSQL embebido como alternativa");
     }
   
     const clusterVersionFile = resolve(dataDir, "PG_VERSION");
@@ -337,7 +337,7 @@ export async function startServer(): Promise<StartedServer> {
   
     const runningPid = getRunningPid();
     if (runningPid) {
-      logger.warn(`Embedded PostgreSQL already running; reusing existing process (pid=${runningPid}, port=${port})`);
+      logger.warn(`PostgreSQL embebido ya está en ejecución; reutilizando el proceso existente (pid=${runningPid}, port=${port})`);
     } else {
       const configuredAdminConnectionString = `postgres://paperclip:paperclip@127.0.0.1:${configuredPort}/postgres`;
       try {
@@ -350,15 +350,15 @@ export async function startServer(): Promise<StartedServer> {
         }
         await ensurePostgresDatabase(configuredAdminConnectionString, "paperclip");
         logger.warn(
-          `Embedded PostgreSQL appears to already be reachable without a pid file; reusing existing server on configured port ${configuredPort}`,
+          `PostgreSQL embebido parece ya estar accesible sin archivo pid; reutilizando el servidor existente en el puerto configurado ${configuredPort}`,
         );
       } catch {
         const detectedPort = await detectPort(configuredPort);
         if (detectedPort !== configuredPort) {
-          logger.warn(`Embedded PostgreSQL port is in use; using next free port (requestedPort=${configuredPort}, selectedPort=${detectedPort})`);
+          logger.warn(`El puerto de PostgreSQL embebido está en uso; usando el siguiente puerto libre (requestedPort=${configuredPort}, selectedPort=${detectedPort})`);
         }
         port = detectedPort;
-        logger.info(`Using embedded PostgreSQL because no DATABASE_URL set (dataDir=${dataDir}, port=${port})`);
+        logger.info(`Usando PostgreSQL embebido porque no se configuró DATABASE_URL (dataDir=${dataDir}, port=${port})`);
         embeddedPostgres = new EmbeddedPostgres({
           databaseDir: dataDir,
           user: "paperclip",
@@ -376,16 +376,16 @@ export async function startServer(): Promise<StartedServer> {
           } catch (err) {
             logEmbeddedPostgresFailure("initialise", err);
             throw formatEmbeddedPostgresError(err, {
-              fallbackMessage: `Failed to initialize embedded PostgreSQL cluster in ${dataDir} on port ${port}`,
+              fallbackMessage: `Falló la inicialización del clúster de PostgreSQL embebido en ${dataDir} en el puerto ${port}`,
               recentLogs: logBuffer.getRecentLogs(),
             });
           }
         } else {
-          logger.info(`Embedded PostgreSQL cluster already exists (${clusterVersionFile}); skipping init`);
+          logger.info(`El clúster de PostgreSQL embebido ya existe (${clusterVersionFile}); omitiendo la inicialización`);
         }
 
         if (existsSync(postmasterPidFile)) {
-          logger.warn("Removing stale embedded PostgreSQL lock file");
+          logger.warn("Eliminando el archivo de bloqueo obsoleto de PostgreSQL embebido");
           rmSync(postmasterPidFile, { force: true });
         }
         try {
@@ -393,7 +393,7 @@ export async function startServer(): Promise<StartedServer> {
         } catch (err) {
           logEmbeddedPostgresFailure("start", err);
           throw formatEmbeddedPostgresError(err, {
-            fallbackMessage: `Failed to start embedded PostgreSQL on port ${port}`,
+            fallbackMessage: `Falló el arranque de PostgreSQL embebido en el puerto ${port}`,
             recentLogs: logBuffer.getRecentLogs(),
           });
         }
@@ -404,20 +404,20 @@ export async function startServer(): Promise<StartedServer> {
     const embeddedAdminConnectionString = `postgres://paperclip:paperclip@127.0.0.1:${port}/postgres`;
     const dbStatus = await ensurePostgresDatabase(embeddedAdminConnectionString, "paperclip");
     if (dbStatus === "created") {
-      logger.info("Created embedded PostgreSQL database: paperclip");
+      logger.info("Base de datos de PostgreSQL embebido creada: paperclip");
     }
   
     const embeddedConnectionString = `postgres://paperclip:paperclip@127.0.0.1:${port}/paperclip`;
     const shouldAutoApplyFirstRunMigrations = !clusterAlreadyInitialized || dbStatus === "created";
     if (shouldAutoApplyFirstRunMigrations) {
-      logger.info("Detected first-run embedded PostgreSQL setup; applying pending migrations automatically");
+      logger.info("Se detectó una configuración inicial de PostgreSQL embebido; aplicando migraciones pendientes automáticamente");
     }
-    migrationSummary = await ensureMigrations(embeddedConnectionString, "Embedded PostgreSQL", {
+    migrationSummary = await ensureMigrations(embeddedConnectionString, "PostgreSQL embebido", {
       autoApply: shouldAutoApplyFirstRunMigrations,
     });
   
     db = createDb(embeddedConnectionString);
-    logger.info("Embedded PostgreSQL ready");
+    logger.info("PostgreSQL embebido listo");
     activeDatabaseConnectionString = embeddedConnectionString;
     resolvedEmbeddedPostgresPort = port;
     startupDbInfo = { mode: "embedded-postgres", dataDir, port };
@@ -425,25 +425,25 @@ export async function startServer(): Promise<StartedServer> {
   
   if (config.deploymentMode === "local_trusted" && !isLoopbackHost(config.host)) {
     throw new Error(
-      `local_trusted mode requires loopback host binding (received: ${config.host}). ` +
-        "Use authenticated mode for non-loopback deployments.",
+      `El modo local_trusted requiere enlace a host de loopback (recibido: ${config.host}). ` +
+        "Usa el modo authenticated para despliegues no loopback.",
     );
   }
   
   if (config.deploymentMode === "local_trusted" && config.deploymentExposure !== "private") {
-    throw new Error("local_trusted mode only supports private exposure");
+    throw new Error("El modo local_trusted solo soporta exposición privada");
   }
   
   if (config.deploymentMode === "authenticated") {
     if (config.authBaseUrlMode === "explicit" && !config.authPublicBaseUrl) {
-      throw new Error("auth.baseUrlMode=explicit requires auth.publicBaseUrl");
+      throw new Error("auth.baseUrlMode=explicit requiere auth.publicBaseUrl");
     }
     if (config.deploymentExposure === "public") {
       if (config.authBaseUrlMode !== "explicit") {
-        throw new Error("authenticated public exposure requires auth.baseUrlMode=explicit");
+        throw new Error("La exposición pública authenticated requiere auth.baseUrlMode=explicit");
       }
       if (!config.authPublicBaseUrl) {
-        throw new Error("authenticated public exposure requires auth.publicBaseUrl");
+        throw new Error("La exposición pública authenticated requiere auth.publicBaseUrl");
       }
     }
   }
@@ -471,7 +471,7 @@ export async function startServer(): Promise<StartedServer> {
       process.env.BETTER_AUTH_SECRET?.trim() ?? process.env.PAPERCLIP_AGENT_JWT_SECRET?.trim();
     if (!betterAuthSecret) {
       throw new Error(
-        "authenticated mode requires BETTER_AUTH_SECRET (or PAPERCLIP_AGENT_JWT_SECRET) to be set",
+        "El modo authenticated requiere que BETTER_AUTH_SECRET (o PAPERCLIP_AGENT_JWT_SECRET) esté configurado",
       );
     }
     const derivedTrustedOrigins = deriveAuthTrustedOrigins(config);
@@ -490,7 +490,7 @@ export async function startServer(): Promise<StartedServer> {
           env: envTrustedOrigins.length,
         },
       },
-      "Authenticated mode auth origin configuration",
+      "Configuración de origen de autenticación del modo authenticated",
     );
     const auth = createBetterAuthInstance(db as any, config, effectiveTrustedOrigins);
     betterAuthHandler = createBetterAuthHandler(auth);
@@ -532,7 +532,7 @@ export async function startServer(): Promise<StartedServer> {
   const server = createServer(app as unknown as Parameters<typeof createServer>[0]);
   
   if (listenPort !== config.port) {
-    logger.warn(`Requested port is busy; using next free port (requestedPort=${config.port}, selectedPort=${listenPort})`);
+    logger.warn(`El puerto solicitado está ocupado; usando el siguiente puerto libre (requestedPort=${config.port}, selectedPort=${listenPort})`);
   }
   
   const runtimeListenHost = config.host;
@@ -554,56 +554,56 @@ export async function startServer(): Promise<StartedServer> {
       if (result.reconciled > 0) {
         logger.warn(
           { reconciled: result.reconciled },
-          "reconciled persisted runtime services from a previous server process",
+          "servicios de runtime persistidos reconciliados de un proceso anterior del servidor",
         );
       }
     })
     .catch((err) => {
-      logger.error({ err }, "startup reconciliation of persisted runtime services failed");
+      logger.error({ err }, "falló la reconciliación al arrancar de los servicios de runtime persistidos");
     });
   
   if (config.heartbeatSchedulerEnabled) {
     const heartbeat = heartbeatService(db as any);
     const routines = routineService(db as any);
   
-    // Reap orphaned running runs at startup while in-memory execution state is empty,
-    // then resume any persisted queued runs that were waiting on the previous process.
+    // Recolectar ejecuciones huérfanas en ejecución al arrancar mientras el estado de ejecución en memoria está vacío,
+    // luego reanudar las ejecuciones en cola persistidas que esperaban al proceso anterior.
     void heartbeat
       .reapOrphanedRuns()
       .then(() => heartbeat.resumeQueuedRuns())
       .catch((err) => {
-        logger.error({ err }, "startup heartbeat recovery failed");
+        logger.error({ err }, "falló la recuperación del latido al arrancar");
       });
     setInterval(() => {
       void heartbeat
         .tickTimers(new Date())
         .then((result) => {
           if (result.enqueued > 0) {
-            logger.info({ ...result }, "heartbeat timer tick enqueued runs");
+            logger.info({ ...result }, "el tick del temporizador de latido encoló ejecuciones");
           }
         })
         .catch((err) => {
-          logger.error({ err }, "heartbeat timer tick failed");
+          logger.error({ err }, "falló el tick del temporizador de latido");
         });
 
       void routines
         .tickScheduledTriggers(new Date())
         .then((result) => {
           if (result.triggered > 0) {
-            logger.info({ ...result }, "routine scheduler tick enqueued runs");
+            logger.info({ ...result }, "el tick del programador de rutinas encoló ejecuciones");
           }
         })
         .catch((err) => {
-          logger.error({ err }, "routine scheduler tick failed");
+          logger.error({ err }, "falló el tick del programador de rutinas");
         });
   
-      // Periodically reap orphaned runs (5-min staleness threshold) and make sure
-      // persisted queued work is still being driven forward.
+      // Recolectar periódicamente ejecuciones huérfanas (umbral de obsolescencia de 5 min) y asegurar
+      // que el trabajo en cola persistido siga avanzando.
       void heartbeat
         .reapOrphanedRuns({ staleThresholdMs: 5 * 60 * 1000 })
         .then(() => heartbeat.resumeQueuedRuns())
         .catch((err) => {
-          logger.error({ err }, "periodic heartbeat recovery failed");
+          logger.error({ err }, "falló la recuperación periódica del latido");
         });
     }, config.heartbeatSchedulerIntervalMs);
   }
@@ -614,7 +614,7 @@ export async function startServer(): Promise<StartedServer> {
   
     const runScheduledBackup = async () => {
       if (backupInFlight) {
-        logger.warn("Skipping scheduled database backup because a previous backup is still running");
+        logger.warn("Omitiendo el respaldo programado de la base de datos porque un respaldo anterior sigue en ejecución");
         return;
       }
   
@@ -634,10 +634,10 @@ export async function startServer(): Promise<StartedServer> {
             backupDir: config.databaseBackupDir,
             retentionDays: config.databaseBackupRetentionDays,
           },
-          `Automatic database backup complete: ${formatDatabaseBackupResult(result)}`,
+          `Respaldo automático de la base de datos completo: ${formatDatabaseBackupResult(result)}`,
         );
       } catch (err) {
-        logger.error({ err, backupDir: config.databaseBackupDir }, "Automatic database backup failed");
+        logger.error({ err, backupDir: config.databaseBackupDir }, "Falló el respaldo automático de la base de datos");
       } finally {
         backupInFlight = false;
       }
@@ -649,7 +649,7 @@ export async function startServer(): Promise<StartedServer> {
         retentionDays: config.databaseBackupRetentionDays,
         backupDir: config.databaseBackupDir,
       },
-      "Automatic database backups enabled",
+      "Respaldos automáticos de la base de datos habilitados",
     );
     setInterval(() => {
       void runScheduledBackup();
@@ -665,17 +665,17 @@ export async function startServer(): Promise<StartedServer> {
     server.once("error", onError);
     server.listen(listenPort, config.host, () => {
       server.off("error", onError);
-      logger.info(`Server listening on ${config.host}:${listenPort}`);
+      logger.info(`Servidor escuchando en ${config.host}:${listenPort}`);
       if (process.env.PAPERCLIP_OPEN_ON_LISTEN === "true") {
         const openHost = config.host === "0.0.0.0" || config.host === "::" ? "127.0.0.1" : config.host;
         const url = `http://${openHost}:${listenPort}`;
         void import("open")
           .then((mod) => mod.default(url))
           .then(() => {
-            logger.info(`Opened browser at ${url}`);
+            logger.info(`Navegador abierto en ${url}`);
           })
           .catch((err) => {
-            logger.warn({ err, url }, "Failed to open browser on startup");
+            logger.warn({ err, url }, "Falló la apertura del navegador al arrancar");
           });
       }
       printStartupBanner({
@@ -703,11 +703,11 @@ export async function startServer(): Promise<StartedServer> {
         const reset = "\x1b[0m";
         console.log(
           [
-            `${red}  BOARD CLAIM REQUIRED  ${reset}`,
-            `${yellow}This instance was previously local_trusted and still has local-board as the only admin.${reset}`,
-            `${yellow}Sign in with a real user and open this one-time URL to claim ownership:${reset}`,
+            `${red}  RECLAMO DEL PANEL REQUERIDO  ${reset}`,
+            `${yellow}Esta instancia era anteriormente local_trusted y todavía tiene local-board como único admin.${reset}`,
+            `${yellow}Inicia sesión con un usuario real y abre esta URL de un solo uso para reclamar la propiedad:${reset}`,
             `${yellow}${boardClaimUrl}${reset}`,
-            `${yellow}If you are connecting over Tailscale, replace the host in this URL with your Tailscale IP/MagicDNS name.${reset}`,
+            `${yellow}Si te conectas por Tailscale, reemplaza el host en esta URL con tu IP de Tailscale o tu nombre MagicDNS.${reset}`,
           ].join("\n"),
         );
       }
@@ -718,11 +718,11 @@ export async function startServer(): Promise<StartedServer> {
   
   if (embeddedPostgres && embeddedPostgresStartedByThisProcess) {
     const shutdown = async (signal: "SIGINT" | "SIGTERM") => {
-      logger.info({ signal }, "Stopping embedded PostgreSQL");
+      logger.info({ signal }, "Deteniendo PostgreSQL embebido");
       try {
         await embeddedPostgres?.stop();
       } catch (err) {
-        logger.error({ err }, "Failed to stop embedded PostgreSQL cleanly");
+        logger.error({ err }, "Falló la detención limpia de PostgreSQL embebido");
       } finally {
         process.exit(0);
       }
@@ -757,7 +757,7 @@ function isMainModule(metaUrl: string): boolean {
 
 if (isMainModule(import.meta.url)) {
   void startServer().catch((err) => {
-    logger.error({ err }, "Paperclip server failed to start");
+    logger.error({ err }, "Falló el arranque del servidor Paperclip");
     process.exit(1);
   });
 }

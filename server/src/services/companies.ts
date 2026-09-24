@@ -143,7 +143,7 @@ export function companyService(db: Db) {
       }
       suffix += 1;
     }
-    throw new Error("Unable to allocate unique issue prefix");
+    throw new Error("No se pudo asignar un prefijo de issue único");
   }
 
   return {
@@ -167,7 +167,7 @@ export function companyService(db: Db) {
       const row = await getCompanyQuery(db)
         .where(eq(companies.id, created.id))
         .then((rows) => rows[0] ?? null);
-      if (!row) throw notFound("Company not found after creation");
+      if (!row) throw notFound("Empresa no encontrada tras la creación");
       const [hydrated] = await hydrateCompanySpend([row], db);
       return enrichCompany(hydrated);
     },
@@ -190,9 +190,9 @@ export function companyService(db: Db) {
             .from(assets)
             .where(eq(assets.id, logoAssetId))
             .then((rows) => rows[0] ?? null);
-          if (!nextLogoAsset) throw notFound("Logo asset not found");
+          if (!nextLogoAsset) throw notFound("Recurso de logo no encontrado");
           if (nextLogoAsset.companyId !== existing.id) {
-            throw unprocessable("Logo asset must belong to the same company");
+            throw unprocessable("El recurso de logo debe pertenecer a la misma empresa");
           }
         }
 
@@ -253,7 +253,7 @@ export function companyService(db: Db) {
 
     remove: (id: string) =>
       db.transaction(async (tx) => {
-        // Delete from child tables in dependency order
+        // Elimina de las tablas hijas en orden de dependencia
         await tx.delete(heartbeatRunEvents).where(eq(heartbeatRunEvents.companyId, id));
         await tx.delete(agentTaskSessions).where(eq(agentTaskSessions.companyId, id));
         await tx.delete(heartbeatRuns).where(eq(heartbeatRuns.companyId, id));

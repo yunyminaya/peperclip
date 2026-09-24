@@ -3,38 +3,38 @@ export const label = "Pi (local)";
 
 export const models: Array<{ id: string; label: string }> = [];
 
-export const agentConfigurationDoc = `# pi_local agent configuration
+export const agentConfigurationDoc = `# Configuración del agente pi_local
 
-Adapter: pi_local
+Adaptador: pi_local
 
-Use when:
-- You want Paperclip to run Pi (the AI coding agent) locally as the agent runtime
-- You want provider/model routing in Pi format (--provider <name> --model <id>)
-- You want Pi session resume across heartbeats via --session
-- You need Pi's tool set (read, bash, edit, write, grep, find, ls)
+Casos de uso:
+- Quieres que Paperclip ejecute Pi (el agente de código con IA) localmente como el runtime del agente
+- Quieres el enrutamiento proveedor/modelo en formato Pi (--provider <name> --model <id>)
+- Quieres reanudar las sesiones de Pi entre latidos con --session
+- Necesitas el conjunto de herramientas de Pi (read, bash, edit, write, grep, find, ls)
 
-Don't use when:
-- You need webhook-style external invocation (use openclaw_gateway or http)
-- You only need one-shot shell commands (use process)
-- Pi CLI is not installed on the machine
+No usar cuando:
+- Necesitas invocación externa tipo webhook (usa openclaw_gateway o http)
+- Solo necesitas comandos shell de una sola ejecución (usa process)
+- La CLI de Pi no está instalada en la máquina
 
-Core fields:
-- cwd (string, optional): default absolute working directory fallback for the agent process (created if missing when possible)
-- instructionsFilePath (string, optional): absolute path to a markdown instructions file appended to system prompt via --append-system-prompt
-- promptTemplate (string, optional): user prompt template passed via -p flag
-- model (string, required): Pi model id in provider/model format (for example xai/grok-4)
-- thinking (string, optional): thinking level (off, minimal, low, medium, high, xhigh)
-- command (string, optional): defaults to "pi"
-- env (object, optional): KEY=VALUE environment variables
+Campos principales:
+- cwd (string, optional): directorio de trabajo absoluto predeterminado de reserva para el proceso del agente (se crea si falta cuando es posible)
+- instructionsFilePath (string, optional): ruta absoluta a un archivo markdown de instrucciones que se agrega al system prompt con --append-system-prompt
+- promptTemplate (string, optional): plantilla del prompt de usuario pasada con el flag -p
+- model (string, required): id del modelo de Pi en formato proveedor/modelo (por ejemplo xai/grok-4)
+- thinking (string, optional): nivel de thinking (off, minimal, low, medium, high, xhigh)
+- command (string, optional): valor predeterminado "pi"
+- env (object, optional): variables de entorno CLAVE=VALOR
 
-Operational fields:
-- timeoutSec (number, optional): run timeout in seconds
-- graceSec (number, optional): SIGTERM grace period in seconds
+Campos operativos:
+- timeoutSec (number, optional): tiempo máximo de ejecución en segundos
+- graceSec (number, optional): período de gracia de SIGTERM en segundos
 
-Notes:
-- Pi supports multiple providers and models. Use \`pi --list-models\` to list available options.
-- Paperclip requires an explicit \`model\` value for \`pi_local\` agents.
-- Sessions are stored in ~/.pi/paperclips/ and resumed with --session.
-- All tools (read, bash, edit, write, grep, find, ls) are enabled by default.
-- Agent instructions are appended to Pi's system prompt via --append-system-prompt, while the user task is sent via -p.
+Notas:
+- Pi admite múltiples proveedores y modelos. Usa \`pi --list-models\` para listar las opciones disponibles.
+- Paperclip requiere un valor explícito de \`model\` para los agentes \`pi_local\`.
+- Las sesiones se guardan en ~/.pi/paperclips/ y se reanudan con --session.
+- Todas las herramientas (read, bash, edit, write, grep, find, ls) están habilitadas de forma predeterminada.
+- Las instrucciones del agente se agregan al system prompt de Pi con --append-system-prompt, mientras que la tarea del usuario se envía con -p.
 `;

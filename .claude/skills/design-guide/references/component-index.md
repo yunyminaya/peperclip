@@ -1,98 +1,98 @@
-# Paperclip Component Index
+# Índice de componentes de Paperclip
 
-Complete inventory of all UI components. Update this file when adding new reusable components.
-
----
-
-## Table of Contents
-
-1. [shadcn/ui Primitives](#shadcnui-primitives)
-2. [Custom Components](#custom-components)
-3. [Layout Components](#layout-components)
-4. [Dialog & Form Components](#dialog--form-components)
-5. [Property Panel Components](#property-panel-components)
-6. [Agent Configuration](#agent-configuration)
-7. [Utilities & Hooks](#utilities--hooks)
+Inventario completo de todos los componentes de la UI. Actualizar este archivo al agregar componentes reutilizables nuevos.
 
 ---
 
-## shadcn/ui Primitives
+## Índice
 
-Location: `ui/src/components/ui/`
+1. [Primitivas de shadcn/ui](#primitivas-de-shadcni)
+2. [Componentes personalizados](#componentes-personalizados)
+3. [Componentes de layout](#componentes-de-layout)
+4. [Componentes de diálogo y formularios](#componentes-de-diálogo-y-formularios)
+5. [Componentes del panel de propiedades](#componentes-del-panel-de-propiedades)
+6. [Configuración del agente](#configuración-del-agente)
+7. [Utilidades y hooks](#utilidades-y-hooks)
 
-These are shadcn/ui base components. Do not modify directly — extend via composition.
+---
 
-| Component | File | Key Props | Notes |
+## Primitivas de shadcn/ui
+
+Ubicación: `ui/src/components/ui/`
+
+Son componentes base de shadcn/ui. No modificarlos directamente; extender mediante composición.
+
+| Componente | Archivo | Props clave | Notas |
 |-----------|------|-----------|-------|
-| Button | `button.tsx` | `variant` (default, secondary, outline, ghost, destructive, link), `size` (xs, sm, default, lg, icon, icon-xs, icon-sm, icon-lg) | Primary interactive element. Uses CVA. |
-| Card | `card.tsx` | CardHeader, CardTitle, CardDescription, CardAction, CardContent, CardFooter | Compound component. `py-6` default padding. |
-| Input | `input.tsx` | `disabled` | Standard text input. |
-| Badge | `badge.tsx` | `variant` (default, secondary, outline, destructive, ghost) | Generic label/tag. For status, use StatusBadge instead. |
-| Label | `label.tsx` | — | Form label, wraps Radix Label. |
-| Select | `select.tsx` | Trigger, Content, Item, etc. | Radix-based dropdown select. |
-| Separator | `separator.tsx` | `orientation` (horizontal, vertical) | Divider line. |
-| Checkbox | `checkbox.tsx` | `checked`, `onCheckedChange` | Radix checkbox with indicator. |
-| Textarea | `textarea.tsx` | Standard textarea props | Multi-line input. |
-| Avatar | `avatar.tsx` | `size` (sm, default, lg). Includes AvatarGroup, AvatarGroupCount | Image or fallback initials. |
-| Breadcrumb | `breadcrumb.tsx` | BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage | Navigation breadcrumbs. |
-| Command | `command.tsx` | CommandInput, CommandList, CommandGroup, CommandItem | Command palette / search. Based on cmdk. |
-| Dialog | `dialog.tsx` | DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter | Modal overlay. |
-| DropdownMenu | `dropdown-menu.tsx` | Trigger, Content, Item, Separator, etc. | Context/action menus. |
-| Popover | `popover.tsx` | PopoverTrigger, PopoverContent | Floating content panel. |
-| Tabs | `tabs.tsx` | `variant` (pill, line). TabsList, TabsTrigger, TabsContent | Tabbed navigation. Pill = default, line = underline style. |
-| Tooltip | `tooltip.tsx` | TooltipTrigger, TooltipContent | Hover tooltips. App is wrapped in TooltipProvider. |
-| ScrollArea | `scroll-area.tsx` | — | Custom scrollable container. |
-| Collapsible | `collapsible.tsx` | CollapsibleTrigger, CollapsibleContent | Expand/collapse sections. |
-| Skeleton | `skeleton.tsx` | className for sizing | Loading placeholder with shimmer. |
-| Sheet | `sheet.tsx` | SheetTrigger, SheetContent, SheetHeader, etc. | Side panel overlay. |
+| Button | `button.tsx` | `variant` (default, secondary, outline, ghost, destructive, link), `size` (xs, sm, default, lg, icon, icon-xs, icon-sm, icon-lg) | Elemento interactivo principal. Usa CVA. |
+| Card | `card.tsx` | CardHeader, CardTitle, CardDescription, CardAction, CardContent, CardFooter | Componente compuesto. Padding por defecto `py-6`. |
+| Input | `input.tsx` | `disabled` | Entrada de texto estándar. |
+| Badge | `badge.tsx` | `variant` (default, secondary, outline, destructive, ghost) | Etiqueta genérica. Para estado, usar StatusBadge en su lugar. |
+| Label | `label.tsx` | — | Etiqueta de formulario, envuelve Radix Label. |
+| Select | `select.tsx` | Trigger, Content, Item, etc. | Select desplegable basado en Radix. |
+| Separator | `separator.tsx` | `orientation` (horizontal, vertical) | Línea divisoria. |
+| Checkbox | `checkbox.tsx` | `checked`, `onCheckedChange` | Checkbox de Radix con indicador. |
+| Textarea | `textarea.tsx` | props estándar de textarea | Entrada multilínea. |
+| Avatar | `avatar.tsx` | `size` (sm, default, lg). Incluye AvatarGroup, AvatarGroupCount | Imagen o iniciales de respaldo. |
+| Breadcrumb | `breadcrumb.tsx` | BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage | Migas de pan de navegación. |
+| Command | `command.tsx` | CommandInput, CommandList, CommandGroup, CommandItem | Paleta de comandos / búsqueda. Basado en cmdk. |
+| Dialog | `dialog.tsx` | DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter | Superposición modal. |
+| DropdownMenu | `dropdown-menu.tsx` | Trigger, Content, Item, Separator, etc. | Menús de contexto/acción. |
+| Popover | `popover.tsx` | PopoverTrigger, PopoverContent | Panel flotante de contenido. |
+| Tabs | `tabs.tsx` | `variant` (pill, line). TabsList, TabsTrigger, TabsContent | Navegación por pestañas. Píldora = por defecto, línea = estilo subrayado. |
+| Tooltip | `tooltip.tsx` | TooltipTrigger, TooltipContent | Tooltips de hover. La app está envuelta en TooltipProvider. |
+| ScrollArea | `scroll-area.tsx` | — | Contenedor desplazable personalizado. |
+| Collapsible | `collapsible.tsx` | CollapsibleTrigger, CollapsibleContent | Secciones expandibles/plegables. |
+| Skeleton | `skeleton.tsx` | className para dimensionar | Marcador de carga con brillo. |
+| Sheet | `sheet.tsx` | SheetTrigger, SheetContent, SheetHeader, etc. | Superposición de panel lateral. |
 
 ---
 
-## Custom Components
+## Componentes personalizados
 
-Location: `ui/src/components/`
+Ubicación: `ui/src/components/`
 
 ### StatusBadge
 
-**File:** `StatusBadge.tsx`
+**Archivo:** `StatusBadge.tsx`
 **Props:** `status: string`
-**Usage:** Colored pill showing entity status. Supports 20+ statuses with mapped colors.
+**Uso:** píldora de color que muestra el estado de la entidad. Soporta más de 20 estados con colores mapeados.
 
 ```tsx
 <StatusBadge status="in_progress" />
 ```
 
-Use for displaying status in properties panels, entity rows, and list views. Never hardcode status colors — always use this component.
+Usar para mostrar el estado en paneles de propiedades, filas de entidad y vistas de lista. Nunca codificar colores de estado; usar siempre este componente.
 
 ### StatusIcon
 
-**File:** `StatusIcon.tsx`
+**Archivo:** `StatusIcon.tsx`
 **Props:** `status: string`, `onChange?: (status: string) => void`
-**Usage:** Circle icon representing issue status. When `onChange` provided, opens a popover picker.
+**Uso:** icono circular que representa el estado del issue. Cuando se proporciona `onChange`, abre un selector popover.
 
 ```tsx
 <StatusIcon status="todo" onChange={setStatus} />
 ```
 
-Supports: backlog, todo, in_progress, in_review, done, cancelled, blocked. Use in entity row leading slots and grouped list headers.
+Soporta: backlog, todo, in_progress, in_review, done, cancelled, blocked. Usar en los slots iniciales de filas de entidad y en encabezados de listas agrupadas.
 
 ### PriorityIcon
 
-**File:** `PriorityIcon.tsx`
+**Archivo:** `PriorityIcon.tsx`
 **Props:** `priority: string`, `onChange?: (priority: string) => void`
-**Usage:** Priority indicator icon. Interactive when `onChange` provided.
+**Uso:** icono indicador de prioridad. Interactivo cuando se proporciona `onChange`.
 
 ```tsx
 <PriorityIcon priority="high" onChange={setPriority} />
 ```
 
-Supports: critical, high, medium, low. Use alongside StatusIcon in entity row leading slots.
+Soporta: critical, high, medium, low. Usar junto a StatusIcon en los slots iniciales de filas de entidad.
 
 ### EntityRow
 
-**File:** `EntityRow.tsx`
+**Archivo:** `EntityRow.tsx`
 **Props:** `leading`, `identifier`, `title`, `subtitle?`, `trailing?`, `onClick?`, `selected?`
-**Usage:** Standard list row for issues, agents, projects. Supports hover highlight and selected state.
+**Uso:** fila de lista estándar para issues, agentes y proyectos. Soporta resaltado de hover y estado seleccionado.
 
 ```tsx
 <EntityRow
@@ -104,25 +104,25 @@ Supports: critical, high, medium, low. Use alongside StatusIcon in entity row le
 />
 ```
 
-Wrap multiple EntityRows in a `border border-border rounded-md` container.
+Envolver varios EntityRow en un contenedor `border border-border rounded-md`.
 
 ### MetricCard
 
-**File:** `MetricCard.tsx`
+**Archivo:** `MetricCard.tsx`
 **Props:** `icon: LucideIcon`, `value: string | number`, `label: string`, `description?: string`
-**Usage:** Dashboard stat card with icon, large value, label, and optional description.
+**Uso:** tarjeta de estadística del panel con icono, valor grande, etiqueta y descripción opcional.
 
 ```tsx
 <MetricCard icon={Bot} value={12} label="Active Agents" description="+3 this week" />
 ```
 
-Always use in a responsive grid: `grid md:grid-cols-2 xl:grid-cols-4 gap-4`.
+Usar siempre en una cuadrícula responsiva: `grid md:grid-cols-2 xl:grid-cols-4 gap-4`.
 
 ### EmptyState
 
-**File:** `EmptyState.tsx`
+**Archivo:** `EmptyState.tsx`
 **Props:** `icon: LucideIcon`, `message: string`, `action?: string`, `onAction?: () => void`
-**Usage:** Empty list placeholder with icon, message, and optional CTA button.
+**Uso:** marcador de lista vacía con icono, mensaje y botón CTA opcional.
 
 ```tsx
 <EmptyState icon={Inbox} message="No items yet." action="Create Item" onAction={handleCreate} />
@@ -130,10 +130,10 @@ Always use in a responsive grid: `grid md:grid-cols-2 xl:grid-cols-4 gap-4`.
 
 ### FilterBar
 
-**File:** `FilterBar.tsx`
+**Archivo:** `FilterBar.tsx`
 **Props:** `filters: FilterValue[]`, `onRemove: (key) => void`, `onClear: () => void`
-**Type:** `FilterValue = { key: string; label: string; value: string }`
-**Usage:** Filter chip display with remove buttons and clear all.
+**Tipo:** `FilterValue = { key: string; label: string; value: string }`
+**Uso:** visualización de chips de filtro con botones para quitar y limpiar todo.
 
 ```tsx
 <FilterBar filters={filters} onRemove={handleRemove} onClear={() => setFilters([])} />
@@ -141,9 +141,9 @@ Always use in a responsive grid: `grid md:grid-cols-2 xl:grid-cols-4 gap-4`.
 
 ### Identity
 
-**File:** `Identity.tsx`
+**Archivo:** `Identity.tsx`
 **Props:** `name: string`, `avatarUrl?: string`, `initials?: string`, `size?: "sm" | "default" | "lg"`
-**Usage:** Avatar + name display for users and agents. Derives initials from name automatically. Three sizes matching Avatar sizes.
+**Uso:** visualización de avatar + nombre para usuarios y agentes. Deriva las iniciales del nombre automáticamente. Tres tamaños que coinciden con los de Avatar.
 
 ```tsx
 <Identity name="Agent Alpha" size="sm" />
@@ -151,13 +151,13 @@ Always use in a responsive grid: `grid md:grid-cols-2 xl:grid-cols-4 gap-4`.
 <Identity name="Backend Service" size="lg" avatarUrl="/img/bot.png" />
 ```
 
-Use in property rows, comment headers, assignee displays, and anywhere a user/agent reference is shown.
+Usar en filas de propiedad, encabezados de comentarios, visualizaciones de asignado y en cualquier lugar donde se muestre una referencia de usuario/agente.
 
 ### InlineEditor
 
-**File:** `InlineEditor.tsx`
+**Archivo:** `InlineEditor.tsx`
 **Props:** `value: string`, `onSave: (val: string) => void`, `as?: string`, `className?: string`
-**Usage:** Click-to-edit text. Renders as display text, clicking enters edit mode. Enter saves, Escape cancels.
+**Uso:** texto de clic para editar. Se muestra como texto; al hacer clic entra en modo edición. Enter guarda, Escape cancela.
 
 ```tsx
 <InlineEditor value={title} onSave={updateTitle} as="h2" className="text-xl font-bold" />
@@ -165,9 +165,9 @@ Use in property rows, comment headers, assignee displays, and anywhere a user/ag
 
 ### PageSkeleton
 
-**File:** `PageSkeleton.tsx`
+**Archivo:** `PageSkeleton.tsx`
 **Props:** `variant: "list" | "detail"`
-**Usage:** Full-page loading skeleton matching list or detail layout.
+**Uso:** esqueleto de carga de página completa que coincide con el layout de lista o detalle.
 
 ```tsx
 <PageSkeleton variant="list" />
@@ -175,149 +175,149 @@ Use in property rows, comment headers, assignee displays, and anywhere a user/ag
 
 ### CommentThread
 
-**File:** `CommentThread.tsx`
-**Usage:** Comment list with add-comment form. Used on issue and entity detail views.
+**Archivo:** `CommentThread.tsx`
+**Uso:** lista de comentarios con formulario para agregar comentarios. Se usa en vistas de detalle de issue y entidad.
 
 ### GoalTree
 
-**File:** `GoalTree.tsx`
-**Usage:** Hierarchical goal tree with expand/collapse. Used on the goals page.
+**Archivo:** `GoalTree.tsx`
+**Uso:** árbol jerárquico de objetivos con expandir/plegar. Se usa en la página de objetivos.
 
 ### CompanySwitcher
 
-**File:** `CompanySwitcher.tsx`
-**Usage:** Company selector dropdown in sidebar header.
+**Archivo:** `CompanySwitcher.tsx`
+**Uso:** desplegable selector de empresa en el encabezado de la barra lateral.
 
 ---
 
-## Layout Components
+## Componentes de layout
 
 ### Layout
 
-**File:** `Layout.tsx`
-**Usage:** Main app shell. Three-zone layout: Sidebar + Main content + Properties panel. Wraps all routes.
+**Archivo:** `Layout.tsx`
+**Uso:** shell principal de la app. Layout de tres zonas: barra lateral + contenido principal + panel de propiedades. Envuelve todas las rutas.
 
 ### Sidebar
 
-**File:** `Sidebar.tsx`
-**Usage:** Left navigation sidebar (`w-60`). Contains CompanySwitcher, search button, new issue button, and SidebarSections.
+**Archivo:** `Sidebar.tsx`
+**Uso:** barra lateral de navegación izquierda (`w-60`). Contiene CompanySwitcher, botón de búsqueda, botón de nuevo issue y SidebarSections.
 
 ### SidebarSection
 
-**File:** `SidebarSection.tsx`
-**Usage:** Collapsible sidebar group with header label and chevron toggle.
+**Archivo:** `SidebarSection.tsx`
+**Uso:** grupo plegable de la barra lateral con etiqueta de encabezado e interruptor de chevrón.
 
 ### SidebarNavItem
 
-**File:** `SidebarNavItem.tsx`
-**Props:** Icon, label, optional badge count
-**Usage:** Individual nav item within a SidebarSection.
+**Archivo:** `SidebarNavItem.tsx`
+**Props:** Icon, label, recuento opcional de insignia
+**Uso:** elemento de navegación individual dentro de un SidebarSection.
 
 ### BreadcrumbBar
 
-**File:** `BreadcrumbBar.tsx`
-**Usage:** Top breadcrumb navigation spanning main content + properties panel.
+**Archivo:** `BreadcrumbBar.tsx`
+**Uso:** navegación de migas de pan superior que abarca el contenido principal + el panel de propiedades.
 
 ### PropertiesPanel
 
-**File:** `PropertiesPanel.tsx`
-**Usage:** Right-side properties panel (`w-80`). Closeable. Shown on detail views.
+**Archivo:** `PropertiesPanel.tsx`
+**Uso:** panel de propiedades del lado derecho (`w-80`). Se puede cerrar. Visible en vistas de detalle.
 
 ### CommandPalette
 
-**File:** `CommandPalette.tsx`
-**Usage:** Cmd+K global search modal. Searches issues, projects, agents.
+**Archivo:** `CommandPalette.tsx`
+**Uso:** modal de búsqueda global Cmd+K. Busca issues, proyectos y agentes.
 
 ---
 
-## Dialog & Form Components
+## Componentes de diálogo y formularios
 
 ### NewIssueDialog
 
-**File:** `NewIssueDialog.tsx`
-**Usage:** Create new issue with project/assignee/priority selection. Supports draft saving.
+**Archivo:** `NewIssueDialog.tsx`
+**Uso:** crear issue nuevo con selección de proyecto/asignado/prioridad. Soporta guardado de borradores.
 
 ### NewProjectDialog
 
-**File:** `NewProjectDialog.tsx`
-**Usage:** Create new project dialog.
+**Archivo:** `NewProjectDialog.tsx`
+**Uso:** diálogo para crear proyecto nuevo.
 
 ### NewAgentDialog
 
-**File:** `NewAgentDialog.tsx`
-**Usage:** Create new agent dialog.
+**Archivo:** `NewAgentDialog.tsx`
+**Uso:** diálogo para crear agente nuevo.
 
 ### OnboardingWizard
 
-**File:** `OnboardingWizard.tsx`
-**Usage:** Multi-step onboarding flow for new users/companies.
+**Archivo:** `OnboardingWizard.tsx`
+**Uso:** flujo de incorporación de varios pasos para usuarios/empresas nuevos.
 
 ---
 
-## Property Panel Components
+## Componentes del panel de propiedades
 
-These render inside the PropertiesPanel for different entity types:
+Se muestran dentro del PropertiesPanel para distintos tipos de entidad:
 
-| Component | File | Entity |
+| Componente | Archivo | Entidad |
 |-----------|------|--------|
 | IssueProperties | `IssueProperties.tsx` | Issues |
-| AgentProperties | `AgentProperties.tsx` | Agents |
-| ProjectProperties | `ProjectProperties.tsx` | Projects |
-| GoalProperties | `GoalProperties.tsx` | Goals |
+| AgentProperties | `AgentProperties.tsx` | Agentes |
+| ProjectProperties | `ProjectProperties.tsx` | Proyectos |
+| GoalProperties | `GoalProperties.tsx` | Objetivos |
 
-All follow the property row pattern: `text-xs text-muted-foreground` label on left, value on right, `py-1.5` spacing.
+Todos siguen el patrón de fila de propiedad: etiqueta `text-xs text-muted-foreground` a la izquierda, valor a la derecha, espaciado `py-1.5`.
 
 ---
 
-## Agent Configuration
+## Configuración del agente
 
 ### agent-config-primitives
 
-**File:** `agent-config-primitives.tsx`
+**Archivo:** `agent-config-primitives.tsx`
 **Exports:** Field, ToggleField, ToggleWithNumber, CollapsibleSection, AutoExpandTextarea, DraftInput
-**Usage:** Reusable form field primitives for agent configuration forms.
+**Uso:** primitivas de campos de formulario reutilizables para formularios de configuración de agentes.
 
 ### AgentConfigForm
 
-**File:** `AgentConfigForm.tsx`
-**Usage:** Full agent creation/editing form with adapter type selection.
+**Archivo:** `AgentConfigForm.tsx`
+**Uso:** formulario completo de creación/edición de agentes con selección de tipo de adaptador.
 
 ---
 
-## Utilities & Hooks
+## Utilidades y hooks
 
-### cn() — Class Name Merger
+### cn() — Combinador de nombres de clase
 
-**File:** `ui/src/lib/utils.ts`
-**Usage:** Merges class names with clsx + tailwind-merge. Use in every component.
+**Archivo:** `ui/src/lib/utils.ts`
+**Uso:** combina nombres de clase con clsx + tailwind-merge. Usar en cada componente.
 
 ```tsx
 import { cn } from "@/lib/utils";
 <div className={cn("base-classes", conditional && "extra", className)} />
 ```
 
-### Formatting Utilities
+### Utilidades de formato
 
-**File:** `ui/src/lib/utils.ts`
+**Archivo:** `ui/src/lib/utils.ts`
 
-| Function | Usage |
+| Función | Uso |
 |----------|-------|
-| `formatCents(cents)` | Money display: `$12.34` |
-| `formatDate(date)` | Date display: `Jan 15, 2025` |
-| `relativeTime(date)` | Relative time: `2m ago`, `Jan 15` |
-| `formatTokens(count)` | Token counts: `1.2M`, `500k` |
+| `formatCents(cents)` | Visualización de dinero: `$12.34` |
+| `formatDate(date)` | Visualización de fecha: `Jan 15, 2025` |
+| `relativeTime(date)` | Tiempo relativo: `2m ago`, `Jan 15` |
+| `formatTokens(count)` | Conteos de tokens: `1.2M`, `500k` |
 
 ### useKeyboardShortcuts
 
-**File:** `ui/src/hooks/useKeyboardShortcuts.ts`
-**Usage:** Global keyboard shortcut handler. Registers Cmd+K, C, [, ], Cmd+Enter.
+**Archivo:** `ui/src/hooks/useKeyboardShortcuts.ts`
+**Uso:** manejador global de atajos de teclado. Registra Cmd+K, C, [, ], Cmd+Enter.
 
-### Query Keys
+### Claves de consulta
 
-**File:** `ui/src/lib/queryKeys.ts`
-**Usage:** Structured React Query key factories for cache management.
+**Archivo:** `ui/src/lib/queryKeys.ts`
+**Uso:** fábricas estructuradas de claves de React Query para gestión de caché.
 
 ### groupBy
 
-**File:** `ui/src/lib/groupBy.ts`
-**Usage:** Generic array grouping utility.
+**Archivo:** `ui/src/lib/groupBy.ts`
+**Uso:** utilidad genérica de agrupación de arreglos.

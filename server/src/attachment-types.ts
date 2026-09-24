@@ -1,18 +1,18 @@
 /**
- * Shared attachment content-type configuration.
+ * Configuración compartida de content-type de adjuntos.
  *
- * By default only image types are allowed.  Set the
- * `PAPERCLIP_ALLOWED_ATTACHMENT_TYPES` environment variable to a
- * comma-separated list of MIME types or wildcard patterns to expand the
- * allowed set.
+ * Por defecto solo se permiten tipos de imagen. Configura la
+ * variable de entorno `PAPERCLIP_ALLOWED_ATTACHMENT_TYPES` con una
+ * lista de tipos MIME o patrones comodín separados por comas para ampliar
+ * el conjunto permitido.
  *
- * Examples:
+ * Ejemplos:
  *   PAPERCLIP_ALLOWED_ATTACHMENT_TYPES=image/*,application/pdf
  *   PAPERCLIP_ALLOWED_ATTACHMENT_TYPES=image/*,application/pdf,text/*
  *
- * Supported pattern syntax:
- *   - Exact types:   "application/pdf"
- *   - Wildcards:     "image/*"  or  "application/vnd.openxmlformats-officedocument.*"
+ * Sintaxis de patrones soportada:
+ *   - Tipos exactos: "application/pdf"
+ *   - Comodines:     "image/*"  o  "application/vnd.openxmlformats-officedocument.*"
  */
 
 export const DEFAULT_ALLOWED_TYPES: readonly string[] = [
@@ -30,8 +30,8 @@ export const DEFAULT_ALLOWED_TYPES: readonly string[] = [
 ];
 
 /**
- * Parse a comma-separated list of MIME type patterns into a normalised array.
- * Returns the default image-only list when the input is empty or undefined.
+ * Analiza una lista de patrones de tipos MIME separados por comas en un arreglo normalizado.
+ * Devuelve la lista por defecto (solo imágenes) cuando la entrada está vacía o es undefined.
  */
 export function parseAllowedTypes(raw: string | undefined): string[] {
   if (!raw) return [...DEFAULT_ALLOWED_TYPES];
@@ -43,10 +43,10 @@ export function parseAllowedTypes(raw: string | undefined): string[] {
 }
 
 /**
- * Check whether `contentType` matches any entry in `allowedPatterns`.
+ * Verifica si `contentType` coincide con alguna entrada de `allowedPatterns`.
  *
- * Supports exact matches ("application/pdf") and wildcard / prefix
- * patterns ("image/*", "application/vnd.openxmlformats-officedocument.*").
+ * Soporta coincidencias exactas ("application/pdf") y patrones comodín / de
+ * prefijo ("image/*", "application/vnd.openxmlformats-officedocument.*").
  */
 export function matchesContentType(contentType: string, allowedPatterns: string[]): boolean {
   const ct = contentType.toLowerCase();
@@ -59,13 +59,13 @@ export function matchesContentType(contentType: string, allowedPatterns: string[
   });
 }
 
-// ---------- Module-level singletons read once at startup ----------
+// ---------- Singletons a nivel de módulo leídos una vez al arrancar ----------
 
 const allowedPatterns: string[] = parseAllowedTypes(
   process.env.PAPERCLIP_ALLOWED_ATTACHMENT_TYPES,
 );
 
-/** Convenience wrapper using the process-level allowed list. */
+/** Envoltorio de conveniencia que usa la lista permitida a nivel de proceso. */
 export function isAllowedContentType(contentType: string): boolean {
   return matchesContentType(contentType, allowedPatterns);
 }

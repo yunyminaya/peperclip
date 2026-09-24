@@ -1,8 +1,8 @@
-# Docker Quickstart
+# Inicio rápido con Docker
 
-Run Paperclip in Docker without installing Node or pnpm locally.
+Ejecuta Paperclip en Docker sin instalar Node ni pnpm en local.
 
-## One-liner (build + run)
+## Una línea (build + run)
 
 ```sh
 docker build -t paperclip-local . && \
@@ -14,39 +14,39 @@ docker run --name paperclip \
   paperclip-local
 ```
 
-Open: `http://localhost:3100`
+Abre: `http://localhost:3100`
 
-Data persistence:
+Persistencia de datos:
 
-- Embedded PostgreSQL data
-- uploaded assets
-- local secrets key
-- local agent workspace data
+- Datos de PostgreSQL embebido
+- assets subidos
+- clave local de secretos
+- datos locales del workspace de agentes
 
-All persisted under your bind mount (`./data/docker-paperclip` in the example above).
+Todo persiste bajo tu bind mount (`./data/docker-paperclip` en el ejemplo de arriba).
 
-## Compose Quickstart
+## Inicio rápido con Compose
 
 ```sh
 docker compose -f docker-compose.quickstart.yml up --build
 ```
 
-Defaults:
+Valores por defecto:
 
-- host port: `3100`
-- persistent data dir: `./data/docker-paperclip`
+- puerto de host: `3100`
+- directorio de datos persistente: `./data/docker-paperclip`
 
-Optional overrides:
+Overrides opcionales:
 
 ```sh
 PAPERCLIP_PORT=3200 PAPERCLIP_DATA_DIR=./data/pc docker compose -f docker-compose.quickstart.yml up --build
 ```
 
-If you change host port or use a non-local domain, set `PAPERCLIP_PUBLIC_URL` to the external URL you will use in browser/auth flows.
+Si cambias el puerto de host o usas un dominio no local, define `PAPERCLIP_PUBLIC_URL` con la URL externa que usarás en flujos de navegador/autenticación.
 
-## Authenticated Compose (Single Public URL)
+## Compose autenticado (una sola URL pública)
 
-For authenticated deployments, set one canonical public URL and let Paperclip derive auth/callback defaults:
+Para despliegues autenticados, define una URL pública canónica y deja que Paperclip derive los valores por defecto de autenticación/callback:
 
 ```yaml
 services:
@@ -57,25 +57,25 @@ services:
       PAPERCLIP_PUBLIC_URL: https://desk.koker.net
 ```
 
-`PAPERCLIP_PUBLIC_URL` is used as the primary source for:
+`PAPERCLIP_PUBLIC_URL` se usa como fuente principal para:
 
-- auth public base URL
-- Better Auth base URL defaults
-- bootstrap invite URL defaults
-- hostname allowlist defaults (hostname extracted from URL)
+- URL base pública de autenticación
+- valores por defecto de URL base de Better Auth
+- valores por defecto de URL de invitación bootstrap
+- valores por defecto de lista de hosts permitidos (hostname extraído de la URL)
 
-Granular overrides remain available if needed (`PAPERCLIP_AUTH_PUBLIC_BASE_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_TRUSTED_ORIGINS`, `PAPERCLIP_ALLOWED_HOSTNAMES`).
+Los overrides granulares siguen disponibles si se necesitan (`PAPERCLIP_AUTH_PUBLIC_BASE_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_TRUSTED_ORIGINS`, `PAPERCLIP_ALLOWED_HOSTNAMES`).
 
-Set `PAPERCLIP_ALLOWED_HOSTNAMES` explicitly only when you need additional hostnames beyond the public URL host (for example Tailscale/LAN aliases or multiple private hostnames).
+Define `PAPERCLIP_ALLOWED_HOSTNAMES` explícitamente solo cuando necesites hostnames adicionales más allá del host de la URL pública (por ejemplo alias de Tailscale/LAN o múltiples hostnames privados).
 
-## Claude + Codex Local Adapters in Docker
+## Adaptadores locales Claude + Codex en Docker
 
-The image pre-installs:
+La imagen preinstala:
 
-- `claude` (Anthropic Claude Code CLI)
-- `codex` (OpenAI Codex CLI)
+- `claude` (CLI de Anthropic Claude Code)
+- `codex` (CLI de OpenAI Codex)
 
-If you want local adapter runs inside the container, pass API keys when starting the container:
+Si quieres ejecuciones de adaptadores locales dentro del contenedor, pasa API keys al iniciar el contenedor:
 
 ```sh
 docker run --name paperclip \
@@ -88,24 +88,24 @@ docker run --name paperclip \
   paperclip-local
 ```
 
-Notes:
+Notas:
 
-- Without API keys, the app still runs normally.
-- Adapter environment checks in Paperclip will surface missing auth/CLI prerequisites.
+- Sin API keys, la app sigue ejecutándose normalmente.
+- Los chequeos de entorno de adaptadores en Paperclip mostrarán requisitos faltantes de autenticación/CLI.
 
-## Untrusted PR Review Container
+## Contenedor de revisión de PR no confiables
 
-If you want a separate Docker environment for reviewing untrusted pull requests with `codex` or `claude`, use the dedicated review workflow in `doc/UNTRUSTED-PR-REVIEW.md`.
+Si quieres un entorno Docker separado para revisar pull requests no confiables con `codex` o `claude`, usa el flujo de revisión dedicado en `doc/UNTRUSTED-PR-REVIEW.md`.
 
-That setup keeps CLI auth state in Docker volumes instead of your host home directory and uses a separate scratch workspace for PR checkouts and preview runs.
+Esa configuración mantiene el estado de autenticación de los CLI en volúmenes Docker en lugar de tu directorio home del host y usa un workspace de scratch separado para checkouts de PR y ejecuciones de vista previa.
 
-## Onboard Smoke Test (Ubuntu + npm only)
+## Prueba de humo de onboard (solo Ubuntu + npm)
 
-Use this when you want to mimic a fresh machine that only has Ubuntu + npm and verify:
+Úsalo cuando quieras imitar una máquina nueva que solo tiene Ubuntu + npm y verificar:
 
-- `npx paperclipai onboard --yes` completes
-- the server binds to `0.0.0.0:3100` so host access works
-- onboard/run banners and startup logs are visible in your terminal
+- `npx paperclipai onboard --yes` se completa
+- el servidor hace bind en `0.0.0.0:3100` para que el acceso del host funcione
+- los banners de onboard/run y los logs de arranque son visibles en tu terminal
 
 Build + run:
 
@@ -113,9 +113,9 @@ Build + run:
 ./scripts/docker-onboard-smoke.sh
 ```
 
-Open: `http://localhost:3131` (default smoke host port)
+Abre: `http://localhost:3131` (puerto de host de humo por defecto)
 
-Useful overrides:
+Overrides útiles:
 
 ```sh
 HOST_PORT=3200 PAPERCLIPAI_VERSION=latest ./scripts/docker-onboard-smoke.sh
@@ -123,14 +123,14 @@ PAPERCLIP_DEPLOYMENT_MODE=authenticated PAPERCLIP_DEPLOYMENT_EXPOSURE=private ./
 SMOKE_DETACH=true SMOKE_METADATA_FILE=/tmp/paperclip-smoke.env PAPERCLIPAI_VERSION=latest ./scripts/docker-onboard-smoke.sh
 ```
 
-Notes:
+Notas:
 
-- Persistent data is mounted at `./data/docker-onboard-smoke` by default.
-- Container runtime user id defaults to your local `id -u` so the mounted data dir stays writable while avoiding root runtime.
-- Smoke script defaults to `authenticated/private` mode so `HOST=0.0.0.0` can be exposed to the host.
-- Smoke script defaults host port to `3131` to avoid conflicts with local Paperclip on `3100`.
-- Smoke script also defaults `PAPERCLIP_PUBLIC_URL` to `http://localhost:<HOST_PORT>` so bootstrap invite URLs and auth callbacks use the reachable host port instead of the container's internal `3100`.
-- In authenticated mode, the smoke script defaults `SMOKE_AUTO_BOOTSTRAP=true` and drives the real bootstrap path automatically: it signs up a real user, runs `paperclipai auth bootstrap-ceo` inside the container to mint a real bootstrap invite, accepts that invite over HTTP, and verifies board session access.
-- Run the script in the foreground to watch the onboarding flow; stop with `Ctrl+C` after validation.
-- Set `SMOKE_DETACH=true` to leave the container running for automation and optionally write shell-ready metadata to `SMOKE_METADATA_FILE`.
-- The image definition is in `Dockerfile.onboard-smoke`.
+- Los datos persistentes se montan en `./data/docker-onboard-smoke` por defecto.
+- El id de usuario de runtime del contenedor por defecto es tu `id -u` local para que el directorio de datos montado siga siendo escribible evitando runtime como root.
+- El script de humo por defecto usa modo `authenticated/private` para que `HOST=0.0.0.0` pueda exponerse al host.
+- El script de humo usa por defecto el puerto de host `3131` para evitar conflictos con Paperclip local en `3100`.
+- El script de humo también usa por defecto `PAPERCLIP_PUBLIC_URL` en `http://localhost:<HOST_PORT>` para que las URLs de invitación bootstrap y los callbacks de autenticación usen el puerto de host alcanzable en lugar del `3100` interno del contenedor.
+- En modo autenticado, el script de humo usa por defecto `SMOKE_AUTO_BOOTSTRAP=true` y conduce la ruta bootstrap real automáticamente: registra un usuario real, ejecuta `paperclipai auth bootstrap-ceo` dentro del contenedor para acuñar una invitación bootstrap real, acepta esa invitación por HTTP y verifica el acceso de sesión del tablero.
+- Ejecuta el script en primer plano para ver el flujo de incorporación; detén con `Ctrl+C` después de validar.
+- Define `SMOKE_DETACH=true` para dejar el contenedor ejecutándose para automatización y opcionalmente escribir metadatos listos para shell en `SMOKE_METADATA_FILE`.
+- La definición de la imagen está en `Dockerfile.onboard-smoke`.

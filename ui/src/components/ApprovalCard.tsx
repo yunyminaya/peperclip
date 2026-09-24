@@ -39,7 +39,7 @@ export function ApprovalCard({
 
   return (
     <div className="border border-border rounded-lg p-4 space-y-0">
-      {/* Header */}
+      {/* Encabezado */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -47,7 +47,7 @@ export function ApprovalCard({
             <span className="font-medium text-sm">{label}</span>
             {requesterAgent && (
               <span className="text-xs text-muted-foreground">
-                requested by <Identity name={requesterAgent.name} size="sm" className="inline-flex" />
+                solicitado por <Identity name={requesterAgent.name} size="sm" className="inline-flex" />
               </span>
             )}
           </div>
@@ -59,17 +59,17 @@ export function ApprovalCard({
         </div>
       </div>
 
-      {/* Payload */}
+      {/* Datos */}
       <ApprovalPayloadRenderer type={approval.type} payload={approval.payload} />
 
-      {/* Decision note */}
+      {/* Nota de decisión */}
       {approval.decisionNote && (
         <div className="mt-3 text-xs text-muted-foreground italic border-t border-border pt-2">
-          Note: {approval.decisionNote}
+          Nota: {approval.decisionNote}
         </div>
       )}
 
-      {/* Actions */}
+      {/* Acciones */}
       {showResolutionButtons && (
         <div className="flex gap-2 mt-4 pt-3 border-t border-border">
           <Button
@@ -78,7 +78,7 @@ export function ApprovalCard({
             onClick={onApprove}
             disabled={isPending}
           >
-            Approve
+            Aprobar
           </Button>
           <Button
             variant="destructive"
@@ -86,18 +86,18 @@ export function ApprovalCard({
             onClick={onReject}
             disabled={isPending}
           >
-            Reject
+            Rechazar
           </Button>
         </div>
       )}
       <div className="mt-3">
         {detailLink ? (
           <Button variant="ghost" size="sm" className="text-xs px-0" asChild>
-            <Link to={detailLink}>View details</Link>
+            <Link to={detailLink}>Ver detalles</Link>
           </Button>
         ) : (
           <Button variant="ghost" size="sm" className="text-xs px-0" onClick={onOpen}>
-            View details
+            Ver detalles
           </Button>
         )}
       </div>

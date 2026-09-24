@@ -14,17 +14,17 @@ export function logCheck(config: PaperclipConfig, configPath?: string): CheckRes
   try {
     fs.accessSync(reportedDir, fs.constants.W_OK);
     return {
-      name: "Log directory",
+      name: "Directorio de logs",
       status: "pass",
-      message: `Log directory is writable: ${reportedDir}`,
+      message: `Directorio de logs con permiso de escritura: ${reportedDir}`,
     };
   } catch {
     return {
-      name: "Log directory",
+      name: "Directorio de logs",
       status: "fail",
-      message: `Log directory is not writable: ${logDir}`,
+      message: `Directorio de logs sin permiso de escritura: ${logDir}`,
       canRepair: false,
-      repairHint: "Check file permissions on the log directory",
+      repairHint: "Revisa los permisos de archivo del directorio de logs",
     };
   }
 }

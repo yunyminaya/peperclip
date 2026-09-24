@@ -2,11 +2,11 @@ import { cn } from "@/lib/utils";
 
 interface QuotaBarProps {
   label: string;
-  // value between 0 and 100
+  // valor entre 0 y 100
   percentUsed: number;
   leftLabel: string;
   rightLabel?: string;
-  // shows a 2px destructive notch at the fill tip when true
+  // muestra una muesca destructiva de 2px en la punta del relleno cuando es true
   showDeficitNotch?: boolean;
   className?: string;
 }
@@ -26,12 +26,12 @@ export function QuotaBar({
   className,
 }: QuotaBarProps) {
   const clampedPct = Math.min(100, Math.max(0, percentUsed));
-  // keep the notch visible even near the edges
+  // mantener la muesca visible incluso cerca de los bordes
   const notchLeft = Math.min(clampedPct, 97);
 
   return (
     <div className={cn("space-y-1.5", className)}>
-      {/* row header */}
+      {/* encabezado de la fila */}
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs text-muted-foreground">{label}</span>
         <div className="flex items-center gap-2 shrink-0">
@@ -42,9 +42,9 @@ export function QuotaBar({
         </div>
       </div>
 
-      {/* track — boxed border, square corners to match the theme */}
+      {/* pista — borde encajonado, esquinas cuadradas para coincidir con el tema */}
       <div className="relative h-2 w-full border border-border overflow-hidden">
-        {/* fill */}
+        {/* relleno */}
         <div
           className={cn(
             "absolute inset-y-0 left-0 transition-[width,background-color] duration-150",
@@ -52,7 +52,7 @@ export function QuotaBar({
           )}
           style={{ width: `${clampedPct}%` }}
         />
-        {/* deficit notch — 2px wide, sits at the fill tip */}
+        {/* muesca de déficit — 2px de ancho, situada en la punta del relleno */}
         {showDeficitNotch && clampedPct > 0 && (
           <div
             className="absolute inset-y-0 w-[2px] bg-destructive z-10"

@@ -1,57 +1,66 @@
 /**
- * PluginEventBus — typed in-process event bus for the Paperclip plugin system.
+ * PluginEventBus — bus de eventos tipado en proceso para el sistema de
+ * plugins de Paperclip.
  *
- * Responsibilities:
- * - Deliver core domain events to subscribing plugin workers (server-side).
- * - Apply `EventFilter` server-side so filtered-out events never reach the handler.
- * - Namespace plugin-emitted events as `plugin.<pluginId>.<eventName>`.
- * - Guard the core namespace: plugins may not emit events with the `plugin.` prefix.
- * - Isolate subscriptions per plugin — a plugin cannot enumerate or interfere with
- *   another plugin's subscriptions.
- * - Support wildcard subscriptions via prefix matching (e.g. `plugin.acme.linear.*`).
+ * Responsabilidades:
+ * - Entregar eventos de dominio centrales a los workers de plugins
+ *   suscritos (lado del servidor).
+ * - Aplicar `EventFilter` en el servidor para que los eventos filtrados
+ *   nunca lleguen al manejador.
+ * - Nombrar los eventos emitidos por plugins como
+ *   `plugin.<pluginId>.<eventName>`.
+ * - Proteger el namespace central: los plugins no pueden emitir eventos
+ *   con el prefijo `plugin.`.
+ * - Aislar las suscripciones por plugin — un plugin no puede enumerar ni
+ *   interferir con las suscripciones de otro plugin.
+ * - Soportar suscripciones con comodín vía coincidencia de prefijo
+ *   (p. ej. `plugin.acme.linear.*`).
  *
- * The bus operates in-process. In the full out-of-process architecture the host
- * calls `bus.emit()` after receiving events from the DB/queue layer, and the bus
- * forwards to handlers that proxy the call to the relevant worker process via IPC.
- * That IPC layer is separate; this module only handles routing and filtering.
+ * El bus opera en proceso. En la arquitectura completa fuera de proceso,
+ * el host llama a `bus.emit()` tras recibir eventos de la capa de BD/cola,
+ * y el bus los reenvía a manejadores que delegan la llamada al proceso
+ * worker correspondiente vía IPC. Esa capa de IPC es separada; este módulo
+ * solo maneja el enrutamiento y el filtrado.
  *
- * @see PLUGIN_SPEC.md §16 — Event System
- * @see PLUGIN_SPEC.md §16.1 — Event Filtering
- * @see PLUGIN_SPEC.md §16.2 — Plugin-to-Plugin Events
+ * @see PLUGIN_SPEC.md §16 — Sistema de eventos
+ * @see PLUGIN_SPEC.md §16.1 — Filtrado de eventos
+ * @see PLUGIN_SPEC.md §16.2 — Eventos de plugin a plugin
  */
 
 import type { PluginEventType } from "@paperclipai/shared";
 import type { PluginEvent, EventFilter } from "@paperclipai/plugin-sdk";
 
 // ---------------------------------------------------------------------------
-// Internal types
+// Tipos internos
 // ---------------------------------------------------------------------------
 
 /**
- * A registered subscription record stored per plugin.
+ * Registro de suscripción almacenado por plugin.
  */
 interface Subscription {
-  /** The event name or prefix pattern this subscription matches. */
+  /** El nombre de evento o patrón de prefijo que coincide con esta suscripción. */
   eventPattern: string;
-  /** Optional server-side filter applied before delivery. */
+  /** Filtro opcional aplicado en el servidor antes de la entrega. */
   filter: EventFilter | null;
-  /** Async handler to invoke when a matching event passes the filter. */
+  /** Manejador asíncrono a invocar cuando un evento coincidente pasa el filtro. */
   handler: (event: PluginEvent) => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
-// Pattern matching helpers
+// Utilidades de coincidencia de patrones
 // ---------------------------------------------------------------------------
 
 /**
- * Returns true if the event type matches the subscription pattern.
+ * Devuelve true si el tipo de evento coincide con el patrón de suscripción.
  *
- * Matching rules:
- * - Exact match: `"issue.created"` matches `"issue.created"`.
- * - Wildcard suffix: `"plugin.acme.*"` matches any event type that starts with
- *   `"plugin.acme."`. The wildcard `*` is only supported as a trailing token.
+ * Reglas de coincidencia:
+ * - Coincidencia exacta: `"issue.created"` coincide con `"issue.created"`.
+ * - Sufijo comodín: `"plugin.acme.*"` coincide con cualquier tipo de evento
+ *   que empiece con `"plugin.acme."`. El comodín `*` solo se soporta como
+ *   token final.
  *
- * No full glob syntax is supported — only trailing `*` after a `.` separator.
+ * No se soporta sintaxis glob completa — solo `*` al final tras un
+ * separador `.`.
  */
 function matchesPattern(eventType: string, pattern: string): boolean {
   if (pattern === eventType) return true;
@@ -66,25 +75,29 @@ function matchesPattern(eventType: string, pattern: string): boolean {
 }
 
 /**
- * Returns true if the event passes all fields of the filter.
- * A `null` or empty filter object passes all events.
+ * Devuelve true si el evento pasa todos los campos del filtro.
+ * Un filtro `null` o vacío deja pasar todos los eventos.
  *
- * **Resolution strategy per field:**
+ * **Estrategia de resolución por campo:**
  *
- * - `projectId` — checked against `event.entityId` when `entityType === "project"`,
- *   otherwise against `payload.projectId`. This covers both direct project events
- *   (e.g. `project.created`) and secondary events that embed a project reference in
- *   their payload (e.g. `issue.created` with `payload.projectId`).
+ * - `projectId` — se compara contra `event.entityId` cuando
+ *   `entityType === "project"`, de lo contrario contra `payload.projectId`.
+ *   Esto cubre tanto eventos directos de proyecto (p. ej. `project.created`)
+ *   como eventos secundarios que incrustan una referencia de proyecto en su
+ *   payload (p. ej. `issue.created` con `payload.projectId`).
  *
- * - `companyId` — always resolved from `payload.companyId`. Core domain events that
- *   belong to a company embed the company ID in their payload.
+ * - `companyId` — siempre se resuelve desde `payload.companyId`. Los eventos
+ *   de dominio centrales que pertenecen a una empresa incrustan el ID de la
+ *   empresa en su payload.
  *
- * - `agentId` — checked against `event.entityId` when `entityType === "agent"`,
- *   otherwise against `payload.agentId`. Covers both direct agent lifecycle events
- *   (e.g. `agent.created`) and run-level events with `payload.agentId` (e.g.
- *   `agent.run.started`).
+ * - `agentId` — se compara contra `event.entityId` cuando
+ *   `entityType === "agent"`, de lo contrario contra `payload.agentId`.
+ *   Cubre tanto eventos directos del ciclo de vida de agentes
+ *   (p. ej. `agent.created`) como eventos a nivel de run con
+ *   `payload.agentId` (p. ej. `agent.run.started`).
  *
- * Multiple filter fields are ANDed — all specified fields must match.
+ * Múltiples campos de filtro se combinan con AND — todos los campos
+ * especificados deben coincidir.
  */
 function passesFilter(event: PluginEvent, filter: EventFilter | null): boolean {
   if (!filter) return true;
@@ -113,29 +126,29 @@ function passesFilter(event: PluginEvent, filter: EventFilter | null): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Event bus factory
+// Fábrica del bus de eventos
 // ---------------------------------------------------------------------------
 
 /**
- * Creates and returns a new `PluginEventBus` instance.
+ * Crea y devuelve una nueva instancia de `PluginEventBus`.
  *
- * A single bus instance should be shared across the server process. Each
- * plugin interacts with the bus through a scoped handle obtained via
- * {@link PluginEventBus.forPlugin}.
+ * Una sola instancia del bus debe compartirse en todo el proceso del
+ * servidor. Cada plugin interactúa con el bus a través de un manejador con
+ * alcance obtenido vía {@link PluginEventBus.forPlugin}.
  *
  * @example
  * ```ts
  * const bus = createPluginEventBus();
  *
- * // Give the Linear plugin a scoped handle
+ * // Darle al plugin de Linear un manejador con alcance
  * const linearBus = bus.forPlugin("acme.linear");
  *
- * // Subscribe from the plugin's perspective
+ * // Suscribirse desde la perspectiva del plugin
  * linearBus.subscribe("issue.created", async (event) => {
- *   // handle event
+ *   // manejar el evento
  * });
  *
- * // Emit a core domain event (called by the host, not the plugin)
+ * // Emitir un evento de dominio central (lo llama el host, no el plugin)
  * await bus.emit({
  *   eventId: "evt-1",
  *   eventType: "issue.created",
@@ -147,11 +160,11 @@ function passesFilter(event: PluginEvent, filter: EventFilter | null): boolean {
  * ```
  */
 export function createPluginEventBus(): PluginEventBus {
-  // Subscription registry: pluginKey → list of subscriptions
+  // Registro de suscripciones: pluginKey → lista de suscripciones
   const registry = new Map<string, Subscription[]>();
 
   /**
-   * Retrieve or create the subscription list for a plugin.
+   * Obtiene o crea la lista de suscripciones de un plugin.
    */
   function subsFor(pluginId: string): Subscription[] {
     let subs = registry.get(pluginId);
@@ -163,11 +176,13 @@ export function createPluginEventBus(): PluginEventBus {
   }
 
   /**
-   * Emit an event envelope to all matching subscribers across all plugins.
+   * Emite un sobre de evento a todos los suscriptores coincidentes de todos
+   * los plugins.
    *
-   * Subscribers are called concurrently (Promise.all). Each handler's errors
-   * are caught individually and collected in the returned `errors` array so a
-   * single misbehaving plugin cannot interrupt delivery to other plugins.
+   * Los suscriptores se llaman de forma concurrente (Promise.all). Los
+   * errores de cada manejador se capturan individualmente y se recogen en el
+   * arreglo `errors` devuelto, para que un solo plugin con mal comportamiento
+   * no pueda interrumpir la entrega a otros plugins.
    */
   async function emit(event: PluginEvent): Promise<PluginEventBusEmitResult> {
     const errors: Array<{ pluginId: string; error: unknown }> = [];
@@ -178,13 +193,14 @@ export function createPluginEventBus(): PluginEventBus {
         if (!matchesPattern(event.eventType, sub.eventPattern)) continue;
         if (!passesFilter(event, sub.filter)) continue;
 
-        // Use Promise.resolve().then() so that synchronous throws from handlers
-        // are also caught inside the promise chain. Calling
-        // Promise.resolve(syncThrowingFn()) does NOT catch sync throws — the
-        // throw escapes before Promise.resolve() can wrap it. Using .then()
-        // ensures the call is deferred into the microtask queue where all
-        // exceptions become rejections. Each .catch() swallows the rejection
-        // and records it — the promise always resolves, so Promise.all never rejects.
+        // Usar Promise.resolve().then() para que los throws síncronos de los
+        // manejadores también se capturen dentro de la cadena de promesas.
+        // Llamar Promise.resolve(syncThrowingFn()) NO captura los throws
+        // síncronos — el throw escapa antes de que Promise.resolve() pueda
+        // envolverlo. Usar .then() asegura que la llamada se difiera a la
+        // cola de microtareas, donde todas las excepciones se convierten en
+        // rechazos. Cada .catch() absorbe el rechazo y lo registra — la
+        // promesa siempre se resuelve, así Promise.all nunca rechaza.
         promises.push(
           Promise.resolve().then(() => sub.handler(event)).catch((error: unknown) => {
             errors.push({ pluginId, error });
@@ -198,26 +214,29 @@ export function createPluginEventBus(): PluginEventBus {
   }
 
   /**
-   * Remove all subscriptions for a plugin (e.g. on worker shutdown or uninstall).
+   * Elimina todas las suscripciones de un plugin (p. ej. al apagar el worker
+   * o desinstalar).
    */
   function clearPlugin(pluginId: string): void {
     registry.delete(pluginId);
   }
 
   /**
-   * Return a scoped handle for a specific plugin. The handle exposes only the
-   * plugin's own subscription list and enforces the plugin namespace on `emit`.
+   * Devuelve un manejador con alcance para un plugin específico. El
+   * manejador expone solo la lista de suscripciones del propio plugin y
+   * aplica el namespace del plugin en `emit`.
    */
   function forPlugin(pluginId: string): ScopedPluginEventBus {
     return {
       /**
-       * Subscribe to a core domain event or a plugin-namespaced event.
+       * Suscribirse a un evento de dominio central o a un evento con
+       * namespace de plugin.
        *
-       * For wildcard subscriptions use a trailing `.*` pattern, e.g.
+       * Para suscripciones con comodín usa un patrón `.*` al final, p. ej.
        * `"plugin.acme.linear.*"`.
        *
-       * Requires the `events.subscribe` capability (capability enforcement is
-       * done by the host layer before calling this method).
+       * Requiere la capacidad `events.subscribe` (la capa host aplica el
+       * control de capacidades antes de llamar este método).
        */
       subscribe(
         eventPattern: PluginEventType | `plugin.${string}`,
@@ -231,7 +250,7 @@ export function createPluginEventBus(): PluginEventBus {
           handler = fnOrFilter;
         } else {
           filter = fnOrFilter;
-          if (!maybeFn) throw new Error("Handler function is required when a filter is provided");
+          if (!maybeFn) throw new Error("Se requiere una función manejadora cuando se proporciona un filtro");
           handler = maybeFn;
         }
 
@@ -239,28 +258,29 @@ export function createPluginEventBus(): PluginEventBus {
       },
 
       /**
-       * Emit a plugin-namespaced event. The event type is automatically
-       * prefixed with `plugin.<pluginId>.` so:
-       * - `emit("sync-done", payload)` becomes `"plugin.acme.linear.sync-done"`.
+       * Emitir un evento con namespace de plugin. El tipo de evento se
+       * prefija automáticamente con `plugin.<pluginId>.`, así:
+       * - `emit("sync-done", payload)` se convierte en
+       *   `"plugin.acme.linear.sync-done"`.
        *
-       * Requires the `events.emit` capability (enforced by the host layer).
+       * Requiere la capacidad `events.emit` (aplicada por la capa host).
        *
-       * @throws {Error} if `name` already contains the `plugin.` prefix
-       *   (prevents cross-namespace spoofing).
+       * @throws {Error} si `name` ya contiene el prefijo `plugin.`
+       *   (evita suplantación entre namespaces).
        */
       async emit(name: string, companyId: string, payload: unknown): Promise<PluginEventBusEmitResult> {
         if (!name || name.trim() === "") {
-          throw new Error(`Plugin "${pluginId}" must provide a non-empty event name.`);
+          throw new Error(`El plugin "${pluginId}" debe proporcionar un nombre de evento no vacío.`);
         }
 
         if (!companyId || companyId.trim() === "") {
-          throw new Error(`Plugin "${pluginId}" must provide a companyId when emitting events.`);
+          throw new Error(`El plugin "${pluginId}" debe proporcionar un companyId al emitir eventos.`);
         }
 
         if (name.startsWith("plugin.")) {
           throw new Error(
-            `Plugin "${pluginId}" must not include the "plugin." prefix when emitting events. ` +
-            `Emit the bare event name (e.g. "sync-done") and the bus will namespace it automatically.`,
+            `El plugin "${pluginId}" no debe incluir el prefijo "plugin." al emitir eventos. ` +
+            `Emite el nombre de evento simple (p. ej. "sync-done") y el bus lo nombrará automáticamente.`,
           );
         }
 
@@ -278,7 +298,7 @@ export function createPluginEventBus(): PluginEventBus {
         return emit(event);
       },
 
-      /** Remove all subscriptions registered by this plugin. */
+      /** Elimina todas las suscripciones registradas por este plugin. */
       clear(): void {
         clearPlugin(pluginId);
       },
@@ -289,7 +309,7 @@ export function createPluginEventBus(): PluginEventBus {
     emit,
     forPlugin,
     clearPlugin,
-    /** Expose subscription count for a plugin (useful for tests and diagnostics). */
+    /** Expone el conteo de suscripciones de un plugin (útil para pruebas y diagnóstico). */
     subscriptionCount(pluginId?: string): number {
       if (pluginId !== undefined) {
         return registry.get(pluginId)?.length ?? 0;
@@ -302,83 +322,91 @@ export function createPluginEventBus(): PluginEventBus {
 }
 
 // ---------------------------------------------------------------------------
-// Public types
+// Tipos públicos
 // ---------------------------------------------------------------------------
 
 /**
- * Result returned from `emit()`. Handler errors are collected and returned
- * rather than thrown so a single misbehaving plugin cannot block delivery to
- * other plugins.
+ * Resultado devuelto por `emit()`. Los errores de los manejadores se recogen
+ * y se devuelven en lugar de lanzarse, para que un solo plugin con mal
+ * comportamiento no bloquee la entrega a otros plugins.
  */
 export interface PluginEventBusEmitResult {
-  /** Errors thrown by individual handlers, keyed by the plugin that failed. */
+  /** Errores lanzados por manejadores individuales, claveados por el plugin que falló. */
   errors: Array<{ pluginId: string; error: unknown }>;
 }
 
 /**
- * The full event bus — held by the host process.
+ * El bus de eventos completo — lo mantiene el proceso host.
  *
- * Call `forPlugin(id)` to obtain a `ScopedPluginEventBus` for each plugin worker.
+ * Llama a `forPlugin(id)` para obtener un `ScopedPluginEventBus` para cada
+ * worker de plugin.
  */
 export interface PluginEventBus {
   /**
-   * Emit a typed domain event to all matching subscribers.
+   * Emite un evento de dominio tipado a todos los suscriptores coincidentes.
    *
-   * Called by the host when a domain event occurs (e.g. from the DB layer or
-   * message queue). All registered subscriptions across all plugins are checked.
+   * Lo llama el host cuando ocurre un evento de dominio (p. ej. desde la
+   * capa de BD o la cola de mensajes). Se revisan todas las suscripciones
+   * registradas en todos los plugins.
    */
   emit(event: PluginEvent): Promise<PluginEventBusEmitResult>;
 
   /**
-   * Get a scoped handle for a specific plugin worker.
+   * Obtiene un manejador con alcance para un worker de plugin específico.
    *
-   * The scoped handle isolates the plugin's subscriptions and enforces the
-   * plugin namespace on outbound events.
+   * El manejador con alcance aísla las suscripciones del plugin y aplica el
+   * namespace del plugin en los eventos salientes.
    */
   forPlugin(pluginId: string): ScopedPluginEventBus;
 
   /**
-   * Remove all subscriptions for a plugin (called on worker shutdown/uninstall).
+   * Elimina todas las suscripciones de un plugin (se llama al apagar o
+   * desinstalar el worker).
    */
   clearPlugin(pluginId: string): void;
 
   /**
-   * Return the total number of active subscriptions, or the count for a
-   * specific plugin if `pluginId` is provided.
+   * Devuelve el número total de suscripciones activas, o el conteo de un
+   * plugin específico si se proporciona `pluginId`.
    */
   subscriptionCount(pluginId?: string): number;
 }
 
 /**
- * A plugin-scoped view of the event bus. Handed to the plugin worker (or its
- * host-side proxy) during initialisation.
+ * Una vista con alcance de plugin del bus de eventos. Se entrega al worker
+ * del plugin (o a su proxy del lado host) durante la inicialización.
  *
- * Plugins use this to:
- * 1. Subscribe to domain events (with optional server-side filter).
- * 2. Emit plugin-namespaced events for other plugins to consume.
+ * Los plugins la usan para:
+ * 1. Suscribirse a eventos de dominio (con filtro opcional en el servidor).
+ * 2. Emitir eventos con namespace de plugin para que otros plugins los
+ *    consuman.
  *
- * Note: `subscribe` overloads mirror the `PluginEventsClient.on()` interface
- * from the SDK. `emit` intentionally returns `PluginEventBusEmitResult` rather
- * than `void` so the host layer can inspect handler errors; the SDK-facing
- * `PluginEventsClient.emit()` wraps this and returns `void`.
+ * Nota: las sobrecargas de `subscribe` reflejan la interfaz
+ * `PluginEventsClient.on()` del SDK. `emit` devuelve intencionalmente
+ * `PluginEventBusEmitResult` en lugar de `void` para que la capa host
+ * pueda inspeccionar los errores de los manejadores; el
+ * `PluginEventsClient.emit()` del SDK lo envuelve y devuelve `void`.
  */
 export interface ScopedPluginEventBus {
   /**
-   * Subscribe to a core domain event or a plugin-namespaced event.
+   * Suscribirse a un evento de dominio central o a un evento con namespace
+   * de plugin.
    *
-   * **Pattern syntax:**
-   * - Exact match: `"issue.created"` — receives only that event type.
-   * - Wildcard suffix: `"plugin.acme.linear.*"` — receives all events emitted by
-   *   the `acme.linear` plugin. The `*` is supported only as a trailing token after
-   *   a `.` separator; no other glob syntax is supported.
-   * - Top-level plugin wildcard: `"plugin.*"` — receives all plugin-emitted events
-   *   regardless of which plugin emitted them.
+   * **Sintaxis de patrones:**
+   * - Coincidencia exacta: `"issue.created"` — recibe solo ese tipo de evento.
+   * - Sufijo comodín: `"plugin.acme.linear.*"` — recibe todos los eventos
+   *   emitidos por el plugin `acme.linear`. El `*` solo se soporta como
+   *   token final tras un separador `.`; no se soporta otra sintaxis glob.
+   * - Comodín de plugins de nivel superior: `"plugin.*"` — recibe todos los
+   *   eventos emitidos por plugins sin importar cuál plugin los emitió.
    *
-   * Wildcards apply only to the `plugin.*` namespace. Core domain events must be
-   * subscribed to by exact name (e.g. `"issue.created"`, not `"issue.*"`).
+   * Los comodines solo aplican al namespace `plugin.*`. Los eventos de
+   * dominio centrales deben suscribirse por nombre exacto
+   * (p. ej. `"issue.created"`, no `"issue.*"`).
    *
-   * An optional `EventFilter` can be passed as the second argument to perform
-   * server-side pre-filtering; filtered-out events are never delivered to the handler.
+   * Se puede pasar un `EventFilter` opcional como segundo argumento para
+   * hacer pre-filtrado en el servidor; los eventos filtrados nunca se
+   * entregan al manejador.
    */
   subscribe(
     eventPattern: PluginEventType | `plugin.${string}`,
@@ -391,22 +419,26 @@ export interface ScopedPluginEventBus {
   ): void;
 
   /**
-   * Emit a plugin-namespaced event. The bus automatically prepends
-   * `plugin.<pluginId>.` to the `name`, so passing `"sync-done"` from plugin
-   * `"acme.linear"` produces the event type `"plugin.acme.linear.sync-done"`.
+   * Emitir un evento con namespace de plugin. El bus antepone
+   * automáticamente `plugin.<pluginId>.` al `name`, así pasar `"sync-done"`
+   * desde el plugin `"acme.linear"` produce el tipo de evento
+   * `"plugin.acme.linear.sync-done"`.
    *
-   * @param name  Bare event name (e.g. `"sync-done"`). Must be non-empty and
-   *   must not include the `plugin.` prefix — the bus adds that automatically.
-   * @param companyId  UUID of the company this event belongs to.
-   * @param payload  Arbitrary JSON-serializable data to attach to the event.
+   * @param name  Nombre de evento simple (p. ej. `"sync-done"`). Debe ser no
+   *   vacío y no debe incluir el prefijo `plugin.` — el bus lo agrega
+   *   automáticamente.
+   * @param companyId  UUID de la empresa a la que pertenece este evento.
+   * @param payload  Datos arbitrarios serializables en JSON para adjuntar al
+   *   evento.
    *
-   * @throws {Error} if `name` is empty or whitespace-only.
-   * @throws {Error} if `name` starts with `"plugin."` (namespace spoofing guard).
+   * @throws {Error} si `name` está vacío o solo tiene espacios.
+   * @throws {Error} si `name` empieza con `"plugin."` (protección contra
+   *   suplantación de namespace).
    */
   emit(name: string, companyId: string, payload: unknown): Promise<PluginEventBusEmitResult>;
 
   /**
-   * Remove all subscriptions registered by this plugin.
+   * Elimina todas las suscripciones registradas por este plugin.
    */
   clear(): void;
 }

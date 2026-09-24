@@ -3,7 +3,7 @@ import { resolveMigrationConnection } from "./migration-runtime.js";
 
 const jsonMode = process.argv.includes("--json");
 
-function toError(error: unknown, context = "Migration status check failed"): Error {
+function toError(error: unknown, context = "No se pudo verificar el estado de la migración"): Error {
   if (error instanceof Error) return error;
   if (error === undefined) return new Error(context);
   if (typeof error === "string") return new Error(`${context}: ${error}`);
@@ -42,12 +42,12 @@ async function main(): Promise<void> {
     }
 
     if (payload.status === "upToDate") {
-      console.log(`Database is up to date via ${payload.source}`);
+      console.log(`La base de datos está actualizada con ${payload.source}`);
       return;
     }
 
     console.log(
-      `Pending migrations via ${payload.source}: ${payload.pendingMigrations.join(", ")}`,
+      `Migraciones pendientes con ${payload.source}: ${payload.pendingMigrations.join(", ")}`,
     );
   } finally {
     await connection.stop();
@@ -55,7 +55,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
-  const err = toError(error, "Migration status check failed");
+  const err = toError(error, "No se pudo verificar el estado de la migración");
   process.stderr.write(`${err.stack ?? err.message}\n`);
   process.exit(1);
 });

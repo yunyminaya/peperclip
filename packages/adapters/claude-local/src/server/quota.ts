@@ -133,8 +133,8 @@ export async function readClaudeAuthStatus(): Promise<ClaudeAuthStatus | null> {
 function describeClaudeSubscriptionAuth(status: ClaudeAuthStatus | null): string | null {
   if (!status?.loggedIn || status.authMethod !== "claude.ai") return null;
   return status.subscriptionType
-    ? `Claude is logged in via claude.ai (${status.subscriptionType})`
-    : "Claude is logged in via claude.ai";
+    ? `Claude inició sesión vía claude.ai (${status.subscriptionType})`
+    : "Claude inició sesión vía claude.ai";
 }
 
 export async function readClaudeToken(): Promise<string | null> {
@@ -190,13 +190,13 @@ function formatExtraUsageLabel(extraUsage: AnthropicExtraUsage): string | null {
   return `${formatCurrencyAmount(usedCredits, extraUsage.currency)} / ${formatCurrencyAmount(monthlyLimit, extraUsage.currency)}`;
 }
 
-/** Convert a 0-1 utilization fraction to a 0-100 integer percent. Returns null for null/undefined input. */
+/** Convierte una fracción de utilización 0-1 a un porcentaje entero 0-100. Devuelve null para entradas null/undefined. */
 export function toPercent(utilization: number | null | undefined): number | null {
   if (utilization == null) return null;
   return Math.min(100, Math.round(utilization * 100));
 }
 
-/** fetch with an abort-based timeout so a hanging provider api doesn't block the response indefinitely */
+/** fetch con tiempo de espera basado en abort para que una API de proveedor colgada no bloquee la respuesta indefinidamente */
 export async function fetchWithTimeout(url: string, init: RequestInit, ms = 8000): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
@@ -214,13 +214,13 @@ export async function fetchClaudeQuota(token: string): Promise<QuotaWindow[]> {
       "anthropic-beta": "oauth-2025-04-20",
     },
   });
-  if (!resp.ok) throw new Error(`anthropic usage api returned ${resp.status}`);
+  if (!resp.ok) throw new Error(`La API de uso de Anthropic devolvió ${resp.status}`);
   const body = (await resp.json()) as AnthropicUsageResponse;
   const windows: QuotaWindow[] = [];
 
   if (body.five_hour != null) {
     windows.push({
-      label: "Current session",
+      label: "Sesión actual",
       usedPercent: toPercent(body.five_hour.utilization),
       resetsAt: body.five_hour.resets_at ?? null,
       valueLabel: null,
@@ -229,7 +229,7 @@ export async function fetchClaudeQuota(token: string): Promise<QuotaWindow[]> {
   }
   if (body.seven_day != null) {
     windows.push({
-      label: "Current week (all models)",
+      label: "Semana actual (todos los modelos)",
       usedPercent: toPercent(body.seven_day.utilization),
       resetsAt: body.seven_day.resets_at ?? null,
       valueLabel: null,
@@ -238,7 +238,7 @@ export async function fetchClaudeQuota(token: string): Promise<QuotaWindow[]> {
   }
   if (body.seven_day_sonnet != null) {
     windows.push({
-      label: "Current week (Sonnet only)",
+      label: "Semana actual (solo Sonnet)",
       usedPercent: toPercent(body.seven_day_sonnet.utilization),
       resetsAt: body.seven_day_sonnet.resets_at ?? null,
       valueLabel: null,
@@ -247,7 +247,7 @@ export async function fetchClaudeQuota(token: string): Promise<QuotaWindow[]> {
   }
   if (body.seven_day_opus != null) {
     windows.push({
-      label: "Current week (Opus only)",
+      label: "Semana actual (solo Opus)",
       usedPercent: toPercent(body.seven_day_opus.utilization),
       resetsAt: body.seven_day_opus.resets_at ?? null,
       valueLabel: null,
@@ -256,17 +256,17 @@ export async function fetchClaudeQuota(token: string): Promise<QuotaWindow[]> {
   }
   if (body.extra_usage != null) {
     windows.push({
-      label: "Extra usage",
+      label: "Uso extra",
       usedPercent: body.extra_usage.is_enabled === false ? null : toPercent(body.extra_usage.utilization),
       resetsAt: null,
       valueLabel:
         body.extra_usage.is_enabled === false
-          ? "Not enabled"
+          ? "No habilitado"
           : formatExtraUsageLabel(body.extra_usage),
       detail:
         body.extra_usage.is_enabled === false
-          ? "Extra usage not enabled"
-          : "Monthly extra usage pool",
+          ? "Uso extra no habilitado"
+          : "Fondo mensual de uso extra",
     });
   }
   return windows;
@@ -302,16 +302,16 @@ function extractUsageError(text: string): string | null {
   const lower = text.toLowerCase();
   const compact = lower.replace(/\s+/g, "");
   if (lower.includes("token_expired") || lower.includes("token has expired")) {
-    return "Claude CLI token expired. Run `claude login` to refresh.";
+    return "El token del CLI de Claude expiró. Ejecuta `claude login` para renovarlo.";
   }
   if (lower.includes("authentication_error")) {
-    return "Claude CLI authentication error. Run `claude login`.";
+    return "Error de autenticación del CLI de Claude. Ejecuta `claude login`.";
   }
   if (lower.includes("rate_limit_error") || lower.includes("rate limited") || compact.includes("ratelimited")) {
-    return "Claude CLI usage endpoint is rate limited right now. Please try again later.";
+    return "El endpoint de uso del CLI de Claude tiene límite de peticiones en este momento. Inténtalo de nuevo más tarde.";
   }
   if (lower.includes("failed to load usage data") || compact.includes("failedtoloadusagedata")) {
-    return "Claude CLI could not load usage data. Open the CLI and retry `/usage`.";
+    return "El CLI de Claude no pudo cargar los datos de uso. Abre el CLI y reintenta `/usage`.";
   }
   return null;
 }
@@ -343,28 +343,50 @@ function isQuotaLabel(line: string): boolean {
 function canonicalQuotaLabel(line: string): string {
   switch (normalizeForLabelSearch(line)) {
     case "currentsession":
-      return "Current session";
+      return "Sesión actual";
     case "currentweekallmodels":
-      return "Current week (all models)";
+      return "Semana actual (todos los modelos)";
     case "currentweeksonnetonly":
     case "currentweeksonnet":
-      return "Current week (Sonnet only)";
+      return "Semana actual (solo Sonnet)";
     case "currentweekopusonly":
     case "currentweekopus":
-      return "Current week (Opus only)";
+      return "Semana actual (solo Opus)";
     case "extrausage":
-      return "Extra usage";
+      return "Uso extra";
     default:
       return line;
   }
 }
 
+/**
+ * Devuelve la clave canónica en inglés de una etiqueta de cuota, aceptando tanto
+ * las etiquetas originales del CLI de Claude como las etiquetas ya traducidas al
+ * español. Las comparaciones internas deben usar esta clave, no la etiqueta visible.
+ */
+function canonicalQuotaKey(label: string): string {
+  switch (normalizeForLabelSearch(label)) {
+    case "sesinactual":
+      return "currentsession";
+    case "semanaactualtodoslosmodelos":
+      return "currentweekallmodels";
+    case "semanaactualsolosonnet":
+      return "currentweeksonnetonly";
+    case "semanaactualsoloopus":
+      return "currentweekopusonly";
+    case "usoextra":
+      return "extrausage";
+    default:
+      return normalizeForLabelSearch(label);
+  }
+}
+
 function formatClaudeCliDetail(label: string, lines: string[]): string | null {
-  const normalizedLabel = normalizeForLabelSearch(label);
+  const normalizedLabel = canonicalQuotaKey(label);
   if (normalizedLabel === "extrausage") {
     const compact = lines.join(" ").replace(/\s+/g, "").toLowerCase();
     if (compact.includes("extrausagenotenabled")) {
-      return "Extra usage not enabled • /extra-usage to enable";
+      return "Uso extra no habilitado • /extra-usage para habilitarlo";
     }
     const firstLine = lines.find((line) => line.trim().length > 0) ?? null;
     return firstLine;
@@ -416,8 +438,8 @@ export function parseClaudeCliUsageText(text: string): QuotaWindow[] {
     };
   });
 
-  if (!windows.some((window) => normalizeForLabelSearch(window.label) === "currentsession")) {
-    throw new Error("Could not parse Claude CLI usage output.");
+  if (!windows.some((window) => canonicalQuotaKey(window.label) === "currentsession")) {
+    throw new Error("No se pudo analizar la salida de uso del CLI de Claude.");
   }
   return windows;
 }
@@ -446,7 +468,7 @@ export async function captureClaudeCliUsageText(timeoutMs = 12_000): Promise<str
     const output = `${stdout}${stderr}`;
     const cleaned = cleanTerminalText(output);
     if (usageOutputLooksComplete(cleaned)) return output;
-    throw new Error("Claude CLI usage probe ended before rendering usage.");
+    throw new Error("La prueba de uso del CLI de Claude terminó antes de mostrar el uso.");
   } catch (error) {
     const stdout =
       typeof error === "object" && error !== null && "stdout" in error && typeof error.stdout === "string"
@@ -460,7 +482,7 @@ export async function captureClaudeCliUsageText(timeoutMs = 12_000): Promise<str
     const cleaned = cleanTerminalText(output);
     if (usageOutputLooksComplete(cleaned)) return output;
     if (usageOutputLooksRelevant(cleaned)) {
-      throw new Error("Claude CLI usage probe ended before rendering usage.");
+      throw new Error("La prueba de uso del CLI de Claude terminó antes de mostrar el uso.");
     }
     throw error instanceof Error ? error : new Error(String(error));
   }
@@ -505,7 +527,7 @@ export async function getQuotaWindows(): Promise<ProviderQuotaResult> {
       ok: false,
       error:
         errors[0]
-        ?? "ANTHROPIC_API_KEY is set and no local Claude subscription session is available for quota polling",
+        ?? "ANTHROPIC_API_KEY está definida y no hay sesión local de suscripción de Claude disponible para consultar la cuota",
       windows: [],
     };
   }
@@ -516,8 +538,8 @@ export async function getQuotaWindows(): Promise<ProviderQuotaResult> {
       ok: false,
       error:
         errors.length > 0
-          ? `${authDescription}, but quota polling failed (${errors.join("; ")})`
-          : `${authDescription}, but Paperclip could not load subscription quota data`,
+          ? `${authDescription}, pero la consulta de cuota falló (${errors.join("; ")})`
+          : `${authDescription}, pero Paperclip no pudo cargar los datos de cuota de la suscripción`,
       windows: [],
     };
   }
@@ -525,7 +547,7 @@ export async function getQuotaWindows(): Promise<ProviderQuotaResult> {
   return {
     provider: "anthropic",
     ok: false,
-    error: errors[0] ?? "no local claude auth token",
+    error: errors[0] ?? "sin token local de autenticación de claude",
     windows: [],
   };
 }

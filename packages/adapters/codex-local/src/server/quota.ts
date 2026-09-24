@@ -188,8 +188,8 @@ interface WhamUsageResponse {
 }
 
 /**
- * Map a window duration in seconds to a human-readable label.
- * Falls back to the provided fallback string when seconds is null/undefined.
+ * Mapea una duración de ventana en segundos a una etiqueta legible.
+ * Usa la cadena de respaldo proporcionada cuando seconds es null/undefined.
  */
 export function secondsToWindowLabel(
   seconds: number | null | undefined,
@@ -203,7 +203,7 @@ export function secondsToWindowLabel(
   return `${Math.round(hours / 24)}d`;
 }
 
-/** fetch with an abort-based timeout so a hanging provider api doesn't block the response indefinitely */
+/** fetch con tiempo de espera basado en abort para que una API de proveedor colgada no bloquee la respuesta indefinidamente */
 export async function fetchWithTimeout(
   url: string,
   init: RequestInit,
@@ -233,7 +233,7 @@ export async function fetchCodexQuota(
   if (accountId) headers["ChatGPT-Account-Id"] = accountId;
 
   const resp = await fetchWithTimeout("https://chatgpt.com/backend-api/wham/usage", { headers });
-  if (!resp.ok) throw new Error(`chatgpt wham api returned ${resp.status}`);
+  if (!resp.ok) throw new Error(`La API wham de ChatGPT devolvió ${resp.status}`);
   const body = (await resp.json()) as WhamUsageResponse;
   const windows: QuotaWindow[] = [];
 
@@ -241,7 +241,7 @@ export async function fetchCodexQuota(
   if (rateLimit?.primary_window != null) {
     const w = rateLimit.primary_window;
     windows.push({
-      label: "5h limit",
+      label: "Límite de 5h",
       usedPercent: normalizeCodexUsedPercent(w.used_percent),
       resetsAt:
         typeof w.reset_at === "number"
@@ -254,7 +254,7 @@ export async function fetchCodexQuota(
   if (rateLimit?.secondary_window != null) {
     const w = rateLimit.secondary_window;
     windows.push({
-      label: "Weekly limit",
+      label: "Límite semanal",
       usedPercent: normalizeCodexUsedPercent(w.used_percent),
       resetsAt:
         typeof w.reset_at === "number"
@@ -266,9 +266,9 @@ export async function fetchCodexQuota(
   }
   if (body.credits != null && body.credits.unlimited !== true) {
     const balance = body.credits.balance;
-    const valueLabel = balance != null ? `$${(balance / 100).toFixed(2)} remaining` : "N/A";
+    const valueLabel = balance != null ? `$${(balance / 100).toFixed(2)} restante` : "N/A";
     windows.push({
-      label: "Credits",
+      label: "Créditos",
       usedPercent: null,
       resetsAt: null,
       valueLabel,
@@ -337,12 +337,12 @@ function buildCodexRpcWindow(label: string, window: CodexRpcWindow | null | unde
 
 function parseCreditBalance(value: string | number | null | undefined): string | null {
   if (typeof value === "number" && Number.isFinite(value)) {
-    return `$${value.toFixed(2)} remaining`;
+    return `$${value.toFixed(2)} restante`;
   }
   if (typeof value === "string" && value.trim().length > 0) {
     const parsed = Number(value);
     if (Number.isFinite(parsed)) {
-      return `$${parsed.toFixed(2)} remaining`;
+      return `$${parsed.toFixed(2)} restante`;
     }
     return value.trim();
   }
@@ -372,13 +372,13 @@ export function mapCodexRpcQuota(result: CodexRpcRateLimitsResult, account?: Cod
       limitId === "codex"
         ? ""
         : `${limit.limitName ?? limitId} · `;
-    const primary = buildCodexRpcWindow(`${prefix}5h limit`, limit.primary);
+    const primary = buildCodexRpcWindow(`${prefix}Límite de 5h`, limit.primary);
     if (primary) windows.push(primary);
-    const secondary = buildCodexRpcWindow(`${prefix}Weekly limit`, limit.secondary);
+    const secondary = buildCodexRpcWindow(`${prefix}Límite semanal`, limit.secondary);
     if (secondary) windows.push(secondary);
     if (limitId === "codex" && limit.credits && limit.credits.unlimited !== true) {
       windows.push({
-        label: "Credits",
+        label: "Créditos",
         usedPercent: null,
         resetsAt: null,
         valueLabel: parseCreditBalance(limit.credits.balance) ?? "N/A",
@@ -428,7 +428,7 @@ class CodexRpcClient {
     this.proc.on("exit", () => {
       for (const request of this.pending.values()) {
         clearTimeout(request.timer);
-        request.reject(new Error(this.stderr.trim() || "codex app-server closed unexpectedly"));
+        request.reject(new Error(this.stderr.trim() || "codex app-server se cerró inesperadamente"));
       }
       this.pending.clear();
     });
@@ -464,7 +464,7 @@ class CodexRpcClient {
     return new Promise<Record<string, unknown>>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id);
-        reject(new Error(`codex app-server timed out on ${method}`));
+        reject(new Error(`codex app-server agotó el tiempo de espera en ${method}`));
       }, timeoutMs);
       this.pending.set(id, { resolve, reject, timer });
       this.proc.stdin.write(payload);
@@ -544,7 +544,7 @@ export async function getQuotaWindows(): Promise<ProviderQuotaResult> {
       errors.push(formatProviderError("ChatGPT WHAM usage", error));
     }
   } else {
-    errors.push("no local codex auth token");
+    errors.push("sin token local de autenticación de codex");
   }
 
   return {

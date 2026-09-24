@@ -1,12 +1,12 @@
 /**
- * Plugin bridge initialization.
+ * Inicialización del puente de plugins.
  *
- * Registers the host's React instances and bridge hook implementations
- * on a global object so that the plugin module loader can inject them
- * into plugin UI bundles at load time.
+ * Registra las instancias de React del host y las implementaciones de hooks
+ * del puente en un objeto global para que el cargador de módulos de plugins
+ * pueda inyectarlas en los bundles de UI de plugins al cargarlos.
  *
- * Call `initPluginBridge()` once during app startup (in `main.tsx`), before
- * any plugin UI modules are loaded.
+ * Llama a `initPluginBridge()` una vez durante el arranque de la app (en `main.tsx`), antes
+ * de que se cargue cualquier módulo de UI de plugins.
  *
  * @see PLUGIN_SPEC.md §19.0.1 — Plugin UI SDK
  * @see PLUGIN_SPEC.md §19.0.2 — Bundle Isolation
@@ -21,14 +21,14 @@ import {
 } from "./bridge.js";
 
 // ---------------------------------------------------------------------------
-// Global bridge registry
+// Registro global del puente
 // ---------------------------------------------------------------------------
 
 /**
- * The global bridge registry shape.
+ * La forma del registro global del puente.
  *
- * This is placed on `globalThis.__paperclipPluginBridge__` and consumed by
- * the plugin module loader to provide implementations for external imports.
+ * Se coloca en `globalThis.__paperclipPluginBridge__` y el cargador de módulos
+ * de plugins lo consume para proporcionar implementaciones de las importaciones externas.
  */
 export interface PluginBridgeRegistry {
   react: unknown;
@@ -42,14 +42,14 @@ declare global {
 }
 
 /**
- * Initialize the plugin bridge global registry.
+ * Inicializa el registro global del puente de plugins.
  *
- * Registers the host's React, ReactDOM, and SDK UI bridge implementations
- * on `globalThis.__paperclipPluginBridge__` so the plugin module loader
- * can provide them to plugin bundles.
+ * Registra las implementaciones de React, ReactDOM y el puente de UI del SDK
+ * del host en `globalThis.__paperclipPluginBridge__` para que el cargador de módulos
+ * de plugins pueda proporcionárselas a los bundles de plugins.
  *
- * @param react - The host's React module
- * @param reactDom - The host's ReactDOM module
+ * @param react - El módulo React del host
+ * @param reactDom - El módulo ReactDOM del host
  */
 export function initPluginBridge(
   react: typeof import("react"),

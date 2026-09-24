@@ -1,72 +1,72 @@
-# OpenClaw Gateway Adapter
+# Adaptador de la puerta de enlace de OpenClaw
 
-This document describes how `@paperclipai/adapter-openclaw-gateway` invokes OpenClaw over the Gateway protocol.
+Este documento describe cómo `@paperclipai/adapter-openclaw-gateway` invoca OpenClaw mediante el protocolo de puerta de enlace (Gateway).
 
-## Transport
+## Transporte
 
-This adapter always uses WebSocket gateway transport.
+Este adaptador siempre usa el transporte de puerta de enlace por WebSocket.
 
-- URL must be `ws://` or `wss://`
-- Connect flow follows gateway protocol:
-1. receive `connect.challenge`
-2. send `req connect` (protocol/client/auth/device payload)
-3. send `req agent`
-4. wait for completion via `req agent.wait`
-5. stream `event agent` frames into Paperclip logs/transcript parsing
+- La URL debe ser `ws://` o `wss://`
+- El flujo de conexión sigue el protocolo de puerta de enlace:
+1. recibe `connect.challenge`
+2. envía `req connect` (payload de protocolo/cliente/autenticación/dispositivo)
+3. envía `req agent`
+4. espera la finalización mediante `req agent.wait`
+5. transmite los frames `event agent` hacia los registros/analizador de transcripciones de Paperclip
 
-## Auth Modes
+## Modos de autenticación
 
-Gateway credentials can be provided in any of these ways:
+Las credenciales de la puerta de enlace se pueden proporcionar de cualquiera de estas formas:
 
-- `authToken` / `token` in adapter config
+- `authToken` / `token` en la configuración del adaptador
 - `headers.x-openclaw-token`
-- `headers.x-openclaw-auth` (legacy)
-- `password` (shared password mode)
+- `headers.x-openclaw-auth` (heredado)
+- `password` (modo de contraseña compartida)
 
-When a token is present and `authorization` header is missing, the adapter derives `Authorization: Bearer <token>`.
+Cuando hay un token presente y falta el encabezado `authorization`, el adaptador deriva `Authorization: Bearer <token>`.
 
-## Device Auth
+## Autenticación del dispositivo
 
-By default the adapter sends a signed `device` payload in `connect` params.
+Por defecto, el adaptador envía un payload `device` firmado en los parámetros de `connect`.
 
-- set `disableDeviceAuth=true` to omit device signing
-- set `devicePrivateKeyPem` to pin a stable signing key
-- without `devicePrivateKeyPem`, the adapter generates an ephemeral Ed25519 keypair per run
-- when `autoPairOnFirstConnect` is enabled (default), the adapter handles one initial `pairing required` by calling `device.pair.list` + `device.pair.approve` over shared auth, then retries once.
+- establece `disableDeviceAuth=true` para omitir la firma del dispositivo
+- establece `devicePrivateKeyPem` para fijar una clave de firma estable
+- sin `devicePrivateKeyPem`, el adaptador genera un par de claves Ed25519 efímero por ejecución
+- cuando `autoPairOnFirstConnect` está habilitado (por defecto), el adaptador maneja un `pairing required` inicial llamando a `device.pair.list` + `device.pair.approve` con la autenticación compartida, y luego reintenta una vez.
 
-## Session Strategy
+## Estrategia de sesión
 
-The adapter supports the same session routing model as HTTP OpenClaw mode:
+El adaptador admite el mismo modelo de enrutamiento de sesiones que el modo HTTP de OpenClaw:
 
 - `sessionKeyStrategy=issue|fixed|run`
-- `sessionKey` is used when strategy is `fixed`
+- `sessionKey` se usa cuando la estrategia es `fixed`
 
-Resolved session key is sent as `agent.sessionKey`.
+La clave de sesión resuelta se envía como `agent.sessionKey`.
 
-## Payload Mapping
+## Mapeo del payload
 
-The agent request is built as:
+La solicitud del agente se construye como:
 
-- required fields:
-  - `message` (wake text plus optional `payloadTemplate.message`/`payloadTemplate.text` prefix)
-  - `idempotencyKey` (Paperclip `runId`)
-  - `sessionKey` (resolved strategy)
-- optional additions:
-  - all `payloadTemplate` fields merged in
-  - `agentId` from config if set and not already in template
+- campos requeridos:
+  - `message` (texto de activación más el prefijo opcional de `payloadTemplate.message`/`payloadTemplate.text`)
+  - `idempotencyKey` (el `runId` de Paperclip)
+  - `sessionKey` (estrategia resuelta)
+- agregados opcionales:
+  - todos los campos de `payloadTemplate` combinados
+  - `agentId` desde la configuración si está definido y aún no está en la plantilla
 
-## Timeouts
+## Tiempos de espera
 
-- `timeoutSec` controls adapter-level request budget
-- `waitTimeoutMs` controls `agent.wait.timeoutMs`
+- `timeoutSec` controla el presupuesto de solicitud a nivel del adaptador
+- `waitTimeoutMs` controla `agent.wait.timeoutMs`
 
-If `agent.wait` returns `timeout`, adapter returns `openclaw_gateway_wait_timeout`.
+Si `agent.wait` devuelve `timeout`, el adaptador devuelve `openclaw_gateway_wait_timeout`.
 
-## Log Format
+## Formato de registros
 
-Structured gateway event logs use:
+Los registros estructurados de eventos de la puerta de enlace usan:
 
-- `[openclaw-gateway] ...` for lifecycle/system logs
-- `[openclaw-gateway:event] run=<id> stream=<stream> data=<json>` for `event agent` frames
+- `[openclaw-gateway] ...` para los registros de ciclo de vida/sistema
+- `[openclaw-gateway:event] run=<id> stream=<stream> data=<json>` para los frames `event agent`
 
-UI/CLI parsers consume these lines to render transcript updates.
+Los analizadores de UI/CLI consumen estas líneas para mostrar las actualizaciones de la transcripción.

@@ -15,8 +15,8 @@ const manifest: PaperclipPluginManifestV1 = {
   id: PLUGIN_ID,
   apiVersion: 1,
   version: PLUGIN_VERSION,
-  displayName: "Kitchen Sink (Example)",
-  description: "Reference plugin that demonstrates the current Paperclip plugin API surface, UI surfaces, bridge actions, events, jobs, webhooks, tools, local workspace access, and runtime diagnostics in one place.",
+  displayName: "Kitchen Sink (Ejemplo)",
+  description: "Plugin de referencia que demuestra la superficie actual de la API de plugins de Paperclip, superficies de interfaz, acciones de puente, eventos, tareas, webhooks, herramientas, acceso local al workspace y diagn\u00f3sticos de runtime en un solo lugar.",
   author: "Paperclip",
   categories: ["ui", "automation", "workspace", "connector"],
   capabilities: [
@@ -67,53 +67,53 @@ const manifest: PaperclipPluginManifestV1 = {
     properties: {
       showSidebarEntry: {
         type: "boolean",
-        title: "Show Sidebar Entry",
+        title: "Mostrar entrada de barra lateral",
         default: DEFAULT_CONFIG.showSidebarEntry,
       },
       showSidebarPanel: {
         type: "boolean",
-        title: "Show Sidebar Panel",
+        title: "Mostrar panel de barra lateral",
         default: DEFAULT_CONFIG.showSidebarPanel,
       },
       showProjectSidebarItem: {
         type: "boolean",
-        title: "Show Project Sidebar Item",
+        title: "Mostrar elemento de barra lateral del proyecto",
         default: DEFAULT_CONFIG.showProjectSidebarItem,
       },
       showCommentAnnotation: {
         type: "boolean",
-        title: "Show Comment Annotation",
+        title: "Mostrar anotaci\u00f3n de comentario",
         default: DEFAULT_CONFIG.showCommentAnnotation,
       },
       showCommentContextMenuItem: {
         type: "boolean",
-        title: "Show Comment Action",
+        title: "Mostrar acci\u00f3n de comentario",
         default: DEFAULT_CONFIG.showCommentContextMenuItem,
       },
       enableWorkspaceDemos: {
         type: "boolean",
-        title: "Enable Workspace Demos",
+        title: "Habilitar demos de workspace",
         default: DEFAULT_CONFIG.enableWorkspaceDemos,
       },
       enableProcessDemos: {
         type: "boolean",
-        title: "Enable Process Demos",
+        title: "Habilitar demos de proceso",
         default: DEFAULT_CONFIG.enableProcessDemos,
-        description: "Allows curated local child-process demos in project workspaces.",
+        description: "Permite demos seleccionadas de procesos hijo locales en workspaces de proyecto.",
       },
       secretRefExample: {
         type: "string",
-        title: "Secret Reference Example",
+        title: "Ejemplo de referencia de secreto",
         default: DEFAULT_CONFIG.secretRefExample,
       },
       httpDemoUrl: {
         type: "string",
-        title: "HTTP Demo URL",
+        title: "URL de demo HTTP",
         default: DEFAULT_CONFIG.httpDemoUrl,
       },
       allowedCommands: {
         type: "array",
-        title: "Allowed Process Commands",
+        title: "Comandos de proceso permitidos",
         items: {
           type: "string",
           enum: DEFAULT_CONFIG.allowedCommands,
@@ -122,7 +122,7 @@ const manifest: PaperclipPluginManifestV1 = {
       },
       workspaceScratchFile: {
         type: "string",
-        title: "Workspace Scratch File",
+        title: "Archivo temporal del workspace",
         default: DEFAULT_CONFIG.workspaceScratchFile,
       },
     },
@@ -130,23 +130,23 @@ const manifest: PaperclipPluginManifestV1 = {
   jobs: [
     {
       jobKey: JOB_KEYS.heartbeat,
-      displayName: "Demo Heartbeat",
-      description: "Periodic demo job that records plugin runtime activity.",
+      displayName: "Latido de demo",
+      description: "Tarea de demo peri\u00f3dica que registra la actividad del runtime del plugin.",
       schedule: "*/15 * * * *",
     },
   ],
   webhooks: [
     {
       endpointKey: WEBHOOK_KEYS.demo,
-      displayName: "Demo Ingest",
-      description: "Accepts arbitrary webhook payloads and records the latest delivery in plugin state.",
+      displayName: "Ingesta de demo",
+      description: "Acepta cargas \u00fatiles de webhook arbitrarias y registra la \u00faltima entrega en el estado del plugin.",
     },
   ],
   tools: [
     {
       name: TOOL_NAMES.echo,
-      displayName: "Kitchen Sink Echo",
-      description: "Returns the provided message and the current run context.",
+      displayName: "Eco de Kitchen Sink",
+      description: "Devuelve el mensaje proporcionado y el contexto de ejecuci\u00f3n actual.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -157,8 +157,8 @@ const manifest: PaperclipPluginManifestV1 = {
     },
     {
       name: TOOL_NAMES.companySummary,
-      displayName: "Kitchen Sink Company Summary",
-      description: "Summarizes the current company using the Paperclip domain APIs.",
+      displayName: "Resumen de empresa de Kitchen Sink",
+      description: "Resume la empresa actual usando las APIs de dominio de Paperclip.",
       parametersSchema: {
         type: "object",
         properties: {},
@@ -166,8 +166,8 @@ const manifest: PaperclipPluginManifestV1 = {
     },
     {
       name: TOOL_NAMES.createIssue,
-      displayName: "Kitchen Sink Create Issue",
-      description: "Creates an issue in the current project from an agent tool call.",
+      displayName: "Crear issue de Kitchen Sink",
+      description: "Crea un issue en el proyecto actual desde una llamada de herramienta de agente.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -190,7 +190,7 @@ const manifest: PaperclipPluginManifestV1 = {
       {
         type: "settingsPage",
         id: SLOT_IDS.settingsPage,
-        displayName: "Kitchen Sink Settings",
+        displayName: "Ajustes de Kitchen Sink",
         exportName: EXPORT_NAMES.settingsPage,
       },
       {
@@ -208,7 +208,7 @@ const manifest: PaperclipPluginManifestV1 = {
       {
         type: "sidebarPanel",
         id: SLOT_IDS.sidebarPanel,
-        displayName: "Kitchen Sink Panel",
+        displayName: "Panel de Kitchen Sink",
         exportName: EXPORT_NAMES.sidebarPanel,
       },
       {
@@ -235,35 +235,35 @@ const manifest: PaperclipPluginManifestV1 = {
       {
         type: "taskDetailView",
         id: SLOT_IDS.taskDetailView,
-        displayName: "Kitchen Sink Task View",
+        displayName: "Vista de tarea de Kitchen Sink",
         exportName: EXPORT_NAMES.taskDetailView,
         entityTypes: ["issue"],
       },
       {
         type: "toolbarButton",
         id: SLOT_IDS.toolbarButton,
-        displayName: "Kitchen Sink Action",
+        displayName: "Acci\u00f3n de Kitchen Sink",
         exportName: EXPORT_NAMES.toolbarButton,
         entityTypes: ["project", "issue"],
       },
       {
         type: "contextMenuItem",
         id: SLOT_IDS.contextMenuItem,
-        displayName: "Kitchen Sink Context",
+        displayName: "Contexto de Kitchen Sink",
         exportName: EXPORT_NAMES.contextMenuItem,
         entityTypes: ["project", "issue"],
       },
       {
         type: "commentAnnotation",
         id: SLOT_IDS.commentAnnotation,
-        displayName: "Kitchen Sink Comment Annotation",
+        displayName: "Anotaci\u00f3n de comentario de Kitchen Sink",
         exportName: EXPORT_NAMES.commentAnnotation,
         entityTypes: ["comment"],
       },
       {
         type: "commentContextMenuItem",
         id: SLOT_IDS.commentContextMenuItem,
-        displayName: "Kitchen Sink Comment Action",
+        displayName: "Acci\u00f3n de comentario de Kitchen Sink",
         exportName: EXPORT_NAMES.commentContextMenuItem,
         entityTypes: ["comment"],
       },
@@ -271,7 +271,7 @@ const manifest: PaperclipPluginManifestV1 = {
     launchers: [
       {
         id: "kitchen-sink-launcher",
-        displayName: "Kitchen Sink Modal",
+        displayName: "Modal de Kitchen Sink",
         placementZone: "toolbarButton",
         entityTypes: ["project", "issue"],
         action: {

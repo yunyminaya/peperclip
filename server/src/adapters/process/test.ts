@@ -29,14 +29,14 @@ export async function testEnvironment(
     checks.push({
       code: "process_command_missing",
       level: "error",
-      message: "Process adapter requires a command.",
-      hint: "Set adapterConfig.command to an executable command.",
+      message: "El adaptador de procesos requiere un comando.",
+      hint: "Configura adapterConfig.command con un comando ejecutable.",
     });
   } else {
     checks.push({
       code: "process_command_present",
       level: "info",
-      message: `Configured command: ${command}`,
+      message: `Comando configurado: ${command}`,
     });
   }
 
@@ -45,13 +45,13 @@ export async function testEnvironment(
     checks.push({
       code: "process_cwd_valid",
       level: "info",
-      message: `Working directory is valid: ${cwd}`,
+      message: `El directorio de trabajo es válido: ${cwd}`,
     });
   } catch (err) {
     checks.push({
       code: "process_cwd_invalid",
       level: "error",
-      message: err instanceof Error ? err.message : "Invalid working directory",
+      message: err instanceof Error ? err.message : "Directorio de trabajo inválido",
       detail: cwd,
     });
   }
@@ -68,13 +68,13 @@ export async function testEnvironment(
       checks.push({
         code: "process_command_resolvable",
         level: "info",
-        message: `Command is executable: ${command}`,
+        message: `El comando es ejecutable: ${command}`,
       });
     } catch (err) {
       checks.push({
         code: "process_command_unresolvable",
         level: "error",
-        message: err instanceof Error ? err.message : "Command is not executable",
+        message: err instanceof Error ? err.message : "El comando no es ejecutable",
         detail: command,
       });
     }

@@ -1,62 +1,62 @@
-# Issue worktree support
+# Soporte de worktrees de issues
 
-Status: experimental, runtime-only, not shipping as a user-facing feature yet.
+Estado: experimental, solo runtime, aún no se lanza como función de cara al usuario.
 
-This branch contains the runtime and seeding work needed for issue-scoped worktrees:
+Esta rama contiene el trabajo de runtime y seeding necesario para worktrees con alcance de issue:
 
-- project execution workspace policy support
-- issue-level execution workspace settings
-- git worktree realization for isolated issue execution
-- optional command-based worktree provisioning
-- seeded worktree fixes for secrets key compatibility
-- seeded project workspace rebinding to the current git worktree
+- soporte de política de workspace de ejecución de proyecto
+- ajustes de workspace de ejecución a nivel de issue
+- realización de worktrees de git para ejecución aislada de issues
+- aprovisionamiento opcional de worktrees basado en comandos
+- correcciones de worktrees sembrados para compatibilidad de clave de secretos
+- rebinding de workspace de proyecto sembrado al worktree de git actual
 
-We are intentionally not shipping the UI for this yet. The runtime code remains in place, but the main UI entrypoints are hard-gated off for now.
+Intencionalmente aún no lanzamos la UI para esto. El código de runtime permanece en su lugar, pero los entrypoints principales de UI están desactivados con gates duros por ahora.
 
-## What works today
+## Qué funciona hoy
 
-- projects can carry execution workspace policy in the backend
-- issues can carry execution workspace settings in the backend
-- heartbeat execution can realize isolated git worktrees
-- runtime can run a project-defined provision command inside the derived worktree
-- seeded worktree instances can keep local-encrypted secrets working
-- seeded worktree instances can rebind same-repo project workspace paths onto the current git worktree
+- los proyectos pueden llevar política de workspace de ejecución en el backend
+- los issues pueden llevar ajustes de workspace de ejecución en el backend
+- la ejecución de latidos puede realizar worktrees de git aislados
+- el runtime puede ejecutar un comando de aprovisionamiento definido por el proyecto dentro del worktree derivado
+- las instancias de worktree sembradas pueden mantener funcionando los secretos cifrados locales
+- las instancias de worktree sembradas pueden rebindar rutas de workspace de proyecto del mismo repo al worktree de git actual
 
-## Hidden UI entrypoints
+## Entrypoints de UI ocultos
 
-These are the current user-facing UI surfaces for the feature, now intentionally disabled:
+Estas son las superficies actuales de UI de cara al usuario para la función, ahora intencionalmente deshabilitadas:
 
-- project settings:
+- ajustes de proyecto:
   - `ui/src/components/ProjectProperties.tsx`
-  - execution workspace policy controls
-  - git worktree base ref / branch template / parent dir
-  - provision / teardown command inputs
+  - controles de política de workspace de ejecución
+  - ref base / plantilla de rama / directorio padre de worktree de git
+  - entradas de comandos de aprovisionamiento / desmontaje
 
-- issue creation:
+- creación de issue:
   - `ui/src/components/NewIssueDialog.tsx`
-  - isolated issue checkout toggle
-  - defaulting issue execution workspace settings from project policy
+  - toggle de checkout aislado de issue
+  - valores por defecto de ajustes de workspace de ejecución de issue desde la política del proyecto
 
-- issue editing:
+- edición de issue:
   - `ui/src/components/IssueProperties.tsx`
-  - issue-level workspace mode toggle
-  - defaulting issue execution workspace settings when project changes
+  - toggle de modo de workspace a nivel de issue
+  - valores por defecto de ajustes de workspace de ejecución de issue cuando cambia el proyecto
 
-- agent/runtime settings:
+- ajustes de agente/runtime:
   - `ui/src/adapters/runtime-json-fields.tsx`
-  - runtime services JSON field, which is part of the broader workspace-runtime support surface
+  - campo JSON de servicios de runtime, que es parte de la superficie más amplia de soporte workspace-runtime
 
-## Why the UI is hidden
+## Por qué la UI está oculta
 
-- the runtime behavior is still being validated
-- the workflow and operator ergonomics are not final
-- we do not want to expose a partially-baked user-facing feature in issues, projects, or settings
+- el comportamiento de runtime aún se está validando
+- el flujo de trabajo y la ergonomía del operador no son finales
+- no queremos exponer una función parcialmente cocinada de cara al usuario en issues, proyectos o ajustes
 
-## Re-enable plan
+## Plan de reactivación
 
-When this is ready to ship:
+Cuando esto esté listo para lanzar:
 
-- re-enable the gated UI sections in the files above
-- review wording and defaults for project and issue controls
-- decide which agent/runtime settings should remain advanced-only
-- add end-to-end product-level verification for the full UI workflow
+- reactiva las secciones de UI con gate en los archivos de arriba
+- revisa redacción y valores por defecto para controles de proyecto e issue
+- decide qué ajustes de agente/runtime deben permanecer solo avanzados
+- agrega verificación de nivel de producto end-to-end para el flujo completo de UI

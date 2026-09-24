@@ -17,7 +17,7 @@ export function MyIssues() {
   const { setBreadcrumbs } = useBreadcrumbs();
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "My Issues" }]);
+    setBreadcrumbs([{ label: "Mis issues" }]);
   }, [setBreadcrumbs]);
 
   const { data: issues, isLoading, error } = useQuery({
@@ -27,14 +27,14 @@ export function MyIssues() {
   });
 
   if (!selectedCompanyId) {
-    return <EmptyState icon={ListTodo} message="Select a company to view your issues." />;
+    return <EmptyState icon={ListTodo} message="Selecciona una empresa para ver tus issues." />;
   }
 
   if (isLoading) {
     return <PageSkeleton variant="list" />;
   }
 
-  // Show issues that are not assigned (user-created or unassigned)
+  // Mostrar issues que no están asignados (creados por el usuario o sin asignar)
   const myIssues = (issues ?? []).filter(
     (i) => !i.assigneeAgentId && !["done", "cancelled"].includes(i.status)
   );
@@ -44,7 +44,7 @@ export function MyIssues() {
       {error && <p className="text-sm text-destructive">{error.message}</p>}
 
       {myIssues.length === 0 && (
-        <EmptyState icon={ListTodo} message="No issues assigned to you." />
+        <EmptyState icon={ListTodo} message="No tienes issues asignados." />
       )}
 
       {myIssues.length > 0 && (

@@ -5,73 +5,72 @@ description: >
   reading commits, changesets, and merged PR context since the last stable tag.
 ---
 
-# Release Changelog Skill
+# Habilidad de changelog de versión
 
-Generate the user-facing changelog for the **stable** Paperclip release.
+Generar el changelog orientado al usuario de la versión **estable** de Paperclip.
 
-## Versioning Model
+## Modelo de versionado
 
-Paperclip uses **calendar versioning (calver)**:
+Paperclip usa **versionado por calendario (calver)**:
 
-- Stable releases: `YYYY.MDD.P` (e.g. `2026.318.0`)
-- Canary releases: `YYYY.MDD.P-canary.N` (e.g. `2026.318.1-canary.0`)
-- Git tags: `vYYYY.MDD.P` for stable, `canary/vYYYY.MDD.P-canary.N` for canary
+- Versiones estables: `YYYY.MDD.P` (p. ej. `2026.318.0`)
+- Versiones canary: `YYYY.MDD.P-canary.N` (p. ej. `2026.318.1-canary.0`)
+- Tags de git: `vYYYY.MDD.P` para estable, `canary/vYYYY.MDD.P-canary.N` para canary
 
-There are no major/minor/patch bumps. The stable version is derived from the
-intended release date (UTC) plus the next same-day stable patch slot.
+No hay incrementos de major/minor/patch. La versión estable se deriva de la fecha de publicación prevista (UTC) más el siguiente slot de parche estable del mismo día.
 
-Output:
+Salida:
 
 - `releases/vYYYY.MDD.P.md`
 
-Important rules:
+Reglas importantes:
 
-- even if there are canary releases such as `2026.318.1-canary.0`, the changelog file stays `releases/v2026.318.1.md`
-- do not derive versions from semver bump types
-- do not create canary changelog files
+- aunque haya versiones canary como `2026.318.1-canary.0`, el archivo de changelog sigue siendo `releases/v2026.318.1.md`
+- no derivar versiones de tipos de incremento semver
+- no crear archivos de changelog canary
 
-## Step 0 — Idempotency Check
+## Paso 0 — Verificación de idempotencia
 
-Before generating anything, check whether the file already exists:
+Antes de generar nada, verificar si el archivo ya existe:
 
 ```bash
 ls releases/vYYYY.MDD.P.md 2>/dev/null
 ```
 
-If it exists:
+Si existe:
 
-1. read it first
-2. present it to the reviewer
-3. ask whether to keep it, regenerate it, or update specific sections
-4. never overwrite it silently
+1. leerlo primero
+2. presentarlo al revisor
+3. preguntar si se conserva, se regenera o se actualizan secciones específicas
+4. nunca sobrescribirlo en silencio
 
-## Step 1 — Determine the Stable Range
+## Paso 1 — Determinar el rango estable
 
-Find the last stable tag:
+Encontrar el último tag estable:
 
 ```bash
 git tag --list 'v*' --sort=-version:refname | head -1
 git log v{last}..HEAD --oneline --no-merges
 ```
 
-The stable version comes from one of:
+La versión estable proviene de una de estas opciones:
 
-- an explicit maintainer request
+- una solicitud explícita del mantenedor
 - `./scripts/release.sh stable --date YYYY-MM-DD --print-version`
-- the release plan already agreed in `doc/RELEASING.md`
+- el plan de versión ya acordado en `doc/RELEASING.md`
 
-Do not derive the changelog version from a canary tag or prerelease suffix.
-Do not derive major/minor/patch bumps from API intent — calver uses the date and same-day stable slot.
+No derivar la versión del changelog de un tag canary ni de un sufijo de prerelease.
+No derivar incrementos de major/minor/patch de la intención de la API: calver usa la fecha y el slot estable del mismo día.
 
-## Step 2 — Gather the Raw Inputs
+## Paso 2 — Recopilar los datos crudos
 
-Collect release data from:
+Recopilar datos de la versión desde:
 
-1. git commits since the last stable tag
-2. `.changeset/*.md` files
-3. merged PRs via `gh` when available
+1. commits de git desde el último tag estable
+2. archivos `.changeset/*.md`
+3. PR fusionados vía `gh` cuando esté disponible
 
-Useful commands:
+Comandos útiles:
 
 ```bash
 git log v{last}..HEAD --oneline --no-merges
@@ -80,16 +79,16 @@ ls .changeset/*.md | grep -v README.md
 gh pr list --state merged --search "merged:>={last-tag-date}" --json number,title,body,labels
 ```
 
-## Step 3 — Detect Breaking Changes
+## Paso 3 — Detectar cambios incompatibles (breaking changes)
 
-Look for:
+Buscar:
 
-- destructive migrations
-- removed or changed API fields/endpoints
-- renamed or removed config keys
-- `BREAKING:` or `BREAKING CHANGE:` commit signals
+- migraciones destructivas
+- campos/endpoints de la API eliminados o modificados
+- claves de configuración renombradas o eliminadas
+- señales de commit `BREAKING:` o `BREAKING CHANGE:`
 
-Key commands:
+Comandos clave:
 
 ```bash
 git diff --name-only v{last}..HEAD -- packages/db/src/migrations/
@@ -98,50 +97,46 @@ git diff v{last}..HEAD -- server/src/routes/ server/src/api/
 git log v{last}..HEAD --format="%s" | rg -n 'BREAKING CHANGE|BREAKING:|^[a-z]+!:' || true
 ```
 
-If breaking changes are detected, flag them prominently — they must appear in the
-Breaking Changes section with an upgrade path.
+Si se detectan cambios incompatibles, marcarlos de forma destacada: deben aparecer en la sección de cambios incompatibles (Breaking Changes) con una ruta de actualización.
 
-## Step 4 — Categorize for Users
+## Paso 4 — Categorizar para los usuarios
 
-Use these stable changelog sections:
+Usar estas secciones del changelog estable:
 
 - `Breaking Changes`
 - `Highlights`
 - `Improvements`
 - `Fixes`
-- `Upgrade Guide` when needed
+- `Upgrade Guide` cuando sea necesario
 
-Exclude purely internal refactors, CI changes, and docs-only work unless they materially affect users.
+Excluir refactorizaciones puramente internas, cambios de CI y trabajo solo de documentación, a menos que afecten materialmente a los usuarios.
 
-Guidelines:
+Pautas:
 
-- group related commits into one user-facing entry
-- write from the user perspective
-- keep highlights short and concrete
-- spell out upgrade actions for breaking changes
+- agrupar commits relacionados en una sola entrada orientada al usuario
+- escribir desde la perspectiva del usuario
+- mantener los highlights breves y concretos
+- detallar las acciones de actualización para los cambios incompatibles
 
-### Inline PR and contributor attribution
+### Atribución inline de PR y contribuidores
 
-When a bullet item clearly maps to a merged pull request, add inline attribution at the
-end of the entry in this format:
+Cuando un elemento de viñeta se corresponde claramente con un pull request fusionado, agregar atribución inline al final de la entrada en este formato:
 
 ```
 - **Feature name** — Description. ([#123](https://github.com/paperclipai/paperclip/pull/123), @contributor1, @contributor2)
 ```
 
-Rules:
+Reglas:
 
-- Only add a PR link when you can confidently trace the bullet to a specific merged PR.
-  Use merge commit messages (`Merge pull request #N from user/branch`) to map PRs.
-- List the contributor(s) who authored the PR. Use GitHub usernames, not real names or emails.
-- If multiple PRs contributed to a single bullet, list them all: `([#10](url), [#12](url), @user1, @user2)`.
-- If you cannot determine the PR number or contributor with confidence, omit the attribution
-  parenthetical — do not guess.
-- Core maintainer commits that don't have an external PR can omit the parenthetical.
+- Agregar un enlace al PR solo cuando se pueda rastrear con confianza la viñeta hasta un PR fusionado específico. Usar mensajes de merge commit (`Merge pull request #N from user/branch`) para mapear los PR.
+- Listar el/los contribuidor(es) que crearon el PR. Usar nombres de usuario de GitHub, no nombres reales ni correos.
+- Si varios PR contribuyeron a una sola viñeta, listarlos todos: `([#10](url), [#12](url), @user1, @user2)`.
+- Si no se puede determinar con confianza el número de PR o el contribuidor, omitir el paréntesis de atribución; no adivinar.
+- Los commits del mantenedor principal sin PR externo pueden omitir el paréntesis.
 
-## Step 5 — Write the File
+## Paso 5 — Escribir el archivo
 
-Template:
+Plantilla:
 
 ```markdown
 # vYYYY.MDD.P
@@ -165,28 +160,25 @@ Thank you to everyone who contributed to this release!
 @username1, @username2, @username3
 ```
 
-Omit empty sections except `Highlights`, `Improvements`, and `Fixes`, which should usually exist.
+Omitir las secciones vacías excepto `Highlights`, `Improvements` y `Fixes`, que normalmente deberían existir.
 
-The `Contributors` section should always be included. List every person who authored
-commits in the release range, @-mentioning them by their **GitHub username** (not their
-real name or email). To find GitHub usernames:
+La sección `Contributors` siempre debe incluirse. Listar a todas las personas que crearon commits en el rango de la versión, mencionándolas con su **nombre de usuario de GitHub** (no su nombre real ni su correo). Para encontrar los nombres de usuario de GitHub:
 
-1. Extract usernames from merge commit messages: `git log v{last}..HEAD --oneline --merges` — the branch prefix (e.g. `from username/branch`) gives the GitHub username.
-2. For noreply emails like `user@users.noreply.github.com`, the username is the part before `@`.
-3. For contributors whose username is ambiguous, check `gh api users/{guess}` or the PR page.
+1. Extraer los nombres de usuario de los mensajes de merge commit: `git log v{last}..HEAD --oneline --merges`; el prefijo de la rama (p. ej. `from username/branch`) da el nombre de usuario de GitHub.
+2. Para correos noreply como `user@users.noreply.github.com`, el nombre de usuario es la parte anterior a `@`.
+3. Para contribuidores cuyo nombre de usuario sea ambiguo, verificar `gh api users/{guess}` o la página del PR.
 
-**Never expose contributor email addresses.** Use `@username` only.
+**Nunca exponer las direcciones de correo de los contribuidores.** Usar solo `@username`.
 
-Exclude bot accounts (e.g. `lockfile-bot`, `dependabot`) from the list. List contributors
-in alphabetical order by GitHub username (case-insensitive).
+Excluir las cuentas de bots (p. ej. `lockfile-bot`, `dependabot`) de la lista. Listar los contribuidores en orden alfabético por nombre de usuario de GitHub (sin distinción de mayúsculas).
 
-## Step 6 — Review Before Release
+## Paso 6 — Revisar antes de la publicación
 
-Before handing it off:
+Antes de entregarlo:
 
-1. confirm the heading is the stable version only
-2. confirm there is no `-canary` language in the title or filename
-3. confirm any breaking changes have an upgrade path
-4. present the draft for human sign-off
+1. confirmar que el encabezado sea solo la versión estable
+2. confirmar que no haya lenguaje `-canary` en el título ni en el nombre del archivo
+3. confirmar que cualquier cambio incompatible tenga una ruta de actualización
+4. presentar el borrador para aprobación humana
 
-This skill never publishes anything. It only prepares the stable changelog artifact.
+Esta habilidad nunca publica nada. Solo prepara el artefacto del changelog estable.

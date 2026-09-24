@@ -40,7 +40,7 @@ describe("opencode local skill sync", () => {
 
     const before = await listOpenCodeSkills(ctx);
     expect(before.mode).toBe("persistent");
-    expect(before.warnings).toContain("OpenCode currently uses the shared Claude skills home (~/.claude/skills).");
+    expect(before.warnings).toContain("OpenCode usa actualmente el directorio de habilidades compartido de Claude (~/.claude/skills).");
     expect(before.desiredSkills).toContain(paperclipKey);
     expect(before.entries.find((entry) => entry.key === paperclipKey)?.required).toBe(true);
     expect(before.entries.find((entry) => entry.key === paperclipKey)?.state).toBe("missing");

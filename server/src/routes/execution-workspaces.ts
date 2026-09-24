@@ -36,7 +36,7 @@ export function executionWorkspaceRoutes(db: Db) {
     const id = req.params.id as string;
     const workspace = await svc.getById(id);
     if (!workspace) {
-      res.status(404).json({ error: "Execution workspace not found" });
+      res.status(404).json({ error: "Espacio de trabajo de ejecución no encontrado" });
       return;
     }
     assertCompanyAccess(req, workspace.companyId);
@@ -47,7 +47,7 @@ export function executionWorkspaceRoutes(db: Db) {
     const id = req.params.id as string;
     const existing = await svc.getById(id);
     if (!existing) {
-      res.status(404).json({ error: "Execution workspace not found" });
+      res.status(404).json({ error: "Espacio de trabajo de ejecución no encontrado" });
       return;
     }
     assertCompanyAccess(req, existing.companyId);
@@ -70,7 +70,7 @@ export function executionWorkspaceRoutes(db: Db) {
 
       if (activeLinkedIssues.length > 0) {
         res.status(409).json({
-          error: `Cannot archive execution workspace while ${activeLinkedIssues.length} linked issue(s) are still open`,
+          error: `No se puede archivar el espacio de trabajo de ejecución mientras ${activeLinkedIssues.length} issue(s) vinculados sigan abiertos`,
         });
         return;
       }
@@ -83,7 +83,7 @@ export function executionWorkspaceRoutes(db: Db) {
         cleanupReason: null,
       });
       if (!archivedWorkspace) {
-        res.status(404).json({ error: "Execution workspace not found" });
+        res.status(404).json({ error: "Espacio de trabajo de ejecución no encontrado" });
         return;
       }
       workspace = archivedWorkspace;
@@ -147,14 +147,14 @@ export function executionWorkspaceRoutes(db: Db) {
             cleanupReason: failureReason,
           })) ?? workspace;
         res.status(500).json({
-          error: `Failed to archive execution workspace: ${failureReason}`,
+          error: `No se pudo archivar el espacio de trabajo de ejecución: ${failureReason}`,
         });
         return;
       }
     } else {
       const updatedWorkspace = await svc.update(id, patch);
       if (!updatedWorkspace) {
-        res.status(404).json({ error: "Execution workspace not found" });
+        res.status(404).json({ error: "Espacio de trabajo de ejecución no encontrado" });
         return;
       }
       workspace = updatedWorkspace;

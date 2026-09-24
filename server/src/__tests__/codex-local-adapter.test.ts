@@ -38,7 +38,7 @@ describe("codex_local ui stdout parser", () => {
     const ts = "2026-02-20T00:00:00.000Z";
 
     expect(parseCodexStdoutLine(JSON.stringify({ type: "turn.started" }), ts)).toEqual([
-      { kind: "system", ts, text: "turn started" },
+      { kind: "system", ts, text: "turno iniciado" },
     ]);
 
     expect(
@@ -117,7 +117,7 @@ describe("codex_local ui stdout parser", () => {
       {
         kind: "system",
         ts,
-        text: "file changes: update /Users/paperclipuser/project/ui/src/pages/AgentDetail.tsx",
+        text: "cambios de archivo: update /Users/paperclipuser/project/ui/src/pages/AgentDetail.tsx",
       },
     ]);
   });
@@ -235,13 +235,13 @@ describe("codex_local cli formatter", () => {
         .map(stripAnsi);
 
       expect(lines).toEqual(expect.arrayContaining([
-        "turn started",
+        "Turno iniciado",
         "tool_call: command_execution",
         "/bin/zsh -lc ls",
         "tool_result: command_execution command=\"/bin/zsh -lc ls\" status=completed exit_code=0",
         "agents",
         "file_change: update /home/user/project/ui/src/pages/AgentDetail.tsx",
-        "turn failed: model access denied",
+        "turno fallido: model access denied",
         "tokens: in=10 out=4 cached=2",
         "error: resume model mismatch",
       ]));

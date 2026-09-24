@@ -36,7 +36,7 @@ function parseJson(filePath: string): unknown {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf-8"));
   } catch (err) {
-    throw new Error(`Failed to parse JSON at ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(`No se pudo interpretar el JSON en ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
@@ -75,7 +75,7 @@ function formatValidationError(err: unknown): string {
       .map((issue) => {
         const pathParts = Array.isArray(issue.path) ? issue.path.map(String) : [];
         const issuePath = pathParts.length > 0 ? pathParts.join(".") : "config";
-        const message = typeof issue.message === "string" ? issue.message : "Invalid value";
+        const message = typeof issue.message === "string" ? issue.message : "Valor no válido";
         return `${issuePath}: ${message}`;
       })
       .join("; ");
@@ -90,7 +90,7 @@ export function readConfig(configPath?: string): PaperclipConfig | null {
   const migrated = migrateLegacyConfig(raw);
   const parsed = paperclipConfigSchema.safeParse(migrated);
   if (!parsed.success) {
-    throw new Error(`Invalid config at ${filePath}: ${formatValidationError(parsed.error)}`);
+    throw new Error(`Configuración no válida en ${filePath}: ${formatValidationError(parsed.error)}`);
   }
   return parsed.data;
 }
@@ -103,7 +103,7 @@ export function writeConfig(
   const dir = path.dirname(filePath);
   fs.mkdirSync(dir, { recursive: true });
 
-  // Backup existing config before overwriting
+  // Respaldar la configuración existente antes de sobrescribir
   if (fs.existsSync(filePath)) {
     const backupPath = filePath + ".backup";
     fs.copyFileSync(filePath, backupPath);

@@ -14,7 +14,7 @@ interface InlineEditorProps {
   mentions?: MentionOption[];
 }
 
-/** Shared padding so display and edit modes occupy the exact same box. */
+/** Relleno compartido para que los modos de vista y edición ocupen exactamente el mismo espacio. */
 const pad = "px-1 -mx-1";
 const markdownPad = "px-1";
 const AUTOSAVE_DEBOUNCE_MS = 900;
@@ -24,7 +24,7 @@ export function InlineEditor({
   onSave,
   as: Tag = "span",
   className,
-  placeholder = "Click to edit...",
+  placeholder = "Clic para editar…",
   multiline = false,
   imageUploadHandler,
   mentions,
@@ -192,12 +192,12 @@ export function InlineEditor({
             )}
           >
             {autosaveState === "saving"
-              ? "Autosaving..."
+              ? "Guardando…"
               : autosaveState === "saved"
-                ? "Saved"
+                ? "Guardado"
                 : autosaveState === "error"
-                  ? "Could not save"
-                  : "Idle"}
+                  ? "No se pudo guardar"
+                  : "En espera"}
           </span>
         </div>
       </div>
@@ -228,8 +228,8 @@ export function InlineEditor({
     );
   }
 
-  // Use div instead of Tag when rendering markdown to avoid invalid nesting
-  // (e.g. <p> cannot contain the <div>/<p> elements that markdown produces)
+  // Usa div en lugar de Tag al renderizar markdown para evitar anidación inválida
+  // (por ejemplo, <p> no puede contener los elementos <div>/<p> que produce markdown)
   const DisplayTag = value && multiline ? "div" : Tag;
 
   return (

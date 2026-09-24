@@ -78,7 +78,7 @@ async function ensureOpenCodeSkillsInjected(
       if (result === "skipped") continue;
       await onLog(
         "stderr",
-        `[paperclip] ${result === "repaired" ? "Repaired" : "Injected"} OpenCode skill "${entry.key}" into ${skillsHome}\n`,
+        `[paperclip] ${result === "repaired" ? "Reparada" : "Inyectada"} la habilidad de OpenCode "${entry.key}" into ${skillsHome}\n`,
       );
     } catch (err) {
       await onLog(
@@ -170,10 +170,10 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   for (const [key, value] of Object.entries(envConfig)) {
     if (typeof value === "string") env[key] = value;
   }
-  // Prevent OpenCode from writing an opencode.json config file into the
-  // project working directory (which would pollute the git repo).  Model
-  // selection is already handled via the --model CLI flag.  Set after the
-  // envConfig loop so user overrides cannot disable this guard.
+  // Evita que OpenCode escriba un archivo de configuración opencode.json en el
+  // directorio de trabajo del proyecto (lo que contaminaría el repo git).  La
+  // selección del modelo ya se maneja con el flag --model de la CLI.  Se establece
+  // después del ciclo envConfig para que las anulaciones del usuario no puedan desactivar esta protección.
   env.OPENCODE_DISABLE_PROJECT_CONFIG = "true";
   if (!hasExplicitApiKey && authToken) {
     env.PAPERCLIP_API_KEY = authToken;
@@ -233,7 +233,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
         const reason = err instanceof Error ? err.message : String(err);
         await onLog(
           "stdout",
-          `[paperclip] Warning: could not read agent instructions file "${resolvedInstructionsFilePath}": ${reason}\n`,
+          `[paperclip] Advertencia: no se pudo leer el archivo de instrucciones del agente "${resolvedInstructionsFilePath}": ${reason}\n`,
         );
       }
     }
@@ -338,7 +338,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
           exitCode: attempt.proc.exitCode,
           signal: attempt.proc.signal,
           timedOut: true,
-          errorMessage: `Timed out after ${timeoutSec}s`,
+          errorMessage: `Se agotó el tiempo después de ${timeoutSec}s`,
           clearSession: clearSessionOnMissingSession,
         };
       }
@@ -363,7 +363,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       const fallbackErrorMessage =
         parsedError ||
         stderrLine ||
-        `OpenCode exited with code ${synthesizedExitCode ?? -1}`;
+        `OpenCode salió con el código ${synthesizedExitCode ?? -1}`;
       const modelId = model || null;
 
       return {

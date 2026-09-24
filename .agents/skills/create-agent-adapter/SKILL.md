@@ -8,13 +8,13 @@ description: >
   and conventions derived from the existing claude-local and codex-local adapters.
 ---
 
-# Creating a Paperclip Agent Adapter
+# Crear un adaptador de agente de Paperclip
 
-An adapter bridges Paperclip's orchestration layer to a specific AI agent runtime (Claude Code, Codex CLI, a custom process, an HTTP endpoint, etc.). Each adapter is a self-contained package that provides implementations for **three consumers**: the server, the UI, and the CLI.
+Un adaptador conecta la capa de orquestación de Paperclip con un runtime de agente de IA específico (Claude Code, Codex CLI, un proceso personalizado, un endpoint HTTP, etc.). Cada adaptador es un paquete autocontenido que proporciona implementaciones para **tres consumidores**: el servidor, la UI y la CLI.
 
 ---
 
-## 1. Architecture Overview
+## 1. Descripción general de la arquitectura
 
 ```
 packages/adapters/<name>/
@@ -35,21 +35,21 @@ packages/adapters/<name>/
   tsconfig.json
 ```
 
-Three separate registries consume adapter modules:
+Tres registros separados consumen los módulos de adaptador:
 
-| Registry | Location | Interface |
+| Registro | Ubicación | Interfaz |
 |----------|----------|-----------|
-| Server | `server/src/adapters/registry.ts` | `ServerAdapterModule` |
+| Servidor | `server/src/adapters/registry.ts` | `ServerAdapterModule` |
 | UI | `ui/src/adapters/registry.ts` | `UIAdapterModule` |
 | CLI | `cli/src/adapters/registry.ts` | `CLIAdapterModule` |
 
 ---
 
-## 2. Shared Types (`@paperclipai/adapter-utils`)
+## 2. Tipos compartidos (`@paperclipai/adapter-utils`)
 
-All adapter interfaces live in `packages/adapter-utils/src/types.ts`. Import from `@paperclipai/adapter-utils` (types) or `@paperclipai/adapter-utils/server-utils` (runtime helpers).
+Todas las interfaces de adaptador viven en `packages/adapter-utils/src/types.ts`. Importa desde `@paperclipai/adapter-utils` (tipos) o `@paperclipai/adapter-utils/server-utils` (utilidades de runtime).
 
-### Core Interfaces
+### Interfaces principales
 
 ```ts
 // The execute function signature — every adapter must implement this
@@ -88,7 +88,7 @@ interface AdapterSessionCodec {
 }
 ```
 
-### Module Interfaces
+### Interfaces de módulo
 
 ```ts
 // Server — registered in server/src/adapters/registry.ts
@@ -120,9 +120,9 @@ interface CLIAdapterModule {
 
 ---
 
-## 2.1 Adapter Environment Test Contract
+## 2.1 Contrato de prueba de entorno del adaptador
 
-Every server adapter must implement `testEnvironment(...)`. This powers the board UI "Test environment" button in agent configuration.
+Todo adaptador de servidor debe implementar `testEnvironment(...)`. Esto alimenta el botón "Test environment" de la UI del panel en la configuración del agente.
 
 ```ts
 type AdapterEnvironmentCheckLevel = "info" | "warn" | "error";
@@ -150,21 +150,21 @@ interface AdapterEnvironmentTestContext {
 }
 ```
 
-Guidelines:
+Lineamientos:
 
-- Return structured diagnostics, never throw for expected findings.
-- Use `error` for invalid/unusable runtime setup (bad cwd, missing command, invalid URL).
-- Use `warn` for non-blocking but important situations.
-- Use `info` for successful checks and context.
+- Devuelve diagnósticos estructurados; nunca lances excepciones por hallazgos esperados.
+- Usa `error` para una configuración de runtime inválida o inutilizable (cwd incorrecto, comando faltante, URL inválida).
+- Usa `warn` para situaciones importantes que no bloquean.
+- Usa `info` para verificaciones exitosas y contexto.
 
-Severity policy is product-critical: warnings are not save blockers.  
-Example: for `claude_local`, detected `ANTHROPIC_API_KEY` must be a `warn`, not an `error`, because Claude can still run (it just uses API-key auth instead of subscription auth).
+La política de severidad es crítica para el producto: las advertencias no son bloqueadores de guardado.
+Ejemplo: para `claude_local`, una `ANTHROPIC_API_KEY` detectada debe ser `warn`, no `error`, porque Claude aún puede ejecutarse (simplemente usa autenticación con clave de API en lugar de autenticación por suscripción).
 
 ---
 
-## 3. Step-by-Step: Creating a New Adapter
+## 3. Paso a paso: crear un nuevo adaptador
 
-### 3.1 Create the Package
+### 3.1 Crea el paquete
 
 ```
 packages/adapters/<name>/
@@ -182,7 +182,7 @@ packages/adapters/<name>/
     cli/format-event.ts
 ```
 
-**package.json** — must use the four-export convention:
+**package.json** — debe usar la convención de cuatro exportaciones:
 
 ```json
 {
@@ -206,9 +206,9 @@ packages/adapters/<name>/
 }
 ```
 
-### 3.2 Root `index.ts` — Adapter Metadata
+### 3.2 `index.ts` raíz — metadatos del adaptador
 
-This file is imported by **all three** consumers (server, UI, CLI). Keep it dependency-free (no Node APIs, no React).
+Este archivo lo importan **los tres** consumidores (servidor, UI, CLI). Mantenlo sin dependencias (sin APIs de Node, sin React).
 
 ```ts
 export const type = "my_agent";        // snake_case, globally unique
@@ -224,15 +224,15 @@ export const agentConfigurationDoc = `# my_agent agent configuration
 `;
 ```
 
-**Required exports:**
-- `type` — the adapter type key, stored in `agents.adapter_type`
-- `label` — human-readable name for the UI
-- `models` — available model options for the agent creation form
-- `agentConfigurationDoc` — markdown describing all `adapterConfig` fields (used by LLM agents configuring other agents)
+**Exportaciones requeridas:**
+- `type` — la clave del tipo de adaptador, almacenada en `agents.adapter_type`
+- `label` — nombre legible para humanos para la UI
+- `models` — opciones de modelos disponibles para el formulario de creación de agentes
+- `agentConfigurationDoc` — Markdown que describe todos los campos de `adapterConfig` (usado por agentes LLM que configuran otros agentes)
 
-**Writing `agentConfigurationDoc` as routing logic:**
+**Escribir `agentConfigurationDoc` como lógica de ruteo:**
 
-The `agentConfigurationDoc` is read by LLM agents (including Paperclip agents that create other agents). Write it as **routing logic**, not marketing copy. Include concrete "use when" and "don't use when" guidance so an LLM can decide whether this adapter is appropriate for a given task.
+`agentConfigurationDoc` lo leen los agentes LLM (incluidos los agentes de Paperclip que crean otros agentes). Escríbelo como **lógica de ruteo**, no como texto de marketing. Incluye lineamientos concretos de "cuándo usarlo" y "cuándo no usarlo" para que un LLM pueda decidir si este adaptador es apropiado para una tarea dada.
 
 ```ts
 export const agentConfigurationDoc = `# my_agent agent configuration
@@ -255,60 +255,60 @@ Core fields:
 `;
 ```
 
-Adding explicit negative cases improves adapter selection accuracy. One concrete anti-pattern is worth more than three paragraphs of description.
+Agregar casos negativos explícitos mejora la precisión de la selección de adaptadores. Un antipatrón concreto vale más que tres párrafos de descripción.
 
-### 3.3 Server Module
+### 3.3 Módulo de servidor
 
-#### `server/execute.ts` — The Core
+#### `server/execute.ts` — el núcleo
 
-This is the most important file. It receives an `AdapterExecutionContext` and must return an `AdapterExecutionResult`.
+Este es el archivo más importante. Recibe un `AdapterExecutionContext` y debe devolver un `AdapterExecutionResult`.
 
-**Required behavior:**
+**Comportamiento requerido:**
 
-1. **Read config** — extract typed values from `ctx.config` using helpers (`asString`, `asNumber`, `asBoolean`, `asStringArray`, `parseObject` from `@paperclipai/adapter-utils/server-utils`)
-2. **Build environment** — call `buildPaperclipEnv(agent)` then layer in `PAPERCLIP_RUN_ID`, context vars (`PAPERCLIP_TASK_ID`, `PAPERCLIP_WAKE_REASON`, `PAPERCLIP_WAKE_COMMENT_ID`, `PAPERCLIP_APPROVAL_ID`, `PAPERCLIP_APPROVAL_STATUS`, `PAPERCLIP_LINKED_ISSUE_IDS`), user env overrides, and auth token
-3. **Resolve session** — check `runtime.sessionParams` / `runtime.sessionId` for an existing session; validate it's compatible (e.g. same cwd); decide whether to resume or start fresh
-4. **Render prompt** — use `renderTemplate(template, data)` with the template variables: `agentId`, `companyId`, `runId`, `company`, `agent`, `run`, `context`
-5. **Call onMeta** — emit adapter invocation metadata before spawning the process
-6. **Spawn the process** — use `runChildProcess()` for CLI-based agents or `fetch()` for HTTP-based agents
-7. **Parse output** — convert the agent's stdout into structured data (session id, usage, summary, errors)
-8. **Handle session errors** — if resume fails with "unknown session", retry with a fresh session and set `clearSession: true`
-9. **Return AdapterExecutionResult** — populate all fields the agent runtime supports
+1. **Lee la configuración** — extrae valores tipados de `ctx.config` usando utilidades (`asString`, `asNumber`, `asBoolean`, `asStringArray`, `parseObject` de `@paperclipai/adapter-utils/server-utils`)
+2. **Construye el entorno** — llama a `buildPaperclipEnv(agent)` y luego agrega en capas `PAPERCLIP_RUN_ID`, variables de contexto (`PAPERCLIP_TASK_ID`, `PAPERCLIP_WAKE_REASON`, `PAPERCLIP_WAKE_COMMENT_ID`, `PAPERCLIP_APPROVAL_ID`, `PAPERCLIP_APPROVAL_STATUS`, `PAPERCLIP_LINKED_ISSUE_IDS`), anulaciones de entorno del usuario y el token de autenticación
+3. **Resuelve la sesión** — verifica `runtime.sessionParams` / `runtime.sessionId` para una sesión existente; valida que sea compatible (p. ej., mismo cwd); decide si reanudar o empezar de cero
+4. **Renderiza el prompt** — usa `renderTemplate(template, data)` con las variables de plantilla: `agentId`, `companyId`, `runId`, `company`, `agent`, `run`, `context`
+5. **Llama a onMeta** — emite metadatos de invocación del adaptador antes de lanzar el proceso
+6. **Lanza el proceso** — usa `runChildProcess()` para agentes basados en CLI o `fetch()` para agentes basados en HTTP
+7. **Analiza la salida** — convierte el stdout del agente en datos estructurados (id de sesión, uso, resumen, errores)
+8. **Maneja errores de sesión** — si la reanudación falla con "unknown session", reintenta con una sesión nueva y configura `clearSession: true`
+9. **Devuelve AdapterExecutionResult** — completa todos los campos que admite el runtime del agente
 
-**Environment variables the server always injects:**
+**Variables de entorno que el servidor siempre inyecta:**
 
-| Variable | Source |
+| Variable | Fuente |
 |----------|--------|
 | `PAPERCLIP_AGENT_ID` | `agent.id` |
 | `PAPERCLIP_COMPANY_ID` | `agent.companyId` |
-| `PAPERCLIP_API_URL` | Server's own URL |
-| `PAPERCLIP_RUN_ID` | Current run id |
-| `PAPERCLIP_TASK_ID` | `context.taskId` or `context.issueId` |
+| `PAPERCLIP_API_URL` | URL propia del servidor |
+| `PAPERCLIP_RUN_ID` | id de la ejecución actual |
+| `PAPERCLIP_TASK_ID` | `context.taskId` o `context.issueId` |
 | `PAPERCLIP_WAKE_REASON` | `context.wakeReason` |
-| `PAPERCLIP_WAKE_COMMENT_ID` | `context.wakeCommentId` or `context.commentId` |
+| `PAPERCLIP_WAKE_COMMENT_ID` | `context.wakeCommentId` o `context.commentId` |
 | `PAPERCLIP_APPROVAL_ID` | `context.approvalId` |
 | `PAPERCLIP_APPROVAL_STATUS` | `context.approvalStatus` |
-| `PAPERCLIP_LINKED_ISSUE_IDS` | `context.issueIds` (comma-separated) |
-| `PAPERCLIP_API_KEY` | `authToken` (if no explicit key in config) |
+| `PAPERCLIP_LINKED_ISSUE_IDS` | `context.issueIds` (separados por comas) |
+| `PAPERCLIP_API_KEY` | `authToken` (si no hay clave explícita en la configuración) |
 
-#### `server/parse.ts` — Output Parser
+#### `server/parse.ts` — analizador de salida
 
-Parse the agent's stdout format into structured data. Must handle:
+Analiza el formato de stdout del agente en datos estructurados. Debe manejar:
 
-- **Session identification** — extract session/thread ID from init events
-- **Usage tracking** — extract token counts (input, output, cached)
-- **Cost tracking** — extract cost if available
-- **Summary extraction** — pull the agent's final text response
-- **Error detection** — identify error states, extract error messages
-- **Unknown session detection** — export an `is<Agent>UnknownSessionError()` function for retry logic
+- **Identificación de sesión** — extrae el ID de sesión/hilo de los eventos de inicio
+- **Seguimiento de uso** — extrae conteos de tokens (entrada, salida, en caché)
+- **Seguimiento de costos** — extrae el costo si está disponible
+- **Extracción de resumen** — extrae la respuesta de texto final del agente
+- **Detección de errores** — identifica estados de error, extrae mensajes de error
+- **Detección de sesión desconocida** — exporta una función `is<Agent>UnknownSessionError()` para la lógica de reintento
 
-**Treat agent output as untrusted.** The stdout you're parsing comes from an LLM-driven process that may have executed arbitrary tool calls, fetched external content, or been influenced by prompt injection in the files it read. Parse defensively:
-- Never `eval()` or dynamically execute anything from output
-- Use safe extraction helpers (`asString`, `asNumber`, `parseJson`) — they return fallbacks on unexpected types
-- Validate session IDs and other structured data before passing them through
-- If output contains URLs, file paths, or commands, do not act on them in the adapter — just record them
+**Trata la salida del agente como no confiable.** El stdout que estás analizando proviene de un proceso impulsado por LLM que puede haber ejecutado llamadas arbitrarias a herramientas, obtenido contenido externo o haber sido influenciado por inyección de prompts en los archivos que leyó. Analiza de forma defensiva:
+- Nunca `eval()` ni ejecutes dinámicamente nada de la salida
+- Usa utilidades de extracción seguras (`asString`, `asNumber`, `parseJson`): devuelven valores de respaldo ante tipos inesperados
+- Valida los IDs de sesión y otros datos estructurados antes de pasarlos
+- Si la salida contiene URLs, rutas de archivos o comandos, no actúes sobre ellos en el adaptador: solo regístralos
 
-#### `server/index.ts` — Server Exports
+#### `server/index.ts` — exportaciones del servidor
 
 ```ts
 export { execute } from "./execute.js";
@@ -323,36 +323,36 @@ export const sessionCodec: AdapterSessionCodec = {
 };
 ```
 
-#### `server/test.ts` — Environment Diagnostics
+#### `server/test.ts` — diagnósticos de entorno
 
-Implement adapter-specific preflight checks used by the UI test button.
+Implementa verificaciones previas al vuelo específicas del adaptador, usadas por el botón de prueba de la UI.
 
-Minimum expectations:
+Expectativas mínimas:
 
-1. Validate required config primitives (paths, commands, URLs, auth assumptions)
-2. Return check objects with deterministic `code` values
-3. Map severity consistently (`info` / `warn` / `error`)
-4. Compute final status:
-   - `fail` if any `error`
-   - `warn` if no errors and at least one warning
-   - `pass` otherwise
+1. Valida los primitivos de configuración requeridos (rutas, comandos, URLs, suposiciones de autenticación)
+2. Devuelve objetos de verificación con valores `code` deterministas
+3. Mapea la severidad de forma consistente (`info` / `warn` / `error`)
+4. Calcula el estado final:
+   - `fail` si hay algún `error`
+   - `warn` si no hay errores y hay al menos una advertencia
+   - `pass` en los demás casos
 
-This operation should be lightweight and side-effect free.
+Esta operación debe ser ligera y sin efectos secundarios.
 
-### 3.4 UI Module
+### 3.4 Módulo de UI
 
-#### `ui/parse-stdout.ts` — Transcript Parser
+#### `ui/parse-stdout.ts` — analizador de transcripción
 
-Converts individual stdout lines into `TranscriptEntry[]` for the run detail viewer. Must handle the agent's streaming output format and produce entries of these kinds:
+Convierte líneas individuales de stdout en `TranscriptEntry[]` para el visor de detalles de ejecución. Debe manejar el formato de salida en streaming del agente y producir entradas de estos tipos:
 
-- `init` — model/session initialization
-- `assistant` — agent text responses
-- `thinking` — agent thinking/reasoning (if supported)
-- `tool_call` — tool invocations with name and input
-- `tool_result` — tool results with content and error flag
-- `user` — user messages in the conversation
-- `result` — final result with usage stats
-- `stdout` — fallback for unparseable lines
+- `init` — inicialización de modelo/sesión
+- `assistant` — respuestas de texto del agente
+- `thinking` — pensamiento/razonamiento del agente (si es compatible)
+- `tool_call` — invocaciones de herramientas con nombre y entrada
+- `tool_result` — resultados de herramientas con contenido y marca de error
+- `user` — mensajes del usuario en la conversación
+- `result` — resultado final con estadísticas de uso
+- `stdout` — respaldo para líneas no analizables
 
 ```ts
 export function parseMyAgentStdoutLine(line: string, ts: string): TranscriptEntry[] {
@@ -361,9 +361,9 @@ export function parseMyAgentStdoutLine(line: string, ts: string): TranscriptEntr
 }
 ```
 
-#### `ui/build-config.ts` — Config Builder
+#### `ui/build-config.ts` — constructor de configuración
 
-Converts the UI form's `CreateConfigValues` into the `adapterConfig` JSON blob stored on the agent.
+Convierte los `CreateConfigValues` del formulario de la UI en el blob JSON de `adapterConfig` almacenado en el agente.
 
 ```ts
 export function buildMyAgentConfig(v: CreateConfigValues): Record<string, unknown> {
@@ -378,24 +378,24 @@ export function buildMyAgentConfig(v: CreateConfigValues): Record<string, unknow
 }
 ```
 
-#### UI Config Fields Component
+#### Componente de campos de configuración de la UI
 
-Create `ui/src/adapters/<name>/config-fields.tsx` with a React component implementing `AdapterConfigFieldsProps`. This renders adapter-specific form fields in the agent creation/edit form.
+Crea `ui/src/adapters/<name>/config-fields.tsx` con un componente de React que implemente `AdapterConfigFieldsProps`. Esto renderiza los campos de formulario específicos del adaptador en el formulario de creación/edición de agentes.
 
-Use the shared primitives from `ui/src/components/agent-config-primitives`:
-- `Field` — labeled form field wrapper
-- `ToggleField` — boolean toggle with label and hint
-- `DraftInput` — text input with draft/commit behavior
-- `DraftNumberInput` — number input with draft/commit behavior
-- `help` — standard hint text for common fields
+Usa los primitivos compartidos de `ui/src/components/agent-config-primitives`:
+- `Field` — contenedor de campo de formulario con etiqueta
+- `ToggleField` — interruptor booleano con etiqueta y pista
+- `DraftInput` — entrada de texto con comportamiento de borrador/confirmación
+- `DraftNumberInput` — entrada numérica con comportamiento de borrador/confirmación
+- `help` — texto de ayuda estándar para campos comunes
 
-The component must support both `create` mode (using `values`/`set`) and `edit` mode (using `config`/`eff`/`mark`).
+El componente debe admitir tanto el modo `create` (usando `values`/`set`) como el modo `edit` (usando `config`/`eff`/`mark`).
 
-### 3.5 CLI Module
+### 3.5 Módulo de CLI
 
-#### `cli/format-event.ts` — Terminal Formatter
+#### `cli/format-event.ts` — formateador de terminal
 
-Pretty-prints stdout lines for `paperclipai run --watch`. Use `picocolors` for coloring.
+Imprime de forma legible las líneas de stdout para `paperclipai run --watch`. Usa `picocolors` para colorear.
 
 ```ts
 import pc from "picocolors";
@@ -409,11 +409,11 @@ export function printMyAgentStreamEvent(raw: string, debug: boolean): void {
 
 ---
 
-## 4. Registration Checklist
+## 4. Lista de verificación de registro
 
-After creating the adapter package, register it in all three consumers:
+Después de crear el paquete del adaptador, regístralo en los tres consumidores:
 
-### 4.1 Server Registry (`server/src/adapters/registry.ts`)
+### 4.1 Registro de servidor (`server/src/adapters/registry.ts`)
 
 ```ts
 import { execute as myExecute, sessionCodec as mySessionCodec } from "@paperclipai/adapter-my-agent/server";
@@ -434,7 +434,7 @@ const adaptersByType = new Map<string, ServerAdapterModule>(
 );
 ```
 
-### 4.2 UI Registry (`ui/src/adapters/registry.ts`)
+### 4.2 Registro de UI (`ui/src/adapters/registry.ts`)
 
 ```ts
 import { myAgentUIAdapter } from "./my-agent";
@@ -444,7 +444,7 @@ const adaptersByType = new Map<string, UIAdapterModule>(
 );
 ```
 
-With `ui/src/adapters/my-agent/index.ts`:
+Con `ui/src/adapters/my-agent/index.ts`:
 
 ```ts
 import type { UIAdapterModule } from "../types";
@@ -461,7 +461,7 @@ export const myAgentUIAdapter: UIAdapterModule = {
 };
 ```
 
-### 4.3 CLI Registry (`cli/src/adapters/registry.ts`)
+### 4.3 Registro de CLI (`cli/src/adapters/registry.ts`)
 
 ```ts
 import { printMyAgentStreamEvent } from "@paperclipai/adapter-my-agent/cli";
@@ -476,23 +476,23 @@ const myAgentCLIAdapter: CLIAdapterModule = {
 
 ---
 
-## 5. Session Management — Designing for Long Runs
+## 5. Gestión de sesiones — diseño para ejecuciones largas
 
-Sessions allow agents to maintain conversation context across runs. The system is **codec-based** — each adapter defines how to serialize/deserialize its session state.
+Las sesiones permiten a los agentes mantener el contexto de conversación entre ejecuciones. El sistema está **basado en codecs**: cada adaptador define cómo serializar/deserializar su estado de sesión.
 
-**Design for long runs from the start.** Treat session reuse as the default primitive, not an optimization to add later. An agent working on an issue may be woken dozens of times — for the initial assignment, approval callbacks, re-assignments, manual nudges. Each wake should resume the existing conversation so the agent retains full context about what it has already done, what files it has read, and what decisions it has made. Starting fresh each time wastes tokens on re-reading the same files and risks contradictory decisions.
+**Diseña para ejecuciones largas desde el principio.** Trata la reutilización de sesiones como el primitivo predeterminado, no como una optimización para agregar después. Un agente que trabaja en un issue puede ser despertado docenas de veces: para la asignación inicial, devoluciones de aprobación, reasignaciones, empujones manuales. Cada activación debe reanudar la conversación existente para que el agente conserve el contexto completo de lo que ya hizo, qué archivos leyó y qué decisiones tomó. Empezar de cero cada vez desperdicia tokens releyendo los mismos archivos y arriesga decisiones contradictorias.
 
-**Key concepts:**
-- `sessionParams` is an opaque `Record<string, unknown>` stored in the DB per task
-- The adapter's `sessionCodec.serialize()` converts execution result data to storable params
-- `sessionCodec.deserialize()` converts stored params back for the next run
-- `sessionCodec.getDisplayId()` extracts a human-readable session ID for the UI
-- **cwd-aware resume**: if the session was created in a different cwd than the current config, skip resuming (prevents cross-project session contamination)
-- **Unknown session retry**: if resume fails with a "session not found" error, retry with a fresh session and return `clearSession: true` so Paperclip wipes the stale session
+**Conceptos clave:**
+- `sessionParams` es un `Record<string, unknown>` opaco almacenado en la base de datos por tarea
+- El `sessionCodec.serialize()` del adaptador convierte los datos del resultado de ejecución en parámetros almacenables
+- `sessionCodec.deserialize()` convierte los parámetros almacenados de vuelta para la siguiente ejecución
+- `sessionCodec.getDisplayId()` extrae un ID de sesión legible para humanos para la UI
+- **reanudación consciente del cwd**: si la sesión se creó en un cwd distinto al de la configuración actual, omite la reanudación (evita la contaminación de sesiones entre proyectos)
+- **reintento ante sesión desconocida**: si la reanudación falla con un error de "session not found", reintenta con una sesión nueva y devuelve `clearSession: true` para que Paperclip borre la sesión obsoleta
 
-If the agent runtime supports any form of context compaction or conversation compression (e.g. Claude Code's automatic context management, or Codex's `previous_response_id` chaining), lean on it. Adapters that support session resume get compaction for free — the agent runtime handles context window management internally across resumes.
+Si el runtime del agente admite alguna forma de compactación de contexto o compresión de conversación (p. ej., la gestión automática de contexto de Claude Code o el encadenamiento `previous_response_id` de Codex), apóyate en ella. Los adaptadores que admiten la reanudación de sesiones obtienen la compactación gratis: el runtime del agente maneja internamente la gestión de la ventana de contexto entre reanudaciones.
 
-**Pattern** (from both claude-local and codex-local):
+**Patrón** (de claude-local y codex-local):
 
 ```ts
 const canResumeSession =
@@ -511,71 +511,71 @@ if (sessionId && !proc.timedOut && exitCode !== 0 && isUnknownSessionError(outpu
 
 ---
 
-## 6. Server-Utils Helpers
+## 6. Utilidades de server-utils
 
-Import from `@paperclipai/adapter-utils/server-utils`:
+Importa desde `@paperclipai/adapter-utils/server-utils`:
 
-| Helper | Purpose |
+| Utilidad | Propósito |
 |--------|---------|
-| `asString(val, fallback)` | Safe string extraction |
-| `asNumber(val, fallback)` | Safe number extraction |
-| `asBoolean(val, fallback)` | Safe boolean extraction |
-| `asStringArray(val)` | Safe string array extraction |
-| `parseObject(val)` | Safe `Record<string, unknown>` extraction |
-| `parseJson(str)` | Safe JSON.parse returning `Record` or null |
-| `renderTemplate(tmpl, data)` | `{{path.to.value}}` template rendering |
-| `buildPaperclipEnv(agent)` | Standard `PAPERCLIP_*` env vars |
-| `redactEnvForLogs(env)` | Redact sensitive keys for onMeta |
-| `ensureAbsoluteDirectory(cwd)` | Validate cwd exists and is absolute |
-| `ensureCommandResolvable(cmd, cwd, env)` | Validate command is in PATH |
-| `ensurePathInEnv(env)` | Ensure PATH exists in env |
-| `runChildProcess(runId, cmd, args, opts)` | Spawn with timeout, logging, capture |
+| `asString(val, fallback)` | Extracción segura de cadenas |
+| `asNumber(val, fallback)` | Extracción segura de números |
+| `asBoolean(val, fallback)` | Extracción segura de booleanos |
+| `asStringArray(val)` | Extracción segura de arreglos de cadenas |
+| `parseObject(val)` | Extracción segura de `Record<string, unknown>` |
+| `parseJson(str)` | `JSON.parse` seguro que devuelve `Record` o null |
+| `renderTemplate(tmpl, data)` | Renderizado de plantillas `{{path.to.value}}` |
+| `buildPaperclipEnv(agent)` | Variables de entorno `PAPERCLIP_*` estándar |
+| `redactEnvForLogs(env)` | Enmascara claves sensibles para onMeta |
+| `ensureAbsoluteDirectory(cwd)` | Valida que el cwd exista y sea absoluto |
+| `ensureCommandResolvable(cmd, cwd, env)` | Valida que el comando esté en PATH |
+| `ensurePathInEnv(env)` | Garantiza que PATH exista en el entorno |
+| `runChildProcess(runId, cmd, args, opts)` | Lanza un proceso hijo con timeout, registro y captura |
 
 ---
 
-## 7. Conventions and Patterns
+## 7. Convenciones y patrones
 
-### Naming
-- Adapter type: `snake_case` (e.g. `claude_local`, `codex_local`)
-- Package name: `@paperclipai/adapter-<kebab-name>`
-- Package directory: `packages/adapters/<kebab-name>/`
+### Nomenclatura
+- Tipo de adaptador: `snake_case` (p. ej., `claude_local`, `codex_local`)
+- Nombre del paquete: `@paperclipai/adapter-<kebab-name>`
+- Directorio del paquete: `packages/adapters/<kebab-name>/`
 
-### Config Parsing
-- Never trust `config` values directly — always use `asString`, `asNumber`, etc.
-- Provide sensible defaults for every optional field
-- Document all fields in `agentConfigurationDoc`
+### Análisis de configuración
+- Nunca confíes directamente en los valores de `config`: usa siempre `asString`, `asNumber`, etc.
+- Proporciona valores predeterminados sensatos para cada campo opcional
+- Documenta todos los campos en `agentConfigurationDoc`
 
-### Prompt Templates
-- Support `promptTemplate` for every run
-- Use `renderTemplate()` with the standard variable set
-- Default prompt: `"You are agent {{agent.id}} ({{agent.name}}). Continue your Paperclip work."`
+### Plantillas de prompts
+- Admite `promptTemplate` para cada ejecución
+- Usa `renderTemplate()` con el conjunto estándar de variables
+- Prompt predeterminado: `"You are agent {{agent.id}} ({{agent.name}}). Continue your Paperclip work."`
 
-### Error Handling
-- Differentiate timeout vs process error vs parse failure
-- Always populate `errorMessage` on failure
-- Include raw stdout/stderr in `resultJson` when parsing fails
-- Handle the agent CLI not being installed (command not found)
+### Manejo de errores
+- Diferencia timeout de error de proceso y de falla de análisis
+- Completa siempre `errorMessage` en caso de falla
+- Incluye stdout/stderr sin procesar en `resultJson` cuando el análisis falla
+- Maneja el caso de que la CLI del agente no esté instalada (comando no encontrado)
 
-### Logging
-- Call `onLog("stdout", ...)` and `onLog("stderr", ...)` for all process output — this feeds the real-time run viewer
-- Call `onMeta(...)` before spawning to record invocation details
-- Use `redactEnvForLogs()` when including env in meta
+### Registro (logging)
+- Llama a `onLog("stdout", ...)` y `onLog("stderr", ...)` para toda la salida del proceso: esto alimenta el visor de ejecución en tiempo real
+- Llama a `onMeta(...)` antes de lanzar el proceso para registrar los detalles de la invocación
+- Usa `redactEnvForLogs()` al incluir el entorno en meta
 
-### Paperclip Skills Injection
+### Inyección de habilidades de Paperclip
 
-Paperclip ships shared skills (in the repo's top-level `skills/` directory) that agents need at runtime — things like the `paperclip` API skill and the `paperclip-create-agent` workflow skill. Each adapter is responsible for making these skills discoverable by its agent runtime **without polluting the agent's working directory**.
+Paperclip incluye habilidades compartidas (en el directorio `skills/` de nivel superior del repositorio) que los agentes necesitan en runtime, como la habilidad de API `paperclip` y la habilidad de flujo de trabajo `paperclip-create-agent`. Cada adaptador es responsable de hacer que estas habilidades sean descubribles por su runtime de agente **sin contaminar el directorio de trabajo del agente**.
 
-**The constraint:** never copy or symlink skills into the agent's `cwd`. The cwd is the user's project checkout — writing `.claude/skills/` or any other files into it would contaminate the repo with Paperclip internals, break git status, and potentially leak into commits.
+**La restricción:** nunca copies ni crees enlaces simbólicos de habilidades en el `cwd` del agente. El cwd es la copia de trabajo (checkout) del proyecto del usuario: escribir `.claude/skills/` u otros archivos en él contaminaría el repositorio con componentes internos de Paperclip, rompería el estado de git y podría filtrarse en los commits.
 
-**The pattern:** create a clean, isolated location for skills and tell the agent runtime to look there.
+**El patrón:** crea una ubicación limpia y aislada para las habilidades e indícale al runtime del agente que busque ahí.
 
-**How claude-local does it:**
+**Cómo lo hace claude-local:**
 
-1. At execution time, create a fresh tmpdir: `mkdtemp("paperclip-skills-")`
-2. Inside it, create `.claude/skills/` (the directory structure Claude Code expects)
-3. Symlink each skill directory from the repo's `skills/` into the tmpdir's `.claude/skills/`
-4. Pass the tmpdir to Claude Code via `--add-dir <tmpdir>` — this makes Claude Code discover the skills as if they were registered in that directory, without touching the agent's actual cwd
-5. Clean up the tmpdir in a `finally` block after the run completes
+1. En tiempo de ejecución, crea un tmpdir nuevo: `mkdtemp("paperclip-skills-")`
+2. Dentro de él, crea `.claude/skills/` (la estructura de directorios que Claude Code espera)
+3. Crea un enlace simbólico de cada directorio de habilidad del `skills/` del repositorio en el `.claude/skills/` del tmpdir
+4. Pasa el tmpdir a Claude Code mediante `--add-dir <tmpdir>`: esto hace que Claude Code descubra las habilidades como si estuvieran registradas en ese directorio, sin tocar el cwd real del agente
+5. Limpia el tmpdir en un bloque `finally` después de que la ejecución se complete
 
 ```ts
 // From claude-local execute.ts
@@ -602,9 +602,9 @@ args.push("--add-dir", skillsDir);
 // In finally: fs.rm(skillsDir, { recursive: true, force: true })
 ```
 
-**How codex-local does it:**
+**Cómo lo hace codex-local:**
 
-Codex has a global personal skills directory (`$CODEX_HOME/skills` or `~/.codex/skills`). The adapter symlinks Paperclip skills there if they don't already exist. This is acceptable because it's the agent tool's own config directory, not the user's project.
+Codex tiene un directorio global personal de habilidades (`$CODEX_HOME/skills` o `~/.codex/skills`). El adaptador crea enlaces simbólicos de las habilidades de Paperclip ahí si aún no existen. Esto es aceptable porque es el directorio de configuración propio de la herramienta de agente, no el proyecto del usuario.
 
 ```ts
 // From codex-local execute.ts
@@ -620,99 +620,99 @@ async function ensureCodexSkillsInjected(onLog) {
 }
 ```
 
-**For a new adapter:** figure out how your agent runtime discovers skills/plugins, then choose the cleanest injection path:
+**Para un nuevo adaptador:** averigua cómo tu runtime de agente descubre habilidades/plugins y luego elige la ruta de inyección más limpia:
 
-1. **Best: tmpdir + flag** (like claude-local) — if the runtime supports an "additional directory" flag, create a tmpdir, symlink skills in, pass the flag, clean up after. Zero side effects.
-2. **Acceptable: global config dir** (like codex-local) — if the runtime has a global skills/plugins directory separate from the project, symlink there. Skip existing entries to avoid overwriting user customizations.
-3. **Acceptable: env var** — if the runtime reads a skills/plugin path from an environment variable, point it at the repo's `skills/` directory directly.
-4. **Last resort: prompt injection** — if the runtime has no plugin system, include skill content in the prompt template itself. This uses tokens but avoids filesystem side effects entirely.
+1. **Mejor: tmpdir + flag** (como claude-local): si el runtime admite una flag de "directorio adicional", crea un tmpdir, crea enlaces simbólicos de las habilidades, pasa la flag y limpia después. Cero efectos secundarios.
+2. **Aceptable: directorio de configuración global** (como codex-local): si el runtime tiene un directorio global de habilidades/plugins separado del proyecto, crea enlaces simbólicos ahí. Omite las entradas existentes para evitar sobrescribir las personalizaciones del usuario.
+3. **Aceptable: variable de entorno**: si el runtime lee una ruta de habilidades/plugins desde una variable de entorno, apúntala directamente al directorio `skills/` del repositorio.
+4. **Último recurso: inyección de prompt**: si el runtime no tiene sistema de plugins, incluye el contenido de la habilidad en la plantilla del prompt. Esto usa tokens pero evita por completo los efectos secundarios en el sistema de archivos.
 
-**Skills as loaded procedures, not prompt bloat.** The Paperclip skills (like `paperclip` and `paperclip-create-agent`) are designed as on-demand procedures: the agent sees skill metadata (name + description) in its context, but only loads the full SKILL.md content when it decides to invoke a skill. This keeps the base prompt small. When writing `agentConfigurationDoc` or prompt templates for your adapter, do not inline skill content — let the agent runtime's skill discovery do the work. The descriptions in each SKILL.md frontmatter act as routing logic: they tell the agent when to load the full skill, not what the skill contains.
+**Las habilidades como procedimientos cargados, no como relleno del prompt.** Las habilidades de Paperclip (como `paperclip` y `paperclip-create-agent`) están diseñadas como procedimientos bajo demanda: el agente ve los metadatos de la habilidad (nombre + descripción) en su contexto, pero solo carga el contenido completo del SKILL.md cuando decide invocar una habilidad. Esto mantiene pequeño el prompt base. Al escribir `agentConfigurationDoc` o plantillas de prompt para tu adaptador, no incluyas el contenido de las habilidades en línea: deja que el descubrimiento de habilidades del runtime del agente haga el trabajo. Las descripciones en el frontmatter de cada SKILL.md actúan como lógica de ruteo: le dicen al agente cuándo cargar la habilidad completa, no qué contiene.
 
-**Explicit vs. fuzzy skill invocation.** For production workflows where reliability matters (e.g. an agent that must always call the Paperclip API to report status), use explicit instructions in the prompt template: "Use the paperclip skill to report your progress." Fuzzy routing (letting the model decide based on description matching) is fine for exploratory tasks but unreliable for mandatory procedures.
-
----
-
-## 8. Security Considerations
-
-Adapters sit at the boundary between Paperclip's orchestration layer and arbitrary agent execution. This is a high-risk surface.
-
-### Treat Agent Output as Untrusted
-
-The agent process runs LLM-driven code that reads external files, fetches URLs, and executes tools. Its output may be influenced by prompt injection from the content it processes. The adapter's parse layer is a trust boundary — validate everything, execute nothing.
-
-### Secret Injection via Environment, Not Prompts
-
-Never put secrets (API keys, tokens) into prompt templates or config fields that flow through the LLM. Instead, inject them as environment variables that the agent's tools can read directly:
-
-- `PAPERCLIP_API_KEY` is injected by the server into the process environment, not the prompt
-- User-provided secrets in `config.env` are passed as env vars, redacted in `onMeta` logs
-- The `redactEnvForLogs()` helper automatically masks any key matching `/(key|token|secret|password|authorization|cookie)/i`
-
-This follows the "sidecar injection" pattern: the model never sees the real secret value, but the tools it invokes can read it from the environment.
-
-### Network Access
-
-If your agent runtime supports network access controls (sandboxing, allowlists), configure them in the adapter:
-
-- Prefer minimal allowlists over open internet access. An agent that only needs to call the Paperclip API and GitHub should not have access to arbitrary hosts.
-- Skills + network = amplified risk. A skill that teaches the agent to make HTTP requests combined with unrestricted network access creates an exfiltration path. Constrain one or the other.
-- If the runtime supports layered policies (org-level defaults + per-request overrides), wire the org-level policy into the adapter config and let per-agent config narrow further.
-
-### Process Isolation
-
-- CLI-based adapters inherit the server's user permissions. The `cwd` and `env` config determine what the agent process can access on the filesystem.
-- `dangerouslySkipPermissions` / `dangerouslyBypassApprovalsAndSandbox` flags exist for development convenience but must be documented as dangerous in `agentConfigurationDoc`. Production deployments should not use them.
-- Timeout and grace period (`timeoutSec`, `graceSec`) are safety rails — always enforce them. A runaway agent process without a timeout can consume unbounded resources.
+**Invocación explícita vs. difusa de habilidades.** Para flujos de trabajo de producción donde la confiabilidad importa (p. ej., un agente que siempre debe llamar a la API de Paperclip para reportar su estado), usa instrucciones explícitas en la plantilla del prompt: "Use the paperclip skill to report your progress." El ruteo difuso (dejar que el modelo decida según la coincidencia de descripciones) está bien para tareas exploratorias, pero no es confiable para procedimientos obligatorios.
 
 ---
 
-## 9. TranscriptEntry Kinds Reference
+## 8. Consideraciones de seguridad
 
-The UI run viewer displays these entry kinds:
+Los adaptadores se encuentran en el límite entre la capa de orquestación de Paperclip y la ejecución arbitraria de agentes. Esta es una superficie de alto riesgo.
 
-| Kind | Fields | Usage |
+### Trata la salida del agente como no confiable
+
+El proceso del agente ejecuta código impulsado por LLM que lee archivos externos, obtiene URLs y ejecuta herramientas. Su salida puede estar influenciada por inyección de prompts del contenido que procesa. La capa de análisis del adaptador es un límite de confianza: valida todo, no ejecutes nada.
+
+### Inyección de secretos por entorno, no por prompts
+
+Nunca pongas secretos (claves de API, tokens) en plantillas de prompt o campos de configuración que pasen por el LLM. En su lugar, inyéctalos como variables de entorno que las herramientas del agente puedan leer directamente:
+
+- `PAPERCLIP_API_KEY` la inyecta el servidor en el entorno del proceso, no en el prompt
+- Los secretos proporcionados por el usuario en `config.env` se pasan como variables de entorno, enmascarados en los registros de `onMeta`
+- La utilidad `redactEnvForLogs()` enmascara automáticamente cualquier clave que coincida con `/(key|token|secret|password|authorization|cookie)/i`
+
+Esto sigue el patrón de "inyección sidecar": el modelo nunca ve el valor real del secreto, pero las herramientas que invoca pueden leerlo del entorno.
+
+### Acceso a la red
+
+Si tu runtime de agente admite controles de acceso a la red (sandboxing, listas de permitidos), configúralos en el adaptador:
+
+- Prefiere listas de permitidos mínimas sobre el acceso abierto a internet. Un agente que solo necesita llamar a la API de Paperclip y a GitHub no debe tener acceso a hosts arbitrarios.
+- Habilidades + red = riesgo amplificado. Una habilidad que enseña al agente a hacer solicitudes HTTP combinada con acceso irrestricto a la red crea una ruta de exfiltración. Restringe una u otra.
+- Si el runtime admite políticas en capas (valores predeterminados a nivel de organización + anulaciones por solicitud), conecta la política a nivel de organización en la configuración del adaptador y deja que la configuración por agente la restrinja aún más.
+
+### Aislamiento de procesos
+
+- Los adaptadores basados en CLI heredan los permisos de usuario del servidor. La configuración de `cwd` y `env` determina a qué puede acceder el proceso del agente en el sistema de archivos.
+- Las flags `dangerouslySkipPermissions` / `dangerouslyBypassApprovalsAndSandbox` existen por conveniencia de desarrollo, pero deben documentarse como peligrosas en `agentConfigurationDoc`. Los despliegues de producción no deben usarlas.
+- El timeout y el período de gracia (`timeoutSec`, `graceSec`) son rieles de seguridad: aplícalos siempre. Un proceso de agente descontrolado sin timeout puede consumir recursos ilimitados.
+
+---
+
+## 9. Referencia de tipos de TranscriptEntry
+
+El visor de ejecución de la UI muestra estos tipos de entrada:
+
+| Tipo | Campos | Uso |
 |------|--------|-------|
-| `init` | `model`, `sessionId` | Agent initialization |
-| `assistant` | `text` | Agent text response |
-| `thinking` | `text` | Agent reasoning/thinking |
-| `user` | `text` | User message |
-| `tool_call` | `name`, `input` | Tool invocation |
-| `tool_result` | `toolUseId`, `content`, `isError` | Tool result |
-| `result` | `text`, `inputTokens`, `outputTokens`, `cachedTokens`, `costUsd`, `subtype`, `isError`, `errors` | Final result with usage |
-| `stderr` | `text` | Stderr output |
-| `system` | `text` | System messages |
-| `stdout` | `text` | Raw stdout fallback |
+| `init` | `model`, `sessionId` | Inicialización del agente |
+| `assistant` | `text` | Respuesta de texto del agente |
+| `thinking` | `text` | Pensamiento/razonamiento del agente |
+| `user` | `text` | Mensaje del usuario |
+| `tool_call` | `name`, `input` | Invocación de herramienta |
+| `tool_result` | `toolUseId`, `content`, `isError` | Resultado de herramienta |
+| `result` | `text`, `inputTokens`, `outputTokens`, `cachedTokens`, `costUsd`, `subtype`, `isError`, `errors` | Resultado final con uso |
+| `stderr` | `text` | Salida de stderr |
+| `system` | `text` | Mensajes de sistema |
+| `stdout` | `text` | Respaldo de stdout sin procesar |
 
 ---
 
-## 10. Testing
+## 10. Pruebas
 
-Create tests in `server/src/__tests__/<adapter-name>-adapter.test.ts`. Test:
+Crea pruebas en `server/src/__tests__/<adapter-name>-adapter.test.ts`. Prueba:
 
-1. **Output parsing** — feed sample stdout through your parser, verify structured output
-2. **Unknown session detection** — verify the `is<Agent>UnknownSessionError` function
-3. **Config building** — verify `buildConfig` produces correct adapterConfig from form values
-4. **Session codec** — verify serialize/deserialize round-trips
+1. **Análisis de salida** — alimenta stdout de muestra a tu analizador y verifica la salida estructurada
+2. **Detección de sesión desconocida** — verifica la función `is<Agent>UnknownSessionError`
+3. **Construcción de configuración** — verifica que `buildConfig` produzca el adapterConfig correcto a partir de los valores del formulario
+4. **Codec de sesión** — verifica los viajes de ida y vuelta de serializar/deserializar
 
 ---
 
-## 11. Minimal Adapter Checklist
+## 11. Lista de verificación mínima del adaptador
 
-- [ ] `packages/adapters/<name>/package.json` with four exports (`.`, `./server`, `./ui`, `./cli`)
-- [ ] Root `index.ts` with `type`, `label`, `models`, `agentConfigurationDoc`
-- [ ] `server/execute.ts` implementing `AdapterExecutionContext -> AdapterExecutionResult`
-- [ ] `server/test.ts` implementing `AdapterEnvironmentTestContext -> AdapterEnvironmentTestResult`
-- [ ] `server/parse.ts` with output parser and unknown-session detector
-- [ ] `server/index.ts` exporting `execute`, `testEnvironment`, `sessionCodec`, parse helpers
-- [ ] `ui/parse-stdout.ts` with `StdoutLineParser` for the run viewer
-- [ ] `ui/build-config.ts` with `CreateConfigValues -> adapterConfig` builder
-- [ ] `ui/src/adapters/<name>/config-fields.tsx` React component for agent form
-- [ ] `ui/src/adapters/<name>/index.ts` assembling the `UIAdapterModule`
-- [ ] `cli/format-event.ts` with terminal formatter
-- [ ] `cli/index.ts` exporting the formatter
-- [ ] Registered in `server/src/adapters/registry.ts`
-- [ ] Registered in `ui/src/adapters/registry.ts`
-- [ ] Registered in `cli/src/adapters/registry.ts`
-- [ ] Added to workspace in root `pnpm-workspace.yaml` (if not already covered by glob)
-- [ ] Tests for parsing, session codec, and config building
+- [ ] `packages/adapters/<name>/package.json` con cuatro exportaciones (`.`, `./server`, `./ui`, `./cli`)
+- [ ] `index.ts` raíz con `type`, `label`, `models`, `agentConfigurationDoc`
+- [ ] `server/execute.ts` que implementa `AdapterExecutionContext -> AdapterExecutionResult`
+- [ ] `server/test.ts` que implementa `AdapterEnvironmentTestContext -> AdapterEnvironmentTestResult`
+- [ ] `server/parse.ts` con analizador de salida y detector de sesión desconocida
+- [ ] `server/index.ts` que exporta `execute`, `testEnvironment`, `sessionCodec` y utilidades de análisis
+- [ ] `ui/parse-stdout.ts` con `StdoutLineParser` para el visor de ejecución
+- [ ] `ui/build-config.ts` con constructor `CreateConfigValues -> adapterConfig`
+- [ ] `ui/src/adapters/<name>/config-fields.tsx` componente de React para el formulario de agente
+- [ ] `ui/src/adapters/<name>/index.ts` que ensambla el `UIAdapterModule`
+- [ ] `cli/format-event.ts` con formateador de terminal
+- [ ] `cli/index.ts` que exporta el formateador
+- [ ] Registrado en `server/src/adapters/registry.ts`
+- [ ] Registrado en `ui/src/adapters/registry.ts`
+- [ ] Registrado en `cli/src/adapters/registry.ts`
+- [ ] Agregado al workspace en el `pnpm-workspace.yaml` raíz (si el glob aún no lo cubre)
+- [ ] Pruebas de análisis, codec de sesión y construcción de configuración

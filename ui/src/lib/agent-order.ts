@@ -39,7 +39,7 @@ export function writeAgentOrder(storageKey: string, orderedIds: string[]) {
   try {
     localStorage.setItem(storageKey, JSON.stringify(normalized));
   } catch {
-    // Ignore storage write failures in restricted browser contexts.
+    // Ignorar los fallos de escritura en el almacenamiento en contextos de navegador restringidos.
   }
   if (typeof window !== "undefined") {
     window.dispatchEvent(

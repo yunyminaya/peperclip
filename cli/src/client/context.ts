@@ -55,7 +55,7 @@ function parseJson(filePath: string): unknown {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf-8"));
   } catch (err) {
-    throw new Error(`Failed to parse JSON at ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(`No se pudo interpretar el JSON en ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 

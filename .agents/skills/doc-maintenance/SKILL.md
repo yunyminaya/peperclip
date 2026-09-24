@@ -8,34 +8,32 @@ description: >
   after major feature merges, or on a periodic schedule.
 ---
 
-# Doc Maintenance Skill
+# Habilidad de mantenimiento de la documentación
 
-Detect documentation drift and fix it via PR — no rewrites, no churn.
+Detectar la deriva de la documentación y corregirla mediante PR: sin reescrituras, sin cambios innecesarios.
 
-## When to Use
+## Cuándo usar
 
-- Periodic doc review (e.g. weekly or after releases)
-- After major feature merges
-- When asked "are our docs up to date?"
-- When asked to audit README / SPEC / PRODUCT accuracy
+- Revisión periódica de la documentación (p. ej., semanal o después de versiones)
+- Después de fusiones de funciones importantes
+- Cuando se pregunte «¿nuestra documentación está actualizada?»
+- Cuando se pida auditar la precisión de README / SPEC / PRODUCT
 
-## Target Documents
+## Documentos objetivo
 
-| Document | Path | What matters |
+| Documento | Ruta | Lo que importa |
 |----------|------|-------------|
-| README | `README.md` | Features table, roadmap, quickstart, "what is" accuracy, "works with" table |
-| SPEC | `doc/SPEC.md` | No false "not supported" claims, major model/schema accuracy |
-| PRODUCT | `doc/PRODUCT.md` | Core concepts, feature list, principles accuracy |
+| README | `README.md` | Tabla de funciones, hoja de ruta, inicio rápido, precisión del «qué es», tabla de «funciona con» |
+| SPEC | `doc/SPEC.md` | Sin afirmaciones falsas de «no soportado», precisión del modelo/esquema principal |
+| PRODUCT | `doc/PRODUCT.md` | Conceptos principales, lista de funciones, precisión de los principios |
 
-Out of scope: DEVELOPING.md, DATABASE.md, CLI.md, doc/plans/, skill files,
-release notes. These are dev-facing or ephemeral — lower risk of user-facing
-confusion.
+Fuera de alcance: DEVELOPING.md, DATABASE.md, CLI.md, doc/plans/, archivos de habilidades, notas de versión. Son para desarrolladores o efímeros: menor riesgo de confusión para el usuario.
 
-## Workflow
+## Flujo de trabajo
 
-### Step 1 — Detect what changed
+### Paso 1 — Detectar qué cambió
 
-Find the last review cursor:
+Encontrar el cursor de la última revisión:
 
 ```bash
 # Read the last-reviewed commit SHA
@@ -48,29 +46,27 @@ else
 fi
 ```
 
-Then gather commits since the cursor:
+Luego recopilar los commits desde el cursor:
 
 ```bash
 git log "$LAST_SHA"..HEAD --oneline --no-merges
 ```
 
-### Step 2 — Classify changes
+### Paso 2 — Clasificar los cambios
 
-Scan commit messages and changed files. Categorize into:
+Analizar los mensajes de commit y los archivos modificados. Clasificar en:
 
-- **Feature** — new capabilities (keywords: `feat`, `add`, `implement`, `support`)
-- **Breaking** — removed/renamed things (keywords: `remove`, `breaking`, `drop`, `rename`)
-- **Structural** — new directories, config changes, new adapters, new CLI commands
+- **Función** — nuevas capacidades (palabras clave: `feat`, `add`, `implement`, `support`)
+- **Incompatible (breaking)** — elementos eliminados/renombrados (palabras clave: `remove`, `breaking`, `drop`, `rename`)
+- **Estructural** — nuevos directorios, cambios de configuración, nuevos adaptadores, nuevos comandos del CLI
 
-**Ignore:** refactors, test-only changes, CI config, dependency bumps, doc-only
-changes, style/formatting commits. These don't affect doc accuracy.
+**Ignorar:** refactorizaciones, cambios solo de pruebas, configuración de CI, actualizaciones de dependencias, cambios solo de documentación, commits de estilo/formato. No afectan la precisión de la documentación.
 
-For borderline cases, check the actual diff — a commit titled "refactor: X"
-that adds a new public API is a feature.
+En casos límite, revisar el diff real: un commit titulado «refactor: X» que agrega una API pública nueva es una función.
 
-### Step 3 — Build a change summary
+### Paso 3 — Construir un resumen de cambios
 
-Produce a concise list like:
+Producir una lista concisa como esta:
 
 ```
 Since last review (<sha>, <date>):
@@ -80,26 +76,22 @@ Since last review (<sha>, <date>):
 - STRUCTURAL: New .agents/skills/ directory convention
 ```
 
-If there are no notable changes, skip to Step 7 (update cursor and exit).
+Si no hay cambios notables, pasar al Paso 7 (actualizar el cursor y salir).
 
-### Step 4 — Audit each target doc
+### Paso 4 — Auditar cada documento objetivo
 
-For each target document, read it fully and cross-reference against the change
-summary. Check for:
+Para cada documento objetivo, leerlo completo y contrastarlo con el resumen de cambios. Revisar:
 
-1. **False negatives** — major shipped features not mentioned at all
-2. **False positives** — features listed as "coming soon" / "roadmap" / "planned"
-   / "not supported" / "TBD" that already shipped
-3. **Quickstart accuracy** — install commands, prereqs, and startup instructions
-   still correct (README only)
-4. **Feature table accuracy** — does the features section reflect current
-   capabilities? (README only)
-5. **Works-with accuracy** — are supported adapters/integrations listed correctly?
+1. **Falsos negativos** — funciones principales ya publicadas que no se mencionan en absoluto
+2. **Falsos positivos** — funciones listadas como «coming soon» / «roadmap» / «planned» / «not supported» / «TBD» que ya se publicaron
+3. **Precisión del inicio rápido** — comandos de instalación, requisitos previos e instrucciones de arranque aún correctos (solo README)
+4. **Precisión de la tabla de funciones** — ¿la sección de funciones refleja las capacidades actuales? (solo README)
+5. **Precisión de «funciona con»** — ¿los adaptadores/integraciones soportados están listados correctamente?
 
-Use `references/audit-checklist.md` as the structured checklist.
-Use `references/section-map.md` to know where to look for each feature area.
+Usar `references/audit-checklist.md` como lista de verificación estructurada.
+Usar `references/section-map.md` para saber dónde buscar cada área de funciones.
 
-### Step 5 — Create branch and apply minimal edits
+### Paso 5 — Crear rama y aplicar ediciones mínimas
 
 ```bash
 # Create a branch for the doc updates
@@ -107,21 +99,17 @@ BRANCH="docs/maintenance-$(date +%Y%m%d)"
 git checkout -b "$BRANCH"
 ```
 
-Apply **only** the edits needed to fix drift. Rules:
+Aplicar **únicamente** las ediciones necesarias para corregir la deriva. Reglas:
 
-- **Minimal patches only.** Fix inaccuracies, don't rewrite sections.
-- **Preserve voice and style.** Match the existing tone of each document.
-- **No cosmetic changes.** Don't fix typos, reformat tables, or reorganize
-  sections unless they're part of a factual fix.
-- **No new sections.** If a feature needs a whole new section, note it in the
-  PR description as a follow-up — don't add it in a maintenance pass.
-- **Roadmap items:** Move shipped features out of Roadmap. Add a brief mention
-  in the appropriate existing section if there isn't one already. Don't add
-  long descriptions.
+- **Solo parches mínimos.** Corregir inexactitudes, no reescribir secciones.
+- **Preservar voz y estilo.** Respetar el tono existente de cada documento.
+- **Sin cambios cosméticos.** No corregir errores tipográficos, reformatear tablas ni reorganizar secciones a menos que sean parte de una corrección factual.
+- **Sin secciones nuevas.** Si una función necesita una sección completamente nueva, anotarlo en la descripción del PR como seguimiento; no agregarla en una pasada de mantenimiento.
+- **Elementos de la hoja de ruta:** sacar las funciones ya publicadas de la hoja de ruta. Agregar una mención breve en la sección existente correspondiente si aún no hay ninguna. No agregar descripciones largas.
 
-### Step 6 — Open a PR
+### Paso 6 — Abrir un PR
 
-Commit the changes and open a PR:
+Hacer commit de los cambios y abrir un PR:
 
 ```bash
 git add README.md doc/SPEC.md doc/PRODUCT.md .doc-review-cursor
@@ -156,46 +144,42 @@ EOF
 )"
 ```
 
-### Step 7 — Update the cursor
+### Paso 7 — Actualizar el cursor
 
-After a successful audit (whether or not edits were needed), update the cursor:
+Tras una auditoría exitosa (con o sin ediciones), actualizar el cursor:
 
 ```bash
 git rev-parse HEAD > .doc-review-cursor
 ```
 
-If edits were made, this is already committed in the PR branch. If no edits
-were needed, commit the cursor update to the current branch.
+Si se hicieron ediciones, esto ya quedó en commit en la rama del PR. Si no fueron necesarias, hacer commit de la actualización del cursor en la rama actual.
 
-## Change Classification Rules
+## Reglas de clasificación de cambios
 
-| Signal | Category | Doc update needed? |
+| Señal | Categoría | ¿Requiere actualizar la documentación? |
 |--------|----------|-------------------|
-| `feat:`, `add`, `implement`, `support` in message | Feature | Yes if user-facing |
-| `remove`, `drop`, `breaking`, `!:` in message | Breaking | Yes |
-| New top-level directory or config file | Structural | Maybe |
-| `fix:`, `bugfix` | Fix | No (unless it changes behavior described in docs) |
-| `refactor:`, `chore:`, `ci:`, `test:` | Maintenance | No |
-| `docs:` | Doc change | No (already handled) |
-| Dependency bumps only | Maintenance | No |
+| `feat:`, `add`, `implement`, `support` en el mensaje | Función | Sí, si es visible para el usuario |
+| `remove`, `drop`, `breaking`, `!:` en el mensaje | Incompatible (breaking) | Sí |
+| Nuevo directorio de nivel superior o archivo de configuración | Estructural | Quizás |
+| `fix:`, `bugfix` | Corrección | No (a menos que cambie un comportamiento descrito en la documentación) |
+| `refactor:`, `chore:`, `ci:`, `test:` | Mantenimiento | No |
+| `docs:` | Cambio de documentación | No (ya gestionado) |
+| Solo actualizaciones de dependencias | Mantenimiento | No |
 
-## Patch Style Guide
+## Guía de estilo de parches
 
-- Fix the fact, not the prose
-- If removing a roadmap item, don't leave a gap — remove the bullet cleanly
-- If adding a feature mention, match the format of surrounding entries
-  (e.g. if features are in a table, add a table row)
-- Keep README changes especially minimal — it shouldn't churn often
-- For SPEC/PRODUCT, prefer updating existing statements over adding new ones
-  (e.g. change "not supported in V1" to "supported via X" rather than adding
-  a new section)
+- Corregir el hecho, no la prosa
+- Al eliminar un elemento de la hoja de ruta, no dejar un hueco: quitar la viñeta limpiamente
+- Al agregar una mención de función, respetar el formato de las entradas circundantes (p. ej., si las funciones están en una tabla, agregar una fila)
+- Mantener los cambios del README especialmente mínimos: no debería cambiar a menudo
+- Para SPEC/PRODUCT, preferir actualizar afirmaciones existentes antes que agregar nuevas (p. ej., cambiar «not supported in V1» por «supported via X» en lugar de agregar una sección nueva)
 
-## Output
+## Salida
 
-When the skill completes, report:
+Cuando la habilidad termine, informar:
 
-- How many commits were scanned
-- How many notable changes were found
-- How many doc edits were made (and to which files)
-- PR link (if edits were made)
-- Any follow-up items that need larger doc work
+- Cuántos commits se analizaron
+- Cuántos cambios notables se encontraron
+- Cuántas ediciones de documentación se hicieron (y en qué archivos)
+- Enlace al PR (si se hicieron ediciones)
+- Cualquier pendiente que requiera trabajo de documentación mayor

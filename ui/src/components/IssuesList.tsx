@@ -25,16 +25,36 @@ import { CircleDot, Plus, Filter, ArrowUpDown, Layers, Check, X, ChevronRight, L
 import { KanbanBoard } from "./KanbanBoard";
 import type { Issue } from "@paperclipai/shared";
 
-/* ── Helpers ── */
+/* ── Funciones auxiliares ── */
 
 const statusOrder = ["in_progress", "todo", "backlog", "in_review", "blocked", "done", "cancelled"];
 const priorityOrder = ["critical", "high", "medium", "low"];
 
 function statusLabel(status: string): string {
-  return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const labels: Record<string, string> = {
+    backlog: "Backlog",
+    todo: "Por hacer",
+    in_progress: "En curso",
+    in_review: "En revisión",
+    blocked: "Bloqueado",
+    done: "Terminado",
+    cancelled: "Cancelado",
+  };
+  return labels[status] ?? status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/* ── View state ── */
+/** Etiquetas de visualización para las prioridades. */
+function priorityLabel(priority: string): string {
+  const labels: Record<string, string> = {
+    critical: "Crítica",
+    high: "Alta",
+    medium: "Media",
+    low: "Baja",
+  };
+  return labels[priority] ?? priority.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/* ── Estado de la vista ── */
 
 export type IssueViewState = {
   statuses: string[];
@@ -63,10 +83,10 @@ const defaultViewState: IssueViewState = {
 };
 
 const quickFilterPresets = [
-  { label: "All", statuses: [] as string[] },
-  { label: "Active", statuses: ["todo", "in_progress", "in_review", "blocked"] },
+  { label: "Todos", statuses: [] as string[] },
+  { label: "Activos", statuses: ["todo", "in_progress", "in_review", "blocked"] },
   { label: "Backlog", statuses: ["backlog"] },
-  { label: "Done", statuses: ["done", "cancelled"] },
+  { label: "Terminados", statuses: ["done", "cancelled"] },
 ];
 const ISSUE_SEARCH_COMMIT_DELAY_MS = 150;
 
@@ -144,7 +164,7 @@ function countActiveFilters(state: IssueViewState): number {
   return count;
 }
 
-/* ── Component ── */
+/* ── Componente ── */
 
 interface Agent {
   id: string;
@@ -205,9 +225,9 @@ function IssuesSearchInput({ initialValue, onValueCommitted }: IssuesSearchInput
       <Input
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="Search issues..."
+        placeholder="Buscar issues..."
         className="pl-7 text-xs sm:text-sm"
-        aria-label="Search issues"
+        aria-label="Buscar issues"
       />
     </div>
   );
@@ -237,7 +257,7 @@ export function IssuesList({
   });
   const currentUserId = session?.user?.id ?? session?.session?.userId ?? null;
 
-  // Scope the storage key per company so folding/view state is independent across companies.
+  // Alcance de la clave de almacenamiento por empresa para que el estado de plegado/vista sea independiente entre empresas.
   const scopedKey = selectedCompanyId ? `${viewStateKey}:${selectedCompanyId}` : viewStateKey;
 
   const [viewState, setViewState] = useState<IssueViewState>(() => {
@@ -255,7 +275,7 @@ export function IssuesList({
     setIssueSearch(initialSearch ?? "");
   }, [initialSearch]);
 
-  // Reload view state from localStorage when company changes (scopedKey changes).
+  // Recarga el estado de la vista desde localStorage cuando cambia la empresa (cambia scopedKey).
   const prevScopedKey = useRef(scopedKey);
   useEffect(() => {
     if (prevScopedKey.current !== scopedKey) {
@@ -324,9 +344,9 @@ export function IssuesList({
       const groups = groupBy(filtered, (i) => i.priority);
       return priorityOrder
         .filter((p) => groups[p]?.length)
-        .map((p) => ({ key: p, label: statusLabel(p), items: groups[p]! }));
+        .map((p) => ({ key: p, label: priorityLabel(p), items: groups[p]! }));
     }
-    // assignee
+    // responsable
     const groups = groupBy(
       filtered,
       (issue) => issue.assigneeAgentId ?? (issue.assigneeUserId ? `__user:${issue.assigneeUserId}` : "__unassigned"),
@@ -335,9 +355,9 @@ export function IssuesList({
       key,
       label:
         key === "__unassigned"
-          ? "Unassigned"
+          ? "Sin responsable"
           : key.startsWith("__user:")
-            ? (formatAssigneeUserLabel(key.slice("__user:".length), currentUserId) ?? "User")
+            ? (formatAssigneeUserLabel(key.slice("__user:".length), currentUserId) ?? "Usuario")
             : (agentName(key) ?? key.slice(0, 8)),
       items: groups[key]!,
     }));
@@ -365,12 +385,12 @@ export function IssuesList({
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
+      {/* Barra de herramientas */}
       <div className="flex items-center justify-between gap-2 sm:gap-3">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Button size="sm" variant="outline" onClick={() => openNewIssue(newIssueDefaults())}>
             <Plus className="h-4 w-4 sm:mr-1" />
-            <span className="hidden sm:inline">New Issue</span>
+            <span className="hidden sm:inline">Nuevo issue</span>
           </Button>
           <IssuesSearchInput
             initialValue={initialSearch ?? ""}
@@ -379,30 +399,30 @@ export function IssuesList({
         </div>
 
         <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
-          {/* View mode toggle */}
+          {/* Selector de modo de vista */}
           <div className="flex items-center border border-border rounded-md overflow-hidden mr-1">
             <button
               className={`p-1.5 transition-colors ${viewState.viewMode === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               onClick={() => updateView({ viewMode: "list" })}
-              title="List view"
+              title="Vista de lista"
             >
               <List className="h-3.5 w-3.5" />
             </button>
             <button
               className={`p-1.5 transition-colors ${viewState.viewMode === "board" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               onClick={() => updateView({ viewMode: "board" })}
-              title="Board view"
+              title="Vista de tablero"
             >
               <Columns3 className="h-3.5 w-3.5" />
             </button>
           </div>
 
-          {/* Filter */}
+          {/* Filtro */}
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="sm" className={`text-xs ${activeFilterCount > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}>
                 <Filter className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
-                <span className="hidden sm:inline">{activeFilterCount > 0 ? `Filters: ${activeFilterCount}` : "Filter"}</span>
+                <span className="hidden sm:inline">{activeFilterCount > 0 ? `Filtros: ${activeFilterCount}` : "Filtrar"}</span>
                 {activeFilterCount > 0 && (
                   <span className="sm:hidden text-[10px] font-medium ml-0.5">{activeFilterCount}</span>
                 )}
@@ -420,20 +440,20 @@ export function IssuesList({
             <PopoverContent align="end" className="w-[min(480px,calc(100vw-2rem))] p-0">
               <div className="p-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Filters</span>
+                  <span className="text-sm font-medium">Filtros</span>
                   {activeFilterCount > 0 && (
                     <button
                       className="text-xs text-muted-foreground hover:text-foreground"
                       onClick={() => updateView({ statuses: [], priorities: [], assignees: [], labels: [] })}
                     >
-                      Clear
+                      Limpiar
                     </button>
                   )}
                 </div>
 
-                {/* Quick filters */}
+                {/* Filtros rápidos */}
                 <div className="space-y-1.5">
-                  <span className="text-xs text-muted-foreground">Quick filters</span>
+                  <span className="text-xs text-muted-foreground">Filtros rápidos</span>
                   <div className="flex flex-wrap gap-1.5">
                     {quickFilterPresets.map((preset) => {
                       const isActive = arraysEqual(viewState.statuses, preset.statuses);
@@ -456,11 +476,11 @@ export function IssuesList({
 
                 <div className="border-t border-border" />
 
-                {/* Multi-column filter sections */}
+                {/* Secciones de filtro en varias columnas */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
-                  {/* Status */}
+                  {/* Estado */}
                   <div className="space-y-1">
-                    <span className="text-xs text-muted-foreground">Status</span>
+                    <span className="text-xs text-muted-foreground">Estado</span>
                     <div className="space-y-0.5">
                       {statusOrder.map((s) => (
                         <label key={s} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
@@ -475,11 +495,11 @@ export function IssuesList({
                     </div>
                   </div>
 
-                  {/* Priority + Assignee stacked in right column */}
+                  {/* Prioridad + Responsable apilados en la columna derecha */}
                   <div className="space-y-3">
-                    {/* Priority */}
+                    {/* Prioridad */}
                     <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground">Priority</span>
+                      <span className="text-xs text-muted-foreground">Prioridad</span>
                       <div className="space-y-0.5">
                         {priorityOrder.map((p) => (
                           <label key={p} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
@@ -488,22 +508,22 @@ export function IssuesList({
                               onCheckedChange={() => updateView({ priorities: toggleInArray(viewState.priorities, p) })}
                             />
                             <PriorityIcon priority={p} />
-                            <span className="text-sm">{statusLabel(p)}</span>
+                            <span className="text-sm">{priorityLabel(p)}</span>
                           </label>
                         ))}
                       </div>
                     </div>
 
-                    {/* Assignee */}
+                    {/* Responsable */}
                     <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground">Assignee</span>
+                      <span className="text-xs text-muted-foreground">Responsable</span>
                       <div className="space-y-0.5 max-h-32 overflow-y-auto">
                         <label className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
                           <Checkbox
                             checked={viewState.assignees.includes("__unassigned")}
                             onCheckedChange={() => updateView({ assignees: toggleInArray(viewState.assignees, "__unassigned") })}
                           />
-                          <span className="text-sm">No assignee</span>
+                          <span className="text-sm">Sin responsable</span>
                         </label>
                         {currentUserId && (
                           <label className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
@@ -512,7 +532,7 @@ export function IssuesList({
                               onCheckedChange={() => updateView({ assignees: toggleInArray(viewState.assignees, "__me") })}
                             />
                             <User className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span className="text-sm">Me</span>
+                            <span className="text-sm">Yo</span>
                           </label>
                         )}
                         {(agents ?? []).map((agent) => (
@@ -529,7 +549,7 @@ export function IssuesList({
 
                     {labels && labels.length > 0 && (
                       <div className="space-y-1">
-                        <span className="text-xs text-muted-foreground">Labels</span>
+                        <span className="text-xs text-muted-foreground">Etiquetas</span>
                         <div className="space-y-0.5 max-h-32 overflow-y-auto">
                           {labels.map((label) => (
                             <label key={label.id} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
@@ -547,7 +567,7 @@ export function IssuesList({
 
                     {projects && projects.length > 0 && (
                       <div className="space-y-1">
-                        <span className="text-xs text-muted-foreground">Project</span>
+                        <span className="text-xs text-muted-foreground">Proyecto</span>
                         <div className="space-y-0.5 max-h-32 overflow-y-auto">
                           {projects.map((project) => (
                             <label key={project.id} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
@@ -567,23 +587,23 @@ export function IssuesList({
             </PopoverContent>
           </Popover>
 
-          {/* Sort (list view only) */}
+          {/* Ordenar (solo vista de lista) */}
           {viewState.viewMode === "list" && (
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-xs">
                   <ArrowUpDown className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
-                  <span className="hidden sm:inline">Sort</span>
+                  <span className="hidden sm:inline">Ordenar</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-48 p-0">
                 <div className="p-2 space-y-0.5">
                   {([
-                    ["status", "Status"],
-                    ["priority", "Priority"],
-                    ["title", "Title"],
-                    ["created", "Created"],
-                    ["updated", "Updated"],
+                    ["status", "Estado"],
+                    ["priority", "Prioridad"],
+                    ["title", "Título"],
+                    ["created", "Creado"],
+                    ["updated", "Actualizado"],
                   ] as const).map(([field, label]) => (
                     <button
                       key={field}
@@ -611,22 +631,22 @@ export function IssuesList({
             </Popover>
           )}
 
-          {/* Group (list view only) */}
+          {/* Agrupar (solo vista de lista) */}
           {viewState.viewMode === "list" && (
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-xs">
                   <Layers className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
-                  <span className="hidden sm:inline">Group</span>
+                  <span className="hidden sm:inline">Agrupar</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-44 p-0">
                 <div className="p-2 space-y-0.5">
                   {([
-                    ["status", "Status"],
-                    ["priority", "Priority"],
-                    ["assignee", "Assignee"],
-                    ["none", "None"],
+                    ["status", "Estado"],
+                    ["priority", "Prioridad"],
+                    ["assignee", "Responsable"],
+                    ["none", "Ninguno"],
                   ] as const).map(([value, label]) => (
                     <button
                       key={value}
@@ -652,8 +672,8 @@ export function IssuesList({
       {!isLoading && filtered.length === 0 && viewState.viewMode === "list" && (
         <EmptyState
           icon={CircleDot}
-          message="No issues match the current filters or search."
-          action="Create Issue"
+          message="Ningún issue coincide con los filtros o la búsqueda actual."
+          action="Crear issue"
           onAction={() => openNewIssue(newIssueDefaults())}
         />
       )}
@@ -740,7 +760,7 @@ export function IssuesList({
                             <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500" />
                           </span>
                           <span className="hidden text-[11px] font-medium text-blue-600 dark:text-blue-400 sm:inline">
-                            Live
+                            En vivo
                           </span>
                         </span>
                       )}
@@ -793,14 +813,14 @@ export function IssuesList({
                                 <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-dashed border-muted-foreground/35 bg-muted/30">
                                   <User className="h-3 w-3" />
                                 </span>
-                                {formatAssigneeUserLabel(issue.assigneeUserId, currentUserId) ?? "User"}
+                                {formatAssigneeUserLabel(issue.assigneeUserId, currentUserId) ?? "Usuario"}
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-dashed border-muted-foreground/35 bg-muted/30">
                                   <User className="h-3 w-3" />
                                 </span>
-                                Assignee
+                                Responsable
                               </span>
                             )}
                           </button>
@@ -813,7 +833,7 @@ export function IssuesList({
                         >
                           <input
                             className="mb-1 w-full border-b border-border bg-transparent px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/50"
-                            placeholder="Search assignees..."
+                            placeholder="Buscar responsables..."
                             value={assigneeSearch}
                             onChange={(e) => setAssigneeSearch(e.target.value)}
                             autoFocus
@@ -830,7 +850,7 @@ export function IssuesList({
                                 assignIssue(issue.id, null, null);
                               }}
                             >
-                              No assignee
+                              Sin responsable
                             </button>
                             {currentUserId && (
                               <button
@@ -845,7 +865,7 @@ export function IssuesList({
                                 }}
                               >
                                 <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                                <span>Me</span>
+                                <span>Yo</span>
                               </button>
                             )}
                             {(agents ?? [])

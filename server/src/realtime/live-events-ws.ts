@@ -106,7 +106,7 @@ async function authorizeUpgrade(
   const authToken = parseBearerToken(req.headers.authorization);
   const token = authToken ?? (queryToken.length > 0 ? queryToken : null);
 
-  // Browser board context has no bearer token in local_trusted and authenticated modes.
+  // El contexto del panel en el navegador no tiene token bearer en los modos local_trusted y authenticated.
   if (!token) {
     if (opts.deploymentMode === "local_trusted") {
       return {
@@ -225,7 +225,7 @@ export function setupLiveEventsWebSocketServer(
     });
 
     socket.on("error", (err: Error) => {
-      logger.warn({ err, companyId: context.companyId }, "live websocket client error");
+      logger.warn({ err, companyId: context.companyId }, "error del cliente del websocket en vivo");
     });
   });
 
@@ -264,7 +264,7 @@ export function setupLiveEventsWebSocketServer(
         });
       })
       .catch((err) => {
-        logger.error({ err, path: req.url }, "failed websocket upgrade authorization");
+        logger.error({ err, path: req.url }, "falló la autorización de actualización del websocket");
         rejectUpgrade(socket, "500 Internal Server Error", "upgrade failed");
       });
   });

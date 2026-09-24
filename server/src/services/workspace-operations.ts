@@ -178,7 +178,7 @@ export function workspaceOperationService(db: Db) {
               .where(eq(workspaceOperations.id, id))
               .returning()
               .then((rows) => rows[0] ?? null);
-            if (!row) throw notFound("Workspace operation not found");
+            if (!row) throw notFound("Operación de workspace no encontrada");
             return toWorkspaceOperation(row);
           } catch (error) {
             await append("stderr", error instanceof Error ? error.message : String(error));
@@ -234,8 +234,8 @@ export function workspaceOperationService(db: Db) {
 
     readLog: async (operationId: string, opts?: { offset?: number; limitBytes?: number }) => {
       const operation = await getById(operationId);
-      if (!operation) throw notFound("Workspace operation not found");
-      if (!operation.logStore || !operation.logRef) throw notFound("Workspace operation log not found");
+      if (!operation) throw notFound("Operación de workspace no encontrada");
+      if (!operation.logStore || !operation.logRef) throw notFound("Log de operación de workspace no encontrado");
 
       const result = await logStore.read(
         {

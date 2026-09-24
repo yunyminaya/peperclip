@@ -76,11 +76,11 @@ type UsePluginLaunchersResult = {
 
 type PluginLauncherRuntimeContextValue = {
   /**
-   * Open a launcher using already-discovered contribution metadata.
+   * Abre un lanzador usando metadatos de contribución ya descubiertos.
    *
-   * The runtime accepts the normalized `PluginUiContribution` so callers can
-   * reuse the `/api/plugins/ui-contributions` payload they already fetched
-   * instead of issuing another request for each launcher activation.
+   * El runtime acepta el `PluginUiContribution` normalizado para que quienes llamen puedan
+   * reutilizar el payload de `/api/plugins/ui-contributions` que ya obtuvieron
+   * en lugar de emitir otra solicitud por cada activación de lanzador.
    */
   activateLauncher(
     launcher: ResolvedPluginLauncher,
@@ -129,7 +129,7 @@ const PluginLauncherRuntimeContext = createContext<PluginLauncherRuntimeContextV
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) return error.message;
-  return "Unknown error";
+  return "Error desconocido";
 }
 
 function buildLauncherHostContext(
@@ -252,13 +252,13 @@ function isPluginLauncherBounds(value: unknown): value is PluginLauncherBounds {
 }
 
 /**
- * Discover launchers for the requested host placement zones from the normalized
- * `/api/plugins/ui-contributions` response.
+ * Descubre lanzadores para las zonas de ubicación del host solicitadas desde la respuesta
+ * normalizada de `/api/plugins/ui-contributions`.
  *
- * This is the shared discovery path for toolbar, sidebar, detail-view, and
- * context-menu launchers. The hook applies host-side entity filtering and
- * returns both the sorted launcher list and a contribution map so activation
- * can stay on cached metadata.
+ * Esta es la ruta de descubrimiento compartida para los lanzadores de barra de herramientas, barra lateral, vista de detalle y
+ * menú contextual. El hook aplica el filtrado de entidades del lado del host y
+ * devuelve tanto la lista ordenada de lanzadores como un mapa de contribuciones para que la activación
+ * pueda seguir con metadatos en caché.
  */
 export function usePluginLaunchers(
   filters: UsePluginLaunchersFilters,
@@ -338,11 +338,11 @@ async function resolveLauncherComponent(
 }
 
 /**
- * Scope bridge calls to the currently rendered launcher host context.
+ * Limita las llamadas del puente al contexto actual del host del lanzador renderizado.
  *
- * Hooks such as `useHostContext()`, `usePluginData()`, and `usePluginAction()`
- * consume this ambient context so the bridge can forward company/entity scope
- * and render-environment metadata to the plugin worker.
+ * Los hooks como `useHostContext()`, `usePluginData()` y `usePluginAction()`
+ * consumen este contexto ambiental para que el puente pueda reenviar el alcance empresa/entidad
+ * y los metadatos del entorno de renderizado al worker del plugin.
  */
 function PluginLauncherBridgeScope({
   pluginId,
@@ -379,7 +379,7 @@ class LauncherErrorBoundary extends Component<LauncherErrorBoundaryProps, Launch
   }
 
   override componentDidCatch(error: unknown, info: ErrorInfo): void {
-    console.error("Plugin launcher render failed", {
+    console.error("Falló el renderizado del lanzador del plugin", {
       pluginKey: this.props.launcher.pluginKey,
       launcherId: this.props.launcher.id,
       error,
@@ -391,7 +391,7 @@ class LauncherErrorBoundary extends Component<LauncherErrorBoundaryProps, Launch
     if (this.state.hasError) {
       return (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-          {this.props.launcher.pluginDisplayName}: failed to render
+          {this.props.launcher.pluginDisplayName}: no se pudo renderizar
         </div>
       );
     }
@@ -430,7 +430,7 @@ function LauncherRenderContent({
 
     return (
       <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-        {instance.launcher.pluginDisplayName}: could not resolve launcher target "{instance.launcher.action.target}".
+        {instance.launcher.pluginDisplayName}: no se pudo resolver el objetivo del lanzador "{instance.launcher.action.target}".
       </div>
     );
   }
@@ -514,8 +514,8 @@ function LauncherModalShell({
   }), [instance, requestBounds]);
 
   const baseZ = launcherOverlayBaseZIndex + stackIndex * 20;
-  // Keep each launcher in a deterministic z-index band so every stacked modal,
-  // drawer, or popover retains its own backdrop/panel pairing.
+  // Mantiene cada lanzador en una banda de z-index determinista para que cada modal apilado,
+  // cajón o popover conserve su propio emparejamiento de fondo/panel.
   const shellType = instance.launcher.action.type;
   const containerStyle = shellType === "openPopover"
     ? launcherPopoverStyle(instance)
@@ -570,7 +570,7 @@ function LauncherModalShell({
             className="ml-auto"
             onClick={() => void closeLauncher(instance.key, { reason: "programmatic" })}
           >
-            Close
+            Cerrar
           </Button>
         </div>
         <div
@@ -621,14 +621,14 @@ export function PluginLauncherProvider({ children }: { children: ReactNode }) {
     void Promise.all(
       stack.map((entry) => closeLauncher(entry.key, { reason: "hostNavigation" })),
     );
-    // Only react to navigation changes, not stack churn.
+    // Solo reaccionar a cambios de navegación, no al movimiento de la pila.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key]);
 
   const requestBounds = useCallback(
     async (key: string, request: PluginModalBoundsRequest) => {
-      // Bounds changes are host-validated. Unsupported presets are ignored so
-      // plugin UI cannot push the shell into an undefined layout state.
+      // Los cambios de bounds los valida el host. Los presets no soportados se ignoran para que
+      // la UI del plugin no pueda llevar el shell a un estado de layout indefinido.
       if (!isPluginLauncherBounds(request.bounds)) {
         return;
       }
@@ -719,7 +719,7 @@ export function PluginLauncherProvider({ children }: { children: ReactNode }) {
 export function usePluginLauncherRuntime(): PluginLauncherRuntimeContextValue {
   const value = useContext(PluginLauncherRuntimeContext);
   if (!value) {
-    throw new Error("usePluginLauncherRuntime must be used within PluginLauncherProvider");
+    throw new Error("usePluginLauncherRuntime debe usarse dentro de PluginLauncherProvider");
   }
   return value;
 }
@@ -774,7 +774,7 @@ export function PluginLauncherOutlet({
   if (errorMessage) {
     return (
       <div className={cn("rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1 text-xs text-destructive", errorClassName)}>
-        Plugin launchers unavailable: {errorMessage}
+        Lanzadores de plugins no disponibles: {errorMessage}
       </div>
     );
   }

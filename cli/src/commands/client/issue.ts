@@ -62,17 +62,17 @@ interface IssueCheckoutOptions extends BaseClientOptions {
 }
 
 export function registerIssueCommands(program: Command): void {
-  const issue = program.command("issue").description("Issue operations");
+  const issue = program.command("issue").description("Operaciones de issues");
 
   addCommonClientOptions(
     issue
       .command("list")
-      .description("List issues for a company")
-      .option("-C, --company-id <id>", "Company ID")
-      .option("--status <csv>", "Comma-separated statuses")
-      .option("--assignee-agent-id <id>", "Filter by assignee agent ID")
-      .option("--project-id <id>", "Filter by project ID")
-      .option("--match <text>", "Local text match on identifier/title/description")
+      .description("Listar issues de una empresa")
+      .option("-C, --company-id <id>", "ID de empresa")
+      .option("--status <csv>", "Estados separados por comas")
+      .option("--assignee-agent-id <id>", "Filtrar por ID de agente asignado")
+      .option("--project-id <id>", "Filtrar por ID de proyecto")
+      .option("--match <text>", "Coincidencia de texto local en identificador/título/descripción")
       .action(async (opts: IssueBaseOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -119,8 +119,8 @@ export function registerIssueCommands(program: Command): void {
   addCommonClientOptions(
     issue
       .command("get")
-      .description("Get an issue by UUID or identifier (e.g. PC-12)")
-      .argument("<idOrIdentifier>", "Issue ID or identifier")
+      .description("Obtener un issue por UUID o identificador (p. ej. PC-12)")
+      .argument("<idOrIdentifier>", "ID de issue o identificador")
       .action(async (idOrIdentifier: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -135,18 +135,18 @@ export function registerIssueCommands(program: Command): void {
   addCommonClientOptions(
     issue
       .command("create")
-      .description("Create an issue")
-      .requiredOption("-C, --company-id <id>", "Company ID")
-      .requiredOption("--title <title>", "Issue title")
-      .option("--description <text>", "Issue description")
-      .option("--status <status>", "Issue status")
-      .option("--priority <priority>", "Issue priority")
-      .option("--assignee-agent-id <id>", "Assignee agent ID")
-      .option("--project-id <id>", "Project ID")
-      .option("--goal-id <id>", "Goal ID")
-      .option("--parent-id <id>", "Parent issue ID")
-      .option("--request-depth <n>", "Request depth integer")
-      .option("--billing-code <code>", "Billing code")
+      .description("Crear un issue")
+      .requiredOption("-C, --company-id <id>", "ID de empresa")
+      .requiredOption("--title <title>", "Título del issue")
+      .option("--description <text>", "Descripción del issue")
+      .option("--status <status>", "Estado del issue")
+      .option("--priority <priority>", "Prioridad del issue")
+      .option("--assignee-agent-id <id>", "ID del agente asignado")
+      .option("--project-id <id>", "ID de proyecto")
+      .option("--goal-id <id>", "ID de objetivo")
+      .option("--parent-id <id>", "ID de issue padre")
+      .option("--request-depth <n>", "Entero de profundidad de solicitud")
+      .option("--billing-code <code>", "Código de facturación")
       .action(async (opts: IssueCreateOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -175,20 +175,20 @@ export function registerIssueCommands(program: Command): void {
   addCommonClientOptions(
     issue
       .command("update")
-      .description("Update an issue")
-      .argument("<issueId>", "Issue ID")
-      .option("--title <title>", "Issue title")
-      .option("--description <text>", "Issue description")
-      .option("--status <status>", "Issue status")
-      .option("--priority <priority>", "Issue priority")
-      .option("--assignee-agent-id <id>", "Assignee agent ID")
-      .option("--project-id <id>", "Project ID")
-      .option("--goal-id <id>", "Goal ID")
-      .option("--parent-id <id>", "Parent issue ID")
-      .option("--request-depth <n>", "Request depth integer")
-      .option("--billing-code <code>", "Billing code")
-      .option("--comment <text>", "Optional comment to add with update")
-      .option("--hidden-at <iso8601|null>", "Set hiddenAt timestamp or literal 'null'")
+      .description("Actualizar un issue")
+      .argument("<issueId>", "ID de issue")
+      .option("--title <title>", "Título del issue")
+      .option("--description <text>", "Descripción del issue")
+      .option("--status <status>", "Estado del issue")
+      .option("--priority <priority>", "Prioridad del issue")
+      .option("--assignee-agent-id <id>", "ID del agente asignado")
+      .option("--project-id <id>", "ID de proyecto")
+      .option("--goal-id <id>", "ID de objetivo")
+      .option("--parent-id <id>", "ID de issue padre")
+      .option("--request-depth <n>", "Entero de profundidad de solicitud")
+      .option("--billing-code <code>", "Código de facturación")
+      .option("--comment <text>", "Comentario opcional a agregar con la actualización")
+      .option("--hidden-at <iso8601|null>", "Define el timestamp hiddenAt o el literal 'null'")
       .action(async (issueId: string, opts: IssueUpdateOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -218,10 +218,10 @@ export function registerIssueCommands(program: Command): void {
   addCommonClientOptions(
     issue
       .command("comment")
-      .description("Add comment to issue")
-      .argument("<issueId>", "Issue ID")
-      .requiredOption("--body <text>", "Comment body")
-      .option("--reopen", "Reopen if issue is done/cancelled")
+      .description("Agregar comentario a un issue")
+      .argument("<issueId>", "ID de issue")
+      .requiredOption("--body <text>", "Cuerpo del comentario")
+      .option("--reopen", "Reabrir si el issue está done/cancelled")
       .action(async (issueId: string, opts: IssueCommentOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -240,12 +240,12 @@ export function registerIssueCommands(program: Command): void {
   addCommonClientOptions(
     issue
       .command("checkout")
-      .description("Checkout issue for an agent")
-      .argument("<issueId>", "Issue ID")
-      .requiredOption("--agent-id <id>", "Agent ID")
+      .description("Checkout de issue para un agente")
+      .argument("<issueId>", "ID de issue")
+      .requiredOption("--agent-id <id>", "ID de agente")
       .option(
         "--expected-statuses <csv>",
-        "Expected current statuses",
+        "Estados actuales esperados",
         "todo,backlog,blocked",
       )
       .action(async (issueId: string, opts: IssueCheckoutOptions) => {
@@ -266,8 +266,8 @@ export function registerIssueCommands(program: Command): void {
   addCommonClientOptions(
     issue
       .command("release")
-      .description("Release issue back to todo and clear assignee")
-      .argument("<issueId>", "Issue ID")
+      .description("Liberar issue de vuelta a todo y limpiar el asignado")
+      .argument("<issueId>", "ID de issue")
       .action(async (issueId: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -289,7 +289,7 @@ function parseOptionalInt(value: string | undefined): number | undefined {
   if (value === undefined) return undefined;
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed)) {
-    throw new Error(`Invalid integer value: ${value}`);
+    throw new Error(`Valor entero inválido: ${value}`);
   }
   return parsed;
 }

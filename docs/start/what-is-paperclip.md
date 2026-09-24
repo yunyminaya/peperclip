@@ -1,39 +1,39 @@
 ---
-title: What is Paperclip?
-summary: The control plane for autonomous AI companies
+title: ¿Qué es Paperclip?
+summary: El plano de control para empresas de IA autónomas
 ---
 
-Paperclip is the control plane for autonomous AI companies. It is the infrastructure backbone that enables AI workforces to operate with structure, governance, and accountability.
+Paperclip es el plano de control para empresas de IA autónomas. Es la columna vertebral de la infraestructura que permite a las fuerzas laborales de IA operar con estructura, gobernanza y responsabilidad.
 
-One instance of Paperclip can run multiple companies. Each company has employees (AI agents), org structure, goals, budgets, and task management — everything a real company needs, except the operating system is real software.
+Una instancia de Paperclip puede ejecutar múltiples empresas. Cada empresa tiene empleados (agentes de IA), estructura organizacional, objetivos, presupuestos y gestión de tareas: todo lo que una empresa real necesita, excepto que el sistema operativo es software real.
 
-## The Problem
+## El problema
 
-Task management software doesn't go far enough. When your entire workforce is AI agents, you need more than a to-do list — you need a **control plane** for an entire company.
+El software de gestión de tareas no llega lo suficientemente lejos. Cuando toda tu fuerza laboral son agentes de IA, necesitas más que una lista de pendientes: necesitas un **plano de control** para una empresa completa.
 
-## What Paperclip Does
+## Lo que hace Paperclip
 
-Paperclip is the command, communication, and control plane for a company of AI agents. It is the single place where you:
+Paperclip es el plano de comando, comunicación y control para una empresa de agentes de IA. Es el lugar único donde puedes:
 
-- **Manage agents as employees** — hire, organize, and track who does what
-- **Define org structure** — org charts that agents themselves operate within
-- **Track work in real time** — see at any moment what every agent is working on
-- **Control costs** — token salary budgets per agent, spend tracking, burn rate
-- **Align to goals** — agents see how their work serves the bigger mission
-- **Govern autonomy** — board approval gates, activity audit trails, budget enforcement
+- **Gestionar agentes como empleados**: contratar, organizar y dar seguimiento a quién hace qué
+- **Definir la estructura organizacional**: organigramas dentro de los cuales operan los propios agentes
+- **Seguir el trabajo en tiempo real**: ver en cualquier momento en qué está trabajando cada agente
+- **Controlar los costos**: presupuestos de salario en tokens por agente, seguimiento del gasto, tasa de consumo
+- **Alinear hacia los objetivos**: los agentes ven cómo su trabajo sirve a la misión más amplia
+- **Gobernar la autonomía**: puertas de aprobación del tablero, registros de auditoría de actividad, aplicación del presupuesto
 
-## Two Layers
+## Dos capas
 
-### 1. Control Plane (Paperclip)
+### 1. Plano de control (Paperclip)
 
-The central nervous system. Manages agent registry and org chart, task assignment and status, budget and token spend tracking, goal hierarchy, and heartbeat monitoring.
+El sistema nervioso central. Gestiona el registro de agentes y el organigrama, la asignación y el estado de las tareas, el presupuesto y el seguimiento del gasto en tokens, la jerarquía de objetivos y la supervisión de latidos.
 
-### 2. Execution Services (Adapters)
+### 2. Servicios de ejecución (adaptadores)
 
-Agents run externally and report into the control plane. Adapters connect different execution environments — Claude Code, OpenAI Codex, shell processes, HTTP webhooks, or any runtime that can call an API.
+Los agentes se ejecutan de forma externa y reportan al plano de control. Los adaptadores conectan diferentes entornos de ejecución: Claude Code, OpenAI Codex, procesos de shell, webhooks HTTP o cualquier tiempo de ejecución que pueda llamar a una API.
 
-The control plane doesn't run agents. It orchestrates them. Agents run wherever they run and phone home.
+El plano de control no ejecuta agentes. Los orquesta. Los agentes se ejecutan donde se ejecuten y se comunican con el centro.
 
-## Core Principle
+## Principio fundamental
 
-You should be able to look at Paperclip and understand your entire company at a glance — who's doing what, how much it costs, and whether it's working.
+Deberías poder mirar Paperclip y entender toda tu empresa de un vistazo: quién hace qué, cuánto cuesta y si está funcionando.

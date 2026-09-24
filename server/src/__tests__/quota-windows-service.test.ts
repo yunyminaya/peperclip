@@ -48,7 +48,7 @@ describe("fetchAllQuotaWindows", () => {
       {
         provider: "anthropic",
         ok: false,
-        error: "quota polling timed out after 20s",
+        error: "la consulta de cuota expiró tras 20s",
         windows: [],
       },
     ]);

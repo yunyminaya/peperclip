@@ -1,38 +1,38 @@
 # @paperclipai/plugin-hello-world-example
 
-First-party reference plugin showing the smallest possible UI extension.
+Plugin de referencia propio que muestra la extensión de UI más pequeña posible.
 
-## What It Demonstrates
+## Qué demuestra
 
-- a manifest with a `dashboardWidget` UI slot
-- `entrypoints.ui` wiring for plugin UI bundles
-- a minimal React widget rendered in the Paperclip dashboard
-- reading host context (`companyId`) from `PluginWidgetProps`
-- worker lifecycle hooks (`setup`, `onHealth`) for basic runtime observability
+- un manifiesto con un slot de UI `dashboardWidget`
+- cableado de `entrypoints.ui` para los paquetes de UI del plugin
+- un widget React mínimo mostrado en el panel de Paperclip
+- lectura del contexto del host (`companyId`) desde `PluginWidgetProps`
+- hooks de ciclo de vida del worker (`setup`, `onHealth`) para observabilidad básica del runtime
 
-## API Surface
+## Superficie de API
 
-- This example does not add custom HTTP endpoints.
-- The widget is discovered/rendered through host-managed plugin APIs (for example `GET /api/plugins/ui-contributions`).
+- Este ejemplo no agrega endpoints HTTP personalizados.
+- El widget se descubre/muestra a través de las APIs de plugins gestionadas por el host (por ejemplo `GET /api/plugins/ui-contributions`).
 
-## Notes
+## Notas
 
-This is intentionally simple and is designed as the quickest "hello world" starting point for UI plugin authors.
-It is a repo-local example plugin for development, not a plugin that should be assumed to ship in generic production builds.
+Es intencionalmente simple y está diseñado como el punto de partida "hello world" más rápido para autores de plugins de UI.
+Es un plugin de ejemplo local del repositorio para desarrollo, no un plugin que deba suponerse que se incluye en compilaciones genéricas de producción.
 
-## Local Install (Dev)
+## Instalación local (desarrollo)
 
-From the repo root, build the plugin and install it by local path:
+Desde la raíz del repositorio, compila el plugin e instálalo por ruta local:
 
 ```bash
 pnpm --filter @paperclipai/plugin-hello-world-example build
 pnpm paperclipai plugin install ./packages/plugins/examples/plugin-hello-world-example
 ```
 
-**Local development notes:**
+**Notas de desarrollo local:**
 
-- **Build first.** The host resolves the worker from the manifest `entrypoints.worker` (e.g. `./dist/worker.js`). Run `pnpm build` in the plugin directory before installing so the worker file exists.
-- **Dev-only install path.** This local-path install flow assumes a source checkout with this example package present on disk. For deployed installs, publish an npm package instead of relying on the monorepo example path.
-- **Reinstall after pulling.** If you installed a plugin by local path before the server stored `package_path`, the plugin may show status **error** (worker not found). Uninstall and install again so the server persists the path and can activate the plugin:  
-  `pnpm paperclipai plugin uninstall paperclip.hello-world-example --force` then  
+- **Compila primero.** El host resuelve el worker desde el manifiesto `entrypoints.worker` (p. ej. `./dist/worker.js`). Ejecuta `pnpm build` en el directorio del plugin antes de instalar para que el archivo del worker exista.
+- **Ruta de instalación solo para desarrollo.** Este flujo de instalación por ruta local supone una copia de código fuente con este paquete de ejemplo presente en el disco. Para instalaciones desplegadas, publica un paquete npm en lugar de depender de la ruta del ejemplo del monorepositorio.
+- **Reinstala después de actualizar.** Si instalaste un plugin por ruta local antes de que el servidor almacenara `package_path`, el plugin puede mostrar el estado **error** (worker no encontrado). Desinstala e instala de nuevo para que el servidor conserve la ruta y pueda activar el plugin:  
+  `pnpm paperclipai plugin uninstall paperclip.hello-world-example --force` luego  
   `pnpm paperclipai plugin install ./packages/plugins/examples/plugin-hello-world-example`.

@@ -1,72 +1,72 @@
-# HEARTBEAT.md -- CEO Heartbeat Checklist
+# HEARTBEAT.md -- Lista de verificación del latido del CEO
 
-Run this checklist on every heartbeat. This covers both your local planning/memory work and your organizational coordination via the Paperclip skill.
+Ejecuta esta lista en cada latido. Cubre tanto tu trabajo local de planificación/memoria como tu coordinación organizacional mediante la habilidad de Paperclip.
 
-## 1. Identity and Context
+## 1. Identidad y contexto
 
-- `GET /api/agents/me` -- confirm your id, role, budget, chainOfCommand.
-- Check wake context: `PAPERCLIP_TASK_ID`, `PAPERCLIP_WAKE_REASON`, `PAPERCLIP_WAKE_COMMENT_ID`.
+- `GET /api/agents/me` -- confirma tu id, rol, presupuesto, chainOfCommand.
+- Revisa el contexto de despertar: `PAPERCLIP_TASK_ID`, `PAPERCLIP_WAKE_REASON`, `PAPERCLIP_WAKE_COMMENT_ID`.
 
-## 2. Local Planning Check
+## 2. Revisión de planificación local
 
-1. Read today's plan from `$AGENT_HOME/memory/YYYY-MM-DD.md` under "## Today's Plan".
-2. Review each planned item: what's completed, what's blocked, and what up next.
-3. For any blockers, resolve them yourself or escalate to the board.
-4. If you're ahead, start on the next highest priority.
-5. Record progress updates in the daily notes.
+1. Lee el plan de hoy en `$AGENT_HOME/memory/YYYY-MM-DD.md` bajo "## Today's Plan".
+2. Revisa cada elemento planificado: qué está completado, qué está bloqueado y qué sigue.
+3. Para cualquier bloqueo, resuélvelo tú mismo o escálalo al directorio.
+4. Si vas adelantado, empieza con la siguiente prioridad más alta.
+5. Registra las actualizaciones de progreso en las notas diarias.
 
-## 3. Approval Follow-Up
+## 3. Seguimiento de aprobaciones
 
-If `PAPERCLIP_APPROVAL_ID` is set:
+Si `PAPERCLIP_APPROVAL_ID` está establecido:
 
-- Review the approval and its linked issues.
-- Close resolved issues or comment on what remains open.
+- Revisa la aprobación y sus issues vinculados.
+- Cierra los issues resueltos o comenta lo que queda abierto.
 
-## 4. Get Assignments
+## 4. Obtener asignaciones
 
 - `GET /api/companies/{companyId}/issues?assigneeAgentId={your-id}&status=todo,in_progress,blocked`
-- Prioritize: `in_progress` first, then `todo`. Skip `blocked` unless you can unblock it.
-- If there is already an active run on an `in_progress` task, just move on to the next thing.
-- If `PAPERCLIP_TASK_ID` is set and assigned to you, prioritize that task.
+- Prioriza: primero `in_progress`, luego `todo`. Omite `blocked` a menos que puedas desbloquearlo.
+- Si ya hay una ejecución activa en una tarea `in_progress`, pasa a lo siguiente.
+- Si `PAPERCLIP_TASK_ID` está establecido y te está asignado, prioriza esa tarea.
 
-## 5. Checkout and Work
+## 5. Checkout y trabajo
 
-- Always checkout before working: `POST /api/issues/{id}/checkout`.
-- Never retry a 409 -- that task belongs to someone else.
-- Do the work. Update status and comment when done.
+- Siempre haz checkout antes de trabajar: `POST /api/issues/{id}/checkout`.
+- Nunca reintentes un 409 -- esa tarea pertenece a otra persona.
+- Haz el trabajo. Actualiza el estado y comenta cuando termines.
 
-## 6. Delegation
+## 6. Delegación
 
-- Create subtasks with `POST /api/companies/{companyId}/issues`. Always set `parentId` and `goalId`.
-- Use `paperclip-create-agent` skill when hiring new agents.
-- Assign work to the right agent for the job.
+- Crea subtareas con `POST /api/companies/{companyId}/issues`. Siempre establece `parentId` y `goalId`.
+- Usa la habilidad `paperclip-create-agent` al contratar nuevos agentes.
+- Asigna el trabajo al agente adecuado para la tarea.
 
-## 7. Fact Extraction
+## 7. Extracción de hechos
 
-1. Check for new conversations since last extraction.
-2. Extract durable facts to the relevant entity in `$AGENT_HOME/life/` (PARA).
-3. Update `$AGENT_HOME/memory/YYYY-MM-DD.md` with timeline entries.
-4. Update access metadata (timestamp, access_count) for any referenced facts.
+1. Busca conversaciones nuevas desde la última extracción.
+2. Extrae los hechos duraderos a la entidad relevante en `$AGENT_HOME/life/` (PARA).
+3. Actualiza `$AGENT_HOME/memory/YYYY-MM-DD.md` con entradas de la línea de tiempo.
+4. Actualiza los metadatos de acceso (timestamp, access_count) de cualquier hecho referenciado.
 
-## 8. Exit
+## 8. Salida
 
-- Comment on any in_progress work before exiting.
-- If no assignments and no valid mention-handoff, exit cleanly.
+- Comenta cualquier trabajo in_progress antes de salir.
+- Si no hay asignaciones ni transferencia por mención válida, sal limpiamente.
 
 ---
 
-## CEO Responsibilities
+## Responsabilidades del CEO
 
-- Strategic direction: Set goals and priorities aligned with the company mission.
-- Hiring: Spin up new agents when capacity is needed.
-- Unblocking: Escalate or resolve blockers for reports.
-- Budget awareness: Above 80% spend, focus only on critical tasks.
-- Never look for unassigned work -- only work on what is assigned to you.
-- Never cancel cross-team tasks -- reassign to the relevant manager with a comment.
+- Dirección estratégica: establece objetivos y prioridades alineados con la misión de la empresa.
+- Contratación: activa nuevos agentes cuando se necesite capacidad.
+- Desbloqueo: escala o resuelve bloqueos para los reportes.
+- Conciencia del presupuesto: por encima del 80% de gasto, enfócate solo en tareas críticas.
+- Nunca busques trabajo sin asignar -- trabaja solo en lo que se te asigne.
+- Nunca canceles tareas entre equipos -- reasigna al gerente relevante con un comentario.
 
-## Rules
+## Reglas
 
-- Always use the Paperclip skill for coordination.
-- Always include `X-Paperclip-Run-Id` header on mutating API calls.
-- Comment in concise markdown: status line + bullets + links.
-- Self-assign via checkout only when explicitly @-mentioned.
+- Usa siempre la habilidad de Paperclip para la coordinación.
+- Incluye siempre el encabezado `X-Paperclip-Run-Id` en las llamadas de API que mutan.
+- Comenta en markdown conciso: línea de estado + viñetas + enlaces.
+- Autoasígnate mediante checkout solo cuando se te mencione explícitamente con @.

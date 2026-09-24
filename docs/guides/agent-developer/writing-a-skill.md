@@ -1,13 +1,13 @@
 ---
-title: Writing a Skill
-summary: SKILL.md format and best practices
+title: Escribir una habilidad
+summary: Formato de SKILL.md y mejores prácticas
 ---
 
-Skills are reusable instructions that agents can invoke during their heartbeats. They're markdown files that teach agents how to perform specific tasks.
+Las habilidades son instrucciones reutilizables que los agentes pueden invocar durante sus latidos. Son archivos markdown que enseñan a los agentes cómo realizar tareas específicas.
 
-## Skill Structure
+## Estructura de la habilidad
 
-A skill is a directory containing a `SKILL.md` file with YAML frontmatter:
+Una habilidad es un directorio que contiene un archivo `SKILL.md` con frontmatter YAML:
 
 ```
 skills/
@@ -17,7 +17,7 @@ skills/
         └── examples.md
 ```
 
-## SKILL.md Format
+## Formato de SKILL.md
 
 ```markdown
 ---
@@ -33,28 +33,28 @@ description: >
 Detailed instructions for the agent...
 ```
 
-### Frontmatter Fields
+### Campos del frontmatter
 
-- **name** — unique identifier for the skill (kebab-case)
-- **description** — routing description that tells the agent when to use this skill. Write it as decision logic, not marketing copy.
+- **name** — identificador único de la habilidad (kebab-case)
+- **description** — descripción de enrutamiento que le indica al agente cuándo usar esta habilidad. Escríbela como lógica de decisión, no como texto de marketing.
 
-## How Skills Work at Runtime
+## Cómo funcionan las habilidades en tiempo de ejecución
 
-1. Agent sees skill metadata (name + description) in its context
-2. Agent decides whether the skill is relevant to its current task
-3. If relevant, agent loads the full SKILL.md content
-4. Agent follows the instructions in the skill
+1. El agente ve los metadatos de la habilidad (nombre + descripción) en su contexto
+2. El agente decide si la habilidad es relevante para su tarea actual
+3. Si es relevante, el agente carga el contenido completo del SKILL.md
+4. El agente sigue las instrucciones de la habilidad
 
-This keeps the base prompt small — full skill content is only loaded on demand.
+Esto mantiene el prompt base pequeño: el contenido completo de la habilidad solo se carga bajo demanda.
 
-## Best Practices
+## Mejores prácticas
 
-- **Write descriptions as routing logic** — include "use when" and "don't use when" guidance
-- **Be specific and actionable** — agents should be able to follow skills without ambiguity
-- **Include code examples** — concrete API calls and command examples are more reliable than prose
-- **Keep skills focused** — one skill per concern; don't combine unrelated procedures
-- **Reference files sparingly** — put supporting detail in `references/` rather than bloating the main SKILL.md
+- **Escribe las descripciones como lógica de enrutamiento** — incluye orientación de "úsala cuando" y "no la uses cuando"
+- **Sé específico y accionable** — los agentes deben poder seguir las habilidades sin ambigüedad
+- **Incluye ejemplos de código** — las llamadas concretas a la API y los ejemplos de comandos son más confiables que la prosa
+- **Mantén las habilidades enfocadas** — una habilidad por tema; no combines procedimientos no relacionados
+- **Referencia archivos con moderación** — coloca los detalles de apoyo en `references/` en lugar de inflar el SKILL.md principal
 
-## Skill Injection
+## Inyección de habilidades
 
-Adapters are responsible for making skills discoverable to their agent runtime. The `claude_local` adapter uses a temp directory with symlinks and `--add-dir`. The `codex_local` adapter uses the global skills directory. See the [Creating an Adapter](/adapters/creating-an-adapter) guide for details.
+Los adaptadores son responsables de hacer que las habilidades sean descubribles para su runtime de agente. El adaptador `claude_local` usa un directorio temporal con enlaces simbólicos y `--add-dir`. El adaptador `codex_local` usa el directorio global de habilidades. Consulta la guía [Creating an Adapter](/adapters/creating-an-adapter) para más detalles.

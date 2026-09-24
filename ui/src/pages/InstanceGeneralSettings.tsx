@@ -13,7 +13,7 @@ export function InstanceGeneralSettings() {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: "Instance Settings" },
+      { label: "Ajustes de instancia" },
       { label: "General" },
     ]);
   }, [setBreadcrumbs]);
@@ -31,12 +31,12 @@ export function InstanceGeneralSettings() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.instance.generalSettings });
     },
     onError: (error) => {
-      setActionError(error instanceof Error ? error.message : "Failed to update general settings.");
+      setActionError(error instanceof Error ? error.message : "No se pudieron actualizar los ajustes generales.");
     },
   });
 
   if (generalQuery.isLoading) {
-    return <div className="text-sm text-muted-foreground">Loading general settings...</div>;
+    return <div className="text-sm text-muted-foreground">Cargando ajustes generales…</div>;
   }
 
   if (generalQuery.error) {
@@ -44,7 +44,7 @@ export function InstanceGeneralSettings() {
       <div className="text-sm text-destructive">
         {generalQuery.error instanceof Error
           ? generalQuery.error.message
-          : "Failed to load general settings."}
+          : "No se pudieron cargar los ajustes generales."}
       </div>
     );
   }
@@ -59,7 +59,7 @@ export function InstanceGeneralSettings() {
           <h1 className="text-lg font-semibold">General</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Configure instance-wide defaults that affect how operator-visible logs are displayed.
+          Configura los valores predeterminados de la instancia que afectan cómo se muestran los registros visibles para el operador.
         </p>
       </div>
 
@@ -72,17 +72,17 @@ export function InstanceGeneralSettings() {
       <section className="rounded-xl border border-border bg-card p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1.5">
-            <h2 className="text-sm font-semibold">Censor username in logs</h2>
+            <h2 className="text-sm font-semibold">Censurar el nombre de usuario en los registros</h2>
             <p className="max-w-2xl text-sm text-muted-foreground">
-              Hide the username segment in home-directory paths and similar operator-visible log output. Standalone
-              username mentions outside of paths are not yet masked in the live transcript view. This is off by
-              default.
+              Oculta el segmento del nombre de usuario en las rutas del directorio de inicio y en otros registros
+              similares visibles para el operador. Las menciones aisladas del nombre de usuario fuera de las rutas aún
+              no se enmascaran en la vista de transcripción en vivo. Esto está desactivado de forma predeterminada.
             </p>
           </div>
           <button
             type="button"
             data-slot="toggle"
-            aria-label="Toggle username log censoring"
+            aria-label="Alternar la censura del nombre de usuario en los registros"
             disabled={toggleMutation.isPending}
             className={cn(
               "relative inline-flex h-5 w-9 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-60",

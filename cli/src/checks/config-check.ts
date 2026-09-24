@@ -6,28 +6,28 @@ export function configCheck(configPath?: string): CheckResult {
 
   if (!configExists(configPath)) {
     return {
-      name: "Config file",
+      name: "Archivo de configuración",
       status: "fail",
-      message: `Config file not found at ${filePath}`,
+      message: `Archivo de configuración no encontrado en ${filePath}`,
       canRepair: false,
-      repairHint: "Run `paperclipai onboard` to create one",
+      repairHint: "Ejecuta `paperclipai onboard` para crear uno",
     };
   }
 
   try {
     readConfig(configPath);
     return {
-      name: "Config file",
+      name: "Archivo de configuración",
       status: "pass",
-      message: `Valid config at ${filePath}`,
+      message: `Configuración válida en ${filePath}`,
     };
   } catch (err) {
     return {
-      name: "Config file",
+      name: "Archivo de configuración",
       status: "fail",
-      message: `Invalid config: ${err instanceof Error ? err.message : String(err)}`,
+      message: `Configuración inválida: ${err instanceof Error ? err.message : String(err)}`,
       canRepair: false,
-      repairHint: "Run `paperclipai configure --section database` (or `paperclipai onboard` to recreate)",
+      repairHint: "Ejecuta `paperclipai configure --section database` (o `paperclipai onboard` para recrearlo)",
     };
   }
 }

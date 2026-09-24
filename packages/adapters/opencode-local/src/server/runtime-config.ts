@@ -82,7 +82,7 @@ export async function prepareOpenCodeRuntimeConfig(input: {
       XDG_CONFIG_HOME: runtimeConfigHome,
     },
     notes: [
-      "Injected runtime OpenCode config with permission.external_directory=allow to avoid headless approval prompts.",
+      "Se inyectó la configuración de OpenCode en tiempo de ejecución con permission.external_directory=allow para evitar solicitudes de aprobación headless.",
     ],
     cleanup: async () => {
       await fs.rm(runtimeConfigHome, { recursive: true, force: true });

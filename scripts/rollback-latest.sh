@@ -8,16 +8,16 @@ version=""
 
 usage() {
   cat <<'EOF'
-Usage:
+Uso:
   ./scripts/rollback-latest.sh <stable-version> [--dry-run]
 
-Examples:
+Ejemplos:
   ./scripts/rollback-latest.sh 2026.318.0
   ./scripts/rollback-latest.sh 2026.318.0 --dry-run
 
-Notes:
-  - This repoints the npm dist-tag "latest" for every public package.
-  - It does not unpublish anything.
+Notas:
+  - Esto reasigna el dist-tag "latest" de npm para cada paquete público.
+  - No despublica nada.
 EOF
 }
 
@@ -30,7 +30,7 @@ while [ $# -gt 0 ]; do
       ;;
     *)
       if [ -n "$version" ]; then
-        echo "Error: only one version may be provided." >&2
+        echo "Error: solo se puede proporcionar una versión." >&2
         exit 1
       fi
       version="$1"
@@ -45,12 +45,12 @@ if [ -z "$version" ]; then
 fi
 
 if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Error: version must be a stable calendar version like 2026.318.0." >&2
+  echo "Error: la versión debe ser una versión de calendario estable como 2026.318.0." >&2
   exit 1
 fi
 
 if [ "$dry_run" = false ] && ! npm whoami >/dev/null 2>&1; then
-  echo "Error: npm publish rights are required. Run 'npm login' first." >&2
+  echo "Error: se requieren permisos de publicación en npm. Ejecuta 'npm login' primero." >&2
   exit 1
 fi
 
@@ -96,7 +96,7 @@ NODE
 package_names="$(list_public_package_names)"
 
 if [ -z "$package_names" ]; then
-  echo "Error: no public packages were found in the workspace." >&2
+  echo "Error: no se encontraron paquetes públicos en el workspace." >&2
   exit 1
 fi
 
@@ -106,6 +106,6 @@ while IFS= read -r package_name; do
     echo "[dry-run] npm dist-tag add ${package_name}@${version} latest"
   else
     npm dist-tag add "${package_name}@${version}" latest
-    echo "Updated latest -> ${package_name}@${version}"
+    echo "latest actualizado -> ${package_name}@${version}"
   fi
 done <<< "$package_names"

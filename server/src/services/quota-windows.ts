@@ -15,10 +15,11 @@ function providerSlugForAdapterType(type: string): string {
 }
 
 /**
- * Asks each registered adapter for its provider quota windows and aggregates the results.
- * Adapters that don't implement getQuotaWindows() are silently skipped.
- * Individual adapter failures are caught and returned as error results rather than
- * letting one provider's outage block the entire response.
+ * Pregunta a cada adaptador registrado por sus ventanas de cuota de
+ * proveedor y agrega los resultados. Los adaptadores que no implementan
+ * getQuotaWindows() se omiten silenciosamente. Los fallos individuales de
+ * adaptadores se capturan y devuelven como resultados de error en vez de
+ * dejar que la caída de un proveedor bloquee toda la respuesta.
  */
 export async function fetchAllQuotaWindows(): Promise<ProviderQuotaResult[]> {
   const adapters = listServerAdapters().filter((a) => a.getQuotaWindows != null);
@@ -52,7 +53,7 @@ async function withQuotaTimeout(
           resolve({
             provider: providerSlugForAdapterType(adapterType),
             ok: false,
-            error: `quota polling timed out after ${Math.round(QUOTA_PROVIDER_TIMEOUT_MS / 1000)}s`,
+            error: `la consulta de cuota expiró tras ${Math.round(QUOTA_PROVIDER_TIMEOUT_MS / 1000)}s`,
             windows: [],
           });
         }, QUOTA_PROVIDER_TIMEOUT_MS);

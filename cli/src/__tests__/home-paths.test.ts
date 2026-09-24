@@ -34,7 +34,7 @@ describe("home path resolution", () => {
   });
 
   it("rejects invalid instance ids", () => {
-    expect(() => resolvePaperclipInstanceId("bad/id")).toThrow(/Invalid instance id/);
+    expect(() => resolvePaperclipInstanceId("bad/id")).toThrow(/ID de instancia no válido/);
   });
 
   it("expands ~ prefixes", () => {

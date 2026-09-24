@@ -5,7 +5,7 @@ export function checkPort(port: number): Promise<{ available: boolean; error?: s
     const server = net.createServer();
     server.once("error", (err: NodeJS.ErrnoException) => {
       if (err.code === "EADDRINUSE") {
-        resolve({ available: false, error: `Port ${port} is already in use` });
+        resolve({ available: false, error: `El puerto ${port} ya está en uso` });
       } else {
         resolve({ available: false, error: err.message });
       }

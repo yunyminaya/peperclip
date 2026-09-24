@@ -136,7 +136,7 @@ function makeCompanyPatternDataUrl(seed: string, brandColor?: string | null, log
     for (let x = 0; x < logicalSize; x++) {
       const dx = x - center;
 
-      // Side-to-side signal where visible gradient is produced by dither density.
+      // Señal de lado a lado donde el gradiente visible se produce por densidad de tramado.
       const projection = dx * gradientDirX + dy * gradientDirY;
       const gradient = (projection / maxProjection + 1) * 0.5;
       const diagonal = Math.sin((dx + dy) * diagonalFrequency + diagonalPhase) * 0.5 + 0.5;
@@ -144,7 +144,7 @@ function makeCompanyPatternDataUrl(seed: string, brandColor?: string | null, log
       const hatch = diagonal * 0.5 + antiDiagonal * 0.5;
       const signal = Math.max(0, Math.min(1, gradient + (hatch - 0.5) * 0.22));
 
-      // Canonical 16-level ordered dither: level 0..15 compared to Bayer 4x4 threshold index.
+      // Tramado ordenado canónico de 16 niveles: nivel 0..15 comparado con el índice de umbral de Bayer 4x4.
       const level = Math.max(0, Math.min(15, Math.floor(signal * 16)));
       const thresholdIndex = BAYER_4X4[y & 3]![x & 3]!;
       if (level <= thresholdIndex) continue;
@@ -187,7 +187,7 @@ export function CompanyPatternIcon({
       {logo ? (
         <img
           src={logo}
-          alt={`${companyName} logo`}
+          alt={`Logotipo de ${companyName}`}
           onError={() => setImageError(true)}
           className="absolute inset-0 h-full w-full object-cover"
         />

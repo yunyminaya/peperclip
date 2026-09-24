@@ -39,7 +39,7 @@ function normalizeFilePath(baseDir: string, reqPath: string): string {
   const absolute = path.resolve(baseDir, `.${resolved}`);
   const normalizedBase = `${path.resolve(baseDir)}${path.sep}`;
   if (!absolute.startsWith(normalizedBase) && absolute !== path.resolve(baseDir)) {
-    throw new Error("path traversal blocked");
+    throw new Error("recorrido de ruta bloqueado");
   }
   return absolute;
 }
@@ -47,7 +47,7 @@ function normalizeFilePath(baseDir: string, reqPath: string): string {
 function send404(res: ServerResponse) {
   res.statusCode = 404;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.end(JSON.stringify({ error: "Not found" }));
+  res.end(JSON.stringify({ error: "No encontrado" }));
 }
 
 function sendJson(res: ServerResponse, value: unknown) {
@@ -88,7 +88,7 @@ async function startUiWatcher(uiDir: string, onReload: (filePath: string) => voi
     });
     return watcher;
   } catch {
-    // Linux may reject recursive watch. Fall back to polling snapshots.
+    // Linux puede rechazar la observación recursiva. Recurrir a instantáneas por sondeo.
     let previous = snapshotSignature(
       (await getUiBuildSnapshot(path.dirname(uiDir), path.basename(uiDir))).map((row) => ({
         file: row.file,
@@ -104,7 +104,7 @@ async function startUiWatcher(uiDir: string, onReload: (filePath: string) => voi
         previous = next;
         onReload("__snapshot__");
       } catch {
-        // Ignore transient read errors while bundlers are writing files.
+        // Ignorar errores de lectura transitorios mientras los empaquetadores escriben archivos.
       }
     }, 500);
 
@@ -117,12 +117,12 @@ async function startUiWatcher(uiDir: string, onReload: (filePath: string) => voi
 }
 
 /**
- * Start a local static server for plugin UI assets with SSE reload events.
+ * Inicia un servidor estático local para recursos de interfaz de plugin con eventos de recarga SSE.
  *
- * Endpoint summary:
- * - `GET /__paperclip__/health` for diagnostics
- * - `GET /__paperclip__/events` for hot-reload stream
- * - Any other path serves files from the configured UI build directory
+ * Resumen de endpoints:
+ * - `GET /__paperclip__/health` para diagnósticos
+ * - `GET /__paperclip__/events` para el flujo de recarga en caliente
+ * - Cualquier otra ruta sirve archivos desde el directorio configurado de build de interfaz
  */
 export async function startPluginDevServer(options: PluginDevServerOptions = {}): Promise<PluginDevServer> {
   const rootDir = path.resolve(options.rootDir ?? process.cwd());
@@ -208,10 +208,10 @@ export async function startPluginDevServer(options: PluginDevServerOptions = {})
 }
 
 /**
- * Return a stable file+mtime snapshot for a built plugin UI directory.
+ * Devuelve una instantánea estable de archivo+mtime para un directorio de interfaz de plugin construido.
  *
- * Used by the polling watcher fallback and useful for tests that need to assert
- * whether a UI build has changed between runs.
+ * Usado por el respaldo de observación por sondeo y útil para pruebas que necesitan afirmar
+ * si un build de interfaz cambió entre ejecuciones.
  */
 export async function getUiBuildSnapshot(rootDir: string, uiDir = "dist/ui"): Promise<Array<{ file: string; mtimeMs: number }>> {
   const baseDir = path.resolve(rootDir, uiDir);

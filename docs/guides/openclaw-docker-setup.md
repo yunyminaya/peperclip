@@ -1,72 +1,72 @@
-# Running OpenClaw in Docker (Local Development)
+# Ejecutar OpenClaw en Docker (desarrollo local)
 
-How to get OpenClaw running in a Docker container for local development and testing the Paperclip OpenClaw adapter integration.
+Cómo ejecutar OpenClaw en un contenedor Docker para desarrollo local y probar la integración del adaptador OpenClaw de Paperclip.
 
-## Automated Join Smoke Test (Recommended First)
+## Prueba smoke automatizada de join (recomendado primero)
 
-Paperclip includes an end-to-end join smoke harness:
+Paperclip incluye un harness smoke de join de extremo a extremo:
 
 ```bash
 pnpm smoke:openclaw-join
 ```
 
-The harness automates:
+El harness automatiza:
 
-- invite creation (`allowedJoinTypes=agent`)
-- OpenClaw agent join request (`adapterType=openclaw`)
-- board approval
-- one-time API key claim (including invalid/replay claim checks)
-- wakeup callback delivery to a dockerized OpenClaw-style webhook receiver
+- creación de invitaciones (`allowedJoinTypes=agent`)
+- solicitud de join del agente OpenClaw (`adapterType=openclaw`)
+- aprobación del tablero
+- reclamo de API key de un solo uso (incluye verificaciones de reclamos inválidos/repetidos)
+- entrega del callback de wakeup a un receptor de webhooks estilo OpenClaw dockerizado
 
-By default, this uses a preconfigured Docker receiver image (`docker/openclaw-smoke`) so the run is deterministic and requires no manual OpenClaw config edits.
+Por defecto, usa una imagen receptora Docker preconfigurada (`docker/openclaw-smoke`) para que la ejecución sea determinista y no requiera ediciones manuales de la configuración de OpenClaw.
 
-Permissions note:
+Nota de permisos:
 
-- The harness performs board-governed actions (invite creation, join approval, wakeup of the new agent).
-- In authenticated mode, provide board/operator auth or the run exits early with an explicit permissions error.
+- El harness realiza acciones gobernadas por el tablero (creación de invitaciones, aprobación de join, wakeup del nuevo agente).
+- En modo autenticado, proporciona auth de tablero/operador o la ejecución termina temprano con un error de permisos explícito.
 
-## One-Command OpenClaw Gateway UI (Manual Docker Flow)
+## UI de OpenClaw Gateway en un comando (flujo Docker manual)
 
-To spin up OpenClaw in Docker and print a host-browser dashboard URL in one command:
+Para levantar OpenClaw en Docker e imprimir una URL de panel para el navegador del host en un comando:
 
 ```bash
 pnpm smoke:openclaw-docker-ui
 ```
 
-Default behavior is zero-flag: you can run the command as-is with no pairing-related env vars.
+El comportamiento por defecto es sin flags: puedes ejecutar el comando tal cual sin variables de entorno relacionadas con emparejamiento.
 
-What this command does:
+Lo que hace este comando:
 
-- clones/updates `openclaw/openclaw` in `/tmp/openclaw-docker`
-- builds `openclaw:local` (unless `OPENCLAW_BUILD=0`)
-- writes isolated smoke config under `~/.openclaw-paperclip-smoke/openclaw.json` and Docker `.env`
-- pins agent model defaults to OpenAI (`openai/gpt-5.2` with OpenAI fallback)
-- starts `openclaw-gateway` via Compose (with required `/tmp` tmpfs override)
-- probes and prints a Paperclip host URL that is reachable from inside OpenClaw Docker
-- waits for health and prints:
+- clona/actualiza `openclaw/openclaw` en `/tmp/openclaw-docker`
+- construye `openclaw:local` (a menos que `OPENCLAW_BUILD=0`)
+- escribe configuración smoke aislada en `~/.openclaw-paperclip-smoke/openclaw.json` y `.env` de Docker
+- fija los modelos por defecto del agente a OpenAI (`openai/gpt-5.2` con fallback de OpenAI)
+- inicia `openclaw-gateway` vía Compose (con el override tmpfs de `/tmp` requerido)
+- sondea e imprime una URL de host de Paperclip accesible desde dentro del Docker de OpenClaw
+- espera el estado de salud e imprime:
   - `http://127.0.0.1:18789/#token=...`
-- disables Control UI device pairing by default for local smoke ergonomics
+- deshabilita el emparejamiento de dispositivos de Control UI por defecto para ergonomía del smoke local
 
-Environment knobs:
+Ajustes de entorno:
 
-- `OPENAI_API_KEY` (required; loaded from env or `~/.secrets`)
-- `OPENCLAW_DOCKER_DIR` (default `/tmp/openclaw-docker`)
-- `OPENCLAW_GATEWAY_PORT` (default `18789`)
-- `OPENCLAW_GATEWAY_TOKEN` (default random)
-- `OPENCLAW_BUILD=0` to skip rebuild
-- `OPENCLAW_OPEN_BROWSER=1` to auto-open the URL on macOS
-- `OPENCLAW_DISABLE_DEVICE_AUTH=1` (default) disables Control UI device pairing for local smoke
-- `OPENCLAW_DISABLE_DEVICE_AUTH=0` keeps pairing enabled (then approve browser with `devices` CLI commands)
-- `OPENCLAW_MODEL_PRIMARY` (default `openai/gpt-5.2`)
-- `OPENCLAW_MODEL_FALLBACK` (default `openai/gpt-5.2-chat-latest`)
-- `OPENCLAW_CONFIG_DIR` (default `~/.openclaw-paperclip-smoke`)
-- `OPENCLAW_RESET_STATE=1` (default) resets smoke agent state on each run to avoid stale auth/session drift
-- `PAPERCLIP_HOST_PORT` (default `3100`)
-- `PAPERCLIP_HOST_FROM_CONTAINER` (default `host.docker.internal`)
+- `OPENAI_API_KEY` (requerido; cargado desde env o `~/.secrets`)
+- `OPENCLAW_DOCKER_DIR` (por defecto `/tmp/openclaw-docker`)
+- `OPENCLAW_GATEWAY_PORT` (por defecto `18789`)
+- `OPENCLAW_GATEWAY_TOKEN` (aleatorio por defecto)
+- `OPENCLAW_BUILD=0` para omitir la reconstrucción
+- `OPENCLAW_OPEN_BROWSER=1` para abrir la URL automáticamente en macOS
+- `OPENCLAW_DISABLE_DEVICE_AUTH=1` (por defecto) deshabilita el emparejamiento de dispositivos de Control UI para ergonomía del smoke local
+- `OPENCLAW_DISABLE_DEVICE_AUTH=0` mantiene el emparejamiento habilitado (luego aprueba el navegador con comandos CLI `devices`)
+- `OPENCLAW_MODEL_PRIMARY` (por defecto `openai/gpt-5.2`)
+- `OPENCLAW_MODEL_FALLBACK` (por defecto `openai/gpt-5.2-chat-latest`)
+- `OPENCLAW_CONFIG_DIR` (por defecto `~/.openclaw-paperclip-smoke`)
+- `OPENCLAW_RESET_STATE=1` (por defecto) reinicia el estado del agente smoke en cada ejecución para evitar derivas de auth/sesión obsoletas
+- `PAPERCLIP_HOST_PORT` (por defecto `3100`)
+- `PAPERCLIP_HOST_FROM_CONTAINER` (por defecto `host.docker.internal`)
 
-### Authenticated mode
+### Modo autenticado
 
-If your Paperclip deployment is `authenticated`, provide auth context:
+Si tu despliegue de Paperclip es `authenticated`, proporciona contexto de auth:
 
 ```bash
 PAPERCLIP_AUTH_HEADER="Bearer <token>" pnpm smoke:openclaw-join
@@ -74,34 +74,34 @@ PAPERCLIP_AUTH_HEADER="Bearer <token>" pnpm smoke:openclaw-join
 PAPERCLIP_COOKIE="your_session_cookie=..." pnpm smoke:openclaw-join
 ```
 
-### Network topology tips
+### Consejos de topología de red
 
-- Local same-host smoke: default callback uses `http://127.0.0.1:<port>/webhook`.
-- Inside OpenClaw Docker, `127.0.0.1` points to the container itself, not your host Paperclip server.
-- For invite/onboarding URLs consumed by OpenClaw in Docker, use the script-printed Paperclip URL (typically `http://host.docker.internal:3100`).
-- If Paperclip rejects the container-visible host with a hostname error, allow it from host:
+- Smoke local en el mismo host: el callback por defecto usa `http://127.0.0.1:<port>/webhook`.
+- Dentro del Docker de OpenClaw, `127.0.0.1` apunta al propio contenedor, no a tu servidor Paperclip del host.
+- Para las URLs de invitación/incorporación consumidas por OpenClaw en Docker, usa la URL de Paperclip impresa por el script (típicamente `http://host.docker.internal:3100`).
+- Si Paperclip rechaza el host visible desde el contenedor con un error de hostname, permítelo desde el host:
 
 ```bash
 pnpm paperclipai allowed-hostname host.docker.internal
 ```
 
-Then restart Paperclip and rerun the smoke script.
-- Docker/remote OpenClaw: prefer a reachable hostname (Docker host alias, Tailscale hostname, or public domain).
-- Authenticated/private mode: ensure hostnames are in the allowed list when required:
+Luego reinicia Paperclip y vuelve a ejecutar el script smoke.
+- OpenClaw Docker/remoto: prefiere un hostname accesible (alias de host Docker, hostname Tailscale o dominio público).
+- Modo autenticado/privado: asegúrate de que los hostnames estén en la lista permitida cuando se requiera:
 
 ```bash
 pnpm paperclipai allowed-hostname <host>
 ```
 
-## Prerequisites
+## Prerrequisitos
 
-- **Docker Desktop v29+** (with Docker Sandbox support)
-- **2 GB+ RAM** available for the Docker image build
-- **API keys** in `~/.secrets` (at minimum `OPENAI_API_KEY`)
+- **Docker Desktop v29+** (con soporte de Docker Sandbox)
+- **2 GB+ de RAM** disponibles para la construcción de la imagen Docker
+- **API keys** en `~/.secrets` (como mínimo `OPENAI_API_KEY`)
 
-## Option A: Docker Sandbox (Recommended)
+## Opción A: Docker Sandbox (recomendado)
 
-Docker Sandbox provides better isolation (microVM-based) and simpler setup than Docker Compose. Requires Docker Desktop v29+ / Docker Sandbox v0.12+.
+Docker Sandbox proporciona mejor aislamiento (basado en microVM) y configuración más simple que Docker Compose. Requiere Docker Desktop v29+ / Docker Sandbox v0.12+.
 
 ```bash
 # 1. Clone the OpenClaw repo and build the image
@@ -163,7 +163,7 @@ docker sandbox exec -e OPENAI_API_KEY="$OPENAI_API_KEY" -w /app openclaw \
   node dist/index.js status
 ```
 
-### Sandbox Management
+### Gestión del Sandbox
 
 ```bash
 # List sandboxes
@@ -182,9 +182,9 @@ docker sandbox rm openclaw
 docker sandbox version
 ```
 
-## Option B: Docker Compose (Fallback)
+## Opción B: Docker Compose (alternativa)
 
-Use this if Docker Sandbox is not available (Docker Desktop < v29).
+Usa esto si Docker Sandbox no está disponible (Docker Desktop < v29).
 
 ```bash
 # 1. Clone the OpenClaw repo
@@ -263,9 +263,9 @@ sleep 15
 docker compose run --rm openclaw-cli dashboard --no-open
 ```
 
-The dashboard URL will look like: `http://127.0.0.1:18789/#token=<your-token>`
+La URL del panel se verá así: `http://127.0.0.1:18789/#token=<your-token>`
 
-### Docker Compose Management
+### Gestión de Docker Compose
 
 ```bash
 cd /tmp/openclaw-docker
@@ -286,11 +286,11 @@ docker compose run --rm openclaw-cli status
 docker compose run --rm openclaw-cli dashboard --no-open
 ```
 
-## Known Issues and Fixes
+## Problemas conocidos y soluciones
 
-### "no space left on device" when starting containers
+### "no space left on device" al iniciar contenedores
 
-Docker Desktop's virtual disk may be full.
+El disco virtual de Docker Desktop puede estar lleno.
 
 ```bash
 docker system df                   # check usage
@@ -298,9 +298,9 @@ docker system prune -f             # remove stopped containers, unused networks
 docker image prune -f              # remove dangling images
 ```
 
-### "Unable to create fallback OpenClaw temp dir: /tmp/openclaw-1000" (Compose only)
+### "Unable to create fallback OpenClaw temp dir: /tmp/openclaw-1000" (solo Compose)
 
-The container can't write to `/tmp`. Add a `tmpfs` mount to `docker-compose.yml` for **both** services:
+El contenedor no puede escribir en `/tmp`. Agrega un montaje `tmpfs` a `docker-compose.yml` para **ambos** servicios:
 
 ```yaml
 services:
@@ -312,38 +312,38 @@ services:
       - /tmp:exec,size=512M
 ```
 
-This issue does not affect the Docker Sandbox approach.
+Este problema no afecta el enfoque de Docker Sandbox.
 
-### Node version mismatch in community template images
+### Desajuste de versión de Node en imágenes de plantillas comunitarias
 
-Some community-built sandbox templates (e.g. `olegselajev241/openclaw-dmr:latest`) ship Node 20, but OpenClaw requires Node >=22.12.0. Use our locally built `openclaw:local` image as the sandbox template instead, which includes Node 22.
+Algunas plantillas sandbox construidas por la comunidad (p. ej. `olegselajev241/openclaw-dmr:latest`) incluyen Node 20, pero OpenClaw requiere Node >=22.12.0. Usa en su lugar nuestra imagen `openclaw:local` construida localmente como plantilla sandbox, que incluye Node 22.
 
-### Gateway takes ~15 seconds to respond after start
+### El gateway tarda ~15 segundos en responder tras el inicio
 
-The Node.js gateway needs time to initialize. Wait 15 seconds before hitting `http://127.0.0.1:18789/`.
+El gateway de Node.js necesita tiempo para inicializarse. Espera 15 segundos antes de acceder a `http://127.0.0.1:18789/`.
 
-### CLAUDE_AI_SESSION_KEY warnings (Compose only)
+### Advertencias CLAUDE_AI_SESSION_KEY (solo Compose)
 
-These Docker Compose warnings are harmless and can be ignored:
+Estas advertencias de Docker Compose son inofensivas y se pueden ignorar:
 ```
 level=warning msg="The \"CLAUDE_AI_SESSION_KEY\" variable is not set. Defaulting to a blank string."
 ```
 
-## Configuration
+## Configuración
 
-Config file: `~/.openclaw/openclaw.json` (JSON5 format)
+Archivo de configuración: `~/.openclaw/openclaw.json` (formato JSON5)
 
-Key settings:
-- `gateway.auth.token` — the auth token for the web UI and API
-- `agents.defaults.model.primary` — the AI model (use `openai/gpt-5.2` or newer)
-- `env.OPENAI_API_KEY` — references the `OPENAI_API_KEY` env var (Compose approach)
+Ajustes clave:
+- `gateway.auth.token` — el token de auth para la UI web y la API
+- `agents.defaults.model.primary` — el modelo de IA (usa `openai/gpt-5.2` o más nuevo)
+- `env.OPENAI_API_KEY` — referencia la variable de entorno `OPENAI_API_KEY` (enfoque Compose)
 
-API keys are stored in `~/.secrets` and passed into containers via env vars.
+Las API keys se almacenan en `~/.secrets` y se pasan a los contenedores vía variables de entorno.
 
-## Reference
+## Referencia
 
 - [OpenClaw Docker docs](https://docs.openclaw.ai/install/docker)
 - [OpenClaw Configuration Reference](https://docs.openclaw.ai/gateway/configuration-reference)
 - [Docker blog: Run OpenClaw Securely in Docker Sandboxes](https://www.docker.com/blog/run-openclaw-securely-in-docker-sandboxes/)
 - [Docker Sandbox docs](https://docs.docker.com/ai/sandboxes)
-- [OpenAI Models](https://platform.openai.com/docs/models) — current models: gpt-5.2, gpt-5.2-chat-latest, gpt-5.2-pro
+- [OpenAI Models](https://platform.openai.com/docs/models) — modelos actuales: gpt-5.2, gpt-5.2-chat-latest, gpt-5.2-pro

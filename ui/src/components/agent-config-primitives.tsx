@@ -17,44 +17,44 @@ import { HelpCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "../lib/utils";
 import { AGENT_ROLE_LABELS } from "@paperclipai/shared";
 
-/* ---- Help text for (?) tooltips ---- */
+/* ---- Texto de ayuda para los tooltips (?) ---- */
 export const help: Record<string, string> = {
-  name: "Display name for this agent.",
-  title: "Job title shown in the org chart.",
-  role: "Organizational role. Determines position and capabilities.",
-  reportsTo: "The agent this one reports to in the org hierarchy.",
-  capabilities: "Describes what this agent can do. Shown in the org chart and used for task routing.",
-  adapterType: "How this agent runs: local CLI (Claude/Codex/OpenCode), OpenClaw Gateway, spawned process, or generic HTTP webhook.",
-  cwd: "Deprecated legacy working directory fallback for local adapters. Existing agents may still carry this value, but new configurations should use project workspaces instead.",
-  promptTemplate: "Sent on every heartbeat. Keep this small and dynamic. Use it for current-task framing, not large static instructions. Supports {{ agent.id }}, {{ agent.name }}, {{ agent.role }} and other template variables.",
-  model: "Override the default model used by the adapter.",
-  thinkingEffort: "Control model reasoning depth. Supported values vary by adapter/model.",
-  chrome: "Enable Claude's Chrome integration by passing --chrome.",
-  dangerouslySkipPermissions: "Run unattended by auto-approving adapter permission prompts when supported.",
-  dangerouslyBypassSandbox: "Run Codex without sandbox restrictions. Required for filesystem/network access.",
-  search: "Enable Codex web search capability during runs.",
-  workspaceStrategy: "How Paperclip should realize an execution workspace for this agent. Keep project_primary for normal cwd execution, or use git_worktree for issue-scoped isolated checkouts.",
-  workspaceBaseRef: "Base git ref used when creating a worktree branch. Leave blank to use the resolved workspace ref or HEAD.",
-  workspaceBranchTemplate: "Template for naming derived branches. Supports {{issue.identifier}}, {{issue.title}}, {{agent.name}}, {{project.id}}, {{workspace.repoRef}}, and {{slug}}.",
-  worktreeParentDir: "Directory where derived worktrees should be created. Absolute, ~-prefixed, and repo-relative paths are supported.",
-  runtimeServicesJson: "Optional workspace runtime service definitions. Use this for shared app servers, workers, or other long-lived companion processes attached to the workspace.",
-  maxTurnsPerRun: "Maximum number of agentic turns (tool calls) per heartbeat run.",
-  command: "The command to execute (e.g. node, python).",
-  localCommand: "Override the path to the CLI command you want the adapter to call (e.g. /usr/local/bin/claude, codex, opencode).",
-  args: "Command-line arguments, comma-separated.",
-  extraArgs: "Extra CLI arguments for local adapters, comma-separated.",
-  envVars: "Environment variables injected into the adapter process. Use plain values or secret references.",
-  bootstrapPrompt: "Only sent when Paperclip starts a fresh session. Use this for stable setup guidance that should not be repeated on every heartbeat.",
-  payloadTemplateJson: "Optional JSON merged into remote adapter request payloads before Paperclip adds its standard wake and workspace fields.",
-  webhookUrl: "The URL that receives POST requests when the agent is invoked.",
-  heartbeatInterval: "Run this agent automatically on a timer. Useful for periodic tasks like checking for new work.",
-  intervalSec: "Seconds between automatic heartbeat invocations.",
-  timeoutSec: "Maximum seconds a run can take before being terminated. 0 means no timeout.",
-  graceSec: "Seconds to wait after sending interrupt before force-killing the process.",
-  wakeOnDemand: "Allow this agent to be woken by assignments, API calls, UI actions, or automated systems.",
-  cooldownSec: "Minimum seconds between consecutive heartbeat runs.",
-  maxConcurrentRuns: "Maximum number of heartbeat runs that can execute simultaneously for this agent.",
-  budgetMonthlyCents: "Monthly spending limit in cents. 0 means no limit.",
+  name: "Nombre visible de este agente.",
+  title: "Título del puesto mostrado en el organigrama.",
+  role: "Rol organizacional. Determina la posición y las capacidades.",
+  reportsTo: "El agente al que este reporta en la jerarquía de la organización.",
+  capabilities: "Describe lo que este agente puede hacer. Se muestra en el organigrama y se usa para asignar tareas.",
+  adapterType: "Cómo se ejecuta este agente: CLI local (Claude/Codex/OpenCode), OpenClaw Gateway, proceso generado o webhook HTTP genérico.",
+  cwd: "Directorio de trabajo heredado en desuso como respaldo para adaptadores locales. Los agentes existentes pueden conservar este valor, pero las configuraciones nuevas deben usar espacios de trabajo de proyecto.",
+  promptTemplate: "Se envía en cada latido. Mantenlo corto y dinámico. Úsalo para enmarcar la tarea actual, no para instrucciones estáticas extensas. Admite {{ agent.id }}, {{ agent.name }}, {{ agent.role }} y otras variables de plantilla.",
+  model: "Reemplaza el modelo predeterminado usado por el adaptador.",
+  thinkingEffort: "Controla la profundidad del razonamiento del modelo. Los valores admitidos varían según el adaptador/modelo.",
+  chrome: "Activa la integración de Claude con Chrome pasando --chrome.",
+  dangerouslySkipPermissions: "Ejecuta sin supervisión aprobando automáticamente los avisos de permisos del adaptador cuando sea compatible.",
+  dangerouslyBypassSandbox: "Ejecuta Codex sin restricciones de sandbox. Requerido para acceso al sistema de archivos/red.",
+  search: "Activa la capacidad de búsqueda web de Codex durante las ejecuciones.",
+  workspaceStrategy: "Cómo Paperclip debe crear un espacio de trabajo de ejecución para este agente. Mantén project_primary para la ejecución normal con cwd, o usa git_worktree para checkouts aislados por issue.",
+  workspaceBaseRef: "Ref base de git usada al crear una rama de worktree. Déjala en blanco para usar la ref del espacio de trabajo resuelta o HEAD.",
+  workspaceBranchTemplate: "Plantilla para nombrar ramas derivadas. Admite {{issue.identifier}}, {{issue.title}}, {{agent.name}}, {{project.id}}, {{workspace.repoRef}} y {{slug}}.",
+  worktreeParentDir: "Directorio donde se deben crear los worktrees derivados. Se admiten rutas absolutas, con prefijo ~ y relativas al repositorio.",
+  runtimeServicesJson: "Definiciones opcionales de servicios de ejecución del espacio de trabajo. Úsalo para servidores de aplicaciones compartidos, workers u otros procesos complementarios de larga duración asociados al espacio de trabajo.",
+  maxTurnsPerRun: "Número máximo de turnos del agente (llamadas a herramientas) por ejecución de latido.",
+  command: "El comando a ejecutar (p. ej., node, python).",
+  localCommand: "Reemplaza la ruta del comando CLI que el adaptador debe llamar (p. ej., /usr/local/bin/claude, codex, opencode).",
+  args: "Argumentos de línea de comandos, separados por comas.",
+  extraArgs: "Argumentos CLI adicionales para adaptadores locales, separados por comas.",
+  envVars: "Variables de entorno inyectadas en el proceso del adaptador. Usa valores simples o referencias de secretos.",
+  bootstrapPrompt: "Solo se envía cuando Paperclip inicia una sesión nueva. Úsalo para instrucciones estables de configuración que no deben repetirse en cada latido.",
+  payloadTemplateJson: "JSON opcional que se fusiona con las cargas de solicitud del adaptador remoto antes de que Paperclip agregue sus campos estándar de activación y espacio de trabajo.",
+  webhookUrl: "La URL que recibe solicitudes POST cuando se invoca al agente.",
+  heartbeatInterval: "Ejecuta este agente automáticamente con un temporizador. Útil para tareas periódicas como buscar trabajo nuevo.",
+  intervalSec: "Segundos entre invocaciones automáticas del latido.",
+  timeoutSec: "Segundos máximos que puede durar una ejecución antes de terminarla. 0 significa sin límite de tiempo.",
+  graceSec: "Segundos de espera tras enviar la interrupción antes de forzar la terminación del proceso.",
+  wakeOnDemand: "Permite que este agente sea activado por asignaciones, llamadas a la API, acciones de la interfaz o sistemas automatizados.",
+  cooldownSec: "Segundos mínimos entre ejecuciones consecutivas del latido.",
+  maxConcurrentRuns: "Número máximo de ejecuciones de latido que pueden ejecutarse simultáneamente para este agente.",
+  budgetMonthlyCents: "Límite de gasto mensual en centavos. 0 significa sin límite.",
 };
 
 export const adapterLabels: Record<string, string> = {
@@ -70,7 +70,7 @@ export const adapterLabels: Record<string, string> = {
 
 export const roleLabels = AGENT_ROLE_LABELS as Record<string, string>;
 
-/* ---- Primitive components ---- */
+/* ---- Componentes primitivos ---- */
 
 export function HintIcon({ text }: { text: string }) {
   return (
@@ -269,8 +269,8 @@ export function AutoExpandTextarea({
 }
 
 /**
- * Text input that manages internal draft state.
- * Calls `onCommit` on blur (and optionally on every change if `immediate` is set).
+ * Campo de texto que maneja el estado interno de borrador.
+ * Llama a `onCommit` al perder el foco (y opcionalmente en cada cambio si `immediate` está activado).
  */
 export function DraftInput({
   value,
@@ -304,7 +304,7 @@ export function DraftInput({
 }
 
 /**
- * Auto-expanding textarea with draft state and blur-commit.
+ * Área de texto autoexpandible con estado de borrador y confirmación al perder el foco.
  */
 export function DraftTextarea({
   value,
@@ -355,7 +355,7 @@ export function DraftTextarea({
 }
 
 /**
- * Number input with draft state and blur-commit.
+ * Campo numérico con estado de borrador y confirmación al perder el foco.
  */
 export function DraftNumberInput({
   value,
@@ -391,8 +391,8 @@ export function DraftNumberInput({
 }
 
 /**
- * "Choose" button that opens a dialog explaining the user must manually
- * type the path due to browser security limitations.
+ * Botón "Elegir" que abre un diálogo explicando que el usuario debe
+ * escribir la ruta manualmente por limitaciones de seguridad del navegador.
  */
 export function ChoosePathButton() {
   const [open, setOpen] = useState(false);
@@ -403,25 +403,25 @@ export function ChoosePathButton() {
         className="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent/50 transition-colors shrink-0"
         onClick={() => setOpen(true)}
       >
-        Choose
+        Elegir
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Specify path manually</DialogTitle>
+            <DialogTitle>Especifica la ruta manualmente</DialogTitle>
             <DialogDescription>
-              Browser security blocks apps from reading full local paths via a file picker.
-              Copy the absolute path and paste it into the input.
+              La seguridad del navegador impide que las aplicaciones lean rutas locales completas mediante un selector de archivos.
+              Copia la ruta absoluta y pégala en el campo.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 text-sm">
             <section className="space-y-1.5">
               <p className="font-medium">macOS (Finder)</p>
               <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
-                <li>Find the folder in Finder.</li>
-                <li>Hold <kbd>Option</kbd> and right-click the folder.</li>
+                <li>Busca la carpeta en Finder.</li>
+                <li>Mantén <kbd>Option</kbd> y haz clic derecho en la carpeta.</li>
                 <li>Click "Copy &lt;folder name&gt; as Pathname".</li>
-                <li>Paste the result into the path input.</li>
+                <li>Pega el resultado en el campo de ruta.</li>
               </ol>
               <p className="rounded-md bg-muted px-2 py-1 font-mono text-xs">
                 /Users/yourname/Documents/project
@@ -430,27 +430,27 @@ export function ChoosePathButton() {
             <section className="space-y-1.5">
               <p className="font-medium">Windows (File Explorer)</p>
               <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
-                <li>Find the folder in File Explorer.</li>
-                <li>Hold <kbd>Shift</kbd> and right-click the folder.</li>
+                <li>Busca la carpeta en el Explorador de archivos.</li>
+                <li>Mantén <kbd>Shift</kbd> y haz clic derecho en la carpeta.</li>
                 <li>Click "Copy as path".</li>
-                <li>Paste the result into the path input.</li>
+                <li>Pega el resultado en el campo de ruta.</li>
               </ol>
               <p className="rounded-md bg-muted px-2 py-1 font-mono text-xs">
                 C:\Users\yourname\Documents\project
               </p>
             </section>
             <section className="space-y-1.5">
-              <p className="font-medium">Terminal fallback (macOS/Linux)</p>
+              <p className="font-medium">Alternativa en terminal (macOS/Linux)</p>
               <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
-                <li>Run <code>cd /path/to/folder</code>.</li>
-                <li>Run <code>pwd</code>.</li>
-                <li>Copy the output and paste it into the path input.</li>
+                <li>Ejecuta <code>cd /path/to/folder</code>.</li>
+                <li>Ejecuta <code>pwd</code>.</li>
+                <li>Copia la salida y pégala en el campo de ruta.</li>
               </ol>
             </section>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
-              OK
+              Aceptar
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -460,7 +460,7 @@ export function ChoosePathButton() {
 }
 
 /**
- * Label + input rendered on the same line (inline layout for compact fields).
+ * Etiqueta + campo en la misma línea (diseño en línea para campos compactos).
  */
 export function InlineField({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (

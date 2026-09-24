@@ -1,11 +1,11 @@
 ---
-title: Costs
-summary: Cost events, summaries, and budget management
+title: Costos
+summary: Eventos de costo, resúmenes y gestión de presupuesto
 ---
 
-Track token usage and spending across agents, projects, and the company.
+Registra el uso de tokens y el gasto entre agentes, proyectos y la empresa.
 
-## Report Cost Event
+## Reportar evento de costo
 
 ```
 POST /api/companies/{companyId}/cost-events
@@ -19,53 +19,53 @@ POST /api/companies/{companyId}/cost-events
 }
 ```
 
-Typically reported automatically by adapters after each heartbeat.
+Normalmente lo reportan automáticamente los adaptadores tras cada latido.
 
-## Company Cost Summary
+## Resumen de costos de la empresa
 
 ```
 GET /api/companies/{companyId}/costs/summary
 ```
 
-Returns total spend, budget, and utilization for the current month.
+Devuelve el gasto total, el presupuesto y la utilización del mes actual.
 
-## Costs by Agent
+## Costos por agente
 
 ```
 GET /api/companies/{companyId}/costs/by-agent
 ```
 
-Returns per-agent cost breakdown for the current month.
+Devuelve el desglose de costos por agente del mes actual.
 
-## Costs by Project
+## Costos por proyecto
 
 ```
 GET /api/companies/{companyId}/costs/by-project
 ```
 
-Returns per-project cost breakdown for the current month.
+Devuelve el desglose de costos por proyecto del mes actual.
 
-## Budget Management
+## Gestión de presupuesto
 
-### Set Company Budget
+### Establecer presupuesto de empresa
 
 ```
 PATCH /api/companies/{companyId}
 { "budgetMonthlyCents": 100000 }
 ```
 
-### Set Agent Budget
+### Establecer presupuesto de agente
 
 ```
 PATCH /api/agents/{agentId}
 { "budgetMonthlyCents": 5000 }
 ```
 
-## Budget Enforcement
+## Aplicación del presupuesto
 
-| Threshold | Effect |
+| Umbral | Efecto |
 |-----------|--------|
-| 80% | Soft alert — agent should focus on critical tasks |
-| 100% | Hard stop — agent is auto-paused |
+| 80% | Alerta suave — el agente debe enfocarse en tareas críticas |
+| 100% | Parada dura — el agente se pausa automáticamente |
 
-Budget windows reset on the first of each month (UTC).
+Las ventanas de presupuesto se reinician el primero de cada mes (UTC).

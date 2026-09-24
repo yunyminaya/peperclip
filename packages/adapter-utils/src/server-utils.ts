@@ -91,13 +91,13 @@ function buildManagedSkillOrigin(entry: { required?: boolean }): Pick<
   if (entry.required) {
     return {
       origin: "paperclip_required",
-      originLabel: "Required by Paperclip",
+      originLabel: "Requerido por Paperclip",
       readOnly: false,
     };
   }
   return {
     origin: "company_managed",
-    originLabel: "Managed by Paperclip",
+    originLabel: "Gestionado por Paperclip",
     readOnly: false,
   };
 }
@@ -311,13 +311,13 @@ export async function ensureAbsoluteDirectory(
   opts: { createIfMissing?: boolean } = {},
 ) {
   if (!path.isAbsolute(cwd)) {
-    throw new Error(`Working directory must be an absolute path: "${cwd}"`);
+    throw new Error(`El directorio de trabajo debe ser una ruta absoluta: "${cwd}"`);
   }
 
   const assertDirectory = async () => {
     const stats = await fs.stat(cwd);
     if (!stats.isDirectory()) {
-      throw new Error(`Working directory is not a directory: "${cwd}"`);
+      throw new Error(`El directorio de trabajo no es un directorio: "${cwd}"`);
     }
   };
 
@@ -328,7 +328,7 @@ export async function ensureAbsoluteDirectory(
     const code = (err as NodeJS.ErrnoException).code;
     if (!opts.createIfMissing || code !== "ENOENT") {
       if (code === "ENOENT") {
-        throw new Error(`Working directory does not exist: "${cwd}"`);
+        throw new Error(`El directorio de trabajo no existe: "${cwd}"`);
       }
       throw err instanceof Error ? err : new Error(String(err));
     }
@@ -339,7 +339,7 @@ export async function ensureAbsoluteDirectory(
     await assertDirectory();
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
-    throw new Error(`Could not create working directory "${cwd}": ${reason}`);
+    throw new Error(`No se pudo crear el directorio de trabajo "${cwd}": ${reason}`);
   }
 }
 
@@ -379,7 +379,7 @@ export async function listPaperclipSkillEntries(
         runtimeName: entry.name,
         source: path.join(root, entry.name),
         required: true,
-        requiredReason: "Bundled Paperclip skills are always available for local adapters.",
+        requiredReason: "Las habilidades incluidas de Paperclip siempre están disponibles para los adaptadores locales.",
       }));
   } catch {
     return [];
@@ -453,7 +453,7 @@ export function buildPersistentSkillSnapshot(
 
   for (const desiredSkill of desiredSkills) {
     if (availableByKey.has(desiredSkill)) continue;
-    warnings.push(`Desired skill "${desiredSkill}" is not available from the Paperclip skills directory.`);
+    warnings.push(`La habilidad deseada "${desiredSkill}" no está disponible en el directorio de habilidades de Paperclip.`);
     entries.push({
       key: desiredSkill,
       runtimeName: null,
@@ -462,9 +462,9 @@ export function buildPersistentSkillSnapshot(
       state: "missing",
       sourcePath: null,
       targetPath: null,
-      detail: "Paperclip cannot find this skill in the local runtime skills directory.",
+      detail: "Paperclip no puede encontrar esta habilidad en el directorio local de habilidades del runtime.",
       origin: "external_unknown",
-      originLabel: "External or unavailable",
+      originLabel: "Externo o no disponible",
       readOnly: false,
     });
   }
@@ -478,7 +478,7 @@ export function buildPersistentSkillSnapshot(
       managed: false,
       state: "external",
       origin: "user_installed",
-      originLabel: "User-installed",
+      originLabel: "Instalado por el usuario",
       locationLabel: skillLocationLabel(locationLabel),
       readOnly: true,
       sourcePath: null,
@@ -710,9 +710,9 @@ export async function ensureCommandResolvable(command: string, cwd: string, env:
   if (resolved) return;
   if (command.includes("/") || command.includes("\\")) {
     const absolute = path.isAbsolute(command) ? command : path.resolve(cwd, command);
-    throw new Error(`Command is not executable: "${command}" (resolved: "${absolute}")`);
+    throw new Error(`El comando no es ejecutable: "${command}" (resuelta: "${absolute}")`);
   }
-  throw new Error(`Command not found in PATH: "${command}"`);
+  throw new Error(`Comando no encontrado en PATH: "${command}"`);
 }
 
 export async function runChildProcess(
@@ -735,11 +735,11 @@ export async function runChildProcess(
   return new Promise<RunProcessResult>((resolve, reject) => {
     const rawMerged: NodeJS.ProcessEnv = { ...process.env, ...opts.env };
 
-    // Strip Claude Code nesting-guard env vars so spawned `claude` processes
-    // don't refuse to start with "cannot be launched inside another session".
-    // These vars leak in when the Paperclip server itself is started from
-    // within a Claude Code session (e.g. `npx paperclipai run` in a terminal
-    // owned by Claude Code) or when cron inherits a contaminated shell env.
+    // Quita las variables de entorno de protección de anidamiento de Claude Code para que los
+    // procesos `claude` generados no se nieguen a iniciar con "cannot be launched inside another session".
+    // Estas variables se filtran cuando el propio servidor de Paperclip se inicia desde
+    // una sesión de Claude Code (p. ej., `npx paperclipai run` en una terminal
+    // propiedad de Claude Code) o cuando cron hereda un entorno de shell contaminado.
     const CLAUDE_CODE_NESTING_VARS = [
       "CLAUDECODE",
       "CLAUDE_CODE_ENTRYPOINT",
@@ -768,7 +768,7 @@ export async function runChildProcess(
 
         if (typeof child.pid === "number" && child.pid > 0 && opts.onSpawn) {
           void opts.onSpawn({ pid: child.pid, startedAt }).catch((err) => {
-            onLogError(err, runId, "failed to record child process metadata");
+            onLogError(err, runId, "no se pudieron registrar los metadatos del proceso hijo");
           });
         }
 
@@ -797,7 +797,7 @@ export async function runChildProcess(
           stdout = appendWithCap(stdout, text);
           logChain = logChain
             .then(() => opts.onLog("stdout", text))
-            .catch((err) => onLogError(err, runId, "failed to append stdout log chunk"));
+            .catch((err) => onLogError(err, runId, "no se pudo agregar el fragmento de registro de stdout"));
         });
 
         child.stderr?.on("data", (chunk: unknown) => {
@@ -805,7 +805,7 @@ export async function runChildProcess(
           stderr = appendWithCap(stderr, text);
           logChain = logChain
             .then(() => opts.onLog("stderr", text))
-            .catch((err) => onLogError(err, runId, "failed to append stderr log chunk"));
+            .catch((err) => onLogError(err, runId, "no se pudo agregar el fragmento de registro de stderr"));
         });
 
         child.on("error", (err: Error) => {
@@ -815,8 +815,8 @@ export async function runChildProcess(
           const pathValue = mergedEnv.PATH ?? mergedEnv.Path ?? "";
           const msg =
             errno === "ENOENT"
-              ? `Failed to start command "${command}" in "${opts.cwd}". Verify adapter command, working directory, and PATH (${pathValue}).`
-              : `Failed to start command "${command}" in "${opts.cwd}": ${err.message}`;
+              ? `No se pudo iniciar el comando "${command}" en "${opts.cwd}". Verifica el comando del adaptador, el directorio de trabajo y PATH (${pathValue}).`
+              : `No se pudo iniciar el comando "${command}" en "${opts.cwd}": ${err.message}`;
           reject(new Error(msg));
         });
 

@@ -1,148 +1,148 @@
-# Humans and Permissions Implementation (V1)
+# Humanos y permisos — Implementación (V1)
 
-Status: Draft
-Date: 2026-02-21
-Owners: Server + UI + CLI + DB + Shared
-Companion plan: `doc/plan/humans-and-permissions.md`
+Estado: Borrador
+Fecha: 2026-02-21
+Responsables: Servidor + UI + CLI + DB + Shared
+Plan compañero: `doc/plan/humans-and-permissions.md`
 
-## 1. Document role
+## 1. Rol del documento
 
-This document is the engineering implementation contract for the humans-and-permissions plan.
-It translates product decisions into concrete schema, API, middleware, UI, CLI, and test work.
+Este documento es el contrato de implementación de ingeniería para el plan de humanos y permisos.
+Traduce las decisiones de producto en trabajo concreto de esquema, API, middleware, UI, CLI y pruebas.
 
-If this document conflicts with prior exploratory notes, this document wins for V1 execution.
+Si este documento entra en conflicto con notas exploratorias previas, este documento gana para la ejecución V1.
 
-## 2. Locked V1 decisions
+## 2. Decisiones V1 bloqueadas
 
-1. Two deployment modes remain:
+1. Se mantienen dos modos de despliegue:
 - `local_trusted`
 - `cloud_hosted`
 
 2. `local_trusted`:
-- no login UX
-- implicit local instance admin actor
-- loopback-only server binding
-- full admin/settings/invite/approval capabilities available locally
+- sin UX de login
+- actor admin implícito de la instancia local
+- bind del servidor solo a loopback
+- capacidades completas de admin/ajustes/invitación/aprobación disponibles localmente
 
 3. `cloud_hosted`:
-- Better Auth for humans
-- email/password only
-- no email verification requirement in V1
+- Better Auth para humanos
+- solo email/contraseña
+- sin requisito de verificación de email en V1
 
-4. Permissions:
-- one shared authorization system for humans and agents
-- normalized grants table (`principal_permission_grants`)
-- no separate “agent permissions engine”
+4. Permisos:
+- un sistema de autorización compartido para humanos y agentes
+- tabla de grants normalizada (`principal_permission_grants`)
+- sin un "motor de permisos de agentes" separado
 
-5. Invites:
-- copy-link only (no outbound email sending in V1)
-- unified `company_join` link that supports human or agent path
-- acceptance creates `pending_approval` join request
-- no access until admin approval
+5. Invitaciones:
+- solo copiar-enlace (sin envío de email saliente en V1)
+- enlace unificado `company_join` que soporta la ruta humana o de agente
+- la aceptación crea una solicitud de unión `pending_approval`
+- sin acceso hasta la aprobación del admin
 
-6. Join review metadata:
-- source IP required
-- no GeoIP/country lookup in V1
+6. Metadatos de revisión de uniones:
+- IP de origen requerida
+- sin búsqueda GeoIP/país en V1
 
-7. Agent API keys:
-- indefinite by default
-- hash at rest
-- display once on claim
-- revoke/regenerate supported
+7. API keys de agentes:
+- indefinidas por defecto
+- hash en reposo
+- mostrar una sola vez al reclamar
+- revocación/regeneración soportadas
 
-8. Local ingress:
-- public/untrusted ingress is out of scope for V1
-- no `--dangerous-agent-ingress` in V1
+8. Ingreso local:
+- el ingreso público/no confiable está fuera de alcance para V1
+- sin `--dangerous-agent-ingress` en V1
 
-## 3. Current baseline and delta
+## 3. Línea base actual y delta
 
-Current baseline (repo as of this doc):
+Línea base actual (repo a la fecha de este documento):
 
-- server actor model defaults to `board` in `server/src/middleware/auth.ts`
-- authorization is mostly `assertBoard` + company check in `server/src/routes/authz.ts`
-- no human auth/session tables in local schema
-- no principal membership or grants tables
-- no invite or join-request lifecycle
+- el modelo de actor del servidor por defecto es `board` en `server/src/middleware/auth.ts`
+- la autorización es mayormente `assertBoard` + verificación de empresa en `server/src/routes/authz.ts`
+- sin tablas de auth/sesión de humanos en el esquema local
+- sin tablas de membresía principal o grants
+- sin ciclo de vida de invitaciones o solicitudes de unión
 
-Required delta:
+Delta requerido:
 
-- move from board-vs-agent authz to principal-based authz
-- add Better Auth integration in cloud mode
-- add membership/grants/invite/join-request persistence
-- add approval inbox signals and actions
-- preserve local no-login UX without weakening cloud security
+- moverse de authz tablero-vs-agente a authz basada en principales
+- agregar integración de Better Auth en modo nube
+- agregar persistencia de membresías/grants/invitaciones/solicitudes de unión
+- agregar señales y acciones de la bandeja de entrada de aprobación
+- preservar la UX local sin login sin debilitar la seguridad en la nube
 
-## 4. Architecture
+## 4. Arquitectura
 
-## 4.1 Deployment mode contract
+## 4.1 Contrato de modo de despliegue
 
-Add explicit runtime mode:
+Agregar modo de tiempo de ejecución explícito:
 
 - `deployment.mode = local_trusted | cloud_hosted`
 
-Config behavior:
+Comportamiento de configuración:
 
-- mode stored in config file (`packages/shared/src/config-schema.ts`)
-- loaded in server config (`server/src/config.ts`)
-- surfaced in `/api/health`
+- el modo se almacena en el archivo de configuración (`packages/shared/src/config-schema.ts`)
+- se carga en la configuración del servidor (`server/src/config.ts`)
+- se expone en `/api/health`
 
-Startup guardrails:
+Guardas de arranque:
 
-- `local_trusted`: fail startup if bind host is not loopback
-- `cloud_hosted`: fail startup if Better Auth is not configured
+- `local_trusted`: fallar el arranque si el host de bind no es loopback
+- `cloud_hosted`: fallar el arranque si Better Auth no está configurado
 
-## 4.2 Actor model
+## 4.2 Modelo de actor
 
-Replace implicit “board” semantics with explicit actors:
+Reemplazar la semántica implícita de "board" con actores explícitos:
 
-- `user` (session-authenticated human)
-- `agent` (bearer API key)
-- `local_implicit_admin` (local_trusted only)
+- `user` (humano autenticado por sesión)
+- `agent` (API key bearer)
+- `local_implicit_admin` (solo local_trusted)
 
-Implementation note:
+Nota de implementación:
 
-- keep `req.actor` shape backward-compatible during migration by introducing a normalizer helper
-- remove hard-coded `"board"` checks route-by-route after new authz helpers are in place
+- mantener la forma de `req.actor` retrocompatible durante la migración introduciendo un helper normalizador
+- eliminar las verificaciones `"board"` hardcodeadas ruta por ruta después de que los nuevos helpers de authz estén en su lugar
 
-## 4.3 Authorization model
+## 4.3 Modelo de autorización
 
-Authorization input tuple:
+Tupla de entrada de autorización:
 
 - `(company_id, principal_type, principal_id, permission_key, scope_payload)`
 
-Principal types:
+Tipos de principal:
 
 - `user`
 - `agent`
 
-Role layers:
+Capas de roles:
 
-- `instance_admin` (instance-wide)
-- company-scoped grants via `principal_permission_grants`
+- `instance_admin` (toda la instancia)
+- grants con alcance de empresa vía `principal_permission_grants`
 
-Evaluation order:
+Orden de evaluación:
 
-1. resolve principal from actor
-2. resolve instance role (`instance_admin` short-circuit for admin-only actions)
-3. resolve company membership (`active` required for company access)
-4. resolve grant + scope for requested action
+1. resolver el principal desde el actor
+2. resolver el rol de instancia (`instance_admin` atajo para acciones solo-admin)
+3. resolver la membresía de empresa (se requiere `active` para acceso a la empresa)
+4. resolver grant + alcance para la acción solicitada
 
-## 5. Data model
+## 5. Modelo de datos
 
-## 5.1 Better Auth tables
+## 5.1 Tablas de Better Auth
 
-Managed by Better Auth adapter/migrations (expected minimum):
+Gestionadas por el adaptador/migraciones de Better Auth (mínimo esperado):
 
 - `user`
 - `session`
 - `account`
 - `verification`
 
-Note:
+Nota:
 
-- use Better Auth canonical table names/types to avoid custom forks
+- usar los nombres/tipos de tabla canónicos de Better Auth para evitar forks personalizados
 
-## 5.2 New Paperclip tables
+## 5.2 Nuevas tablas de Paperclip
 
 1. `instance_user_roles`
 
@@ -150,7 +150,7 @@ Note:
 - `user_id` text not null
 - `role` text not null (`instance_admin`)
 - `created_at`, `updated_at`
-- unique index: `(user_id, role)`
+- índice único: `(user_id, role)`
 
 2. `company_memberships`
 
@@ -161,8 +161,8 @@ Note:
 - `status` text not null (`pending | active | suspended`)
 - `membership_role` text null
 - `created_at`, `updated_at`
-- unique index: `(company_id, principal_type, principal_id)`
-- index: `(principal_type, principal_id, status)`
+- índice único: `(company_id, principal_type, principal_id)`
+- índice: `(principal_type, principal_id, status)`
 
 3. `principal_permission_grants`
 
@@ -174,8 +174,8 @@ Note:
 - `scope` jsonb null
 - `granted_by_user_id` text null
 - `created_at`, `updated_at`
-- unique index: `(company_id, principal_type, principal_id, permission_key)`
-- index: `(company_id, permission_key)`
+- índice único: `(company_id, principal_type, principal_id, permission_key)`
+- índice: `(company_id, permission_key)`
 
 4. `invites`
 
@@ -183,15 +183,15 @@ Note:
 - `company_id` uuid fk `companies.id` not null
 - `invite_type` text not null (`company_join | bootstrap_ceo`)
 - `token_hash` text not null
-- `allowed_join_types` text not null (`human | agent | both`) for `company_join`
+- `allowed_join_types` text not null (`human | agent | both`) para `company_join`
 - `defaults_payload` jsonb null
 - `expires_at` timestamptz not null
 - `invited_by_user_id` text null
 - `revoked_at` timestamptz null
 - `accepted_at` timestamptz null
-- `created_at` timestamptz not null default now()
-- unique index: `(token_hash)`
-- index: `(company_id, invite_type, revoked_at, expires_at)`
+- `created_at` timestamptz not null por defecto now()
+- índice único: `(token_hash)`
+- índice: `(company_id, invite_type, revoked_at, expires_at)`
 
 5. `join_requests`
 
@@ -213,98 +213,98 @@ Note:
 - `rejected_by_user_id` text null
 - `rejected_at` timestamptz null
 - `created_at`, `updated_at`
-- index: `(company_id, status, request_type, created_at desc)`
-- unique index: `(invite_id)` to enforce one request per consumed invite
+- índice: `(company_id, status, request_type, created_at desc)`
+- índice único: `(invite_id)` para aplicar una solicitud por invitación consumida
 
-## 5.3 Existing table changes
+## 5.3 Cambios en tablas existentes
 
 1. `issues`
 
-- add `assignee_user_id` text null
-- enforce single-assignee invariant:
-  - at most one of `assignee_agent_id` and `assignee_user_id` is non-null
+- agregar `assignee_user_id` text null
+- aplicar la invariante de un solo asignado:
+  - como máximo uno de `assignee_agent_id` y `assignee_user_id` es no-nulo
 
 2. `agents`
 
-- keep existing `permissions` JSON for transition only
-- mark as deprecated in code path once principal grants are live
+- mantener el JSON `permissions` existente solo para la transición
+- marcarlo como deprecado en la ruta de código una vez que los grants principales estén en vivo
 
-## 5.4 Migration strategy
+## 5.4 Estrategia de migración
 
-Migration ordering:
+Orden de migración:
 
-1. add new tables/columns/indexes
-2. backfill minimum memberships/grants for existing data:
-- create local implicit admin membership context in local mode at runtime (not persisted as Better Auth user)
-- for cloud, bootstrap creates first admin user role on acceptance
-3. switch authz reads to new tables
-4. remove legacy board-only checks
+1. agregar nuevas tablas/columnas/índices
+2. rellenar membresías/grants mínimos para datos existentes:
+- crear el contexto de membresía de admin implícito local en modo local en tiempo de ejecución (no persistido como usuario de Better Auth)
+- para la nube, bootstrap crea el primer rol de usuario admin al aceptar
+3. cambiar las lecturas de authz a las nuevas tablas
+4. eliminar las verificaciones solo-tablero heredadas
 
-## 6. API contract (new/changed)
+## 6. Contrato de API (nuevo/cambiado)
 
-All under `/api`.
+Todo bajo `/api`.
 
 ## 6.1 Health
 
-`GET /api/health` response additions:
+`GET /api/health` adiciones a la respuesta:
 
 - `deploymentMode`
 - `authReady`
 - `bootstrapStatus` (`ready | bootstrap_pending`)
 
-## 6.2 Invites
+## 6.2 Invitaciones
 
 1. `POST /api/companies/:companyId/invites`
-- create `company_join` invite
-- copy-link value returned once
+- crear invitación `company_join`
+- el valor de copiar-enlace se devuelve una sola vez
 
 2. `GET /api/invites/:token`
-- validate token
-- return invite landing payload
-- includes `allowedJoinTypes`
+- validar el token
+- devolver el payload de aterrizaje de la invitación
+- incluye `allowedJoinTypes`
 
 3. `POST /api/invites/:token/accept`
-- body:
+- cuerpo:
   - `requestType: human | agent`
-  - human path: no extra payload beyond authenticated user
-  - agent path: `agentName`, `adapterType`, `capabilities`, optional adapter defaults
-- consumes invite token
-- creates `join_requests(status=pending_approval)`
+  - ruta humana: sin payload extra más allá del usuario autenticado
+  - ruta de agente: `agentName`, `adapterType`, `capabilities`, defaults opcionales del adaptador
+- consume el token de invitación
+- crea `join_requests(status=pending_approval)`
 
 4. `POST /api/invites/:inviteId/revoke`
-- revokes non-consumed invite
+- revoca una invitación no consumida
 
-## 6.3 Join requests
+## 6.3 Solicitudes de unión
 
 1. `GET /api/companies/:companyId/join-requests?status=pending_approval&requestType=...`
 
 2. `POST /api/companies/:companyId/join-requests/:requestId/approve`
-- human:
-  - create/activate `company_memberships`
-  - apply default grants
-- agent:
-  - create `agents` row
-  - create pending claim context for API key
-  - create/activate agent membership
-  - apply default grants
+- humano:
+  - crear/activar `company_memberships`
+  - aplicar grants por defecto
+- agente:
+  - crear fila `agents`
+  - crear contexto de reclamo pendiente para la API key
+  - crear/activar membresía del agente
+  - aplicar grants por defecto
 
 3. `POST /api/companies/:companyId/join-requests/:requestId/reject`
 
 4. `POST /api/join-requests/:requestId/claim-api-key`
-- approved agent request only
-- returns plaintext key once
-- stores hash in `agent_api_keys`
+- solo solicitud de agente aprobada
+- devuelve la clave en texto plano una sola vez
+- almacena el hash en `agent_api_keys`
 
-## 6.4 Membership and grants
+## 6.4 Membresía y grants
 
 1. `GET /api/companies/:companyId/members`
-- returns both principal types
+- devuelve ambos tipos de principal
 
 2. `PATCH /api/companies/:companyId/members/:memberId/permissions`
-- upsert/remove grants
+- upsert/eliminar grants
 
 3. `PUT /api/admin/users/:userId/company-access`
-- instance admin only
+- solo admin de instancia
 
 4. `GET /api/admin/users/:userId/company-access`
 
@@ -312,111 +312,111 @@ All under `/api`.
 
 6. `POST /api/admin/users/:userId/demote-instance-admin`
 
-## 6.5 Inbox
+## 6.5 Bandeja de entrada
 
-`GET /api/companies/:companyId/inbox` additions:
+`GET /api/companies/:companyId/inbox` adiciones:
 
-- pending join request alert items when actor can `joins:approve`
-- each item includes inline action metadata:
-  - join request id
-  - request type
-  - source IP
-  - human email snapshot when applicable
+- elementos de alerta de solicitudes de unión pendientes cuando el actor puede `joins:approve`
+- cada elemento incluye metadatos de acción inline:
+  - id de solicitud de unión
+  - tipo de solicitud
+  - IP de origen
+  - instantánea de email humano cuando aplique
 
-## 7. Server implementation details
+## 7. Detalles de implementación del servidor
 
-## 7.1 Config and startup
+## 7.1 Configuración y arranque
 
-Files:
+Archivos:
 
 - `packages/shared/src/config-schema.ts`
 - `server/src/config.ts`
 - `server/src/index.ts`
 - `server/src/startup-banner.ts`
 
-Changes:
+Cambios:
 
-- add deployment mode + bind host settings
-- enforce loopback-only for `local_trusted`
-- enforce Better Auth readiness in `cloud_hosted`
-- banner shows mode and bootstrap status
+- agregar ajustes de modo de despliegue + host de bind
+- aplicar loopback-only para `local_trusted`
+- aplicar preparación de Better Auth en `cloud_hosted`
+- el banner muestra el modo y el estado de bootstrap
 
-## 7.2 Better Auth integration
+## 7.2 Integración de Better Auth
 
-Files:
+Archivos:
 
-- `server/package.json` (dependency)
-- `server/src/auth/*` (new)
-- `server/src/app.ts` (mount auth handler endpoints + session middleware)
+- `server/package.json` (dependencia)
+- `server/src/auth/*` (nuevo)
+- `server/src/app.ts` (montar endpoints del manejador de auth + middleware de sesión)
 
-Changes:
+Cambios:
 
-- add Better Auth server instance
-- cookie/session handling for cloud mode
-- no-op session auth in local mode
+- agregar instancia de servidor de Better Auth
+- manejo de cookie/sesión para modo nube
+- auth de sesión no-op en modo local
 
-## 7.3 Actor middleware
+## 7.3 Middleware de actor
 
-Files:
+Archivos:
 
 - `server/src/middleware/auth.ts`
 - `server/src/routes/authz.ts`
 - `server/src/middleware/board-mutation-guard.ts`
 
-Changes:
+Cambios:
 
-- stop defaulting every request to board in cloud mode
-- map local requests to `local_implicit_admin` actor in local mode
-- map Better Auth session to `user` actor in cloud mode
-- preserve agent bearer path
-- replace `assertBoard` with permission-oriented helpers:
+- dejar de defaultear cada solicitud al tablero en modo nube
+- mapear solicitudes locales al actor `local_implicit_admin` en modo local
+- mapear la sesión de Better Auth al actor `user` en modo nube
+- preservar la ruta bearer de agente
+- reemplazar `assertBoard` con helpers orientados a permisos:
   - `requireInstanceAdmin(req)`
   - `requireCompanyAccess(req, companyId)`
   - `requireCompanyPermission(req, companyId, permissionKey, scope?)`
 
-## 7.4 Authorization services
+## 7.4 Servicios de autorización
 
-Files:
+Archivos:
 
-- `server/src/services` (new modules)
+- `server/src/services` (nuevos módulos)
   - `memberships.ts`
   - `permissions.ts`
   - `invites.ts`
   - `join-requests.ts`
   - `instance-admin.ts`
 
-Changes:
+Cambios:
 
-- centralized permission evaluation
-- centralized membership resolution
-- one place for principal-type branching
+- evaluación centralizada de permisos
+- resolución centralizada de membresía
+- un lugar para la ramificación por tipo de principal
 
-## 7.5 Routes
+## 7.5 Rutas
 
-Files:
+Archivos:
 
-- `server/src/routes/index.ts` and new route modules:
-  - `auth.ts` (if needed)
+- `server/src/routes/index.ts` y nuevos módulos de rutas:
+  - `auth.ts` (si se necesita)
   - `invites.ts`
   - `join-requests.ts`
   - `members.ts`
   - `instance-admin.ts`
-  - `inbox.ts` (or extension of existing inbox source)
+  - `inbox.ts` (o extensión de la fuente de inbox existente)
 
-Changes:
+Cambios:
 
-- add new endpoints listed above
-- apply company and permission checks consistently
-- log all mutations through activity log service
+- agregar los nuevos endpoints listados arriba
+- aplicar verificaciones de empresa y permisos de forma consistente
+- registrar todas las mutaciones a través del servicio de registro de actividad
 
-## 7.6 Activity log and audit
+## 7.6 Registro de actividad y auditoría
 
-Files:
+Archivos:
 
 - `server/src/services/activity-log.ts`
-- call sites in invite/join/member/admin routes
+- sitios de llamada en rutas de invitación/unión/miembro/admin
 
-Required actions:
+Acciones requeridas:
 
 - `invite.created`
 - `invite.revoked`
@@ -431,198 +431,198 @@ Required actions:
 - `agent_api_key.claimed`
 - `agent_api_key.revoked`
 
-## 7.7 Real-time and inbox propagation
+## 7.7 Tiempo real y propagación de la bandeja de entrada
 
-Files:
+Archivos:
 
 - `server/src/services/live-events.ts`
 - `server/src/realtime/live-events-ws.ts`
-- inbox data source endpoint(s)
+- endpoint(s) de fuente de datos de la bandeja de entrada
 
-Changes:
+Cambios:
 
-- emit join-request events
-- ensure inbox refresh path includes join alerts
+- emitir eventos de solicitud de unión
+- asegurar que la ruta de refresco de la bandeja de entrada incluya alertas de unión
 
-## 8. CLI implementation
+## 8. Implementación del CLI
 
-Files:
+Archivos:
 
 - `cli/src/index.ts`
 - `cli/src/commands/onboard.ts`
 - `cli/src/commands/configure.ts`
 - `cli/src/prompts/server.ts`
 
-Commands:
+Comandos:
 
 1. `paperclipai auth bootstrap-ceo`
-- create bootstrap invite
-- print one-time URL
+- crear invitación de bootstrap
+- imprimir URL de un solo uso
 
 2. `paperclipai onboard`
-- in cloud mode with `bootstrap_pending`, print bootstrap URL and next steps
-- in local mode, skip bootstrap requirement
+- en modo nube con `bootstrap_pending`, imprimir la URL de bootstrap y próximos pasos
+- en modo local, omitir el requisito de bootstrap
 
-Config additions:
+Adiciones de configuración:
 
-- deployment mode
-- bind host (validated against mode)
+- modo de despliegue
+- host de bind (validado contra el modo)
 
-## 9. UI implementation
+## 9. Implementación de UI
 
-Files:
+Archivos:
 
-- routing: `ui/src/App.tsx`
-- API clients: `ui/src/api/*`
-- pages/components (new):
-  - `AuthLogin` / `AuthSignup` (cloud mode)
-  - `BootstrapPending` page
-  - `InviteLanding` page
-  - `InstanceSettings` page
-  - join approval components in `Inbox`
-  - member/grant management in company settings
+- enrutamiento: `ui/src/App.tsx`
+- clientes de API: `ui/src/api/*`
+- páginas/componentes (nuevos):
+  - `AuthLogin` / `AuthSignup` (modo nube)
+  - página `BootstrapPending`
+  - página `InviteLanding`
+  - página `InstanceSettings`
+  - componentes de aprobación de unión en `Inbox`
+  - gestión de miembros/grants en ajustes de empresa
 
-Required UX:
+UX requerida:
 
-1. Cloud unauthenticated user:
-- redirect to login/signup
+1. Usuario no autenticado en la nube:
+- redirigir a login/signup
 
-2. Cloud bootstrap pending:
-- block app with setup command guidance
+2. Bootstrap pendiente en la nube:
+- bloquear la app con guía del comando de configuración
 
-3. Invite landing:
-- choose human vs agent path (respect `allowedJoinTypes`)
-- submit join request
-- show pending approval confirmation
+3. Aterrizaje de invitación:
+- elegir la ruta humana vs agente (respetar `allowedJoinTypes`)
+- enviar solicitud de unión
+- mostrar confirmación de aprobación pendiente
 
-4. Inbox:
-- show join approval cards with approve/reject actions
-- include source IP and human email snapshot when applicable
+4. Bandeja de entrada:
+- mostrar tarjetas de aprobación de unión con acciones de aprobar/rechazar
+- incluir IP de origen e instantánea de email humano cuando aplique
 
-5. Local mode:
-- no login prompts
-- full settings/invite/approval UI available
+5. Modo local:
+- sin prompts de login
+- UI completa de ajustes/invitación/aprobación disponible
 
-## 10. Security controls
+## 10. Controles de seguridad
 
-1. Token handling
+1. Manejo de tokens
 
-- invite tokens hashed at rest
-- API keys hashed at rest
-- one-time plaintext key reveal only
+- tokens de invitación hasheados en reposo
+- API keys hasheadas en reposo
+- revelación de clave en texto plano de un solo uso solo
 
-2. Local mode isolation
+2. Aislamiento del modo local
 
-- loopback bind enforcement
-- startup hard-fail on non-loopback host
+- aplicación de bind de loopback
+- fallo duro de arranque en host no-loopback
 
-3. Cloud auth
+3. Auth en la nube
 
-- no implicit board fallback
-- session auth mandatory for human mutations
+- sin fallback implícito al tablero
+- auth de sesión obligatoria para mutaciones humanas
 
-4. Join workflow hardening
+4. Endurecimiento del flujo de unión
 
-- one request per invite token
-- pending request has no data access
-- approval required before membership activation
+- una solicitud por token de invitación
+- la solicitud pendiente no tiene acceso a datos
+- aprobación requerida antes de activar la membresía
 
-5. Abuse controls
+5. Controles de abuso
 
-- rate limit invite accept and key claim endpoints
-- structured logging for join and claim failures
+- limitar por tasa los endpoints de aceptar invitación y reclamar clave
+- registro estructurado para fallas de unión y reclamo
 
-## 11. Migration and compatibility
+## 11. Migración y compatibilidad
 
-## 11.1 Runtime compatibility
+## 11.1 Compatibilidad en tiempo de ejecución
 
-- keep existing board-dependent routes functional while migrating authz helper usage
-- phase out `assertBoard` calls only after permission helpers cover all routes
+- mantener funcionales las rutas existentes dependientes del tablero mientras se migran los usos de helpers de authz
+- eliminar llamadas `assertBoard` solo después de que los helpers de permisos cubran todas las rutas
 
-## 11.2 Data compatibility
+## 11.2 Compatibilidad de datos
 
-- do not delete `agents.permissions` in V1
-- stop reading it once grants are wired
-- remove in post-V1 cleanup migration
+- no eliminar `agents.permissions` en V1
+- dejar de leerlo una vez que los grants estén conectados
+- eliminar en migración de limpieza post-V1
 
-## 11.3 Better Auth user ID handling
+## 11.3 Manejo de ID de usuario de Better Auth
 
-- treat `user.id` as text end-to-end
-- existing `created_by_user_id` and similar text fields remain valid
+- tratar `user.id` como texto de punta a punta
+- los campos de texto existentes `created_by_user_id` y similares siguen siendo válidos
 
-## 12. Testing strategy
+## 12. Estrategia de pruebas
 
-## 12.1 Unit tests
+## 12.1 Pruebas unitarias
 
-- permission evaluator:
-  - instance admin bypass
-  - grant checks
-  - scope checks
-- join approval state machine
-- invite token lifecycle
+- evaluador de permisos:
+  - bypass de admin de instancia
+  - verificaciones de grants
+  - verificaciones de alcance
+- máquina de estados de aprobación de unión
+- ciclo de vida del token de invitación
 
-## 12.2 Integration tests
+## 12.2 Pruebas de integración
 
-- cloud mode unauthenticated mutation -> `401`
-- local mode implicit admin mutation -> success
-- invite accept -> pending join -> no access
-- join approve (human) -> membership/grants active
-- join approve (agent) -> key claim once
-- cross-company access denied for user and agent principals
-- local mode non-loopback bind -> startup failure
+- mutación no autenticada en modo nube -> `401`
+- mutación de admin implícito en modo local -> éxito
+- aceptar invitación -> unión pendiente -> sin acceso
+- aprobar unión (humano) -> membresía/grants activos
+- aprobar unión (agente) -> reclamo de clave una vez
+- acceso entre empresas denegado para principales usuario y agente
+- bind no-loopback en modo local -> falla de arranque
 
-## 12.3 UI tests
+## 12.3 Pruebas de UI
 
-- login gate in cloud mode
-- bootstrap pending screen
-- invite landing choose-path UX
-- inbox join alert approve/reject flows
+- puerta de login en modo nube
+- pantalla de bootstrap pendiente
+- UX de elegir-ruta en el aterrizaje de invitación
+- flujos de aprobar/rechazar de alertas de unión en la bandeja de entrada
 
-## 12.4 Regression tests
+## 12.4 Pruebas de regresión
 
-- existing agent API key flows still work
-- task assignment and checkout invariants unchanged
-- activity logging still emitted for all mutations
+- los flujos existentes de API keys de agentes siguen funcionando
+- invariantes de asignación de tareas y checkout sin cambios
+- registro de actividad aún emitido para todas las mutaciones
 
-## 13. Delivery plan
+## 13. Plan de entrega
 
-## Phase A: Foundations
+## Fase A: Bases
 
-- config mode/bind host support
-- startup guardrails
-- Better Auth integration skeleton
-- actor type expansion
+- soporte de modo/bind host en configuración
+- guardas de arranque
+- esqueleto de integración de Better Auth
+- expansión de tipos de actor
 
-## Phase B: Schema and authz core
+## Fase B: Esquema y núcleo de authz
 
-- add membership/grants/invite/join tables
-- add permission service and helpers
-- wire company/member/instance admin checks
+- agregar tablas de membresía/grants/invitación/unión
+- agregar servicio de permisos y helpers
+- conectar verificaciones de empresa/miembro/admin de instancia
 
-## Phase C: Invite + join backend
+## Fase C: Backend de invitación + unión
 
-- invite create/revoke
-- invite accept -> pending request
-- approve/reject + key claim
-- activity log + live events
+- crear/revocar invitaciones
+- aceptar invitación -> solicitud pendiente
+- aprobar/rechazar + reclamo de clave
+- registro de actividad + eventos en vivo
 
-## Phase D: UI + CLI
+## Fase D: UI + CLI
 
-- cloud login/bootstrap screens
-- invite landing
-- inbox join approval actions
-- instance settings and member permissions
-- bootstrap CLI command and onboarding updates
+- pantallas de login/bootstrap en la nube
+- aterrizaje de invitación
+- acciones de aprobación de unión en la bandeja de entrada
+- ajustes de instancia y permisos de miembros
+- comando bootstrap del CLI y actualizaciones de incorporación
 
-## Phase E: Hardening
+## Fase E: Endurecimiento
 
-- full integration/e2e coverage
-- docs updates (`SPEC-implementation`, `DEVELOPING`, `CLI`)
-- cleanup of legacy board-only codepaths
+- cobertura completa de integración/e2e
+- actualizaciones de docs (`SPEC-implementation`, `DEVELOPING`, `CLI`)
+- limpieza de rutas solo-tablero heredadas
 
-## 14. Verification gate
+## 14. Puerta de verificación
 
-Before handoff:
+Antes de entregar:
 
 ```sh
 pnpm -r typecheck
@@ -630,14 +630,14 @@ pnpm test:run
 pnpm build
 ```
 
-If any command is skipped, record exactly what was skipped and why.
+Si algún comando se omite, registrar exactamente qué se omitió y por qué.
 
-## 15. Done criteria
+## 15. Criterios de terminado
 
-1. Behavior matches locked V1 decisions in this doc and `doc/plan/humans-and-permissions.md`.
-2. Cloud mode requires auth; local mode has no login UX.
-3. Unified invite + pending approval flow works for both humans and agents.
-4. Shared principal membership + permission system is live for users and agents.
-5. Local mode remains loopback-only and fails otherwise.
-6. Inbox shows actionable join approvals.
-7. All new mutating paths are activity-logged.
+1. El comportamiento coincide con las decisiones V1 bloqueadas en este documento y `doc/plan/humans-and-permissions.md`.
+2. El modo nube requiere auth; el modo local no tiene UX de login.
+3. El flujo unificado de invitación + aprobación pendiente funciona para humanos y agentes.
+4. El sistema compartido de membresía principal + permisos está en vivo para usuarios y agentes.
+5. El modo local sigue siendo solo-loopback y falla en caso contrario.
+6. La bandeja de entrada muestra aprobaciones de unión accionables.
+7. Todas las nuevas rutas de mutación tienen registro de actividad.

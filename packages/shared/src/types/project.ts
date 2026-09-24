@@ -50,7 +50,7 @@ export interface Project {
   id: string;
   companyId: string;
   urlKey: string;
-  /** @deprecated Use goalIds / goals instead */
+  /** @deprecated Usa goalIds / goals en su lugar */
   goalId: string | null;
   goalIds: string[];
   goals: ProjectGoalRef[];

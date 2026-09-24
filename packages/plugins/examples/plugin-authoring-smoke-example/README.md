@@ -1,23 +1,23 @@
-# Plugin Authoring Smoke Example
+# Ejemplo de humo de autoría de plugins
 
-A Paperclip plugin
+Un plugin de Paperclip
 
-## Development
+## Desarrollo
 
 ```bash
 pnpm install
-pnpm dev            # watch builds
-pnpm dev:ui         # local dev server with hot-reload events
+pnpm dev            # observa las compilaciones
+pnpm dev:ui         # servidor de desarrollo local con eventos de recarga en caliente
 pnpm test
 ```
 
-## Install Into Paperclip
+## Instalar en Paperclip
 
 ```bash
 pnpm paperclipai plugin install ./
 ```
 
-## Build Options
+## Opciones de compilación
 
-- `pnpm build` uses esbuild presets from `@paperclipai/plugin-sdk/bundlers`.
-- `pnpm build:rollup` uses rollup presets from the same SDK.
+- `pnpm build` usa los presets de esbuild de `@paperclipai/plugin-sdk/bundlers`.
+- `pnpm build:rollup` usa los presets de rollup del mismo SDK.

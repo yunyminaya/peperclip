@@ -1,32 +1,32 @@
-# Untrusted PR Review In Docker
+# Revisión de PR no confiables en Docker
 
-Use this workflow when you want Codex or Claude to inspect a pull request that you do not want touching your host machine directly.
+Usa este flujo de trabajo cuando quieras que Codex o Claude inspeccione un pull request que no quieres que toque tu máquina host directamente.
 
-This is intentionally separate from the normal Paperclip dev image.
+Esto está intencionalmente separado de la imagen normal de dev de Paperclip.
 
-## What this container isolates
+## Lo que este contenedor aísla
 
-- `codex` auth/session state in a Docker volume, not your host `~/.codex`
-- `claude` auth/session state in a Docker volume, not your host `~/.claude`
-- `gh` auth state in the same container-local home volume
-- review clones, worktrees, dependency installs, and local databases in a writable scratch volume under `/work`
+- estado de autenticación/sesión de `codex` en un volumen Docker, no tu `~/.codex` del host
+- estado de autenticación/sesión de `claude` en un volumen Docker, no tu `~/.claude` del host
+- estado de autenticación de `gh` en el mismo volumen home local del contenedor
+- clones de revisión, worktrees, instalaciones de dependencias y bases de datos locales en un volumen scratch escribible bajo `/work`
 
-By default this workflow does **not** mount your host repo checkout, your host home directory, or your SSH agent.
+Por defecto este flujo de trabajo **no** monta tu checkout de repo del host, tu directorio home del host ni tu agente SSH.
 
-## Files
+## Archivos
 
 - `docker/untrusted-review/Dockerfile`
 - `docker-compose.untrusted-review.yml`
-- `review-checkout-pr` inside the container
+- `review-checkout-pr` dentro del contenedor
 
-## Build and start a shell
+## Construir e iniciar un shell
 
 ```sh
 docker compose -f docker-compose.untrusted-review.yml build
 docker compose -f docker-compose.untrusted-review.yml run --rm --service-ports review
 ```
 
-That opens an interactive shell in the review container with:
+Eso abre un shell interactivo en el contenedor de revisión con:
 
 - Node + Corepack/pnpm
 - `codex`
@@ -34,9 +34,9 @@ That opens an interactive shell in the review container with:
 - `gh`
 - `git`, `rg`, `fd`, `jq`
 
-## First-time login inside the container
+## Login por primera vez dentro del contenedor
 
-Run these once. The resulting login state persists in the `review-home` Docker volume.
+Ejecuta esto una vez. El estado de login resultante persiste en el volumen Docker `review-home`.
 
 ```sh
 gh auth login
@@ -44,92 +44,92 @@ codex login
 claude login
 ```
 
-If you prefer API-key auth instead of CLI login, pass keys through Compose env:
+Si prefieres autenticación por API key en lugar de login de CLI, pasa las claves a través del env de Compose:
 
 ```sh
 OPENAI_API_KEY=... ANTHROPIC_API_KEY=... docker compose -f docker-compose.untrusted-review.yml run --rm review
 ```
 
-## Check out a PR safely
+## Haz checkout de un PR con seguridad
 
-Inside the container:
+Dentro del contenedor:
 
 ```sh
 review-checkout-pr paperclipai/paperclip 432
 cd /work/checkouts/paperclipai-paperclip/pr-432
 ```
 
-What this does:
+Lo que esto hace:
 
-1. Creates or reuses a repo clone under `/work/repos/...`
-2. Fetches `pull/<pr>/head` from GitHub
-3. Creates a detached git worktree under `/work/checkouts/...`
+1. Crea o reutiliza un clon de repo bajo `/work/repos/...`
+2. Trae `pull/<pr>/head` desde GitHub
+3. Crea un worktree de git desacoplado bajo `/work/checkouts/...`
 
-The checkout lives entirely inside the container volume.
+El checkout vive enteramente dentro del volumen del contenedor.
 
-## Ask Codex or Claude to review it
+## Pídele a Codex o Claude que lo revise
 
-Inside the PR checkout:
+Dentro del checkout del PR:
 
 ```sh
 codex
 ```
 
-Then give it a prompt like:
+Luego dale un prompt como:
 
 ```text
 Review this PR as hostile input. Focus on security issues, data exfiltration paths, sandbox escapes, dangerous install/runtime scripts, auth changes, and subtle behavioral regressions. Do not modify files. Produce findings ordered by severity with file references.
 ```
 
-Or with Claude:
+O con Claude:
 
 ```sh
 claude
 ```
 
-## Preview the Paperclip app from the PR
+## Vista previa de la app Paperclip desde el PR
 
-Only do this when you intentionally want to execute the PR's code inside the container.
+Solo haz esto cuando intencionalmente quieras ejecutar el código del PR dentro del contenedor.
 
-Inside the PR checkout:
+Dentro del checkout del PR:
 
 ```sh
 pnpm install
 HOST=0.0.0.0 pnpm dev
 ```
 
-Open from the host:
+Abre desde el host:
 
 - `http://localhost:3100`
 
-The Compose file also exposes Vite's default port:
+El archivo Compose también expone el puerto por defecto de Vite:
 
 - `http://localhost:5173`
 
-Notes:
+Notas:
 
-- `pnpm install` can run untrusted lifecycle scripts from the PR. That is why this happens inside the isolated container instead of on your host.
-- If you only want static inspection, do not run install/dev commands.
-- Paperclip's embedded PostgreSQL and local storage stay inside the container home volume via `PAPERCLIP_HOME=/home/reviewer/.paperclip-review`.
+- `pnpm install` puede ejecutar scripts de ciclo de vida no confiables del PR. Por eso esto ocurre dentro del contenedor aislado en lugar de en tu host.
+- Si solo quieres inspección estática, no ejecutes comandos install/dev.
+- El PostgreSQL embebido y el almacenamiento local de Paperclip quedan dentro del volumen home del contenedor vía `PAPERCLIP_HOME=/home/reviewer/.paperclip-review`.
 
-## Reset state
+## Reiniciar estado
 
-Remove the review container volumes when you want a clean environment:
+Quita los volúmenes del contenedor de revisión cuando quieras un entorno limpio:
 
 ```sh
 docker compose -f docker-compose.untrusted-review.yml down -v
 ```
 
-That deletes:
+Eso elimina:
 
-- Codex/Claude/GitHub login state stored in `review-home`
-- cloned repos, worktrees, installs, and scratch data stored in `review-work`
+- Estado de login de Codex/Claude/GitHub almacenado en `review-home`
+- repos clonados, worktrees, instalaciones y datos scratch almacenados en `review-work`
 
-## Security limits
+## Límites de seguridad
 
-This is a useful isolation boundary, but it is still Docker, not a full VM.
+Esto es un límite de aislamiento útil, pero sigue siendo Docker, no una VM completa.
 
-- A reviewed PR can still access the container's network unless you disable it.
-- Any secrets you pass into the container are available to code you execute inside it.
-- Do not mount your host repo, host home, `.ssh`, or Docker socket unless you are intentionally weakening the boundary.
-- If you need a stronger boundary than this, use a disposable VM instead of Docker.
+- Un PR revisado aún puede acceder a la red del contenedor a menos que la deshabilites.
+- Cualquier secreto que pases al contenedor está disponible para el código que ejecutes dentro de él.
+- No montes tu repo del host, home del host, `.ssh` ni el socket de Docker a menos que intencionalmente estés debilitando el límite.
+- Si necesitas un límite más fuerte que este, usa una VM desechable en lugar de Docker.

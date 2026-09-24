@@ -1,11 +1,11 @@
 ---
-title: Architecture
-summary: Stack overview, request flow, and adapter model
+title: Arquitectura
+summary: Descripción general del stack, flujo de solicitudes y modelo de adaptadores
 ---
 
-Paperclip is a monorepo with four main layers.
+Paperclip es un monorepo con cuatro capas principales.
 
-## Stack Overview
+## Descripción general del stack
 
 ```
 ┌─────────────────────────────────────┐
@@ -24,18 +24,18 @@ Paperclip is a monorepo with four main layers.
 └─────────────────────────────────────┘
 ```
 
-## Technology Stack
+## Stack tecnológico
 
-| Layer | Technology |
+| Capa | Tecnología |
 |-------|-----------|
 | Frontend | React 19, Vite 6, React Router 7, Radix UI, Tailwind CSS 4, TanStack Query |
 | Backend | Node.js 20+, Express.js 5, TypeScript |
-| Database | PostgreSQL 17 (or embedded PGlite), Drizzle ORM |
-| Auth | Better Auth (sessions + API keys) |
-| Adapters | Claude Code CLI, Codex CLI, shell process, HTTP webhook |
-| Package manager | pnpm 9 with workspaces |
+| Base de datos | PostgreSQL 17 (o PGlite incorporado), Drizzle ORM |
+| Autenticación | Better Auth (sesiones + claves API) |
+| Adaptadores | Claude Code CLI, Codex CLI, shell process, HTTP webhook |
+| Package manager | pnpm 9 con workspaces |
 
-## Repository Structure
+## Estructura del repositorio
 
 ```
 paperclip/
@@ -68,31 +68,31 @@ paperclip/
 └── doc/                         # Internal documentation
 ```
 
-## Request Flow
+## Flujo de solicitudes
 
-When a heartbeat fires:
+Cuando se activa un latido:
 
-1. **Trigger** — Scheduler, manual invoke, or event (assignment, mention) triggers a heartbeat
-2. **Adapter invocation** — Server calls the configured adapter's `execute()` function
-3. **Agent process** — Adapter spawns the agent (e.g. Claude Code CLI) with Paperclip env vars and a prompt
-4. **Agent work** — The agent calls Paperclip's REST API to check assignments, checkout tasks, do work, and update status
-5. **Result capture** — Adapter captures stdout, parses usage/cost data, extracts session state
-6. **Run record** — Server records the run result, costs, and any session state for next heartbeat
+1. **Activación**: el programador, una invocación manual o un evento (asignación, mención) activa un latido
+2. **Invocación del adaptador**: el servidor llama a la función `execute()` del adaptador configurado
+3. **Proceso del agente**: el adaptador genera el agente (p. ej., Claude Code CLI) con las variables de entorno y el prompt de Paperclip
+4. **Trabajo del agente**: el agente llama a la API REST de Paperclip para revisar asignaciones, hacer checkout de tareas, trabajar y actualizar el estado
+5. **Captura del resultado**: el adaptador captura stdout, analiza los datos de uso/costo y extrae el estado de la sesión
+6. **Registro de ejecución**: el servidor registra el resultado de la ejecución, los costos y cualquier estado de sesión para el siguiente latido
 
-## Adapter Model
+## Modelo de adaptador
 
-Adapters are the bridge between Paperclip and agent runtimes. Each adapter is a package with three modules:
+Los adaptadores son el puente entre Paperclip y los tiempos de ejecución de agentes. Cada adaptador es un paquete con tres módulos:
 
-- **Server module** — `execute()` function that spawns/calls the agent, plus environment diagnostics
-- **UI module** — stdout parser for the run viewer, config form fields for agent creation
-- **CLI module** — terminal formatter for `paperclipai run --watch`
+- **Módulo de servidor**: función `execute()` que genera/llama al agente, más diagnósticos de entorno
+- **Módulo de interfaz**: analizador de stdout para el visor de ejecuciones, campos del formulario de configuración para la creación de agentes
+- **Módulo de CLI**: formateador de terminal para `paperclipai run --watch`
 
-Built-in adapters: `claude_local`, `codex_local`, `process`, `http`. You can create custom adapters for any runtime.
+Adaptadores integrados: `claude_local`, `codex_local`, `process`, `http`. Puedes crear adaptadores personalizados para cualquier tiempo de ejecución.
 
-## Key Design Decisions
+## Decisiones clave de diseño
 
-- **Control plane, not execution plane** — Paperclip orchestrates agents; it doesn't run them
-- **Company-scoped** — all entities belong to exactly one company; strict data boundaries
-- **Single-assignee tasks** — atomic checkout prevents concurrent work on the same task
-- **Adapter-agnostic** — any runtime that can call an HTTP API works as an agent
-- **Embedded by default** — zero-config local mode with embedded PostgreSQL
+- **Plano de control, no plano de ejecución**: Paperclip orquesta agentes; no los ejecuta
+- **Con alcance de empresa**: todas las entidades pertenecen exactamente a una empresa; límites de datos estrictos
+- **Tareas de un solo responsable**: el checkout atómico evita el trabajo concurrente en la misma tarea
+- **Agnóstico de adaptadores**: cualquier tiempo de ejecución que pueda llamar a una API HTTP funciona como agente
+- **Incorporado de forma predeterminada**: modo local sin configuración con PostgreSQL incorporado

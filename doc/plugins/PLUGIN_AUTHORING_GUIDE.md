@@ -1,28 +1,28 @@
-# Plugin Authoring Guide
+# Guía de creación de plugins
 
-This guide describes the current, implemented way to create a Paperclip plugin in this repo.
+Esta guía describe la forma actual e implementada de crear un plugin de Paperclip en este repo.
 
-It is intentionally narrower than [PLUGIN_SPEC.md](./PLUGIN_SPEC.md). The spec includes future ideas; this guide only covers the alpha surface that exists now.
+Es intencionalmente más estrecha que [PLUGIN_SPEC.md](./PLUGIN_SPEC.md). La especificación incluye ideas futuras; esta guía solo cubre la superficie alfa que existe ahora.
 
-## Current reality
+## Realidad actual
 
-- Treat plugin workers and plugin UI as trusted code.
-- Plugin UI runs as same-origin JavaScript inside the main Paperclip app.
-- Worker-side host APIs are capability-gated.
-- Plugin UI is not sandboxed by manifest capabilities.
-- There is no host-provided shared React component kit for plugins yet.
-- `ctx.assets` is not supported in the current runtime.
+- Trata los workers y la UI de los plugins como código confiable.
+- La UI del plugin corre como JavaScript del mismo origen dentro de la app principal de Paperclip.
+- Las API del host del lado del worker están controladas por capacidades.
+- La UI del plugin no está aislada por las capacidades del manifiesto.
+- Aún no hay un kit compartido de componentes React provisto por el host para plugins.
+- `ctx.assets` no está admitido en el runtime actual.
 
-## Scaffold a plugin
+## Armar un plugin
 
-Use the scaffold package:
+Usa el paquete de scaffold:
 
 ```bash
 pnpm --filter @paperclipai/create-paperclip-plugin build
 node packages/plugins/create-paperclip-plugin/dist/index.js @yourscope/plugin-name --output ./packages/plugins/examples
 ```
 
-For a plugin that lives outside the Paperclip repo:
+Para un plugin que vive fuera del repo de Paperclip:
 
 ```bash
 pnpm --filter @paperclipai/create-paperclip-plugin build
@@ -31,7 +31,7 @@ node packages/plugins/create-paperclip-plugin/dist/index.js @yourscope/plugin-na
   --sdk-path /absolute/path/to/paperclip/packages/plugins/sdk
 ```
 
-That creates a package with:
+Eso crea un paquete con:
 
 - `src/manifest.ts`
 - `src/worker.ts`
@@ -40,13 +40,13 @@ That creates a package with:
 - `esbuild.config.mjs`
 - `rollup.config.mjs`
 
-Inside this monorepo, the scaffold uses `workspace:*` for `@paperclipai/plugin-sdk`.
+Dentro de este monorepo, el scaffold usa `workspace:*` para `@paperclipai/plugin-sdk`.
 
-Outside this monorepo, the scaffold snapshots `@paperclipai/plugin-sdk` from the local Paperclip checkout into a `.paperclip-sdk/` tarball so you can build and test a plugin without publishing anything to npm first.
+Fuera de este monorepo, el scaffold toma una instantánea de `@paperclipai/plugin-sdk` desde el checkout local de Paperclip en un tarball `.paperclip-sdk/` para que puedas construir y probar un plugin sin publicar nada a npm primero.
 
-## Recommended local workflow
+## Flujo de trabajo local recomendado
 
-From the generated plugin folder:
+Desde la carpeta del plugin generado:
 
 ```bash
 pnpm install
@@ -55,9 +55,9 @@ pnpm test
 pnpm build
 ```
 
-For local development, install it into Paperclip from an absolute local path through the plugin manager or API. The server supports local filesystem installs and watches local-path plugins for file changes so worker restarts happen automatically after rebuilds.
+Para desarrollo local, instálalo en Paperclip desde una ruta local absoluta a través del gestor de plugins o la API. El servidor admite instalaciones desde el sistema de archivos local y observa los plugins de rutas locales por cambios de archivos para que los reinicios del worker ocurran automáticamente después de las reconstrucciones.
 
-Example:
+Ejemplo:
 
 ```bash
 curl -X POST http://127.0.0.1:3100/api/plugins/install \
@@ -65,7 +65,7 @@ curl -X POST http://127.0.0.1:3100/api/plugins/install \
   -d '{"packageName":"/absolute/path/to/your-plugin","isLocalPath":true}'
 ```
 
-## Supported alpha surface
+## Superficie alfa admitida
 
 Worker:
 
@@ -96,9 +96,9 @@ UI:
 - `usePluginStream`
 - `usePluginToast`
 - `useHostContext`
-- typed slot props from `@paperclipai/plugin-sdk/ui`
+- props de slots tipados desde `@paperclipai/plugin-sdk/ui`
 
-Mount surfaces currently wired in the host include:
+Las superficies de montaje actualmente cableadas en el host incluyen:
 
 - `page`
 - `settingsPage`
@@ -114,31 +114,31 @@ Mount surfaces currently wired in the host include:
 - `commentAnnotation`
 - `commentContextMenuItem`
 
-## Company routes
+## Rutas de empresa
 
-Plugins may declare a `page` slot with `routePath` to own a company route like:
+Los plugins pueden declarar un slot `page` con `routePath` para tener una ruta de empresa como:
 
 ```text
 /:companyPrefix/<routePath>
 ```
 
-Rules:
+Reglas:
 
-- `routePath` must be a single lowercase slug
-- it cannot collide with reserved host routes
-- it cannot duplicate another installed plugin page route
+- `routePath` debe ser un solo slug en minúsculas
+- no puede colisionar con rutas reservadas del host
+- no puede duplicar la ruta de página de otro plugin instalado
 
-## Publishing guidance
+## Guía de publicación
 
-- Use npm packages as the deployment artifact.
-- Treat repo-local example installs as a development workflow only.
-- Prefer keeping plugin UI self-contained inside the package.
-- Do not rely on host design-system components or undocumented app internals.
-- GitHub repository installs are not a first-class workflow today. For local development, use a checked-out local path. For production, publish to npm or a private npm-compatible registry.
+- Usa paquetes npm como artefacto de despliegue.
+- Trata las instalaciones de ejemplo locales al repo solo como flujo de desarrollo.
+- Prefiere mantener la UI del plugin autocontenida dentro del paquete.
+- No dependas de componentes del sistema de diseño del host ni de internas no documentadas de la app.
+- Las instalaciones desde repositorios de GitHub no son un flujo de primera clase hoy. Para desarrollo local, usa una ruta local con checkout. Para producción, publica a npm o a un registro compatible con npm privado.
 
-## Verification before handoff
+## Verificación antes de entregar
 
-At minimum:
+Como mínimo:
 
 ```bash
 pnpm --filter <your-plugin-package> typecheck
@@ -146,7 +146,7 @@ pnpm --filter <your-plugin-package> test
 pnpm --filter <your-plugin-package> build
 ```
 
-If you changed host integration too, also run:
+Si también cambiaste la integración del host, ejecuta además:
 
 ```bash
 pnpm -r typecheck

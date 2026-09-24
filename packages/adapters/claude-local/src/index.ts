@@ -13,25 +13,25 @@ export const agentConfigurationDoc = `# claude_local agent configuration
 
 Adapter: claude_local
 
-Core fields:
-- cwd (string, optional): default absolute working directory fallback for the agent process (created if missing when possible)
-- instructionsFilePath (string, optional): absolute path to a markdown instructions file injected at runtime
-- model (string, optional): Claude model id
-- effort (string, optional): reasoning effort passed via --effort (low|medium|high)
-- chrome (boolean, optional): pass --chrome when running Claude
-- promptTemplate (string, optional): run prompt template
-- maxTurnsPerRun (number, optional): max turns for one run
-- dangerouslySkipPermissions (boolean, optional): pass --dangerously-skip-permissions to claude
-- command (string, optional): defaults to "claude"
-- extraArgs (string[], optional): additional CLI args
-- env (object, optional): KEY=VALUE environment variables
-- workspaceStrategy (object, optional): execution workspace strategy; currently supports { type: "git_worktree", baseRef?, branchTemplate?, worktreeParentDir? }
-- workspaceRuntime (object, optional): workspace runtime service intents; local host-managed services are realized before Claude starts and exposed back via context/env
+Campos principales:
+- cwd (string, optional): directorio de trabajo absoluto predeterminado para el proceso del agente (se crea si falta cuando es posible)
+- instructionsFilePath (string, optional): ruta absoluta a un archivo markdown de instrucciones que se inyecta en tiempo de ejecución
+- model (string, optional): id del modelo de Claude
+- effort (string, optional): esfuerzo de razonamiento pasado vía --effort (low|medium|high)
+- chrome (boolean, optional): pasar --chrome al ejecutar Claude
+- promptTemplate (string, optional): plantilla del prompt de ejecución
+- maxTurnsPerRun (number, optional): máximo de turnos para una ejecución
+- dangerouslySkipPermissions (boolean, optional): pasar --dangerously-skip-permissions a claude
+- command (string, optional): predeterminado "claude"
+- extraArgs (string[], optional): argumentos CLI adicionales
+- env (object, optional): variables de entorno KEY=VALUE
+- workspaceStrategy (object, optional): estrategia del workspace de ejecución; actualmente admite { type: "git_worktree", baseRef?, branchTemplate?, worktreeParentDir? }
+- workspaceRuntime (object, optional): intenciones del servicio de runtime del workspace; los servicios locales gestionados por el host se realizan antes de que inicie Claude y se exponen de vuelta vía context/env
 
-Operational fields:
-- timeoutSec (number, optional): run timeout in seconds
-- graceSec (number, optional): SIGTERM grace period in seconds
+Campos operativos:
+- timeoutSec (number, optional): tiempo de espera de ejecución en segundos
+- graceSec (number, optional): período de gracia SIGTERM en segundos
 
-Notes:
-- When Paperclip realizes a workspace/runtime for a run, it injects PAPERCLIP_WORKSPACE_* and PAPERCLIP_RUNTIME_* env vars for agent-side tooling.
+Notas:
+- Cuando Paperclip realiza un workspace/runtime para una ejecución, inyecta las variables de entorno PAPERCLIP_WORKSPACE_* y PAPERCLIP_RUNTIME_* para las herramientas del lado del agente.
 `;

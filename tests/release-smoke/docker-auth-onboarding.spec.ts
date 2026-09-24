@@ -19,14 +19,14 @@ async function signIn(page: Page) {
 
   await page.locator('input[type="email"]').fill(ADMIN_EMAIL);
   await page.locator('input[type="password"]').fill(ADMIN_PASSWORD);
-  await page.getByRole("button", { name: "Sign In" }).click();
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
 
   await expect(page).not.toHaveURL(/\/auth/, { timeout: 20_000 });
 }
 
 async function openOnboarding(page: Page) {
-  const wizardHeading = page.locator("h3", { hasText: "Name your company" });
-  const startButton = page.getByRole("button", { name: "Start Onboarding" });
+  const wizardHeading = page.locator("h3", { hasText: "Ponle nombre a tu empresa" });
+  const startButton = page.getByRole("button", { name: "Iniciar incorporación" });
 
   await expect(wizardHeading.or(startButton)).toBeVisible({ timeout: 20_000 });
 
@@ -45,31 +45,31 @@ test.describe("Docker authenticated onboarding smoke", () => {
     await openOnboarding(page);
 
     await page.locator('input[placeholder="Acme Corp"]').fill(COMPANY_NAME);
-    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("button", { name: "Siguiente" }).click();
 
     await expect(
-      page.locator("h3", { hasText: "Create your first agent" })
+      page.locator("h3", { hasText: "Crea tu primer agente" })
     ).toBeVisible({ timeout: 10_000 });
 
     await expect(page.locator('input[placeholder="CEO"]')).toHaveValue(AGENT_NAME);
-    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("button", { name: "Siguiente" }).click();
 
     await expect(
-      page.locator("h3", { hasText: "Give it something to do" })
+      page.locator("h3", { hasText: "Dale algo que hacer" })
     ).toBeVisible({ timeout: 10_000 });
     await page
-      .locator('input[placeholder="e.g. Research competitor pricing"]')
+      .locator('input[placeholder="p. ej., investigar los precios de la competencia"]')
       .fill(TASK_TITLE);
-    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("button", { name: "Siguiente" }).click();
 
     await expect(
-      page.locator("h3", { hasText: "Ready to launch" })
+      page.locator("h3", { hasText: "Listo para lanzar" })
     ).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText(COMPANY_NAME)).toBeVisible();
     await expect(page.getByText(AGENT_NAME)).toBeVisible();
     await expect(page.getByText(TASK_TITLE)).toBeVisible();
 
-    await page.getByRole("button", { name: "Create & Open Issue" }).click();
+    await page.getByRole("button", { name: "Crear y abrir issue" }).click();
     await expect(page).toHaveURL(/\/issues\//, { timeout: 10_000 });
 
     const baseUrl = new URL(page.url()).origin;

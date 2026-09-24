@@ -12,10 +12,12 @@ export class PluginSandboxError extends Error {
 }
 
 /**
- * Sandbox runtime options used when loading a plugin worker module.
+ * Opciones de runtime del sandbox usadas al cargar un módulo worker de
+ * plugin.
  *
- * `allowedModuleSpecifiers` controls which bare module specifiers are permitted.
- * `allowedModules` provides concrete host-provided bindings for those specifiers.
+ * `allowedModuleSpecifiers` controla qué especificadores de módulo
+ * desnudos están permitidos. `allowedModules` provee bindings concretos
+ * provistos por el host para esos especificadores.
  */
 export interface PluginSandboxOptions {
   entrypointPath: string;
@@ -26,8 +28,9 @@ export interface PluginSandboxOptions {
 }
 
 /**
- * Operation-level runtime gate for plugin host API calls.
- * Every host operation must be checked against manifest capabilities before execution.
+ * Puerta de runtime a nivel de operación para llamadas de la API host de
+ * plugins. Cada operación host debe comprobarse contra las capacidades del
+ * manifiesto antes de ejecutarse.
  */
 export interface CapabilityScopedInvoker {
   invoke<T>(operation: string, fn: () => Promise<T> | T): Promise<T>;
@@ -66,12 +69,14 @@ export function createCapabilityScopedInvoker(
 }
 
 /**
- * Load a CommonJS plugin module in a VM context with explicit module import allow-listing.
+ * Carga un módulo de plugin CommonJS en un contexto VM con allow-listing
+ * explícito de importaciones de módulos.
  *
- * Security properties:
- * - no implicit access to host globals like `process`
- * - no unrestricted built-in module imports
- * - relative imports are resolved only inside the plugin root directory
+ * Propiedades de seguridad:
+ * - sin acceso implícito a globales del host como `process`
+ * - sin importaciones irrestrictas de módulos integrados
+ * - las importaciones relativas solo se resuelven dentro del directorio raíz
+ *   del plugin
  */
 export async function loadPluginModuleInSandbox(
   options: PluginSandboxOptions,
@@ -97,7 +102,7 @@ export async function loadPluginModuleInSandbox(
 
     if (!isWithinRoot(realPath, realPluginRoot)) {
       throw new PluginSandboxError(
-        `Import '${modulePath}' escapes plugin root and is not allowed`,
+        `La importación '${modulePath}' escapa la raíz del plugin y no está permitida`,
       );
     }
 
@@ -108,26 +113,27 @@ export async function loadPluginModuleInSandbox(
 
     if (looksLikeEsm(code)) {
       throw new PluginSandboxError(
-        "Sandbox loader only supports CommonJS modules. Build plugin worker entrypoints as CJS for sandboxed loading.",
+        "El cargador del sandbox solo soporta módulos CommonJS. Compile los entrypoints de workers de plugins como CJS para la carga en sandbox.",
       );
     }
 
     const module = { exports: {} as Record<string, unknown> };
-    // Cache the module before execution to preserve CommonJS cycle semantics.
+    // Guarda el módulo en caché antes de ejecutarlo para preservar la
+    // semántica de ciclos de CommonJS.
     moduleCache.set(realPath, module.exports);
 
     const requireInSandbox = (specifier: string): Record<string, unknown> => {
       if (!specifier.startsWith(".") && !specifier.startsWith("/")) {
         if (!allowedSpecifiers.has(specifier)) {
           throw new PluginSandboxError(
-            `Import denied for module '${specifier}'. Add an explicit sandbox allow-list entry.`,
+            `Importación denegada para el módulo '${specifier}'. Agregue una entrada explícita a la allow-list del sandbox.`,
           );
         }
 
         const binding = allowedModules[specifier];
         if (!binding) {
           throw new PluginSandboxError(
-            `Bare module '${specifier}' is allow-listed but no host binding is registered.`,
+            `El módulo desnudo '${specifier}' está en la allow-list pero no hay ningún binding del host registrado.`,
           );
         }
 
@@ -138,11 +144,12 @@ export async function loadPluginModuleInSandbox(
       return loadModuleSync(candidatePath);
     };
 
-    // Inject the CJS module arguments into the context so the script can call
-    // the wrapper immediately. This is critical: the timeout in runInContext
-    // only applies during script evaluation. By including the self-invocation
-    // `(fn)(exports, module, ...)` in the script text, the timeout also covers
-    // the actual module body execution — preventing infinite loops from hanging.
+    // Inyecta los argumentos del módulo CJS en el contexto para que el
+    // script pueda llamar al wrapper inmediatamente. Esto es crítico: el
+    // timeout en runInContext solo aplica durante la evaluación del script.
+    // Al incluir la auto-invocación `(fn)(exports, module, ...)` en el texto
+    // del script, el timeout también cubre la ejecución real del cuerpo del
+    // módulo — evitando que bucles infinitos cuelguen.
     const sandboxArgs = {
       __paperclip_exports: module.exports,
       __paperclip_module: module,
@@ -150,7 +157,8 @@ export async function loadPluginModuleInSandbox(
       __paperclip_filename: realPath,
       __paperclip_dirname: path.dirname(realPath),
     };
-    // Temporarily inject args into the context, run, then remove to avoid pollution.
+    // Inyecta temporalmente los args en el contexto, ejecuta, y luego los
+    // elimina para evitar contaminación.
     Object.assign(context, sandboxArgs);
     const wrapped = `(function (exports, module, require, __filename, __dirname) {\n${code}\n})(__paperclip_exports, __paperclip_module, __paperclip_require, __paperclip_filename, __paperclip_dirname)`;
     const script = new vm.Script(wrapped, { filename: realPath });
@@ -183,12 +191,14 @@ function resolveModulePathSync(candidatePath: string): string {
     }
   }
 
-  throw new PluginSandboxError(`Unable to resolve module import at path '${candidatePath}'`);
+  throw new PluginSandboxError(`No se pudo resolver la importación del módulo en la ruta '${candidatePath}'`);
 }
 
 /**
- * True when `targetPath` is inside `rootPath` (or equals rootPath), false otherwise.
- * Uses `path.relative` so sibling-prefix paths (e.g. `/root-a` vs `/root`) cannot bypass checks.
+ * True cuando `targetPath` está dentro de `rootPath` (o es igual a
+ * rootPath), false en caso contrario. Usa `path.relative` para que rutas de
+ * prefijo hermanas (p. ej. `/root-a` vs `/root`) no puedan evadir los
+ * chequeos.
  */
 function isWithinRoot(targetPath: string, rootPath: string): boolean {
   const relative = path.relative(rootPath, targetPath);
@@ -200,7 +210,7 @@ function readModuleSourceSync(modulePath: string): string {
     return readFileSync(modulePath, "utf8");
   } catch (error) {
     throw new PluginSandboxError(
-      `Failed to read sandbox module '${modulePath}': ${error instanceof Error ? error.message : String(error)}`,
+      `No se pudo leer el módulo del sandbox '${modulePath}': ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 }
@@ -214,7 +224,7 @@ function normalizeModuleExports(exportsValue: unknown): Record<string, unknown> 
 }
 
 /**
- * Lightweight guard to reject ESM syntax in the VM CommonJS loader.
+ * Guarda liviana para rechazar sintaxis ESM en el cargador CommonJS de la VM.
  */
 function looksLikeEsm(code: string): boolean {
   return /(^|\n)\s*import\s+/m.test(code) || /(^|\n)\s*export\s+/m.test(code);

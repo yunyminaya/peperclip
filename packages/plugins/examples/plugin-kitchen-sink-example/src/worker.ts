@@ -115,12 +115,12 @@ async function resolveWorkspace(
 ): Promise<PluginWorkspace> {
   const workspaces = await ctx.projects.listWorkspaces(projectId, companyId);
   if (workspaces.length === 0) {
-    throw new Error("No workspaces configured for this project");
+    throw new Error("No hay workspaces configurados para este proyecto");
   }
   if (!workspaceId) return workspaces[0]!;
   const workspace = workspaces.find((entry) => entry.id === workspaceId);
   if (!workspace) {
-    throw new Error("Workspace not found");
+    throw new Error("Workspace no encontrado");
   }
   return workspace;
 }
@@ -130,7 +130,7 @@ function ensureInsideWorkspace(workspacePath: string, relativePath: string): str
   const resolved = path.resolve(root, relativePath);
   const relative = path.relative(root, resolved);
   if (relative.startsWith("..") || path.isAbsolute(relative)) {
-    throw new Error("Requested path escapes the selected workspace");
+    throw new Error("La ruta solicitada escapa del workspace seleccionado");
   }
   return resolved;
 }
@@ -164,15 +164,15 @@ async function runCuratedCommand(
   commandKey: string,
 ): Promise<ProcessResult> {
   if (!config.enableProcessDemos) {
-    throw new Error("Process demos are disabled in plugin settings");
+    throw new Error("Las demos de proceso est\u00e1n deshabilitadas en los ajustes del plugin");
   }
   const allowedCommands = new Set(config.allowedCommands ?? DEFAULT_CONFIG.allowedCommands);
   if (!allowedCommands.has(commandKey)) {
-    throw new Error(`Command "${commandKey}" is not allowed by plugin settings`);
+    throw new Error(`El comando "${commandKey}" no est\u00e1 permitido por los ajustes del plugin`);
   }
   const definition = SAFE_COMMANDS.find((entry) => entry.key === commandKey);
   if (!definition) {
-    throw new Error(`Unknown curated command "${commandKey}"`);
+    throw new Error(`Comando seleccionado desconocido "${commandKey}"`);
   }
   const workspace = await resolveWorkspace(ctx, companyId, projectId, workspaceId);
   const cwd = workspace.path;
@@ -210,7 +210,7 @@ async function runCuratedCommand(
   pushRecord({
     level: code === 0 ? "info" : "warning",
     source: "process",
-    message: `Ran curated command "${commandKey}"`,
+    message: `Comando seleccionado ejecutado "${commandKey}"`,
     data: { code, cwd },
   });
   await ctx.metrics.write("process.run", 1, { command: commandKey, exit_code: String(code ?? -1) });
@@ -220,7 +220,7 @@ async function runCuratedCommand(
 function getCurrentCompanyId(params: Record<string, unknown>): string {
   const companyId = typeof params.companyId === "string" ? params.companyId : "";
   if (!companyId) {
-    throw new Error("companyId is required");
+    throw new Error("Se requiere companyId");
   }
   return companyId;
 }
@@ -392,7 +392,7 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     const companyId = getCurrentCompanyId(params);
     const message = typeof params.message === "string" && params.message.trim().length > 0
       ? params.message.trim()
-      : "Kitchen Sink demo event";
+      : "Evento de demo de Kitchen Sink";
     await ctx.events.emit("demo-event", companyId, {
       message,
       source: "kitchen-sink",
@@ -416,7 +416,7 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     pushRecord({
       level: "info",
       source: "state",
-      message: `Wrote state key ${input.stateKey}`,
+      message: `Clave de estado escrita ${input.stateKey}`,
       data: input,
     });
     await ctx.metrics.write("demo.state.write", 1, { scope: input.scopeKind });
@@ -429,14 +429,14 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     pushRecord({
       level: "warning",
       source: "state",
-      message: `Deleted state key ${input.stateKey}`,
+      message: `Clave de estado eliminada ${input.stateKey}`,
       data: input,
     });
     return { ok: true, scope: input };
   });
 
   ctx.actions.register("upsert-entity", async (params) => {
-    const title = typeof params.title === "string" && params.title.length > 0 ? params.title : "Kitchen Sink Entity";
+    const title = typeof params.title === "string" && params.title.length > 0 ? params.title : "Entidad de Kitchen Sink";
     const entityType = typeof params.entityType === "string" && params.entityType.length > 0
       ? params.entityType
       : "demo-record";
@@ -458,7 +458,7 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     pushRecord({
       level: "info",
       source: "entities",
-      message: `Upserted entity ${record.entityType}`,
+      message: `Entidad registrada ${record.entityType}`,
       data: { id: record.id, scopeKind: record.scopeKind },
     });
     return record;
@@ -468,21 +468,21 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     const companyId = getCurrentCompanyId(params);
     const title = typeof params.title === "string" && params.title.trim().length > 0
       ? params.title.trim()
-      : "Kitchen Sink demo issue";
+      : "Issue de demo de Kitchen Sink";
     const description = typeof params.description === "string" ? params.description : undefined;
     const projectId = typeof params.projectId === "string" && params.projectId.length > 0 ? params.projectId : undefined;
     const issue = await ctx.issues.create({ companyId, projectId, title, description });
     pushRecord({
       level: "info",
       source: "issues.create",
-      message: `Created issue ${issue.title}`,
+      message: `Issue creado ${issue.title}`,
       data: { issueId: issue.id },
     });
     await ctx.activity.log({
       companyId,
       entityType: "issue",
       entityId: issue.id,
-      message: `Kitchen Sink created issue "${issue.title}"`,
+      message: `Kitchen Sink cre\u00f3 el issue "${issue.title}"`,
       metadata: { plugin: PLUGIN_ID },
     });
     return issue;
@@ -493,13 +493,13 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     const issueId = typeof params.issueId === "string" ? params.issueId : "";
     const status = typeof params.status === "string" ? params.status : "";
     if (!issueId || !status) {
-      throw new Error("issueId and status are required");
+      throw new Error("Se requieren issueId y status");
     }
     const issue = await ctx.issues.update(issueId, { status: status as Issue["status"] }, companyId);
     pushRecord({
       level: "info",
       source: "issues.update",
-      message: `Updated issue ${issue.id} to ${issue.status}`,
+      message: `Issue ${issue.id} actualizado a ${issue.status}`,
     });
     return issue;
   });
@@ -508,13 +508,13 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     const companyId = getCurrentCompanyId(params);
     const title = typeof params.title === "string" && params.title.trim().length > 0
       ? params.title.trim()
-      : "Kitchen Sink demo goal";
+      : "Objetivo de demo de Kitchen Sink";
     const description = typeof params.description === "string" ? params.description : undefined;
     const goal = await ctx.goals.create({ companyId, title, description, level: "team", status: "planned" });
     pushRecord({
       level: "info",
       source: "goals.create",
-      message: `Created goal ${goal.title}`,
+      message: `Objetivo creado ${goal.title}`,
       data: { goalId: goal.id },
     });
     return goal;
@@ -525,13 +525,13 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     const goalId = typeof params.goalId === "string" ? params.goalId : "";
     const status = typeof params.status === "string" ? params.status : "";
     if (!goalId || !status) {
-      throw new Error("goalId and status are required");
+      throw new Error("Se requieren goalId y status");
     }
     const goal = await ctx.goals.update(goalId, { status: status as Goal["status"] }, companyId);
     pushRecord({
       level: "info",
       source: "goals.update",
-      message: `Updated goal ${goal.id} to ${goal.status}`,
+      message: `Objetivo ${goal.id} actualizado a ${goal.status}`,
     });
     return goal;
   });
@@ -542,7 +542,7 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     const entityId = typeof params.entityId === "string" ? params.entityId : undefined;
     const message = typeof params.message === "string" && params.message.length > 0
       ? params.message
-      : "Kitchen Sink wrote an activity entry";
+      : "Kitchen Sink escribi\u00f3 una entrada de actividad";
     await ctx.activity.log({
       companyId,
       entityType,
@@ -566,7 +566,7 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     pushRecord({
       level: "info",
       source: "metrics",
-      message: `Wrote metric demo.${name}`,
+      message: `M\u00e9trica escrita demo.${name}`,
       data: { value },
     });
     return { ok: true, value };
@@ -590,7 +590,7 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     pushRecord({
       level: response.ok ? "info" : "warning",
       source: "http",
-      message: `Fetched ${url}`,
+      message: `Obtenido ${url}`,
       data: { status: response.status },
     });
     return result;
@@ -602,13 +602,13 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
       ? params.secretRef
       : config.secretRefExample || "";
     if (!secretRef) {
-      throw new Error("No secret reference configured");
+      throw new Error("No hay referencia de secreto configurada");
     }
     const resolved = await ctx.secrets.resolve(secretRef);
     pushRecord({
       level: "info",
       source: "secrets",
-      message: `Resolved secret reference ${secretRef}`,
+      message: `Referencia de secreto resuelta ${secretRef}`,
     });
     return {
       secretRef,
@@ -623,14 +623,14 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     const projectId = typeof params.projectId === "string" ? params.projectId : "";
     const workspaceId = typeof params.workspaceId === "string" && params.workspaceId.length > 0 ? params.workspaceId : undefined;
     const commandKey = typeof params.commandKey === "string" ? params.commandKey : "pwd";
-    if (!projectId) throw new Error("projectId is required");
+    if (!projectId) throw new Error("Se requiere projectId");
     return await runCuratedCommand(ctx, config, companyId, projectId, workspaceId, commandKey);
   });
 
   ctx.actions.register("read-workspace-file", async (params) => {
     const config = await getConfig(ctx);
     if (!config.enableWorkspaceDemos) {
-      throw new Error("Workspace demos are disabled in plugin settings");
+      throw new Error("Las demos de workspace están deshabilitadas en los ajustes del plugin");
     }
     const companyId = getCurrentCompanyId(params);
     const projectId = typeof params.projectId === "string" ? params.projectId : "";
@@ -638,7 +638,7 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     const relativePath = typeof params.relativePath === "string" && params.relativePath.length > 0
       ? params.relativePath
       : config.workspaceScratchFile || DEFAULT_CONFIG.workspaceScratchFile;
-    if (!projectId) throw new Error("projectId is required");
+    if (!projectId) throw new Error("Se requiere projectId");
     const workspace = await resolveWorkspace(ctx, companyId, projectId, workspaceId);
     const fullPath = ensureInsideWorkspace(workspace.path, relativePath);
     const content = await fs.readFile(fullPath, "utf8");
@@ -652,7 +652,7 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
   ctx.actions.register("write-workspace-scratch", async (params) => {
     const config = await getConfig(ctx);
     if (!config.enableWorkspaceDemos) {
-      throw new Error("Workspace demos are disabled in plugin settings");
+      throw new Error("Las demos de workspace están deshabilitadas en los ajustes del plugin");
     }
     const companyId = getCurrentCompanyId(params);
     const projectId = typeof params.projectId === "string" ? params.projectId : "";
@@ -660,15 +660,15 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     const relativePath = typeof params.relativePath === "string" && params.relativePath.length > 0
       ? params.relativePath
       : config.workspaceScratchFile || DEFAULT_CONFIG.workspaceScratchFile;
-    const content = typeof params.content === "string" ? params.content : "Kitchen Sink workspace demo";
-    if (!projectId) throw new Error("projectId is required");
+    const content = typeof params.content === "string" ? params.content : "Demo de workspace de Kitchen Sink";
+    if (!projectId) throw new Error("Se requiere projectId");
     const workspace = await resolveWorkspace(ctx, companyId, projectId, workspaceId);
     const fullPath = ensureInsideWorkspace(workspace.path, relativePath);
     await fs.writeFile(fullPath, content, "utf8");
     pushRecord({
       level: "info",
       source: "workspace",
-      message: `Wrote scratch file ${relativePath}`,
+      message: `Archivo temporal escrito ${relativePath}`,
       data: { workspaceId: workspace.id },
     });
     return {
@@ -688,7 +688,7 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
           ctx.streams.emit(STREAM_CHANNELS.progress, {
             step: index,
             total: steps,
-            message: `Progress step ${index}/${steps}`,
+            message: `Paso de progreso ${index}/${steps}`,
           });
           await new Promise((resolve) => setTimeout(resolve, 350));
         }
@@ -704,13 +704,13 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     const agentId = typeof params.agentId === "string" ? params.agentId : "";
     const prompt = typeof params.prompt === "string" && params.prompt.length > 0
       ? params.prompt
-      : "Kitchen Sink test invocation";
-    if (!agentId) throw new Error("agentId is required");
-    const result = await ctx.agents.invoke(agentId, companyId, { prompt, reason: "Kitchen Sink plugin demo" });
+      : "Invocaci\u00f3n de prueba de Kitchen Sink";
+    if (!agentId) throw new Error("Se requiere agentId");
+    const result = await ctx.agents.invoke(agentId, companyId, { prompt, reason: "Demo del plugin Kitchen Sink" });
     pushRecord({
       level: "info",
       source: "agents.invoke",
-      message: `Invoked agent ${agentId}`,
+      message: `Agente invocado ${agentId}`,
       data: result,
     });
     return result;
@@ -719,14 +719,14 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
   ctx.actions.register("pause-agent", async (params) => {
     const companyId = getCurrentCompanyId(params);
     const agentId = typeof params.agentId === "string" ? params.agentId : "";
-    if (!agentId) throw new Error("agentId is required");
+    if (!agentId) throw new Error("Se requiere agentId");
     return await ctx.agents.pause(agentId, companyId);
   });
 
   ctx.actions.register("resume-agent", async (params) => {
     const companyId = getCurrentCompanyId(params);
     const agentId = typeof params.agentId === "string" ? params.agentId : "";
-    if (!agentId) throw new Error("agentId is required");
+    if (!agentId) throw new Error("Se requiere agentId");
     return await ctx.agents.resume(agentId, companyId);
   });
 
@@ -735,17 +735,17 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     const agentId = typeof params.agentId === "string" ? params.agentId : "";
     const prompt = typeof params.prompt === "string" && params.prompt.length > 0
       ? params.prompt
-      : "Say hello from the Kitchen Sink plugin.";
-    if (!agentId) throw new Error("agentId is required");
+      : "Saluda desde el plugin Kitchen Sink.";
+    if (!agentId) throw new Error("Se requiere agentId");
 
     ctx.streams.open(STREAM_CHANNELS.agentChat, companyId);
     const session = await ctx.agents.sessions.create(agentId, companyId, {
-      reason: "Kitchen Sink plugin chat demo",
+      reason: "Demo de chat del plugin Kitchen Sink",
     });
 
     await ctx.agents.sessions.sendMessage(session.sessionId, companyId, {
       prompt,
-      reason: "Kitchen Sink demo",
+      reason: "Demo de Kitchen Sink",
       onEvent: (event) => {
         ctx.streams.emit(STREAM_CHANNELS.agentChat, {
           eventType: event.eventType,
@@ -762,7 +762,7 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     pushRecord({
       level: "info",
       source: "agent.sessions",
-      message: `Started agent session ${session.sessionId}`,
+      message: `Sesi\u00f3n de agente iniciada ${session.sessionId}`,
       data: { agentId, sessionId: session.sessionId },
     });
     return { channel: STREAM_CHANNELS.agentChat, sessionId: session.sessionId };
@@ -773,19 +773,19 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     const issueId = typeof params.issueId === "string" ? params.issueId : "";
     const commentId = typeof params.commentId === "string" ? params.commentId : "";
     if (!issueId || !commentId) {
-      throw new Error("issueId and commentId are required");
+      throw new Error("Se requieren issueId y commentId");
     }
     const comments = await ctx.issues.listComments(issueId, companyId);
     const comment = comments.find((entry) => entry.id === commentId);
     if (!comment) {
-      throw new Error("Comment not found");
+      throw new Error("Comentario no encontrado");
     }
     const record = await ctx.entities.upsert({
       entityType: "copied-comment",
       scopeKind: "issue",
       scopeId: issueId,
       externalId: comment.id,
-      title: `Copied comment ${comment.id.slice(0, 8)}`,
+      title: `Comentario copiado ${comment.id.slice(0, 8)}`,
       status: "captured",
       data: {
         commentId: comment.id,
@@ -796,7 +796,7 @@ async function registerActionHandlers(ctx: PluginContext): Promise<void> {
     pushRecord({
       level: "info",
       source: "comments",
-      message: `Copied comment ${comment.id} into plugin entities`,
+      message: `Comentario ${comment.id} copiado a entidades del plugin`,
       data: { recordId: record.id },
     });
     return record;
@@ -807,8 +807,8 @@ async function registerToolHandlers(ctx: PluginContext): Promise<void> {
   ctx.tools.register(
     TOOL_NAMES.echo,
     {
-      displayName: "Kitchen Sink Echo",
-      description: "Echoes the provided message back to the caller.",
+      displayName: "Eco de Kitchen Sink",
+      description: "Devuelve el mensaje proporcionado al llamador.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -820,7 +820,7 @@ async function registerToolHandlers(ctx: PluginContext): Promise<void> {
     async (params, runCtx): Promise<ToolResult> => {
       const payload = params as { message?: string };
       return {
-        content: payload.message ?? "No message provided",
+        content: payload.message ?? "No se proporcion\u00f3 mensaje",
         data: {
           runCtx,
           message: payload.message ?? "",
@@ -832,8 +832,8 @@ async function registerToolHandlers(ctx: PluginContext): Promise<void> {
   ctx.tools.register(
     TOOL_NAMES.companySummary,
     {
-      displayName: "Kitchen Sink Company Summary",
-      description: "Summarizes current company counts from the Paperclip APIs.",
+      displayName: "Resumen de empresa de Kitchen Sink",
+      description: "Resume los conteos actuales de la empresa desde las APIs de Paperclip.",
       parametersSchema: { type: "object", properties: {} },
     },
     async (_params, runCtx): Promise<ToolResult> => {
@@ -842,7 +842,7 @@ async function registerToolHandlers(ctx: PluginContext): Promise<void> {
       const goals = await ctx.goals.list({ companyId: runCtx.companyId, limit: 50, offset: 0 });
       const agents = await ctx.agents.list({ companyId: runCtx.companyId, limit: 50, offset: 0 });
       return {
-        content: `Company has ${projects.length} projects, ${issues.length} issues, ${goals.length} goals, and ${agents.length} agents.`,
+        content: `La empresa tiene ${projects.length} proyectos, ${issues.length} issues, ${goals.length} objetivos y ${agents.length} agentes.`,
         data: {
           companyId: runCtx.companyId,
           projects: projects.length,
@@ -857,8 +857,8 @@ async function registerToolHandlers(ctx: PluginContext): Promise<void> {
   ctx.tools.register(
     TOOL_NAMES.createIssue,
     {
-      displayName: "Kitchen Sink Create Issue",
-      description: "Creates an issue in the current run context.",
+      displayName: "Crear issue de Kitchen Sink",
+      description: "Crea un issue en el contexto de ejecuci\u00f3n actual.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -871,7 +871,7 @@ async function registerToolHandlers(ctx: PluginContext): Promise<void> {
     async (params, runCtx): Promise<ToolResult> => {
       const payload = params as { title?: string; description?: string };
       if (!payload.title) {
-        return { error: "title is required" };
+        return { error: "Se requiere title" };
       }
       const issue = await ctx.issues.create({
         companyId: runCtx.companyId,
@@ -880,7 +880,7 @@ async function registerToolHandlers(ctx: PluginContext): Promise<void> {
         description: payload.description,
       });
       return {
-        content: `Created issue ${issue.title}`,
+        content: `Issue creado ${issue.title}`,
         data: issue,
       };
     },
@@ -892,7 +892,7 @@ async function registerEventHandlers(ctx: PluginContext): Promise<void> {
     pushRecord({
       level: "info",
       source: "events.subscribe",
-      message: "Observed issue.created",
+      message: "issue.created observado",
       data: event,
     });
   });
@@ -901,7 +901,7 @@ async function registerEventHandlers(ctx: PluginContext): Promise<void> {
     pushRecord({
       level: "info",
       source: "events.subscribe",
-      message: "Observed issue.updated",
+      message: "issue.updated observado",
       data: event,
     });
   });
@@ -910,7 +910,7 @@ async function registerEventHandlers(ctx: PluginContext): Promise<void> {
     pushRecord({
       level: "info",
       source: "plugin-event",
-      message: "Observed plugin demo event",
+      message: "Evento de demo del plugin observado",
       data: event,
     });
   });
@@ -929,7 +929,7 @@ async function registerJobs(ctx: PluginContext): Promise<void> {
     pushRecord({
       level: "info",
       source: "jobs",
-      message: "Kitchen Sink demo job ran",
+      message: "Tarea de demo de Kitchen Sink ejecutada",
       data: payload,
     });
     await ctx.metrics.write("jobs.demo_heartbeat", 1, { trigger: job.trigger });
@@ -944,7 +944,7 @@ const plugin: PaperclipPlugin = definePlugin({
     pushRecord({
       level: "info",
       source: "setup",
-      message: "Kitchen Sink plugin setup complete",
+      message: "Configuraci\u00f3n del plugin Kitchen Sink completa",
       data: { pluginId: PLUGIN_ID },
     });
     await registerEventHandlers(ctx);
@@ -959,7 +959,7 @@ const plugin: PaperclipPlugin = definePlugin({
     const config = ctx ? await getConfig(ctx) : DEFAULT_CONFIG;
     return {
       status: "ok",
-      message: "Kitchen Sink plugin ready",
+      message: "Plugin Kitchen Sink listo",
       details: {
         recordsTracked: recentRecords.length,
         runtimeLaunchers: runtimeLaunchers.size,
@@ -973,7 +973,7 @@ const plugin: PaperclipPlugin = definePlugin({
     pushRecord({
       level: "info",
       source: "config",
-      message: "Kitchen Sink config changed",
+      message: "Configuraci\u00f3n de Kitchen Sink cambiada",
       data: newConfig,
     });
   },
@@ -983,20 +983,20 @@ const plugin: PaperclipPlugin = definePlugin({
     const warnings: string[] = [];
     const typed = config as KitchenSinkConfig;
     if (typed.httpDemoUrl && typeof typed.httpDemoUrl !== "string") {
-      errors.push("httpDemoUrl must be a string");
+      errors.push("httpDemoUrl debe ser una cadena");
     }
     if (typed.allowedCommands && !Array.isArray(typed.allowedCommands)) {
-      errors.push("allowedCommands must be an array");
+      errors.push("allowedCommands debe ser un arreglo");
     }
     if (Array.isArray(typed.allowedCommands)) {
       const allowed = new Set<string>(SAFE_COMMANDS.map((command) => command.key));
       const invalid = typed.allowedCommands.filter((value) => typeof value !== "string" || !allowed.has(value));
       if (invalid.length > 0) {
-        errors.push(`allowedCommands contains unsupported values: ${invalid.join(", ")}`);
+        errors.push(`allowedCommands contiene valores no soportados: ${invalid.join(", ")}`);
       }
     }
     if (typed.enableProcessDemos) {
-      warnings.push("Process demos run local child processes and are intended only for trusted development environments.");
+      warnings.push("Las demos de proceso ejecutan procesos hijo locales y est\u00e1n destinadas solo a entornos de desarrollo confiables.");
     }
     return {
       ok: errors.length === 0,
@@ -1020,11 +1020,11 @@ const plugin: PaperclipPlugin = definePlugin({
     pushRecord({
       level: "info",
       source: "webhook",
-      message: `Received webhook ${input.endpointKey}`,
+      message: `Webhook recibido ${input.endpointKey}`,
       data: payload,
     });
     if (input.endpointKey !== WEBHOOK_KEYS.demo) {
-      throw new Error(`Unsupported webhook endpoint "${input.endpointKey}"`);
+      throw new Error(`Endpoint de webhook no soportado "${input.endpointKey}"`);
     }
   },
 
@@ -1032,7 +1032,7 @@ const plugin: PaperclipPlugin = definePlugin({
     pushRecord({
       level: "warning",
       source: "shutdown",
-      message: "Kitchen Sink plugin shutting down",
+      message: "Apagando el plugin Kitchen Sink",
     });
   },
 });

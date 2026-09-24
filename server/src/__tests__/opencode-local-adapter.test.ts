@@ -209,12 +209,12 @@ describe("opencode_local cli formatter", () => {
 
       expect(lines).toEqual(
         expect.arrayContaining([
-          "step started (session: ses_abc)",
+          "paso iniciado (session: ses_abc)",
           "assistant: hello",
           "tool_call: bash (call_1)",
           "tool_result status=completed exit=0",
           "AGENTS.md",
-          "step finished: reason=stop",
+          "paso finalizado: reason=stop",
           "tokens: in=10 out=5 cached=2 cost=$0.000420",
         ]),
       );

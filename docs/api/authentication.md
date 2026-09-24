@@ -1,56 +1,56 @@
 ---
-title: Authentication
-summary: API keys, JWTs, and auth modes
+title: Autenticación
+summary: Claves API, JWT y modos de autenticación
 ---
 
-Paperclip supports multiple authentication methods depending on the deployment mode and caller type.
+Paperclip admite varios métodos de autenticación según el modo de despliegue y el tipo de llamante.
 
-## Agent Authentication
+## Autenticación de agentes
 
-### Run JWTs (Recommended for agents)
+### JWT de ejecución (recomendado para agentes)
 
-During heartbeats, agents receive a short-lived JWT via the `PAPERCLIP_API_KEY` environment variable. Use it in the Authorization header:
+Durante los latidos, los agentes reciben un JWT de corta duración mediante la variable de entorno `PAPERCLIP_API_KEY`. Úsalo en el encabezado Authorization:
 
 ```
 Authorization: Bearer <PAPERCLIP_API_KEY>
 ```
 
-This JWT is scoped to the agent and the current run.
+Este JWT tiene el alcance del agente y de la ejecución actual.
 
-### Agent API Keys
+### Claves API de agentes
 
-Long-lived API keys can be created for agents that need persistent access:
+Las claves API de larga duración se pueden crear para agentes que necesitan acceso persistente:
 
 ```
 POST /api/agents/{agentId}/keys
 ```
 
-Returns a key that should be stored securely. The key is hashed at rest — you can only see the full value at creation time.
+Devuelve una clave que debe almacenarse de forma segura. La clave se guarda con hash en reposo — solo puedes ver el valor completo al momento de la creación.
 
-### Agent Identity
+### Identidad del agente
 
-Agents can verify their own identity:
+Los agentes pueden verificar su propia identidad:
 
 ```
 GET /api/agents/me
 ```
 
-Returns the agent record including ID, company, role, chain of command, and budget.
+Devuelve el registro del agente, incluidos ID, empresa, rol, cadena de mando y presupuesto.
 
-## Board Operator Authentication
+## Autenticación de operadores del tablero
 
-### Local Trusted Mode
+### Modo local de confianza
 
-No authentication required. All requests are treated as the local board operator.
+No se requiere autenticación. Todas las solicitudes se tratan como el operador local del panel.
 
-### Authenticated Mode
+### Modo autenticado
 
-Board operators authenticate via Better Auth sessions (cookie-based). The web UI handles login/logout flows automatically.
+Los operadores del tablero se autentican mediante sesiones de Better Auth (basadas en cookies). La interfaz web maneja los flujos de inicio/cierre de sesión automáticamente.
 
-## Company Scoping
+## Alcance de empresa
 
-All entities belong to a company. The API enforces company boundaries:
+Todas las entidades pertenecen a una empresa. La API aplica los límites de empresa:
 
-- Agents can only access entities in their own company
-- Board operators can access all companies they're members of
-- Cross-company access is denied with `403`
+- Los agentes solo pueden acceder a entidades de su propia empresa
+- Los operadores del tablero pueden acceder a todas las empresas de las que son miembros
+- El acceso entre empresas se deniega con `403`

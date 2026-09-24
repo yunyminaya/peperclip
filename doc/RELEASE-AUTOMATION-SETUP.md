@@ -1,176 +1,176 @@
-# Release Automation Setup
+# Configuración de automatización de versiones
 
-This document covers the GitHub and npm setup required for the current Paperclip release model:
+Este documento cubre la configuración de GitHub y npm requerida para el modelo actual de versiones de Paperclip:
 
-- automatic canaries from `master`
-- manual stable promotion from a chosen source ref
-- npm trusted publishing via GitHub OIDC
-- protected release infrastructure in a public repository
+- canaries automáticos desde `master`
+- promoción manual de estables desde un ref fuente elegido
+- publicación confiable de npm vía GitHub OIDC
+- infraestructura de versiones protegida en un repositorio público
 
-Repo-side files that depend on this setup:
-
-- `.github/workflows/release.yml`
-- `.github/CODEOWNERS`
-
-Note:
-
-- the release workflows intentionally use `pnpm install --no-frozen-lockfile`
-- this matches the repo's current policy where `pnpm-lock.yaml` is refreshed by GitHub automation after manifest changes land on `master`
-- the publish jobs then restore `pnpm-lock.yaml` before running `scripts/release.sh`, so the release script still sees a clean worktree
-
-## 1. Merge the Repo Changes First
-
-Before touching GitHub or npm settings, merge the release automation code so the referenced workflow filenames already exist on the default branch.
-
-Required files:
+Archivos del repo que dependen de esta configuración:
 
 - `.github/workflows/release.yml`
 - `.github/CODEOWNERS`
 
-## 2. Configure npm Trusted Publishing
+Nota:
 
-Do this for every public package that Paperclip publishes.
+- los workflows de versión usan intencionalmente `pnpm install --no-frozen-lockfile`
+- esto coincide con la política actual del repo donde `pnpm-lock.yaml` es refrescado por automatización de GitHub después de que cambios de manifiestos aterrizan en `master`
+- los jobs de publicación luego restauran `pnpm-lock.yaml` antes de ejecutar `scripts/release.sh`, así el script de versión aún ve un working tree limpio
 
-At minimum that includes:
+## 1. Haz merge de los cambios del repo primero
+
+Antes de tocar ajustes de GitHub o npm, haz merge del código de automatización de versiones para que los nombres de archivo de workflow referenciados ya existan en la rama por defecto.
+
+Archivos requeridos:
+
+- `.github/workflows/release.yml`
+- `.github/CODEOWNERS`
+
+## 2. Configura publicación confiable de npm
+
+Haz esto para cada paquete público que Paperclip publica.
+
+Como mínimo eso incluye:
 
 - `paperclipai`
 - `@paperclipai/server`
 - `@paperclipai/ui`
-- public packages under `packages/`
+- paquetes públicos bajo `packages/`
 
-### 2.1. In npm, open each package settings page
+### 2.1. En npm, abre la página de ajustes de cada paquete
 
-For each package:
+Para cada paquete:
 
-1. open npm as an owner of the package
-2. go to the package settings / publishing access area
-3. add a trusted publisher for the GitHub repository `paperclipai/paperclip`
+1. abre npm como propietario del paquete
+2. ve al área de ajustes / acceso de publicación del paquete
+3. agrega un publicador confiable para el repositorio de GitHub `paperclipai/paperclip`
 
-### 2.2. Add one trusted publisher entry per package
+### 2.2. Agrega una entrada de publicador confiable por paquete
 
-npm currently allows one trusted publisher configuration per package.
+npm actualmente permite una configuración de publicador confiable por paquete.
 
-Configure:
+Configura:
 
 - workflow: `.github/workflows/release.yml`
 
-Repository:
+Repositorio:
 
 - `paperclipai/paperclip`
 
-Environment name:
+Nombre de entorno:
 
-- leave the npm trusted-publisher environment field blank
+- deja en blanco el campo de entorno del publicador confiable de npm
 
-Why:
+Por qué:
 
-- the single `release.yml` workflow handles both canary and stable publishing
-- GitHub environments `npm-canary` and `npm-stable` still enforce different approval rules on the GitHub side
+- el único workflow `release.yml` maneja tanto publicación canary como estable
+- los entornos de GitHub `npm-canary` y `npm-stable` aún aplican distintas reglas de aprobación del lado de GitHub
 
-### 2.3. Verify trusted publishing before removing old auth
+### 2.3. Verifica la publicación confiable antes de quitar la autenticación vieja
 
-After the workflows are live:
+Después de que los workflows estén en vivo:
 
-1. run a canary publish
-2. confirm npm publish succeeds without any `NPM_TOKEN`
-3. run a stable dry-run
-4. run one real stable publish
+1. ejecuta una publicación canary
+2. confirma que la publicación npm tiene éxito sin ningún `NPM_TOKEN`
+3. ejecuta un dry-run estable
+4. ejecuta una publicación estable real
 
-Only after that should you remove old token-based access.
+Solo después de eso debes quitar el acceso viejo basado en tokens.
 
-## 3. Remove Legacy npm Tokens
+## 3. Quita tokens legacy de npm
 
-After trusted publishing works:
+Después de que la publicación confiable funcione:
 
-1. revoke any repository or organization `NPM_TOKEN` secrets used for publish
-2. revoke any personal automation token that used to publish Paperclip
-3. if npm offers a package-level setting to restrict publishing to trusted publishers, enable it
+1. revoca cualquier secreto `NPM_TOKEN` de repositorio u organización usado para publicar
+2. revoca cualquier token personal de automatización que solía publicar Paperclip
+3. si npm ofrece un ajuste a nivel de paquete para restringir la publicación a publicadores confiables, habilítalo
 
-Goal:
+Objetivo:
 
-- no long-lived npm publishing token should remain in GitHub Actions
+- ningún token de publicación npm de larga duración debe quedar en GitHub Actions
 
-## 4. Create GitHub Environments
+## 4. Crea entornos de GitHub
 
-Create two environments in the GitHub repository:
+Crea dos entornos en el repositorio de GitHub:
 
 - `npm-canary`
 - `npm-stable`
 
-Path:
+Ruta:
 
-1. GitHub repository
+1. Repositorio de GitHub
 2. `Settings`
 3. `Environments`
 4. `New environment`
 
-## 5. Configure `npm-canary`
+## 5. Configura `npm-canary`
 
-Recommended settings for `npm-canary`:
+Ajustes recomendados para `npm-canary`:
 
-- environment name: `npm-canary`
-- required reviewers: none
-- wait timer: none
-- deployment branches and tags:
-  - selected branches only
-  - allow `master`
+- nombre de entorno: `npm-canary`
+- revisores requeridos: ninguno
+- temporizador de espera: ninguno
+- ramas y tags de despliegue:
+  - solo ramas seleccionadas
+  - permitir `master`
 
-Reasoning:
+Razonamiento:
 
-- every push to `master` should be able to publish a canary automatically
-- no human approval should be required for canaries
+- cada push a `master` debe poder publicar un canary automáticamente
+- no se debe requerir aprobación humana para canaries
 
-## 6. Configure `npm-stable`
+## 6. Configura `npm-stable`
 
-Recommended settings for `npm-stable`:
+Ajustes recomendados para `npm-stable`:
 
-- environment name: `npm-stable`
-- required reviewers: at least one maintainer other than the person triggering the workflow when possible
-- prevent self-review: enabled
-- admin bypass: disabled if your team can tolerate it
-- wait timer: optional
-- deployment branches and tags:
-  - selected branches only
-  - allow `master`
+- nombre de entorno: `npm-stable`
+- revisores requeridos: al menos un mantenedor distinto de la persona que dispara el workflow cuando sea posible
+- prevenir auto-revisión: habilitado
+- bypass de admin: deshabilitado si tu equipo lo tolera
+- temporizador de espera: opcional
+- ramas y tags de despliegue:
+  - solo ramas seleccionadas
+  - permitir `master`
 
-Reasoning:
+Razonamiento:
 
-- stable publishes should require an explicit human approval gate
-- the workflow is manual, but the environment should still be the real control point
+- las publicaciones estables deben requerir una puerta de aprobación humana explícita
+- el workflow es manual, pero el entorno aún debe ser el punto de control real
 
-## 7. Protect `master`
+## 7. Protege `master`
 
-Open the branch protection settings for `master`.
+Abre los ajustes de protección de rama para `master`.
 
-Recommended rules:
+Reglas recomendadas:
 
-1. require pull requests before merging
-2. require status checks to pass before merging
-3. require review from code owners
-4. dismiss stale approvals when new commits are pushed
-5. restrict who can push directly to `master`
+1. requerir pull requests antes de hacer merge
+2. requerir que los checks de estado pasen antes de hacer merge
+3. requerir revisión de code owners
+4. descartar aprobaciones obsoletas cuando se pushean nuevos commits
+5. restringir quién puede pushear directamente a `master`
 
-At minimum, make sure workflow and release script changes cannot land without review.
+Como mínimo, asegúrate de que cambios de workflow y de scripts de versión no puedan aterrizar sin revisión.
 
-## 8. Enforce CODEOWNERS Review
+## 8. Aplica revisión de CODEOWNERS
 
-This repo now includes `.github/CODEOWNERS`, but GitHub only enforces it if branch protection requires code owner reviews.
+Este repo ahora incluye `.github/CODEOWNERS`, pero GitHub solo lo aplica si la protección de rama requiere revisiones de code owner.
 
-In branch protection for `master`, enable:
+En la protección de rama para `master`, habilita:
 
 - `Require review from Code Owners`
 
-Then verify the owner entries are correct for your actual maintainer set.
+Luego verifica que las entradas de propietarios sean correctas para tu conjunto real de mantenedores.
 
-Current file:
+Archivo actual:
 
 - `.github/CODEOWNERS`
 
-If `@cryppadotta` is not the right reviewer identity in the public repo, change it before enabling enforcement.
+Si `@cryppadotta` no es la identidad de revisor correcta en el repo público, cámbiala antes de habilitar la aplicación.
 
-## 9. Protect Release Infrastructure Specifically
+## 9. Protege la infraestructura de versiones específicamente
 
-These files should always trigger code owner review:
+Estos archivos siempre deben disparar revisión de code owner:
 
 - `.github/workflows/release.yml`
 - `scripts/release.sh`
@@ -181,101 +181,101 @@ These files should always trigger code owner review:
 - `doc/RELEASING.md`
 - `doc/PUBLISHING.md`
 
-If you want stronger controls, add a repository ruleset that explicitly blocks direct pushes to:
+Si quieres controles más fuertes, agrega un ruleset de repositorio que bloquee explícitamente pushes directos a:
 
 - `.github/workflows/**`
 - `scripts/release*`
 
-## 10. Do Not Store a Claude Token in GitHub Actions
+## 10. No almacenes un token de Claude en GitHub Actions
 
-Do not add a personal Claude or Anthropic token for automatic changelog generation.
+No agregues un token personal de Claude o Anthropic para generación automática de changelog.
 
-Recommended policy:
+Política recomendada:
 
-- stable changelog generation happens locally from a trusted maintainer machine
-- canaries never generate changelogs
+- la generación de changelog estable ocurre en local desde una máquina confiable del mantenedor
+- los canaries nunca generan changelogs
 
-This keeps LLM spending intentional and avoids a high-value token sitting in Actions.
+Esto mantiene intencional el gasto en LLM y evita un token de alto valor en Actions.
 
-## 11. Verify the Canary Workflow
+## 11. Verifica el workflow canary
 
-After setup:
+Después de la configuración:
 
-1. merge a harmless commit to `master`
-2. open the `Release` workflow run triggered by that push
-3. confirm it passes verification
-4. confirm publish succeeds under the `npm-canary` environment
-5. confirm npm now shows a new `canary` release
-6. confirm a git tag named `canary/vYYYY.MDD.P-canary.N` was pushed
+1. haz merge de un commit inofensivo a `master`
+2. abre la ejecución del workflow `Release` disparada por ese push
+3. confirma que pasa la verificación
+4. confirma que la publicación tiene éxito bajo el entorno `npm-canary`
+5. confirma que npm ahora muestra una nueva versión `canary`
+6. confirma que se pusheó un tag de git llamado `canary/vYYYY.MDD.P-canary.N`
 
-Install-path check:
+Chequeo de ruta de instalación:
 
 ```bash
 npx paperclipai@canary onboard
 ```
 
-## 12. Verify the Stable Workflow
+## 12. Verifica el workflow estable
 
-After at least one good canary exists:
+Después de que exista al menos un buen canary:
 
-1. resolve the target stable version with `./scripts/release.sh stable --date YYYY-MM-DD --print-version`
-2. prepare `releases/vYYYY.MDD.P.md` on the source commit you want to promote
-3. open `Actions` -> `Release`
-4. run it with:
-   - `source_ref`: the tested commit SHA or canary tag source commit
-   - `stable_date`: leave blank or set the intended UTC date like `2026-03-18`
-     do not enter a version like `2026.318.0`; the workflow computes that from the date
+1. resuelve la versión estable objetivo con `./scripts/release.sh stable --date YYYY-MM-DD --print-version`
+2. prepara `releases/vYYYY.MDD.P.md` en el commit fuente que quieres promover
+3. abre `Actions` -> `Release`
+4. ejecútalo con:
+   - `source_ref`: el SHA de commit probado o commit fuente del tag canary
+   - `stable_date`: déjalo en blanco o define la fecha UTC prevista como `2026-03-18`
+     no ingreses una versión como `2026.318.0`; el workflow la calcula desde la fecha
    - `dry_run`: `true`
-5. confirm the dry-run succeeds
-6. rerun with `dry_run: false`
-7. approve the `npm-stable` environment when prompted
-8. confirm npm `latest` points to the new stable version
-9. confirm git tag `vYYYY.MDD.P` exists
-10. confirm the GitHub Release was created
+5. confirma que el dry-run tiene éxito
+6. re-ejecuta con `dry_run: false`
+7. aprueba el entorno `npm-stable` cuando se pida
+8. confirma que `latest` de npm apunta a la nueva versión estable
+9. confirma que existe el tag de git `vYYYY.MDD.P`
+10. confirma que se creó el GitHub Release
 
-Implementation note:
+Nota de implementación:
 
-- the GitHub Actions stable workflow calls `create-github-release.sh` with `PUBLISH_REMOTE=origin`
-- local maintainer usage can still pass `PUBLISH_REMOTE=public-gh` explicitly when needed
+- el workflow estable de GitHub Actions llama a `create-github-release.sh` con `PUBLISH_REMOTE=origin`
+- el uso local del mantenedor aún puede pasar `PUBLISH_REMOTE=public-gh` explícitamente cuando se necesite
 
-## 13. Suggested Maintainer Policy
+## 13. Política sugerida del mantenedor
 
-Use this policy going forward:
+Usa esta política en adelante:
 
-- canaries are automatic and cheap
-- stables are manual and approved
-- only stables get public notes and announcements
-- release notes are committed before stable publish
-- rollback uses `npm dist-tag`, not unpublish
+- los canaries son automáticos y baratos
+- las estables son manuales y aprobadas
+- solo las estables obtienen notas públicas y anuncios
+- las notas de versión se commitean antes de la publicación estable
+- la reversión usa `npm dist-tag`, no despublicación
 
-## 14. Troubleshooting
+## 14. Solución de problemas
 
-### Trusted publishing fails with an auth error
+### La publicación confiable falla con un error de autenticación
 
-Check:
+Revisa:
 
-1. the workflow filename on GitHub exactly matches the filename configured in npm
-2. the package has the trusted publisher entry for the correct repository
-3. the job has `id-token: write`
-4. the job is running from the expected repository, not a fork
+1. el nombre del archivo de workflow en GitHub coincide exactamente con el nombre configurado en npm
+2. el paquete tiene la entrada de publicador confiable para el repositorio correcto
+3. el job tiene `id-token: write`
+4. el job se ejecuta desde el repositorio esperado, no desde un fork
 
-### Stable workflow runs but never asks for approval
+### El workflow estable se ejecuta pero nunca pide aprobación
 
-Check:
+Revisa:
 
-1. the `publish` job uses environment `npm-stable`
-2. the environment actually has required reviewers configured
-3. the workflow is running in the canonical repository, not a fork
+1. el job `publish` usa el entorno `npm-stable`
+2. el entorno realmente tiene revisores requeridos configurados
+3. el workflow se ejecuta en el repositorio canónico, no en un fork
 
-### CODEOWNERS does not trigger
+### CODEOWNERS no se dispara
 
-Check:
+Revisa:
 
-1. `.github/CODEOWNERS` is on the default branch
-2. branch protection on `master` requires code owner review
-3. the owner identities in the file are valid reviewers with repository access
+1. `.github/CODEOWNERS` está en la rama por defecto
+2. la protección de rama en `master` requiere revisión de code owner
+3. las identidades de propietario en el archivo son revisores válidos con acceso al repositorio
 
-## Related Docs
+## Documentos relacionados
 
 - [doc/RELEASING.md](RELEASING.md)
 - [doc/PUBLISHING.md](PUBLISHING.md)

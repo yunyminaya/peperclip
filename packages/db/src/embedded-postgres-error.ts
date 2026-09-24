@@ -29,9 +29,9 @@ function detectEmbeddedPostgresHint(recentLogs: string[]): string | null {
   }
 
   return (
-    "Embedded PostgreSQL bootstrap could not allocate shared memory. " +
-    "On macOS, this usually means the host's kern.sysv.shm* limits are too low for another local PostgreSQL cluster. " +
-    "Stop other local PostgreSQL servers or raise the shared-memory sysctls, then retry."
+    "No se pudo asignar memoria compartida al iniciar Embedded PostgreSQL. " +
+    "En macOS, esto suele significar que los límites kern.sysv.shm* del equipo son demasiado bajos para otro clúster local de PostgreSQL. " +
+    "Detén los otros servidores locales de PostgreSQL o aumenta los sysctls de memoria compartida, e inténtalo de nuevo."
   );
 }
 
@@ -82,7 +82,7 @@ export function formatEmbeddedPostgresError(
     parts.push(hint);
   }
   if (recentSummary) {
-    parts.push(`Recent embedded Postgres logs: ${recentSummary}`);
+    parts.push(`Registros recientes de embedded Postgres: ${recentSummary}`);
   }
 
   return new Error(parts.join(" "));

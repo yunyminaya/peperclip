@@ -21,7 +21,7 @@ const providerById = new Map<SecretProvider, SecretProviderModule>(
 
 export function getSecretProvider(id: SecretProvider): SecretProviderModule {
   const provider = providerById.get(id);
-  if (!provider) throw unprocessable(`Unsupported secret provider: ${id}`);
+  if (!provider) throw unprocessable(`Proveedor de secretos no soportado: ${id}`);
   return provider;
 }
 

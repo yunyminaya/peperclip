@@ -1,24 +1,24 @@
 /**
- * Plugin UI bridge runtime — concrete implementations of the bridge hooks.
+ * Runtime del puente de UI de plugins — implementaciones concretas de los hooks del puente.
  *
- * Plugin UI bundles import `usePluginData`, `usePluginAction`, and
- * `useHostContext` from `@paperclipai/plugin-sdk/ui`.  Those are type-only
- * declarations in the SDK package. The host provides the real implementations
- * by injecting this bridge runtime into the plugin's module scope.
+ * Los bundles de UI de plugins importan `usePluginData`, `usePluginAction` y
+ * `useHostContext` desde `@paperclipai/plugin-sdk/ui`. Esas son declaraciones
+ * solo de tipos en el paquete del SDK. El host proporciona las implementaciones reales
+ * inyectando este runtime del puente en el alcance del módulo del plugin.
  *
- * The bridge runtime communicates with plugin workers via HTTP REST endpoints:
- * - `POST /api/plugins/:pluginId/data/:key`     — proxies `getData` RPC
- * - `POST /api/plugins/:pluginId/actions/:key`   — proxies `performAction` RPC
+ * El runtime del puente se comunica con los workers de plugins vía endpoints REST HTTP:
+ * - `POST /api/plugins/:pluginId/data/:key`     — proxifica la RPC `getData`
+ * - `POST /api/plugins/:pluginId/actions/:key`   — proxifica la RPC `performAction`
  *
- * ## How it works
+ * ## Cómo funciona
  *
- * 1. Before loading a plugin's UI module, the host creates a scoped bridge via
+ * 1. Antes de cargar el módulo de UI de un plugin, el host crea un puente con alcance vía
  *    `createPluginBridge(pluginId)`.
- * 2. The bridge's hook implementations are registered in a global bridge
- *    registry keyed by `pluginId`.
- * 3. The "ambient" hooks (`usePluginData`, `usePluginAction`, `useHostContext`)
- *    look up the current plugin context from a React context provider and
- *    delegate to the appropriate bridge instance.
+ * 2. Las implementaciones de hooks del puente se registran en un registro global
+ *    del puente claveado por `pluginId`.
+ * 3. Los hooks "ambientales" (`usePluginData`, `usePluginAction`, `useHostContext`)
+ *    consultan el contexto del plugin actual desde un proveedor de contexto de React y
+ *    delegan a la instancia del puente apropiada.
  *
  * @see PLUGIN_SPEC.md §13.8 — `getData`
  * @see PLUGIN_SPEC.md §13.9 — `performAction`
@@ -37,11 +37,11 @@ import { ApiError } from "@/api/client";
 import { useToast, type ToastInput } from "@/context/ToastContext";
 
 // ---------------------------------------------------------------------------
-// Bridge error type (mirrors the SDK's PluginBridgeError)
+// Tipo de error del puente (refleja el PluginBridgeError del SDK)
 // ---------------------------------------------------------------------------
 
 /**
- * Structured error from the bridge, matching the SDK's `PluginBridgeError`.
+ * Error estructurado del puente, que coincide con el `PluginBridgeError` del SDK.
  */
 export interface PluginBridgeError {
   code: PluginBridgeErrorCode;
@@ -50,7 +50,7 @@ export interface PluginBridgeError {
 }
 
 // ---------------------------------------------------------------------------
-// Bridge data result type (mirrors the SDK's PluginDataResult)
+// Tipo de resultado de datos del puente (refleja el PluginDataResult del SDK)
 // ---------------------------------------------------------------------------
 
 export interface PluginDataResult<T = unknown> {
@@ -64,7 +64,7 @@ export type PluginToastInput = ToastInput;
 export type PluginToastFn = (input: PluginToastInput) => string | null;
 
 // ---------------------------------------------------------------------------
-// Host context type (mirrors the SDK's PluginHostContext)
+// Tipo de contexto del host (refleja el PluginHostContext del SDK)
 // ---------------------------------------------------------------------------
 
 export interface PluginHostContext {
@@ -117,7 +117,7 @@ export interface PluginRenderEnvironmentContext {
 }
 
 // ---------------------------------------------------------------------------
-// Bridge context — React context for plugin identity and host scope
+// Contexto del puente — contexto de React para la identidad del plugin y el alcance del host
 // ---------------------------------------------------------------------------
 
 export type PluginBridgeContextValue = {
@@ -126,15 +126,15 @@ export type PluginBridgeContextValue = {
 };
 
 /**
- * React context that carries the active plugin identity and host scope.
+ * Contexto de React que lleva la identidad del plugin activo y el alcance del host.
  *
- * The slot/launcher mount wraps plugin components in a Provider so that
- * bridge hooks (`usePluginData`, `usePluginAction`, `useHostContext`) can
- * resolve the current plugin without ambient mutable globals.
+ * El montaje de slot/lanzador envuelve los componentes del plugin en un Provider para que
+ * los hooks del puente (`usePluginData`, `usePluginAction`, `useHostContext`) puedan
+ * resolver el plugin actual sin globales mutables ambientales.
  *
- * Because plugin bundles share the host's React instance (via the bridge
- * registry on `globalThis.__paperclipPluginBridge__`), context propagation
- * works correctly across the host/plugin boundary.
+ * Como los bundles de plugins comparten la instancia de React del host (vía el registro
+ * del puente en `globalThis.__paperclipPluginBridge__`), la propagación del contexto
+ * funciona correctamente a través del límite host/plugin.
  */
 export const PluginBridgeContext =
   createContext<PluginBridgeContextValue | null>(null);
@@ -143,23 +143,23 @@ function usePluginBridgeContext(): PluginBridgeContextValue {
   const ctx = useContext(PluginBridgeContext);
   if (!ctx) {
     throw new Error(
-      "Plugin bridge hook called outside of a <PluginBridgeContext.Provider>. " +
-        "Ensure the plugin component is rendered within a PluginBridgeScope.",
+      "Hook del puente de plugins llamado fuera de un <PluginBridgeContext.Provider>. " +
+        "Asegúrate de que el componente del plugin se renderice dentro de un PluginBridgeScope.",
     );
   }
   return ctx;
 }
 
 // ---------------------------------------------------------------------------
-// Error extraction helpers
+// Utilidades de extracción de errores
 // ---------------------------------------------------------------------------
 
 /**
- * Attempt to extract a structured PluginBridgeError from an API error.
+ * Intenta extraer un PluginBridgeError estructurado de un error de API.
  *
- * The bridge proxy endpoints return error bodies shaped as
+ * Los endpoints proxy del puente devuelven cuerpos de error con la forma
  * `{ code: PluginBridgeErrorCode, message: string, details?: unknown }`.
- * This helper extracts that structure from the ApiError thrown by the client.
+ * Esta utilidad extrae esa estructura del ApiError lanzado por el cliente.
  */
 function extractBridgeError(err: unknown): PluginBridgeError {
   if (err instanceof ApiError && err.body && typeof err.body === "object") {
@@ -171,7 +171,7 @@ function extractBridgeError(err: unknown): PluginBridgeError {
         details: body.details,
       };
     }
-    // Fallback: the server returned a plain { error: string } body
+    // Respaldo: el servidor devolvió un cuerpo simple { error: string }
     if (typeof body.error === "string") {
       return {
         code: "UNKNOWN",
@@ -187,12 +187,12 @@ function extractBridgeError(err: unknown): PluginBridgeError {
 }
 
 // ---------------------------------------------------------------------------
-// usePluginData — concrete implementation
+// usePluginData — implementación concreta
 // ---------------------------------------------------------------------------
 
 /**
- * Stable serialization of params for use as a dependency key.
- * Returns a string that changes only when the params object content changes.
+ * Serialización estable de los parámetros para usar como clave de dependencia.
+ * Devuelve una cadena que solo cambia cuando cambia el contenido del objeto de parámetros.
  */
 function serializeParams(params?: Record<string, unknown>): string {
   if (!params) return "";
@@ -221,13 +221,13 @@ function serializeRenderEnvironmentSnapshot(
 }
 
 /**
- * Concrete implementation of `usePluginData<T>(key, params)`.
+ * Implementación concreta de `usePluginData<T>(key, params)`.
  *
- * Makes an HTTP POST to `/api/plugins/:pluginId/data/:key` and returns
- * a reactive `PluginDataResult<T>` matching the SDK type contract.
+ * Hace un HTTP POST a `/api/plugins/:pluginId/data/:key` y devuelve
+ * un `PluginDataResult<T>` reactivo que coincide con el contrato de tipos del SDK.
  *
- * Re-fetches automatically when `key` or `params` change. Provides a
- * `refresh()` function for manual re-fetch.
+ * Vuelve a obtener automáticamente cuando cambian `key` o `params`. Proporciona una
+ * función `refresh()` para volver a obtener manualmente.
  */
 export function usePluginData<T = unknown>(
   key: string,
@@ -243,7 +243,7 @@ export function usePluginData<T = unknown>(
   const [error, setError] = useState<PluginBridgeError | null>(null);
   const [refreshCounter, setRefreshCounter] = useState(0);
 
-  // Stable serialization for params change detection
+  // Serialización estable para la detección de cambios de parámetros
   const paramsKey = serializeParams(params);
 
   useEffect(() => {
@@ -305,21 +305,21 @@ export function usePluginData<T = unknown>(
 }
 
 // ---------------------------------------------------------------------------
-// usePluginAction — concrete implementation
+// usePluginAction — implementación concreta
 // ---------------------------------------------------------------------------
 
 /**
- * Action function type matching the SDK's `PluginActionFn`.
+ * Tipo de función de acción que coincide con el `PluginActionFn` del SDK.
  */
 export type PluginActionFn = (params?: Record<string, unknown>) => Promise<unknown>;
 
 /**
- * Concrete implementation of `usePluginAction(key)`.
+ * Implementación concreta de `usePluginAction(key)`.
  *
- * Returns a stable async function that, when called, sends a POST to
- * `/api/plugins/:pluginId/actions/:key` and returns the worker result.
+ * Devuelve una función asíncrona estable que, al llamarse, envía un POST a
+ * `/api/plugins/:pluginId/actions/:key` y devuelve el resultado del worker.
  *
- * On failure, the function throws a `PluginBridgeError`.
+ * En caso de fallo, la función lanza un `PluginBridgeError`.
  */
 export function usePluginAction(key: string): PluginActionFn {
   const bridgeContext = usePluginBridgeContext();
@@ -350,14 +350,14 @@ export function usePluginAction(key: string): PluginActionFn {
 }
 
 // ---------------------------------------------------------------------------
-// useHostContext — concrete implementation
+// useHostContext — implementación concreta
 // ---------------------------------------------------------------------------
 
 /**
- * Concrete implementation of `useHostContext()`.
+ * Implementación concreta de `useHostContext()`.
  *
- * Returns the current host context (company, project, entity, user)
- * from the enclosing `PluginBridgeContext.Provider`.
+ * Devuelve el contexto del host actual (empresa, proyecto, entidad, usuario)
+ * del `PluginBridgeContext.Provider` que lo envuelve.
  */
 export function useHostContext(): PluginHostContext {
   const { hostContext } = usePluginBridgeContext();
@@ -365,7 +365,7 @@ export function useHostContext(): PluginHostContext {
 }
 
 // ---------------------------------------------------------------------------
-// usePluginToast — concrete implementation
+// usePluginToast — implementación concreta
 // ---------------------------------------------------------------------------
 
 export function usePluginToast(): PluginToastFn {
@@ -377,7 +377,7 @@ export function usePluginToast(): PluginToastFn {
 }
 
 // ---------------------------------------------------------------------------
-// usePluginStream — concrete implementation
+// usePluginStream — implementación concreta
 // ---------------------------------------------------------------------------
 
 export interface PluginStreamResult<T = unknown> {
@@ -456,7 +456,7 @@ export function usePluginStream<T = unknown>(
     source.onerror = () => {
       setConnecting(false);
       setConnected(false);
-      setError(new Error(`Failed to connect to plugin stream "${channel}"`));
+      setError(new Error(`No se pudo conectar al stream del plugin "${channel}"`));
       source.close();
       if (sourceRef.current === source) {
         sourceRef.current = null;

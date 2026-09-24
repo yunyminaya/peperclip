@@ -38,7 +38,7 @@ export const updateCompanyBrandingSchema = z
       || value.description !== undefined
       || value.brandColor !== undefined
       || value.logoAssetId !== undefined,
-    "At least one branding field must be provided",
+    "Se debe proporcionar al menos un campo de marca",
   );
 
 export type UpdateCompanyBranding = z.infer<typeof updateCompanyBrandingSchema>;

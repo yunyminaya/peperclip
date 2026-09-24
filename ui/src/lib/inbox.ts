@@ -58,7 +58,7 @@ export function saveDismissedInboxItems(ids: Set<string>) {
   try {
     localStorage.setItem(DISMISSED_KEY, JSON.stringify([...ids]));
   } catch {
-    // Ignore localStorage failures.
+    // Ignora los errores de localStorage.
   }
 }
 
@@ -75,7 +75,7 @@ export function saveReadInboxItems(ids: Set<string>) {
   try {
     localStorage.setItem(READ_ITEMS_KEY, JSON.stringify([...ids]));
   } catch {
-    // Ignore localStorage failures.
+    // Ignora los errores de localStorage.
   }
 }
 
@@ -94,7 +94,7 @@ export function saveLastInboxTab(tab: InboxTab) {
   try {
     localStorage.setItem(INBOX_LAST_TAB_KEY, tab);
   } catch {
-    // Ignore localStorage failures.
+    // Ignora los errores de localStorage.
   }
 }
 

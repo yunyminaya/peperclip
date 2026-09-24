@@ -57,13 +57,13 @@ interface ResolveProjectNameOptions {
   excludeProjectId?: string | null;
 }
 
-/** Batch-load goal refs for a set of projects. */
+/** Carga por lote refs de objetivos para un set de proyectos. */
 async function attachGoals(db: Db, rows: ProjectRow[]): Promise<ProjectWithGoals[]> {
   if (rows.length === 0) return [];
 
   const projectIds = rows.map((r) => r.id);
 
-  // Fetch join rows + goal titles in one query
+  // Obtiene filas de join + títulos de objetivos en una sola consulta
   const links = await db
     .select({
       projectId: projectGoals.projectId,
@@ -208,7 +208,7 @@ function pickPrimaryWorkspace(
   return toWorkspace(primary, runtimeServicesByWorkspaceId?.get(primary.id) ?? []);
 }
 
-/** Batch-load workspace refs for a set of projects. */
+/** Carga por lote refs de workspaces para un set de proyectos. */
 async function attachWorkspaces(db: Db, rows: ProjectWithGoals[]): Promise<ProjectWithGoals[]> {
   if (rows.length === 0) return [];
 
@@ -263,12 +263,12 @@ async function attachWorkspaces(db: Db, rows: ProjectWithGoals[]): Promise<Proje
   });
 }
 
-/** Sync the project_goals join table for a single project. */
+/** Sincroniza la tabla join project_goals para un solo proyecto. */
 async function syncGoalLinks(db: Db, projectId: string, companyId: string, goalIds: string[]) {
-  // Delete existing links
+  // Elimina los enlaces existentes
   await db.delete(projectGoals).where(eq(projectGoals.projectId, projectId));
 
-  // Insert new links
+  // Inserta los nuevos enlaces
   if (goalIds.length > 0) {
     await db.insert(projectGoals).values(
       goalIds.map((goalId) => ({ projectId, goalId, companyId })),
@@ -276,7 +276,7 @@ async function syncGoalLinks(db: Db, projectId: string, companyId: string, goalI
   }
 }
 
-/** Resolve goalIds from input, handling the legacy goalId field. */
+/** Resuelve goalIds desde la entrada, manejando el campo legacy goalId. */
 function resolveGoalIds(data: { goalIds?: string[]; goalId?: string | null }): string[] | undefined {
   if (data.goalIds !== undefined) return data.goalIds;
   if (data.goalId !== undefined) {
@@ -300,7 +300,7 @@ function normalizeWorkspaceCwd(value: unknown): string | null {
 function deriveNameFromCwd(cwd: string): string {
   const normalized = cwd.replace(/[\\/]+$/, "");
   const segments = normalized.split(/[\\/]/).filter(Boolean);
-  return segments[segments.length - 1] ?? "Local folder";
+  return segments[segments.length - 1] ?? "Carpeta local";
 }
 
 function deriveNameFromRepoUrl(repoUrl: string): string {
@@ -329,7 +329,7 @@ function deriveWorkspaceName(input: {
   const repoUrl = readNonEmptyString(input.repoUrl);
   if (repoUrl) return deriveNameFromRepoUrl(repoUrl);
 
-  return "Workspace";
+  return "Espacio de trabajo";
 }
 
 export function resolveProjectNameForUniqueShortname(
@@ -356,7 +356,7 @@ export function resolveProjectNameForUniqueShortname(
     }
   }
 
-  // Fallback guard for pathological naming collisions.
+  // Guarda de fallback para colisiones de nombres patológicas.
   return `${requestedName} ${Date.now()}`;
 }
 
@@ -431,7 +431,7 @@ export function projectService(db: Db) {
       const { goalIds: inputGoalIds, ...projectData } = data;
       const ids = resolveGoalIds({ goalIds: inputGoalIds, goalId: projectData.goalId });
 
-      // Auto-assign a color from the palette if none provided
+      // Auto-asigna un color de la paleta si no se provee
       if (!projectData.color) {
         const existing = await db.select({ color: projects.color }).from(projects).where(eq(projects.companyId, companyId));
         const usedColors = new Set(existing.map((r) => r.color).filter(Boolean));
@@ -445,7 +445,7 @@ export function projectService(db: Db) {
         .where(eq(projects.companyId, companyId));
       projectData.name = resolveProjectNameForUniqueShortname(projectData.name, existingProjects);
 
-      // Also write goalId to the legacy column (first goal or null)
+      // También escribe goalId en la columna legacy (primer objetivo o null)
       const legacyGoalId = ids && ids.length > 0 ? ids[0] : projectData.goalId ?? null;
 
       const row = await db
@@ -490,7 +490,7 @@ export function projectService(db: Db) {
         }
       }
 
-      // Keep legacy goalId column in sync
+      // Mantiene la columna legacy goalId sincronizada
       const updates: Partial<typeof projects.$inferInsert> = {
         ...projectData,
         updatedAt: new Date(),

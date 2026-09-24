@@ -98,7 +98,7 @@ export function OpenClawGatewayConfigFields({
 
   return (
     <>
-      <Field label="Gateway URL" hint={help.webhookUrl}>
+      <Field label="URL del gateway" hint={help.webhookUrl}>
         <DraftInput
           value={
             isCreate
@@ -134,7 +134,7 @@ export function OpenClawGatewayConfigFields({
 
       {!isCreate && (
         <>
-          <Field label="Paperclip API URL override">
+          <Field label="Anulación de la URL de la API de Paperclip">
             <DraftInput
               value={
                 eff(
@@ -150,20 +150,20 @@ export function OpenClawGatewayConfigFields({
             />
           </Field>
 
-          <Field label="Session strategy">
+          <Field label="Estrategia de sesión">
             <select
               value={sessionStrategy}
               onChange={(e) => mark("adapterConfig", "sessionKeyStrategy", e.target.value)}
               className={inputClass}
             >
-              <option value="fixed">Fixed</option>
-              <option value="issue">Per issue</option>
-              <option value="run">Per run</option>
+              <option value="fixed">Fija</option>
+              <option value="issue">Por issue</option>
+              <option value="run">Por ejecución</option>
             </select>
           </Field>
 
           {sessionStrategy === "fixed" && (
-            <Field label="Session key">
+            <Field label="Clave de sesión">
               <DraftInput
                 value={eff("adapterConfig", "sessionKey", String(config.sessionKey ?? "paperclip"))}
                 onCommit={(v) => mark("adapterConfig", "sessionKey", v || undefined)}
@@ -175,13 +175,13 @@ export function OpenClawGatewayConfigFields({
           )}
 
           <SecretField
-            label="Gateway auth token (x-openclaw-token)"
+            label="Token de autenticación del gateway (x-openclaw-token)"
             value={effectiveGatewayToken}
             onCommit={commitGatewayToken}
-            placeholder="OpenClaw gateway token"
+            placeholder="Token del gateway de OpenClaw"
           />
 
-          <Field label="Role">
+          <Field label="Rol">
             <DraftInput
               value={eff("adapterConfig", "role", String(config.role ?? "operator"))}
               onCommit={(v) => mark("adapterConfig", "role", v || undefined)}
@@ -191,7 +191,7 @@ export function OpenClawGatewayConfigFields({
             />
           </Field>
 
-          <Field label="Scopes (comma-separated)">
+          <Field label="Alcances (separados por comas)">
             <DraftInput
               value={eff("adapterConfig", "scopes", parseScopes(config.scopes ?? ["operator.admin"]))}
               onCommit={(v) => {
@@ -207,7 +207,7 @@ export function OpenClawGatewayConfigFields({
             />
           </Field>
 
-          <Field label="Wait timeout (ms)">
+          <Field label="Tiempo de espera (ms)">
             <DraftInput
               value={eff("adapterConfig", "waitTimeoutMs", String(config.waitTimeoutMs ?? "120000"))}
               onCommit={(v) => {
@@ -224,10 +224,9 @@ export function OpenClawGatewayConfigFields({
             />
           </Field>
 
-          <Field label="Device auth">
+          <Field label="Autenticación del dispositivo">
             <div className="text-xs text-muted-foreground leading-relaxed">
-              Always enabled for gateway agents. Paperclip persists a device key during onboarding so pairing approvals
-              remain stable across runs.
+              Siempre habilitada para los agentes del gateway. Paperclip guarda una clave de dispositivo durante la incorporación para que las aprobaciones de emparejamiento se mantengan estables entre ejecuciones.
             </div>
           </Field>
         </>

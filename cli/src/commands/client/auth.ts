@@ -24,8 +24,8 @@ export function registerClientAuthCommands(auth: Command): void {
   addCommonClientOptions(
     auth
       .command("login")
-      .description("Authenticate the CLI for board-user access")
-      .option("--instance-admin", "Request instance-admin approval instead of plain board access", false)
+      .description("Autenticar el CLI para acceso de usuario de panel")
+      .option("--instance-admin", "Solicitar aprobación de instance-admin en lugar de acceso de panel simple", false)
       .action(async (opts: AuthLoginOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -54,7 +54,7 @@ export function registerClientAuthCommands(auth: Command): void {
   addCommonClientOptions(
     auth
       .command("logout")
-      .description("Remove the stored board-user credential for this API base")
+      .description("Eliminar la credencial almacenada de usuario de panel para esta base de API")
       .action(async (opts: AuthLogoutOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -71,7 +71,7 @@ export function registerClientAuthCommands(auth: Command): void {
             });
             revoked = true;
           } catch {
-            // Remove the local credential even if the server-side revoke fails.
+            // Eliminar la credencial local aunque falle la revocación en el servidor.
           }
           const removedLocalCredential = removeStoredBoardCredential(ctx.api.apiBase);
           printOutput(
@@ -92,7 +92,7 @@ export function registerClientAuthCommands(auth: Command): void {
   addCommonClientOptions(
     auth
       .command("whoami")
-      .description("Show the current board-user identity for this API base")
+      .description("Mostrar la identidad actual de usuario de panel para esta base de API")
       .action(async (opts: AuthWhoamiOptions) => {
         try {
           const ctx = resolveCommandContext(opts);

@@ -9,7 +9,7 @@ export function shouldSyncCompanySelectionFromRoute(params: {
 
   if (selectedCompanyId === routeCompanyId) return false;
 
-  // Let manual company switches finish their remembered-path navigation first.
+  // Permite que los cambios manuales de empresa completen primero su navegación a la ruta recordada.
   if (selectionSource === "manual" && selectedCompanyId) {
     return false;
   }

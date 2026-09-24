@@ -1,17 +1,18 @@
 /**
- * `@paperclipai/plugin-sdk/ui` — Paperclip plugin UI SDK.
+ * `@paperclipai/plugin-sdk/ui`: SDK de interfaz de plugin de Paperclip.
  *
- * Import this subpath from plugin UI bundles (React components that run in
- * the host frontend).  Do **not** import this from plugin worker code.
+ * Importar este subpath desde paquetes de interfaz de plugin (componentes React
+ * que se ejecutan en el frontend del host). **No** importar esto desde código
+ * de worker de plugin.
  *
- * The worker-side SDK is available from `@paperclipai/plugin-sdk` (root).
+ * El SDK del lado del worker está disponible desde `@paperclipai/plugin-sdk` (raíz).
  *
  * @see PLUGIN_SPEC.md §19.0.1 — Plugin UI SDK
- * @see PLUGIN_SPEC.md §29.2 — SDK Versioning
+ * @see PLUGIN_SPEC.md §29.2 — Versionado del SDK
  *
  * @example
  * ```tsx
- * // Plugin UI bundle entry (dist/ui/index.tsx)
+ * // Entrada del paquete de interfaz del plugin (dist/ui/index.tsx)
  * import { usePluginData, usePluginAction } from "@paperclipai/plugin-sdk/ui";
  * import type { PluginWidgetProps } from "@paperclipai/plugin-sdk/ui";
  *
@@ -21,15 +22,15 @@
  *   });
  *   const resync = usePluginAction("resync");
  *
- *   if (loading) return <div>Loading…</div>;
+ *   if (loading) return <div>Cargando…</div>;
  *   if (error) return <div>Error: {error.message}</div>;
  *
  *   return (
  *     <div style={{ display: "grid", gap: 8 }}>
- *       <strong>Synced Issues</strong>
+ *       <strong>Issues sincronizados</strong>
  *       <div>{data!.syncedCount}</div>
  *       <button onClick={() => resync({ companyId: context.companyId })}>
- *         Resync Now
+ *         Resincronizar ahora
  *       </button>
  *     </div>
  *   );
@@ -38,12 +39,13 @@
  */
 
 /**
- * Bridge hooks for plugin UI components to communicate with the plugin worker.
+ * Hooks del puente para que los componentes de interfaz de plugin se comuniquen
+ * con el worker del plugin.
  *
- * - `usePluginData(key, params)` — fetch data from the worker's `getData` handler
- * - `usePluginAction(key)` — get a callable that invokes the worker's `performAction` handler
- * - `useHostContext()` — read the current active company, project, entity, and user IDs
- * - `usePluginStream(channel)` — subscribe to real-time SSE events from the worker
+ * - `usePluginData(key, params)`: obtiene datos del manejador `getData` del worker
+ * - `usePluginAction(key)`: obtiene un invocable que llama al manejador `performAction` del worker
+ * - `useHostContext()`: lee los IDs actuales de empresa, proyecto, entidad y usuario activos
+ * - `usePluginStream(channel)`: se suscribe a eventos SSE en tiempo real del worker
  */
 export {
   usePluginData,
@@ -53,7 +55,7 @@ export {
   usePluginToast,
 } from "./hooks.js";
 
-// Bridge error and host context types
+// Tipos de error del puente y contexto del host
 export type {
   PluginBridgeError,
   PluginBridgeErrorCode,
@@ -74,7 +76,7 @@ export type {
   PluginToastFn,
 } from "./types.js";
 
-// Slot component prop interfaces
+// Interfaces de props de componentes de ranura
 export type {
   PluginPageProps,
   PluginWidgetProps,

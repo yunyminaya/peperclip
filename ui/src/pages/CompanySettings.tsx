@@ -32,14 +32,14 @@ export function CompanySettings() {
   const { setBreadcrumbs } = useBreadcrumbs();
   const { pushToast } = useToast();
   const queryClient = useQueryClient();
-  // General settings local state
+  // Estado local de ajustes generales
   const [companyName, setCompanyName] = useState("");
   const [description, setDescription] = useState("");
   const [brandColor, setBrandColor] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
 
-  // Sync local state from selected company
+  // Sincronizar estado local desde la empresa seleccionada
   useEffect(() => {
     if (!selectedCompany) return;
     setCompanyName(selectedCompany.name);
@@ -120,7 +120,7 @@ export function CompanySettings() {
         setSnippetCopyDelightId((prev) => prev + 1);
         setTimeout(() => setSnippetCopied(false), 2000);
       } catch {
-        /* clipboard may not be available */
+        /* el portapapeles puede no estar disponible */
       }
       queryClient.invalidateQueries({
         queryKey: queryKeys.sidebarBadges(selectedCompanyId!)
@@ -128,7 +128,7 @@ export function CompanySettings() {
     },
     onError: (err) => {
       setInviteError(
-        err instanceof Error ? err.message : "Failed to create invite"
+        err instanceof Error ? err.message : "No se pudo crear la invitación"
       );
     }
   });
@@ -199,8 +199,8 @@ export function CompanySettings() {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: selectedCompany?.name ?? "Company", href: "/dashboard" },
-      { label: "Settings" }
+      { label: selectedCompany?.name ?? "Empresa", href: "/dashboard" },
+      { label: "Ajustes" }
     ]);
   }, [setBreadcrumbs, selectedCompany?.name]);
 
@@ -224,7 +224,7 @@ export function CompanySettings() {
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center gap-2">
         <Settings className="h-5 w-5 text-muted-foreground" />
-        <h1 className="text-lg font-semibold">Company Settings</h1>
+        <h1 className="text-lg font-semibold">Ajustes de la empresa</h1>
       </div>
 
       {/* General */}
@@ -233,7 +233,7 @@ export function CompanySettings() {
           General
         </div>
         <div className="space-y-3 rounded-md border border-border px-4 py-4">
-          <Field label="Company name" hint="The display name for your company.">
+          <Field label="Nombre de la empresa" hint="El nombre visible de tu empresa.">
             <input
               className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
               type="text"
@@ -242,14 +242,14 @@ export function CompanySettings() {
             />
           </Field>
           <Field
-            label="Description"
-            hint="Optional description shown in the company profile."
+            label="Descripción"
+            hint="Descripción opcional mostrada en el perfil de la empresa."
           >
             <input
               className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
               type="text"
               value={description}
-              placeholder="Optional company description"
+              placeholder="Descripción opcional de la empresa"
               onChange={(e) => setDescription(e.target.value)}
             />
           </Field>
@@ -273,8 +273,8 @@ export function CompanySettings() {
             </div>
             <div className="flex-1 space-y-3">
               <Field
-                label="Logo"
-                hint="Upload a PNG, JPEG, WEBP, GIF, or SVG logo image."
+                label="Logotipo"
+                hint="Sube una imagen de logotipo PNG, JPEG, WEBP, GIF o SVG."
               >
                 <div className="space-y-2">
                   <input
@@ -291,7 +291,7 @@ export function CompanySettings() {
                         onClick={handleClearLogo}
                         disabled={clearLogoMutation.isPending}
                       >
-                        {clearLogoMutation.isPending ? "Removing..." : "Remove logo"}
+                        {clearLogoMutation.isPending ? "Eliminando…" : "Eliminar logotipo"}
                       </Button>
                     </div>
                   )}
@@ -300,7 +300,7 @@ export function CompanySettings() {
                       {logoUploadError ??
                         (logoUploadMutation.error instanceof Error
                           ? logoUploadMutation.error.message
-                          : "Logo upload failed")}
+                          : "No se pudo subir el logotipo")}
                     </span>
                   )}
                   {clearLogoMutation.isError && (
@@ -314,8 +314,8 @@ export function CompanySettings() {
                 </div>
               </Field>
               <Field
-                label="Brand color"
-                hint="Sets the hue for the company icon. Leave empty for auto-generated color."
+                label="Color de marca"
+                hint="Define el tono del icono de la empresa. Déjalo vacío para un color generado automáticamente."
               >
                 <div className="flex items-center gap-2">
                   <input
@@ -333,7 +333,7 @@ export function CompanySettings() {
                         setBrandColor(v);
                       }
                     }}
-                    placeholder="Auto"
+                    placeholder="Automático"
                     className="w-28 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm font-mono outline-none"
                   />
                   {brandColor && (
@@ -361,16 +361,16 @@ export function CompanySettings() {
             onClick={handleSaveGeneral}
             disabled={generalMutation.isPending || !companyName.trim()}
           >
-            {generalMutation.isPending ? "Saving..." : "Save changes"}
+            {generalMutation.isPending ? "Guardando…" : "Guardar cambios"}
           </Button>
           {generalMutation.isSuccess && (
-            <span className="text-xs text-muted-foreground">Saved</span>
+            <span className="text-xs text-muted-foreground">Guardado</span>
           )}
           {generalMutation.isError && (
             <span className="text-xs text-destructive">
               {generalMutation.error instanceof Error
                   ? generalMutation.error.message
-                  : "Failed to save"}
+                  : "No se pudo guardar"}
             </span>
           )}
         </div>
@@ -383,8 +383,8 @@ export function CompanySettings() {
         </div>
         <div className="rounded-md border border-border px-4 py-3">
           <ToggleField
-            label="Require board approval for new hires"
-            hint="New agent hires stay pending until approved by board."
+            label="Requerir aprobación del tablero para nuevas contrataciones"
+            hint="Las nuevas contrataciones de agentes quedan pendientes hasta ser aprobadas por el tablero."
             checked={!!selectedCompany.requireBoardApprovalForNewAgents}
             onChange={(v) => settingsMutation.mutate(v)}
           />
@@ -394,14 +394,14 @@ export function CompanySettings() {
       {/* Invites */}
       <div className="space-y-4">
         <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Invites
+          Invitaciones
         </div>
         <div className="space-y-3 rounded-md border border-border px-4 py-4">
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground">
-              Generate an OpenClaw agent invite snippet.
+              Genera un fragmento de invitación de agente de OpenClaw.
             </span>
-            <HintIcon text="Creates a short-lived OpenClaw agent invite and renders a copy-ready prompt." />
+            <HintIcon text="Crea una invitación de agente de OpenClaw de corta duración y muestra un prompt listo para copiar." />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -410,8 +410,8 @@ export function CompanySettings() {
               disabled={inviteMutation.isPending}
             >
               {inviteMutation.isPending
-                ? "Generating..."
-                : "Generate OpenClaw Invite Prompt"}
+                ? "Generando…"
+                : "Generar prompt de invitación de OpenClaw"}
             </Button>
           </div>
           {inviteError && (
@@ -421,7 +421,7 @@ export function CompanySettings() {
             <div className="rounded-md border border-border bg-muted/30 p-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-xs text-muted-foreground">
-                  OpenClaw Invite Prompt
+                  Prompt de invitación de OpenClaw
                 </div>
                 {snippetCopied && (
                   <span
@@ -429,7 +429,7 @@ export function CompanySettings() {
                     className="flex items-center gap-1 text-xs text-green-600 animate-pulse"
                   >
                     <Check className="h-3 w-3" />
-                    Copied
+                    Copiado
                   </span>
                 )}
               </div>
@@ -450,11 +450,11 @@ export function CompanySettings() {
                         setSnippetCopyDelightId((prev) => prev + 1);
                         setTimeout(() => setSnippetCopied(false), 2000);
                       } catch {
-                        /* clipboard may not be available */
+                        /* el portapapeles puede no estar disponible */
                       }
                     }}
                   >
-                    {snippetCopied ? "Copied snippet" : "Copy snippet"}
+                    {snippetCopied ? "Fragmento copiado" : "Copiar fragmento"}
                   </Button>
                 </div>
               </div>
@@ -466,24 +466,24 @@ export function CompanySettings() {
       {/* Import / Export */}
       <div className="space-y-4">
         <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Company Packages
+          Paquetes de empresa
         </div>
         <div className="rounded-md border border-border px-4 py-4">
           <p className="text-sm text-muted-foreground">
-            Import and export have moved to dedicated pages accessible from the{" "}
-            <a href="/org" className="underline hover:text-foreground">Org Chart</a> header.
+            La importación y la exportación se movieron a páginas dedicadas accesibles desde el{" "}
+            <a href="/org" className="underline hover:text-foreground">Organigrama</a>.
           </p>
           <div className="mt-3 flex items-center gap-2">
             <Button size="sm" variant="outline" asChild>
               <a href="/company/export">
                 <Download className="mr-1.5 h-3.5 w-3.5" />
-                Export
+                Exportar
               </a>
             </Button>
             <Button size="sm" variant="outline" asChild>
               <a href="/company/import">
                 <Upload className="mr-1.5 h-3.5 w-3.5" />
-                Import
+                Importar
               </a>
             </Button>
           </div>
@@ -493,12 +493,12 @@ export function CompanySettings() {
       {/* Danger Zone */}
       <div className="space-y-4">
         <div className="text-xs font-medium text-destructive uppercase tracking-wide">
-          Danger Zone
+          Zona de peligro
         </div>
         <div className="space-y-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-4">
           <p className="text-sm text-muted-foreground">
-            Archive this company to hide it from the sidebar. This persists in
-            the database.
+            Archiva esta empresa para ocultarla de la barra lateral. Esto persiste en
+            la base de datos.
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -511,7 +511,7 @@ export function CompanySettings() {
               onClick={() => {
                 if (!selectedCompanyId) return;
                 const confirmed = window.confirm(
-                  `Archive company "${selectedCompany.name}"? It will be hidden from the sidebar.`
+                  `¿Archivar la empresa "${selectedCompany.name}"? Se ocultará de la barra lateral.`
                 );
                 if (!confirmed) return;
                 const nextCompanyId =
@@ -527,16 +527,16 @@ export function CompanySettings() {
               }}
             >
               {archiveMutation.isPending
-                ? "Archiving..."
+                ? "Archivando…"
                 : selectedCompany.status === "archived"
-                ? "Already archived"
-                : "Archive company"}
+                ? "Ya archivada"
+                : "Archivar empresa"}
             </Button>
             {archiveMutation.isError && (
               <span className="text-xs text-destructive">
                 {archiveMutation.error instanceof Error
                   ? archiveMutation.error.message
-                  : "Failed to archive company"}
+                  : "No se pudo archivar la empresa"}
               </span>
             )}
           </div>

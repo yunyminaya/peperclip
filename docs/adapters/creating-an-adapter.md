@@ -1,15 +1,15 @@
 ---
-title: Creating an Adapter
-summary: Guide to building a custom adapter
+title: Crear un adaptador
+summary: Guía para construir un adaptador personalizado
 ---
 
-Build a custom adapter to connect Paperclip to any agent runtime.
+Construye un adaptador personalizado para conectar Paperclip con cualquier runtime de agente.
 
 <Tip>
-If you're using Claude Code, the `.agents/skills/create-agent-adapter` skill can guide you through the full adapter creation process interactively. Just ask Claude to create a new adapter and it will walk you through each step.
+Si usas Claude Code, la habilidad `.agents/skills/create-agent-adapter` puede guiarte por todo el proceso de creación de un adaptador de forma interactiva. Solo pídele a Claude que cree un adaptador nuevo y te guiará paso a paso.
 </Tip>
 
-## Package Structure
+## Estructura del paquete
 
 ```
 packages/adapters/<name>/
@@ -31,9 +31,9 @@ packages/adapters/<name>/
       format-event.ts   # Terminal formatter
 ```
 
-## Step 1: Root Metadata
+## Paso 1: Metadatos raíz
 
-`src/index.ts` is imported by all three consumers. Keep it dependency-free.
+`src/index.ts` es importado por los tres consumidores. Mantenlo sin dependencias.
 
 ```ts
 export const type = "my_agent";        // snake_case, globally unique
@@ -48,60 +48,60 @@ Core fields: ...
 `;
 ```
 
-## Step 2: Server Execute
+## Paso 2: Ejecución del servidor
 
-`src/server/execute.ts` is the core. It receives an `AdapterExecutionContext` and returns an `AdapterExecutionResult`.
+`src/server/execute.ts` es el núcleo. Recibe un `AdapterExecutionContext` y devuelve un `AdapterExecutionResult`.
 
-Key responsibilities:
+Responsabilidades clave:
 
-1. Read config using safe helpers (`asString`, `asNumber`, etc.)
-2. Build environment with `buildPaperclipEnv(agent)` plus context vars
-3. Resolve session state from `runtime.sessionParams`
-4. Render prompt with `renderTemplate(template, data)`
-5. Spawn the process with `runChildProcess()` or call via `fetch()`
-6. Parse output for usage, costs, session state, errors
-7. Handle unknown session errors (retry fresh, set `clearSession: true`)
+1. Leer la configuración con helpers seguros (`asString`, `asNumber`, etc.)
+2. Construir el entorno con `buildPaperclipEnv(agent)` más las vars de contexto
+3. Resolver el estado de sesión desde `runtime.sessionParams`
+4. Renderizar el prompt con `renderTemplate(template, data)`
+5. Generar el proceso con `runChildProcess()` o llamar vía `fetch()`
+6. Analizar la salida para uso, costos, estado de sesión, errores
+7. Manejar errores de sesión desconocida (reintentar con sesión nueva, establecer `clearSession: true`)
 
-## Step 3: Environment Test
+## Paso 3: Prueba de entorno
 
-`src/server/test.ts` validates the adapter config before running.
+`src/server/test.ts` valida la configuración del adaptador antes de ejecutarlo.
 
-Return structured diagnostics:
+Devuelve diagnósticos estructurados:
 
-- `error` for invalid/unusable setup
-- `warn` for non-blocking issues
-- `info` for successful checks
+- `error` para configuración inválida o inutilizable
+- `warn` para problemas que no bloquean
+- `info` para verificaciones exitosas
 
-## Step 4: UI Module
+## Paso 4: Módulo de UI
 
-- `parse-stdout.ts` — converts stdout lines to `TranscriptEntry[]` for the run viewer
-- `build-config.ts` — converts form values to `adapterConfig` JSON
-- Config fields React component in `ui/src/adapters/<name>/config-fields.tsx`
+- `parse-stdout.ts` — convierte líneas de stdout a `TranscriptEntry[]` para el visor de ejecuciones
+- `build-config.ts` — convierte valores del formulario a JSON de `adapterConfig`
+- Componente React de campos de configuración en `ui/src/adapters/<name>/config-fields.tsx`
 
-## Step 5: CLI Module
+## Paso 5: Módulo de CLI
 
-`format-event.ts` — pretty-prints stdout for `paperclipai run --watch` using `picocolors`.
+`format-event.ts` — imprime de forma legible la salida estándar para `paperclipai run --watch` usando `picocolors`.
 
-## Step 6: Register
+## Paso 6: Registrar
 
-Add the adapter to all three registries:
+Agrega el adaptador a los tres registros:
 
 1. `server/src/adapters/registry.ts`
 2. `ui/src/adapters/registry.ts`
 3. `cli/src/adapters/registry.ts`
 
-## Skills Injection
+## Inyección de habilidades
 
-Make Paperclip skills discoverable to your agent runtime without writing to the agent's working directory:
+Haz que las habilidades de Paperclip sean detectables para tu runtime de agente sin escribir en el directorio de trabajo del agente:
 
-1. **Best: tmpdir + flag** — create tmpdir, symlink skills, pass via CLI flag, clean up after
-2. **Acceptable: global config dir** — symlink to the runtime's global plugins directory
-3. **Acceptable: env var** — point a skills path env var at the repo's `skills/` directory
-4. **Last resort: prompt injection** — include skill content in the prompt template
+1. **Mejor: tmpdir + flag** — crear tmpdir, enlazar habilidades con enlaces simbólicos, pasar vía flag de CLI, limpiar después
+2. **Aceptable: directorio de configuración global** — crear enlace simbólico al directorio global de plugins del runtime
+3. **Aceptable: variable de entorno** — apuntar una variable de entorno de ruta de habilidades al directorio `skills/` del repo
+4. **Último recurso: inyección en el prompt** — incluir el contenido de las habilidades en la plantilla del prompt
 
-## Security
+## Seguridad
 
-- Treat agent output as untrusted (parse defensively, never execute)
-- Inject secrets via environment variables, not prompts
-- Configure network access controls if the runtime supports them
-- Always enforce timeout and grace period
+- Trata la salida del agente como no confiable (analiza con cautela, nunca la ejecutes)
+- Inyecta secretos vía variables de entorno, no en prompts
+- Configura controles de acceso a la red si el runtime los admite
+- Aplica siempre el tiempo de espera y el período de gracia

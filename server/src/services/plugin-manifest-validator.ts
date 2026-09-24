@@ -1,13 +1,14 @@
 /**
- * PluginManifestValidator — schema validation for plugin manifest files.
+ * PluginManifestValidator — validación de esquema para archivos de
+ * manifiesto de plugins.
  *
- * Uses the shared Zod schema (`pluginManifestV1Schema`) to validate
- * manifest payloads. Provides both a safe `parse()` variant (returns
- * a result union) and a throwing `parseOrThrow()` for HTTP error
- * propagation at install time.
+ * Usa el esquema Zod compartido (`pluginManifestV1Schema`) para validar
+ * payloads de manifiesto. Provee tanto una variante segura `parse()`
+ * (devuelve una unión de resultado) como `parseOrThrow()` que lanza para
+ * propagar el error HTTP al momento de la instalación.
  *
- * @see PLUGIN_SPEC.md §10 — Plugin Manifest
- * @see packages/shared/src/validators/plugin.ts — Zod schema definition
+ * @see PLUGIN_SPEC.md §10 — Manifiesto de plugin
+ * @see packages/shared/src/validators/plugin.ts — Definición del esquema Zod
  */
 import { pluginManifestV1Schema } from "@paperclipai/shared";
 import type { PaperclipPluginManifestV1 } from "@paperclipai/shared";
@@ -19,18 +20,19 @@ import { badRequest } from "../errors.js";
 // ---------------------------------------------------------------------------
 
 /**
- * The set of plugin API versions this host can accept.
- * When a new API version is introduced, add it here. Old versions should be
- * retained until the host drops support for them.
+ * El conjunto de versiones de la API de plugin que este host puede aceptar.
+ * Cuando se introduce una nueva versión de la API, agréguela aquí. Las
+ * versiones viejas deberían retenerse hasta que el host deje de
+ * soportarlas.
  */
 const SUPPORTED_VERSIONS = [PLUGIN_API_VERSION] as const;
 
 // ---------------------------------------------------------------------------
-// Parse result types
+// Tipos de resultado de parse
 // ---------------------------------------------------------------------------
 
 /**
- * Successful parse result.
+ * Resultado de parse exitoso.
  */
 export interface ManifestParseSuccess {
   success: true;
@@ -38,8 +40,9 @@ export interface ManifestParseSuccess {
 }
 
 /**
- * Failed parse result. `errors` is a human-readable description of what went
- * wrong; `details` is the raw Zod error list for programmatic inspection.
+ * Resultado de parse fallido. `errors` es una descripción legible por
+ * humanos de lo que salió mal; `details` es la lista cruda de errores Zod
+ * para inspección programática.
  */
 export interface ManifestParseFailure {
   success: false;
@@ -47,45 +50,48 @@ export interface ManifestParseFailure {
   details: Array<{ path: (string | number)[]; message: string }>;
 }
 
-/** Union of parse outcomes. */
+/** Unión de resultados de parse. */
 export type ManifestParseResult = ManifestParseSuccess | ManifestParseFailure;
 
 // ---------------------------------------------------------------------------
-// PluginManifestValidator interface
+// Interfaz PluginManifestValidator
 // ---------------------------------------------------------------------------
 
 /**
- * Service for parsing and validating plugin manifests.
+ * Servicio para parsear y validar manifiestos de plugins.
  *
- * @see PLUGIN_SPEC.md §10 — Plugin Manifest
+ * @see PLUGIN_SPEC.md §10 — Manifiesto de plugin
  */
 export interface PluginManifestValidator {
   /**
-   * Try to parse `input` as a plugin manifest.
+   * Intenta parsear `input` como un manifiesto de plugin.
    *
-   * Returns a {@link ManifestParseSuccess} when the input passes all
-   * validation rules, or a {@link ManifestParseFailure} with human-readable
-   * error messages when it does not.
+   * Devuelve un {@link ManifestParseSuccess} cuando la entrada pasa todas
+   * las reglas de validación, o un {@link ManifestParseFailure} con
+   * mensajes de error legibles por humanos cuando no.
    *
-   * This is the "safe" variant — it never throws.
+   * Esta es la variante "segura" — nunca lanza.
    */
   parse(input: unknown): ManifestParseResult;
 
   /**
-   * Parse `input` as a plugin manifest, throwing a 400 HttpError on failure.
+   * Parsea `input` como un manifiesto de plugin, lanzando un HttpError 400
+   * en fallo.
    *
-   * Use this at install time when an invalid manifest should surface as an
-   * HTTP error to the caller.
+   * Use esto al momento de la instalación cuando un manifiesto inválido debe
+   * aparecer como un error HTTP para el llamador.
    *
-   * @throws {HttpError} 400 Bad Request if the manifest is invalid.
+   * @throws {HttpError} 400 Bad Request si el manifiesto es inválido.
    */
   parseOrThrow(input: unknown): PaperclipPluginManifestV1;
 
   /**
-   * Return the list of plugin API versions supported by this host.
+   * Devuelve la lista de versiones de la API de plugin soportadas por este
+   * host.
    *
-   * Callers can use this to present the supported version range to operators
-   * or to decide whether a candidate plugin can be installed.
+   * Los llamadores pueden usar esto para presentar el rango de versiones
+   * soportadas a los operadores o para decidir si un plugin candidato puede
+   * instalarse.
    */
   getSupportedVersions(): readonly number[];
 }
@@ -95,13 +101,13 @@ export interface PluginManifestValidator {
 // ---------------------------------------------------------------------------
 
 /**
- * Create a {@link PluginManifestValidator}.
+ * Crea un {@link PluginManifestValidator}.
  *
- * Usage:
+ * Uso:
  * ```ts
  * const validator = pluginManifestValidator();
  *
- * // Safe parse — inspect the result
+ * // Parse seguro — inspecciona el resultado
  * const result = validator.parse(rawManifest);
  * if (!result.success) {
  *   console.error(result.errors);
@@ -109,10 +115,10 @@ export interface PluginManifestValidator {
  * }
  * const manifest = result.manifest;
  *
- * // Throwing parse — use at install time
+ * // Parse que lanza — usa al momento de la instalación
  * const manifest = validator.parseOrThrow(rawManifest);
  *
- * // Check supported versions
+ * // Comprueba las versiones soportadas
  * const versions = validator.getSupportedVersions(); // [1]
  * ```
  */
@@ -150,7 +156,7 @@ export function pluginManifestValidator(): PluginManifestValidator {
       const result = this.parse(input);
 
       if (!result.success) {
-        throw badRequest(`Invalid plugin manifest: ${result.errors}`, result.details);
+        throw badRequest(`Manifiesto de plugin inválido: ${result.errors}`, result.details);
       }
 
       return result.manifest;

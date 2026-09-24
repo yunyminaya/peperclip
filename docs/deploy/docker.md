@@ -1,31 +1,31 @@
 ---
 title: Docker
-summary: Docker Compose quickstart
+summary: Inicio rápido con Docker Compose
 ---
 
-Run Paperclip in Docker without installing Node or pnpm locally.
+Ejecuta Paperclip en Docker sin instalar Node ni pnpm localmente.
 
-## Compose Quickstart (Recommended)
+## Inicio rápido con Compose (recomendado)
 
 ```sh
 docker compose -f docker-compose.quickstart.yml up --build
 ```
 
-Open [http://localhost:3100](http://localhost:3100).
+Abre [http://localhost:3100](http://localhost:3100).
 
-Defaults:
+Valores por defecto:
 
-- Host port: `3100`
-- Data directory: `./data/docker-paperclip`
+- Puerto del host: `3100`
+- Directorio de datos: `./data/docker-paperclip`
 
-Override with environment variables:
+Sobrescribe con variables de entorno:
 
 ```sh
 PAPERCLIP_PORT=3200 PAPERCLIP_DATA_DIR=./data/pc \
   docker compose -f docker-compose.quickstart.yml up --build
 ```
 
-## Manual Docker Build
+## Construcción manual de Docker
 
 ```sh
 docker build -t paperclip-local .
@@ -37,23 +37,23 @@ docker run --name paperclip \
   paperclip-local
 ```
 
-## Data Persistence
+## Persistencia de datos
 
-All data is persisted under the bind mount (`./data/docker-paperclip`):
+Todos los datos persisten bajo el montaje bind (`./data/docker-paperclip`):
 
-- Embedded PostgreSQL data
-- Uploaded assets
-- Local secrets key
-- Agent workspace data
+- Datos de PostgreSQL embebido
+- Recursos subidos
+- Clave de secretos local
+- Datos del espacio de trabajo del agente
 
-## Claude and Codex Adapters in Docker
+## Adaptadores de Claude y Codex en Docker
 
-The Docker image pre-installs:
+La imagen de Docker preinstala:
 
-- `claude` (Anthropic Claude Code CLI)
-- `codex` (OpenAI Codex CLI)
+- `claude` (CLI de Anthropic Claude Code)
+- `codex` (CLI de OpenAI Codex)
 
-Pass API keys to enable local adapter runs inside the container:
+Pasa claves de API para habilitar ejecuciones locales de adaptadores dentro del contenedor:
 
 ```sh
 docker run --name paperclip \
@@ -66,4 +66,4 @@ docker run --name paperclip \
   paperclip-local
 ```
 
-Without API keys, the app runs normally — adapter environment checks will surface missing prerequisites.
+Sin claves de API, la app funciona normalmente: las comprobaciones de entorno de los adaptadores mostrarán los prerequisitos faltantes.

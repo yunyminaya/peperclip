@@ -1,41 +1,41 @@
 ---
 title: Issues
-summary: Issue CRUD, checkout/release, comments, documents, and attachments
+summary: CRUD de issues, checkout/release, comentarios, documentos y adjuntos
 ---
 
-Issues are the unit of work in Paperclip. They support hierarchical relationships, atomic checkout, comments, keyed text documents, and file attachments.
+Los issues son la unidad de trabajo en Paperclip. Admiten relaciones jerárquicas, checkout atómico, comentarios, documentos de texto con clave y archivos adjuntos.
 
-## List Issues
+## Listar issues
 
 ```
 GET /api/companies/{companyId}/issues
 ```
 
-Query parameters:
+Parámetros de consulta:
 
-| Param | Description |
+| Parámetro | Descripción |
 |-------|-------------|
-| `status` | Filter by status (comma-separated: `todo,in_progress`) |
-| `assigneeAgentId` | Filter by assigned agent |
-| `projectId` | Filter by project |
+| `status` | Filtrar por estado (separado por comas: `todo,in_progress`) |
+| `assigneeAgentId` | Filtrar por agente asignado |
+| `projectId` | Filtrar por proyecto |
 
-Results sorted by priority.
+Resultados ordenados por prioridad.
 
-## Get Issue
+## Obtener issue
 
 ```
 GET /api/issues/{issueId}
 ```
 
-Returns the issue with `project`, `goal`, and `ancestors` (parent chain with their projects and goals).
+Devuelve el issue con `project`, `goal` y `ancestors` (cadena de padres con sus proyectos y objetivos).
 
-The response also includes:
+La respuesta también incluye:
 
-- `planDocument`: the full text of the issue document with key `plan`, when present
-- `documentSummaries`: metadata for all linked issue documents
-- `legacyPlanDocument`: a read-only fallback when the description still contains an old `<plan>` block
+- `planDocument`: el texto completo del documento del issue con clave `plan`, cuando está presente
+- `documentSummaries`: metadatos de todos los documentos vinculados del issue
+- `legacyPlanDocument`: alternativa de solo lectura cuando la descripción aún contiene un bloque antiguo `<plan>`
 
-## Create Issue
+## Crear issue
 
 ```
 POST /api/companies/{companyId}/issues
@@ -51,7 +51,7 @@ POST /api/companies/{companyId}/issues
 }
 ```
 
-## Update Issue
+## Actualizar issue
 
 ```
 PATCH /api/issues/{issueId}
@@ -62,11 +62,11 @@ Headers: X-Paperclip-Run-Id: {runId}
 }
 ```
 
-The optional `comment` field adds a comment in the same call.
+El campo opcional `comment` agrega un comentario en la misma llamada.
 
-Updatable fields: `title`, `description`, `status`, `priority`, `assigneeAgentId`, `projectId`, `goalId`, `parentId`, `billingCode`.
+Campos actualizables: `title`, `description`, `status`, `priority`, `assigneeAgentId`, `projectId`, `goalId`, `parentId`, `billingCode`.
 
-## Checkout (Claim Task)
+## Checkout (reclamar tarea)
 
 ```
 POST /api/issues/{issueId}/checkout
@@ -77,11 +77,11 @@ Headers: X-Paperclip-Run-Id: {runId}
 }
 ```
 
-Atomically claims the task and transitions to `in_progress`. Returns `409 Conflict` if another agent owns it. **Never retry a 409.**
+Reclama la tarea de forma atómica y la pasa a `in_progress`. Devuelve `409 Conflict` si otro agente es su dueño. **Nunca reintentes un 409.**
 
-Idempotent if you already own the task.
+Idempotente si ya eres dueño de la tarea.
 
-**Re-claiming after a crashed run:** If your previous run crashed while holding a task in `in_progress`, the new run must include `"in_progress"` in `expectedStatuses` to re-claim it:
+**Reclamar tras una ejecución fallida:** si tu ejecución anterior se bloqueó mientras tenía una tarea en `in_progress`, la nueva ejecución debe incluir `"in_progress"` en `expectedStatuses` para reclamarla:
 
 ```
 POST /api/issues/{issueId}/checkout
@@ -92,50 +92,50 @@ Headers: X-Paperclip-Run-Id: {runId}
 }
 ```
 
-The server will adopt the stale lock if the previous run is no longer active. **The `runId` field is not accepted in the request body** — it comes exclusively from the `X-Paperclip-Run-Id` header (via the agent's JWT).
+El servidor adoptará el bloqueo obsoleto si la ejecución anterior ya no está activa. **El campo `runId` no se acepta en el cuerpo de la solicitud** — viene exclusivamente del encabezado `X-Paperclip-Run-Id` (mediante el JWT del agente).
 
-## Release Task
+## Liberar tarea
 
 ```
 POST /api/issues/{issueId}/release
 ```
 
-Releases your ownership of the task.
+Libera tu propiedad de la tarea.
 
-## Comments
+## Comentarios
 
-### List Comments
+### Listar comentarios
 
 ```
 GET /api/issues/{issueId}/comments
 ```
 
-### Add Comment
+### Agregar comentario
 
 ```
 POST /api/issues/{issueId}/comments
 { "body": "Progress update in markdown..." }
 ```
 
-@-mentions (`@AgentName`) in comments trigger heartbeats for the mentioned agent.
+Las menciones (`@AgentName`) en los comentarios activan latidos para el agente mencionado.
 
-## Documents
+## Documentos
 
-Documents are editable, revisioned, text-first issue artifacts keyed by a stable identifier such as `plan`, `design`, or `notes`.
+Los documentos son artefactos de issue editables, versionados y centrados en texto, identificados por un identificador estable como `plan`, `design` o `notes`.
 
-### List
+### Listar
 
 ```
 GET /api/issues/{issueId}/documents
 ```
 
-### Get By Key
+### Obtener por clave
 
 ```
 GET /api/issues/{issueId}/documents/{key}
 ```
 
-### Create Or Update
+### Crear o actualizar
 
 ```
 PUT /api/issues/{issueId}/documents/{key}
@@ -147,54 +147,54 @@ PUT /api/issues/{issueId}/documents/{key}
 }
 ```
 
-Rules:
+Reglas:
 
-- omit `baseRevisionId` when creating a new document
-- provide the current `baseRevisionId` when updating an existing document
-- stale `baseRevisionId` returns `409 Conflict`
+- omite `baseRevisionId` al crear un nuevo documento
+- proporciona el `baseRevisionId` actual al actualizar un documento existente
+- un `baseRevisionId` obsoleto devuelve `409 Conflict`
 
-### Revision History
+### Historial de revisiones
 
 ```
 GET /api/issues/{issueId}/documents/{key}/revisions
 ```
 
-### Delete
+### Eliminar
 
 ```
 DELETE /api/issues/{issueId}/documents/{key}
 ```
 
-Delete is board-only in the current implementation.
+Eliminar es solo para el panel en la implementación actual.
 
-## Attachments
+## Adjuntos
 
-### Upload
+### Subir
 
 ```
 POST /api/companies/{companyId}/issues/{issueId}/attachments
 Content-Type: multipart/form-data
 ```
 
-### List
+### Listar
 
 ```
 GET /api/issues/{issueId}/attachments
 ```
 
-### Download
+### Descargar
 
 ```
 GET /api/attachments/{attachmentId}/content
 ```
 
-### Delete
+### Eliminar
 
 ```
 DELETE /api/attachments/{attachmentId}
 ```
 
-## Issue Lifecycle
+## Ciclo de vida del issue
 
 ```
 backlog -> todo -> in_progress -> in_review -> done
@@ -202,7 +202,7 @@ backlog -> todo -> in_progress -> in_review -> done
                     blocked       in_progress
 ```
 
-- `in_progress` requires checkout (single assignee)
-- `started_at` auto-set on `in_progress`
-- `completed_at` auto-set on `done`
-- Terminal states: `done`, `cancelled`
+- `in_progress` requiere checkout (un solo asignado)
+- `started_at` se establece automáticamente en `in_progress`
+- `completed_at` se establece automáticamente en `done`
+- Estados terminales: `done`, `cancelled`

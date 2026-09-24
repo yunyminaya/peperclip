@@ -26,7 +26,7 @@ function writePreference(visible: boolean) {
   try {
     localStorage.setItem(STORAGE_KEY, String(visible));
   } catch {
-    // Ignore storage failures.
+    // Ignorar los fallos de almacenamiento.
   }
 }
 

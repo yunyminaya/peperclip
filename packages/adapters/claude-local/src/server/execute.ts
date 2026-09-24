@@ -33,9 +33,9 @@ import { resolveClaudeDesiredSkillNames } from "./skills.js";
 const __moduleDir = path.dirname(fileURLToPath(import.meta.url));
 
 /**
- * Create a tmpdir with `.claude/skills/` containing symlinks to skills from
- * the repo's `skills/` directory, so `--add-dir` makes Claude Code discover
- * them as proper registered skills.
+ * Crea un tmpdir con `.claude/skills/` que contiene enlaces simbólicos a las
+ * habilidades del directorio `skills/` del repo, para que `--add-dir` haga que
+ * Claude Code las descubra como habilidades registradas correctamente.
  */
 async function buildSkillsDir(config: Record<string, unknown>): Promise<string> {
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "paperclip-skills-"));
@@ -98,7 +98,7 @@ function hasNonEmptyEnvValue(env: Record<string, string>, key: string): boolean 
 }
 
 function resolveClaudeBillingType(env: Record<string, string>): "api" | "subscription" {
-  // Claude uses API-key auth when ANTHROPIC_API_KEY is present; otherwise rely on local login/session auth.
+  // Claude usa autenticación por API key cuando ANTHROPIC_API_KEY está presente; de lo contrario usa el inicio de sesión/sesión local.
   return hasNonEmptyEnvValue(env, "ANTHROPIC_API_KEY") ? "api" : "subscription";
 }
 
@@ -311,7 +311,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const instructionsFileDir = instructionsFilePath ? `${path.dirname(instructionsFilePath)}/` : "";
   const commandNotes = instructionsFilePath
     ? [
-        `Injected agent instructions via --append-system-prompt-file ${instructionsFilePath} (with path directive appended)`,
+        `Instrucciones del agente inyectadas vía --append-system-prompt-file ${instructionsFilePath} (con directiva de ruta agregada)`,
       ]
     : [];
 
@@ -341,9 +341,9 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const billingType = resolveClaudeBillingType(effectiveEnv);
   const skillsDir = await buildSkillsDir(config);
 
-  // When instructionsFilePath is configured, create a combined temp file that
-  // includes both the file content and the path directive, so we only need
-  // --append-system-prompt-file (Claude CLI forbids using both flags together).
+  // Cuando instructionsFilePath está configurado, crear un archivo temporal combinado que
+  // incluye tanto el contenido del archivo como la directiva de ruta, para solo necesitar
+  // --append-system-prompt-file (el CLI de Claude prohíbe usar ambas flags juntas).
   let effectiveInstructionsFilePath: string | undefined = instructionsFilePath;
   if (instructionsFilePath) {
     try {
@@ -356,7 +356,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       const reason = err instanceof Error ? err.message : String(err);
       await onLog(
         "stderr",
-        `[paperclip] Warning: could not read agent instructions file "${instructionsFilePath}": ${reason}\n`,
+        `[paperclip] Advertencia: no se pudo leer el archivo de instrucciones del agente "${instructionsFilePath}": ${reason}\n`,
       );
       effectiveInstructionsFilePath = undefined;
     }
@@ -372,7 +372,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   if (runtimeSessionId && !canResumeSession) {
     await onLog(
       "stdout",
-      `[paperclip] Claude session "${runtimeSessionId}" was saved for cwd "${runtimeSessionCwd}" and will not be resumed in "${cwd}".\n`,
+      `[paperclip] La sesión de Claude "${runtimeSessionId}" se guardó para el cwd "${runtimeSessionCwd}" y no se reanudará en "${cwd}".\n`,
     );
   }
   const bootstrapPromptTemplate = asString(config.bootstrapPromptTemplate, "");
@@ -427,12 +427,12 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
         .find(Boolean) ?? "";
 
     if ((proc.exitCode ?? 0) === 0) {
-      return "Failed to parse claude JSON output";
+      return "No se pudo analizar la salida JSON de claude";
     }
 
     return stderrLine
-      ? `Claude exited with code ${proc.exitCode ?? -1}: ${stderrLine}`
-      : `Claude exited with code ${proc.exitCode ?? -1}`;
+      ? `Claude terminó con el código ${proc.exitCode ?? -1}: ${stderrLine}`
+      : `Claude terminó con el código ${proc.exitCode ?? -1}`;
   };
 
   const runAttempt = async (resumeSessionId: string | null) => {
@@ -492,7 +492,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
         exitCode: proc.exitCode,
         signal: proc.signal,
         timedOut: true,
-        errorMessage: `Timed out after ${timeoutSec}s`,
+        errorMessage: `Se agotó el tiempo de espera después de ${timeoutSec}s`,
         errorCode: "timeout",
         errorMeta,
         clearSession: Boolean(opts.clearSessionOnMissingSession),
@@ -547,7 +547,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       errorMessage:
         (proc.exitCode ?? 0) === 0
           ? null
-          : describeClaudeFailure(parsed) ?? `Claude exited with code ${proc.exitCode ?? -1}`,
+          : describeClaudeFailure(parsed) ?? `Claude terminó con el código ${proc.exitCode ?? -1}`,
       errorCode: loginMeta.requiresLogin ? "claude_auth_required" : null,
       errorMeta,
       usage,
@@ -576,7 +576,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     ) {
       await onLog(
         "stdout",
-        `[paperclip] Claude resume session "${sessionId}" is unavailable; retrying with a fresh session.\n`,
+        `[paperclip] La sesión de reanudación de Claude "${sessionId}" no está disponible; reintentando con una sesión nueva.\n`,
       );
       const retry = await runAttempt(null);
       return toAdapterResult(retry, { fallbackSessionId: null, clearSessionOnMissingSession: true });

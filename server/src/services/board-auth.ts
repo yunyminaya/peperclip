@@ -262,7 +262,7 @@ export function boardAuthService(db: Db) {
         .where(eq(cliAuthChallenges.id, id))
         .then((rows) => rows[0] ?? null);
       if (!challenge || !tokenHashesMatch(challenge.secretHash, hashBearerToken(token))) {
-        throw notFound("CLI auth challenge not found");
+        throw notFound("Desafío de autenticación CLI no encontrado");
       }
 
       const status = challengeStatusForRow(challenge);
@@ -307,7 +307,7 @@ export function boardAuthService(db: Db) {
 
   async function cancelCliAuthChallenge(id: string, token: string) {
     const challenge = await getCliAuthChallengeBySecret(id, token);
-    if (!challenge) throw notFound("CLI auth challenge not found");
+    if (!challenge) throw notFound("Desafío de autenticación CLI no encontrado");
 
     const status = challengeStatusForRow(challenge);
     if (status === "approved") return { status, challenge };
@@ -328,13 +328,13 @@ export function boardAuthService(db: Db) {
   }
 
   async function assertCurrentBoardKey(keyId: string | undefined, userId: string | undefined) {
-    if (!keyId || !userId) throw conflict("Board API key context is required");
+    if (!keyId || !userId) throw conflict("Se requiere el contexto de la clave API del panel");
     const key = await db
       .select()
       .from(boardApiKeys)
       .where(and(eq(boardApiKeys.id, keyId), eq(boardApiKeys.userId, userId)))
       .then((rows) => rows[0] ?? null);
-    if (!key || key.revokedAt) throw notFound("Board API key not found");
+    if (!key || key.revokedAt) throw notFound("Clave API del panel no encontrada");
     return key;
   }
 

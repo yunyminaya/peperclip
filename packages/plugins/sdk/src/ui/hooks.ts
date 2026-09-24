@@ -12,15 +12,15 @@ import { getSdkUiRuntimeValue } from "./runtime.js";
 // ---------------------------------------------------------------------------
 
 /**
- * Fetch data from the plugin worker's registered `getData` handler.
+ * Obtiene datos del manejador `getData` registrado del worker del plugin.
  *
- * Calls `ctx.data.register(key, handler)` in the worker and returns the
- * result as reactive state. Re-fetches when `params` changes.
+ * Llama a `ctx.data.register(key, handler)` en el worker y devuelve el
+ * resultado como estado reactivo. Vuelve a obtener cuando cambian los `params`.
  *
- * @template T The expected shape of the returned data
- * @param key - The data key matching the handler registered with `ctx.data.register()`
- * @param params - Optional parameters forwarded to the handler
- * @returns `PluginDataResult<T>` with `data`, `loading`, `error`, and `refresh`
+ * @template T La forma esperada de los datos devueltos
+ * @param key - La clave de datos que coincide con el manejador registrado con `ctx.data.register()`
+ * @param params - Parámetros opcionales reenviados al manejador
+ * @returns `PluginDataResult<T>` con `data`, `loading`, `error` y `refresh`
  *
  * @example
  * ```tsx
@@ -29,14 +29,14 @@ import { getSdkUiRuntimeValue } from "./runtime.js";
  *     companyId: context.companyId,
  *   });
  *
- *   if (loading) return <div>Loading…</div>;
+ *   if (loading) return <div>Cargando…</div>;
  *   if (error) return <div>Error: {error.message}</div>;
- *   return <div>Synced Issues: {data!.syncedCount}</div>;
+ *   return <div>Issues sincronizados: {data!.syncedCount}</div>;
  * }
  * ```
  *
  * @see PLUGIN_SPEC.md §13.8 — `getData`
- * @see PLUGIN_SPEC.md §19.7 — Error Propagation Through The Bridge
+ * @see PLUGIN_SPEC.md §19.7 — Propagación de errores a través del puente
  */
 export function usePluginData<T = unknown>(
   key: string,
@@ -53,13 +53,13 @@ export function usePluginData<T = unknown>(
 // ---------------------------------------------------------------------------
 
 /**
- * Get a callable function that invokes the plugin worker's registered
- * `performAction` handler.
+ * Obtiene una función invocable que llama al manejador `performAction`
+ * registrado del worker del plugin.
  *
- * The returned function is async and throws a `PluginBridgeError` on failure.
+ * La función devuelta es asíncrona y lanza un `PluginBridgeError` si falla.
  *
- * @param key - The action key matching the handler registered with `ctx.actions.register()`
- * @returns An async function that sends the action to the worker and resolves with the result
+ * @param key - La clave de acción que coincide con el manejador registrado con `ctx.actions.register()`
+ * @returns Una función asíncrona que envía la acción al worker y se resuelve con el resultado
  *
  * @example
  * ```tsx
@@ -75,12 +75,12 @@ export function usePluginData<T = unknown>(
  *     }
  *   }
  *
- *   return <button onClick={handleClick}>Resync Now</button>;
+ *   return <button onClick={handleClick}>Resincronizar ahora</button>;
  * }
  * ```
  *
  * @see PLUGIN_SPEC.md §13.9 — `performAction`
- * @see PLUGIN_SPEC.md §19.7 — Error Propagation Through The Bridge
+ * @see PLUGIN_SPEC.md §19.7 — Propagación de errores a través del puente
  */
 export function usePluginAction(key: string): PluginActionFn {
   const impl = getSdkUiRuntimeValue<(nextKey: string) => PluginActionFn>("usePluginAction");
@@ -92,12 +92,12 @@ export function usePluginAction(key: string): PluginActionFn {
 // ---------------------------------------------------------------------------
 
 /**
- * Read the current host context (active company, project, entity, user).
+ * Lee el contexto actual del host (empresa, proyecto, entidad y usuario activos).
  *
- * Use this to know which context the plugin component is being rendered in
- * so you can scope data requests and actions accordingly.
+ * Úsese para saber en qué contexto se está renderizando el componente del plugin
+ * y así acotar las solicitudes de datos y las acciones en consecuencia.
  *
- * @returns The current `PluginHostContext`
+ * @returns El `PluginHostContext` actual
  *
  * @example
  * ```tsx
@@ -108,7 +108,7 @@ export function usePluginAction(key: string): PluginActionFn {
  * }
  * ```
  *
- * @see PLUGIN_SPEC.md §19 — UI Extension Model
+ * @see PLUGIN_SPEC.md §19 — Modelo de extensión de interfaz
  */
 export function useHostContext(): PluginHostContext {
   const impl = getSdkUiRuntimeValue<() => PluginHostContext>("useHostContext");
@@ -120,16 +120,16 @@ export function useHostContext(): PluginHostContext {
 // ---------------------------------------------------------------------------
 
 /**
- * Subscribe to a real-time event stream pushed from the plugin worker.
+ * Suscribirse a un flujo de eventos en tiempo real enviado desde el worker del plugin.
  *
- * Opens an SSE connection to `GET /api/plugins/:pluginId/bridge/stream/:channel`
- * and accumulates events as they arrive. The worker pushes events using
+ * Abre una conexión SSE a `GET /api/plugins/:pluginId/bridge/stream/:channel`
+ * y acumula los eventos a medida que llegan. El worker envía eventos usando
  * `ctx.streams.emit(channel, event)`.
  *
- * @template T The expected shape of each streamed event
- * @param channel - The stream channel name (must match what the worker uses in `ctx.streams.emit`)
- * @param options - Optional configuration for the stream
- * @returns `PluginStreamResult<T>` with `events`, `lastEvent`, connection status, and `close()`
+ * @template T La forma esperada de cada evento del flujo
+ * @param channel - El nombre del canal del flujo (debe coincidir con lo que usa el worker en `ctx.streams.emit`)
+ * @param options - Configuración opcional para el flujo
+ * @returns `PluginStreamResult<T>` con `events`, `lastEvent`, estado de conexión y `close()`
  *
  * @example
  * ```tsx
@@ -140,7 +140,7 @@ export function useHostContext(): PluginHostContext {
  *     <div>
  *       {events.map((e, i) => <span key={i}>{e.text}</span>)}
  *       {connected && <span className="pulse" />}
- *       <button onClick={close}>Stop</button>
+ *       <button onClick={close}>Detener</button>
  *     </div>
  *   );
  * }
@@ -163,10 +163,11 @@ export function usePluginStream<T = unknown>(
 // ---------------------------------------------------------------------------
 
 /**
- * Trigger a host toast notification from plugin UI.
+ * Dispara una notificación toast del host desde la interfaz del plugin.
  *
- * This lets plugin pages and widgets surface user-facing feedback through the
- * same toast system as the host app without reaching into host internals.
+ * Esto permite que las páginas y widgets del plugin muestren retroalimentación
+ * orientada al usuario mediante el mismo sistema de toasts que la app del host
+ * sin acceder a internos del host.
  */
 export function usePluginToast(): PluginToastFn {
   const impl = getSdkUiRuntimeValue<() => PluginToastFn>("usePluginToast");

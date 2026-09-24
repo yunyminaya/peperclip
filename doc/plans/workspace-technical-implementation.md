@@ -1,149 +1,149 @@
-# Workspace Technical Implementation Spec
+# Especificación de implementación técnica de espacios de trabajo
 
-## Role of This Document
+## Rol de este documento
 
-This document translates [workspace-product-model-and-work-product.md](/Users/dotta/paperclip-subissues/doc/plans/workspace-product-model-and-work-product.md) into an implementation-ready engineering plan.
+Este documento traduce [workspace-product-model-and-work-product.md](/Users/dotta/paperclip-subissues/doc/plans/workspace-product-model-and-work-product.md) en un plan de ingeniería listo para implementar.
 
-It is intentionally concrete:
+Es intencionalmente concreto:
 
-- schema and migration shape
-- shared contract updates
-- route and service changes
-- UI changes
-- rollout and compatibility rules
+- forma de esquema y migración
+- actualizaciones de contratos compartidos
+- cambios de rutas y servicios
+- cambios de UI
+- reglas de despliegue y compatibilidad
 
-This is the implementation target for the first workspace-aware delivery slice.
+Este es el objetivo de implementación para el primer segmento de entrega consciente de espacios de trabajo.
 
-## Locked Decisions
+## Decisiones fijadas
 
-These decisions are treated as settled for this implementation:
+Estas decisiones se tratan como resueltas para esta implementación:
 
-1. Add a new durable `execution_workspaces` table now.
-2. Each issue has at most one current execution workspace at a time.
-3. `issues` get explicit `project_workspace_id` and `execution_workspace_id`.
-4. Workspace reuse is in scope for V1.
-5. The feature is gated in the UI by `/instance/settings > Experimental > Workspaces`.
-6. The gate is UI-only. Backend model changes and migrations always ship.
-7. Existing users upgrade into compatibility-preserving defaults.
-8. `project_workspaces` evolves in place rather than being replaced.
-9. Work product is issue-first, with optional links to execution workspaces and runtime services.
-10. GitHub is the only PR provider in the first slice.
-11. Both `adapter_managed` and `cloud_sandbox` execution modes are in scope.
-12. Workspace controls ship first inside existing project properties, not in a new global navigation area.
-13. Subissues are out of scope for this implementation slice.
+1. Agregar ahora una nueva tabla durable `execution_workspaces`.
+2. Cada issue tiene como máximo un espacio de trabajo de ejecución actual a la vez.
+3. Los `issues` obtienen `project_workspace_id` y `execution_workspace_id` explícitos.
+4. La reutilización de espacios de trabajo está dentro del alcance para V1.
+5. La funcionalidad se controla en la UI mediante `/instance/settings > Experimental > Workspaces`.
+6. El control es solo de UI. Los cambios de modelo de backend y las migraciones siempre se envían.
+7. Los usuarios existentes se actualizan a valores predeterminados que preservan compatibilidad.
+8. `project_workspaces` evoluciona en su lugar en lugar de ser reemplazado.
+9. El producto de trabajo es primero de issue, con enlaces opcionales a espacios de trabajo de ejecución y servicios de tiempo de ejecución.
+10. GitHub es el único proveedor de PR en el primer segmento.
+11. Tanto los modos de ejecución `adapter_managed` como `cloud_sandbox` están dentro del alcance.
+12. Los controles de espacio de trabajo se envían primero dentro de las propiedades de proyecto existentes, no en un área nueva de navegación global.
+13. Los subissues están fuera del alcance para este segmento de implementación.
 
-## Non-Goals
+## No objetivos
 
-- Building a full code review system
-- Solving subissue UX in this slice
-- Implementing reusable shared workspace definitions across projects in this slice
-- Reworking all current runtime service behavior before introducing execution workspaces
+- Construir un sistema completo de revisión de código
+- Resolver la UX de subissues en este segmento
+- Implementar definiciones de espacios de trabajo compartidos reutilizables entre proyectos en este segmento
+- Retrabajar todo el comportamiento actual de servicios de tiempo de ejecución antes de introducir espacios de trabajo de ejecución
 
-## Existing Baseline
+## Línea base existente
 
-The repo already has:
+El repositorio ya tiene:
 
 - `project_workspaces`
 - `projects.execution_workspace_policy`
 - `issues.execution_workspace_settings`
-- runtime service persistence in `workspace_runtime_services`
-- local git-worktree realization in `workspace-runtime.ts`
+- persistencia de servicios de tiempo de ejecución en `workspace_runtime_services`
+- realización local de git-worktree en `workspace-runtime.ts`
 
-This implementation should build on that baseline rather than fork it.
+Esta implementación debería construirse sobre esa línea base en lugar de bifurcarla.
 
-## Terminology
+## Terminología
 
-- `Project workspace`: durable configured codebase/root for a project
-- `Execution workspace`: actual runtime workspace used for one or more issues
-- `Work product`: user-facing output such as PR, preview, branch, commit, artifact, document
-- `Runtime service`: process or service owned or tracked for a workspace
-- `Compatibility mode`: existing behavior preserved for upgraded installs with no explicit workspace opt-in
+- `Project workspace`: base de código/raíz durable configurada para un proyecto
+- `Execution workspace`: espacio de trabajo de tiempo de ejecución real usado para uno o más issues
+- `Work product`: salida orientada al usuario como PR, vista previa, rama, commit, artefacto, documento
+- `Runtime service`: proceso o servicio propiedad o rastreado para un espacio de trabajo
+- `Compatibility mode`: comportamiento existente preservado para instalaciones actualizadas sin opt-in explícito de espacios de trabajo
 
-## Architecture Summary
+## Resumen de arquitectura
 
-The first slice should introduce three explicit layers:
+El primer segmento debería introducir tres capas explícitas:
 
 1. `Project workspace`
-   - existing durable project-scoped codebase record
-   - extended to support local, git, non-git, and remote-managed shapes
+   - registro de base de código durable existente con alcance de proyecto
+   - extendido para admitir formas locales, git, no git y gestionadas remotamente
 
 2. `Execution workspace`
-   - new durable runtime record
-   - represents shared, isolated, operator-branch, or remote-managed execution context
+   - nuevo registro de tiempo de ejecución durable
+   - representa contexto de ejecución compartido, aislado, de rama de operador o gestionado remotamente
 
 3. `Issue work product`
-   - new durable output record
-   - stores PRs, previews, branches, commits, artifacts, and documents
+   - nuevo registro de salida durable
+   - almacena PRs, vistas previas, ramas, commits, artefactos y documentos
 
-The issue remains the planning and ownership unit.
-The execution workspace remains the runtime unit.
-The work product remains the deliverable/output unit.
+El issue sigue siendo la unidad de planificación y propiedad.
+El espacio de trabajo de ejecución sigue siendo la unidad de tiempo de ejecución.
+El producto de trabajo sigue siendo la unidad de entregable/salida.
 
-## Configuration and Deployment Topology
+## Topología de configuración y despliegue
 
-## Important correction
+## Corrección importante
 
-This repo already uses `PAPERCLIP_DEPLOYMENT_MODE` for auth/deployment behavior (`local_trusted | authenticated`).
+Este repositorio ya usa `PAPERCLIP_DEPLOYMENT_MODE` para comportamiento de autenticación/despliegue (`local_trusted | authenticated`).
 
-Do not overload that variable for workspace execution topology.
+No sobrecargar esa variable para la topología de ejecución de espacios de trabajo.
 
-## New env var
+## Nueva variable de entorno
 
-Add a separate execution-host hint:
+Agregar una pista separada de host de ejecución:
 
 - `PAPERCLIP_EXECUTION_TOPOLOGY=local|cloud|hybrid`
 
-Default:
+Valor predeterminado:
 
-- if unset, treat as `local`
+- si no está definida, tratar como `local`
 
-Purpose:
+Propósito:
 
-- influences defaults and validation for workspace configuration
-- does not change current auth/deployment semantics
-- does not break existing installs
+- influye en los valores predeterminados y la validación para la configuración de espacios de trabajo
+- no cambia la semántica actual de autenticación/despliegue
+- no rompe instalaciones existentes
 
-### Semantics
+### Semántica
 
 - `local`
-  - Paperclip may create host-local worktrees, processes, and paths
+  - Paperclip puede crear worktrees, procesos y rutas locales del host
 - `cloud`
-  - Paperclip should assume no durable host-local execution workspace management
-  - adapter-managed and cloud-sandbox flows should be treated as first-class
+  - Paperclip debería asumir que no hay gestión durable de espacios de trabajo de ejecución locales del host
+  - los flujos gestionados por adaptador y de sandbox en la nube deberían tratarse como de primera clase
 - `hybrid`
-  - both local and remote execution strategies may exist
+  - ambas estrategias de ejecución local y remota pueden existir
 
-This is a guardrail and defaulting aid, not a hard policy engine in the first slice.
+Esto es una baranda y ayuda de valores predeterminados, no un motor duro de políticas en el primer segmento.
 
-## Instance Settings
+## Ajustes de instancia
 
-Add a new `Experimental` section under `/instance/settings`.
+Agregar una nueva sección `Experimental` bajo `/instance/settings`.
 
-### New setting
+### Nuevo ajuste
 
 - `experimental.workspaces: boolean`
 
-Rules:
+Reglas:
 
-- default `false`
-- UI-only gate
-- stored in instance config or instance settings API response
-- backend routes and migrations remain available even when false
+- valor predeterminado `false`
+- control solo de UI
+- almacenado en la configuración de instancia o respuesta de API de ajustes de instancia
+- las rutas de backend y migraciones permanecen disponibles incluso cuando es false
 
-### UI behavior when off
+### Comportamiento de UI cuando está apagado
 
-- hide workspace-specific issue controls
-- hide workspace-specific project configuration
-- hide issue `Work Product` tab if it would otherwise be empty
-- do not remove or invalidate any stored workspace data
+- ocultar controles de issue específicos de espacios de trabajo
+- ocultar configuración de proyecto específica de espacios de trabajo
+- ocultar la pestaña `Work Product` del issue si de otro modo estaría vacía
+- no eliminar ni invalidar ningún dato de espacio de trabajo almacenado
 
-## Data Model
+## Modelo de datos
 
-## 1. Extend `project_workspaces`
+## 1. Extender `project_workspaces`
 
-Current table exists and should evolve in place.
+La tabla actual existe y debería evolucionar en su lugar.
 
-### New columns
+### Nuevas columnas
 
 - `source_type text not null default 'local_path'`
   - `local_path | git_repo | non_git_path | remote_managed`
@@ -153,29 +153,29 @@ Current table exists and should evolve in place.
 - `setup_command text null`
 - `cleanup_command text null`
 - `remote_provider text null`
-  - examples: `github`, `openai`, `anthropic`, `custom`
+  - ejemplos: `github`, `openai`, `anthropic`, `custom`
 - `remote_workspace_ref text null`
 - `shared_workspace_key text null`
-  - reserved for future cross-project shared workspace definitions
+  - reservado para futuras definiciones de espacios de trabajo compartidos entre proyectos
 
-### Backfill rules
+### Reglas de backfill
 
-- if existing row has `repo_url`, backfill `source_type='git_repo'`
-- else if existing row has `cwd`, backfill `source_type='local_path'`
-- else backfill `source_type='remote_managed'`
-- copy existing `repo_ref` into `default_ref`
+- si la fila existente tiene `repo_url`, rellenar `source_type='git_repo'`
+- si no, si la fila existente tiene `cwd`, rellenar `source_type='local_path'`
+- si no, rellenar `source_type='remote_managed'`
+- copiar el `repo_ref` existente en `default_ref`
 
-### Indexes
+### Índices
 
-- retain current indexes
-- add `(project_id, source_type)`
-- add `(company_id, shared_workspace_key)` non-unique for future support
+- retener los índices actuales
+- agregar `(project_id, source_type)`
+- agregar `(company_id, shared_workspace_key)` no único para soporte futuro
 
-## 2. Add `execution_workspaces`
+## 2. Agregar `execution_workspaces`
 
-Create a new durable table.
+Crear una nueva tabla durable.
 
-### Columns
+### Columnas
 
 - `id uuid pk`
 - `company_id uuid not null`
@@ -206,7 +206,7 @@ Create a new durable table.
 - `created_at timestamptz not null default now()`
 - `updated_at timestamptz not null default now()`
 
-### Foreign keys
+### Claves foráneas
 
 - `company_id -> companies.id`
 - `project_id -> projects.id`
@@ -214,46 +214,45 @@ Create a new durable table.
 - `source_issue_id -> issues.id on delete set null`
 - `derived_from_execution_workspace_id -> execution_workspaces.id on delete set null`
 
-### Indexes
+### Índices
 
 - `(company_id, project_id, status)`
 - `(company_id, project_workspace_id, status)`
 - `(company_id, source_issue_id)`
 - `(company_id, last_used_at desc)`
-- `(company_id, branch_name)` non-unique
+- `(company_id, branch_name)` no único
 
-## 3. Extend `issues`
+## 3. Extender `issues`
 
-Add explicit workspace linkage.
+Agregar vinculación explícita de espacios de trabajo.
 
-### New columns
+### Nuevas columnas
 
 - `project_workspace_id uuid null`
 - `execution_workspace_id uuid null`
 - `execution_workspace_preference text null`
   - `inherit | shared_workspace | isolated_workspace | operator_branch | reuse_existing`
 
-### Foreign keys
+### Claves foráneas
 
 - `project_workspace_id -> project_workspaces.id on delete set null`
 - `execution_workspace_id -> execution_workspaces.id on delete set null`
 
-### Backfill rules
+### Reglas de backfill
 
-- all existing issues get null values
-- null should be interpreted as compatibility/inherit behavior
+- todos los issues existentes obtienen valores null
+- null debería interpretarse como comportamiento de compatibilidad/herencia
 
-### Invariants
+### Invariantes
 
-- if `project_workspace_id` is set, it must belong to the issue's project and company
-- if `execution_workspace_id` is set, it must belong to the issue's company
-- if `execution_workspace_id` is set, the referenced workspace's `project_id` must match the issue's `project_id`
+- si `project_workspace_id` está definido, debe pertenecer al proyecto y empresa del issue
+- si `execution_workspace_id` está definido, debe pertenecer a la empresa del issue
+- si `execution_workspace_id` está definido, el `project_id` del espacio de trabajo referenciado debe coincidir con el `project_id` del issue
+## 4. Agregar `issue_work_products`
 
-## 4. Add `issue_work_products`
+Crear una nueva tabla durable para salidas.
 
-Create a new durable table for outputs.
-
-### Columns
+### Columnas
 
 - `id uuid pk`
 - `company_id uuid not null`
@@ -281,7 +280,7 @@ Create a new durable table for outputs.
 - `created_at timestamptz not null default now()`
 - `updated_at timestamptz not null default now()`
 
-### Foreign keys
+### Claves foráneas
 
 - `company_id -> companies.id`
 - `project_id -> projects.id on delete set null`
@@ -290,37 +289,37 @@ Create a new durable table for outputs.
 - `runtime_service_id -> workspace_runtime_services.id on delete set null`
 - `created_by_run_id -> heartbeat_runs.id on delete set null`
 
-### Indexes
+### Índices
 
 - `(company_id, issue_id, type)`
 - `(company_id, execution_workspace_id, type)`
 - `(company_id, provider, external_id)`
 - `(company_id, updated_at desc)`
 
-## 5. Extend `workspace_runtime_services`
+## 5. Extender `workspace_runtime_services`
 
-This table already exists and should remain the system of record for owned/tracked services.
+Esta tabla ya existe y debería seguir siendo el sistema de registro para servicios propiedad/rastreados.
 
-### New column
+### Nueva columna
 
 - `execution_workspace_id uuid null`
 
-### Foreign key
+### Clave foránea
 
 - `execution_workspace_id -> execution_workspaces.id on delete set null`
 
-### Behavior
+### Comportamiento
 
-- runtime services remain workspace-first
-- issue UIs should surface them through linked execution workspaces and work products
+- los servicios de tiempo de ejecución siguen siendo primero de espacio de trabajo
+- las UIs de issue deberían exponerlos a través de espacios de trabajo de ejecución vinculados y productos de trabajo
 
-## Shared Contracts
+## Contratos compartidos
 
 ## 1. `packages/shared`
 
-### Update project workspace types and validators
+### Actualizar tipos y validadores de espacios de trabajo de proyecto
 
-Add fields:
+Agregar campos:
 
 - `sourceType`
 - `defaultRef`
@@ -331,36 +330,36 @@ Add fields:
 - `remoteWorkspaceRef`
 - `sharedWorkspaceKey`
 
-### Add execution workspace types and validators
+### Agregar tipos y validadores de espacios de trabajo de ejecución
 
-New shared types:
+Nuevos tipos compartidos:
 
 - `ExecutionWorkspace`
 - `ExecutionWorkspaceMode`
 - `ExecutionWorkspaceStatus`
 - `ExecutionWorkspaceProviderType`
 
-### Add work product types and validators
+### Agregar tipos y validadores de producto de trabajo
 
-New shared types:
+Nuevos tipos compartidos:
 
 - `IssueWorkProduct`
 - `IssueWorkProductType`
 - `IssueWorkProductStatus`
 - `IssueWorkProductReviewState`
 
-### Update issue types and validators
+### Actualizar tipos y validadores de issue
 
-Add:
+Agregar:
 
 - `projectWorkspaceId`
 - `executionWorkspaceId`
 - `executionWorkspacePreference`
 - `workProducts?: IssueWorkProduct[]`
 
-### Extend project execution policy contract
+### Extender el contrato de política de ejecución de proyecto
 
-Replace the current narrow policy with a more explicit shape:
+Reemplazar la política estrecha actual con una forma más explícita:
 
 - `enabled`
 - `defaultMode`
@@ -373,118 +372,118 @@ Replace the current narrow policy with a more explicit shape:
 - `runtimePolicy`
 - `cleanupPolicy`
 
-Do not try to encode every possible provider-specific field in V1. Keep provider-specific extensibility in nested JSON where needed.
+No intentar codificar cada posible campo específico de proveedor en V1. Mantener la extensibilidad específica de proveedor en JSON anidado donde se necesite.
 
-## Service Layer Changes
+## Cambios en la capa de servicios
 
-## 1. Project service
+## 1. Servicio de proyecto
 
-Update project workspace CRUD to handle the extended schema.
+Actualizar el CRUD de espacios de trabajo de proyecto para manejar el esquema extendido.
 
-### Required rules
+### Reglas requeridas
 
-- when setting a primary workspace, clear `is_primary` on siblings
-- `source_type=remote_managed` may have null `cwd`
-- local/git-backed workspaces should still require one of `cwd` or `repo_url`
-- preserve current behavior for existing callers that only send `cwd/repoUrl/repoRef`
+- al definir un espacio de trabajo primario, limpiar `is_primary` en los hermanos
+- `source_type=remote_managed` puede tener `cwd` null
+- los espacios de trabajo locales/respaldados por git aún deberían requerir uno de `cwd` o `repo_url`
+- preservar el comportamiento actual para llamadores existentes que solo envían `cwd/repoUrl/repoRef`
 
-## 2. Issue service
+## 2. Servicio de issue
 
-Update create/update flows to handle explicit workspace binding.
+Actualizar los flujos de creación/actualización para manejar la vinculación explícita de espacios de trabajo.
 
-### Create behavior
+### Comportamiento de creación
 
-Resolve defaults in this order:
+Resolver valores predeterminados en este orden:
 
-1. explicit `projectWorkspaceId` from request
+1. `projectWorkspaceId` explícito de la solicitud
 2. `project.executionWorkspacePolicy.defaultProjectWorkspaceId`
-3. project's primary workspace
+3. el espacio de trabajo primario del proyecto
 4. null
 
-Resolve `executionWorkspacePreference`:
+Resolver `executionWorkspacePreference`:
 
-1. explicit request field
-2. project policy default
-3. compatibility fallback to `inherit`
+1. campo explícito de la solicitud
+2. valor predeterminado de la política de proyecto
+3. fallback de compatibilidad a `inherit`
 
-Do not create an execution workspace at issue creation time unless:
+No crear un espacio de trabajo de ejecución al momento de crear el issue a menos que:
 
-- `reuse_existing` is explicitly chosen and `executionWorkspaceId` is provided
+- `reuse_existing` se elija explícitamente y se proporcione `executionWorkspaceId`
 
-Otherwise, workspace realization happens when execution starts.
+De otro modo, la realización del espacio de trabajo ocurre cuando comienza la ejecución.
 
-### Update behavior
+### Comportamiento de actualización
 
-- allow changing `projectWorkspaceId` only if the workspace belongs to the same project
-- allow setting `executionWorkspaceId` only if it belongs to the same company and project
-- do not automatically destroy or relink historical work products when workspace linkage changes
+- permitir cambiar `projectWorkspaceId` solo si el espacio de trabajo pertenece al mismo proyecto
+- permitir definir `executionWorkspaceId` solo si pertenece a la misma empresa y proyecto
+- no destruir ni reenlazar automáticamente productos de trabajo históricos cuando cambia la vinculación de espacios de trabajo
 
-## 3. Workspace realization service
+## 3. Servicio de realización de espacios de trabajo
 
-Refactor `workspace-runtime.ts` so realization produces or reuses an `execution_workspaces` row.
+Refactorizar `workspace-runtime.ts` para que la realización produzca o reutilice una fila de `execution_workspaces`.
 
-### New flow
+### Nuevo flujo
 
-Input:
+Entrada:
 
 - issue
-- project workspace
-- project execution policy
-- execution topology hint
-- adapter/runtime configuration
+- espacio de trabajo de proyecto
+- política de ejecución de proyecto
+- pista de topología de ejecución
+- configuración de adaptador/tiempo de ejecución
 
-Output:
+Salida:
 
-- realized execution workspace record
-- runtime cwd/provider metadata
+- registro de espacio de trabajo de ejecución realizado
+- metadatos de cwd/proveedor de tiempo de ejecución
 
-### Required modes
+### Modos requeridos
 
 - `shared_workspace`
-  - reuse a stable execution workspace representing the project primary/shared workspace
+  - reutilizar un espacio de trabajo de ejecución estable que represente el espacio de trabajo primario/compartido del proyecto
 - `isolated_workspace`
-  - create or reuse a derived isolated execution workspace
+  - crear o reutilizar un espacio de trabajo de ejecución aislado derivado
 - `operator_branch`
-  - create or reuse a long-lived branch workspace
+  - crear o reutilizar un espacio de trabajo de rama de larga vida
 - `adapter_managed`
-  - create an execution workspace with provider references and optional null `cwd`
+  - crear un espacio de trabajo de ejecución con referencias de proveedor y `cwd` opcional null
 - `cloud_sandbox`
-  - same as adapter-managed, but explicit remote sandbox semantics
+  - igual que gestionado por adaptador, pero con semántica explícita de sandbox remoto
 
-### Reuse rules
+### Reglas de reutilización
 
-When `reuse_existing` is requested:
+Cuando se solicita `reuse_existing`:
 
-- only list active or recently used execution workspaces
-- only for the same project
-- only for the same project workspace if one is specified
-- exclude archived and cleanup-failed workspaces
+- listar solo espacios de trabajo de ejecución activos o usados recientemente
+- solo para el mismo proyecto
+- solo para el mismo espacio de trabajo de proyecto si se especifica uno
+- excluir espacios de trabajo archivados y con limpieza fallida
 
-### Shared workspace realization
+### Realización de espacio de trabajo compartido
 
-For compatibility mode and shared-workspace projects:
+Para modo de compatibilidad y proyectos de espacio de trabajo compartido:
 
-- create a stable execution workspace per project workspace when first needed
-- reuse it for subsequent runs
+- crear un espacio de trabajo de ejecución estable por espacio de trabajo de proyecto cuando se necesite por primera vez
+- reutilizarlo para ejecuciones posteriores
 
-This avoids a special-case branch in later work product linkage.
+Esto evita una rama de caso especial en la vinculación posterior de producto de trabajo.
 
-## 4. Runtime service integration
+## 4. Integración de servicios de tiempo de ejecución
 
-When runtime services are started or reused:
+Cuando se inician o reutilizan servicios de tiempo de ejecución:
 
-- populate `execution_workspace_id`
-- continue populating `project_workspace_id`, `project_id`, and `issue_id`
+- poblar `execution_workspace_id`
+- seguir poblando `project_workspace_id`, `project_id` e `issue_id`
 
-When a runtime service yields a URL:
+Cuando un servicio de tiempo de ejecución produce una URL:
 
-- optionally create or update a linked `issue_work_products` row of type `runtime_service` or `preview_url`
+- opcionalmente crear o actualizar una fila vinculada de `issue_work_products` de tipo `runtime_service` o `preview_url`
 
-## 5. PR and preview reporting
+## 5. Reporte de PR y vistas previas
 
-Add a service for creating/updating `issue_work_products`.
+Agregar un servicio para crear/actualizar `issue_work_products`.
 
-### Supported V1 product types
+### Tipos de producto V1 admitidos
 
 - `pull_request`
 - `preview_url`
@@ -494,11 +493,11 @@ Add a service for creating/updating `issue_work_products`.
 - `artifact`
 - `document`
 
-### GitHub PR reporting
+### Reporte de PR de GitHub
 
-For V1, GitHub is the only provider with richer semantics.
+Para V1, GitHub es el único proveedor con semántica más rica.
 
-Supported statuses:
+Estados admitidos:
 
 - `draft`
 - `ready_for_review`
@@ -507,20 +506,20 @@ Supported statuses:
 - `merged`
 - `closed`
 
-Represent these in `status` and `review_state` rather than inventing a separate PR table in V1.
+Representar estos en `status` y `review_state` en lugar de inventar una tabla PR separada en V1.
 
-## Routes and API
+## Rutas y API
 
-## 1. Project workspace routes
+## 1. Rutas de espacios de trabajo de proyecto
 
-Extend existing routes:
+Extender las rutas existentes:
 
 - `GET /projects/:id/workspaces`
 - `POST /projects/:id/workspaces`
 - `PATCH /projects/:id/workspaces/:workspaceId`
 - `DELETE /projects/:id/workspaces/:workspaceId`
 
-### New accepted/returned fields
+### Nuevos campos aceptados/devueltos
 
 - `sourceType`
 - `defaultRef`
@@ -530,12 +529,12 @@ Extend existing routes:
 - `remoteProvider`
 - `remoteWorkspaceRef`
 
-## 2. Execution workspace routes
+## 2. Rutas de espacios de trabajo de ejecución
 
-Add:
+Agregar:
 
 - `GET /companies/:companyId/execution-workspaces`
-  - filters:
+  - filtros:
     - `projectId`
     - `projectWorkspaceId`
     - `status`
@@ -543,34 +542,34 @@ Add:
     - `reuseEligible=true`
 - `GET /execution-workspaces/:id`
 - `PATCH /execution-workspaces/:id`
-  - update status/metadata/cleanup fields only in V1
+  - actualizar solo campos de estado/metadatos/limpieza en V1
 
-Do not add top-level navigation for these routes yet.
+No agregar navegación de nivel superior para estas rutas aún.
 
-## 3. Work product routes
+## 3. Rutas de producto de trabajo
 
-Add:
+Agregar:
 
 - `GET /issues/:id/work-products`
 - `POST /issues/:id/work-products`
 - `PATCH /work-products/:id`
 - `DELETE /work-products/:id`
 
-### V1 mutation permissions
+### Permisos de mutación V1
 
-- board can create/update/delete all
-- agents can create/update for issues they are assigned or currently executing
-- deletion should generally archive rather than hard-delete once linked to historical output
+- el tablero puede crear/actualizar/eliminar todo
+- los agentes pueden crear/actualizar para issues que tienen asignados o están ejecutando actualmente
+- la eliminación generalmente debería archivar en lugar de eliminar duro una vez vinculado a salida histórica
 
-## 4. Issue routes
+## 4. Rutas de issue
 
-Extend existing create/update payloads to accept:
+Extender las cargas útiles existentes de creación/actualización para aceptar:
 
 - `projectWorkspaceId`
 - `executionWorkspacePreference`
 - `executionWorkspaceId`
 
-Extend `GET /issues/:id` to return:
+Extender `GET /issues/:id` para devolver:
 
 - `projectWorkspaceId`
 - `executionWorkspaceId`
@@ -578,36 +577,36 @@ Extend `GET /issues/:id` to return:
 - `currentExecutionWorkspace`
 - `workProducts[]`
 
-## 5. Instance settings routes
+## 5. Rutas de ajustes de instancia
 
-Add support for:
+Agregar soporte para:
 
-- reading/writing `experimental.workspaces`
+- leer/escribir `experimental.workspaces`
 
-This is a UI gate only.
+Esto es solo un control de UI.
 
-If there is no generic instance settings storage yet, the first slice can store this in the existing config/instance settings mechanism used by `/instance/settings`.
+Si aún no hay almacenamiento genérico de ajustes de instancia, el primer segmento puede almacenar esto en el mecanismo existente de configuración/ajustes de instancia usado por `/instance/settings`.
 
-## UI Changes
+## Cambios de UI
 
 ## 1. `/instance/settings`
 
-Add section:
+Agregar sección:
 
 - `Experimental`
   - `Enable Workspaces`
 
-When off:
+Cuando está apagado:
 
-- hide new workspace-specific affordances
-- do not alter existing project or issue behavior
+- ocultar nuevas affordances específicas de espacios de trabajo
+- no alterar el comportamiento existente de proyecto o issue
 
-## 2. Project properties
+## 2. Propiedades de proyecto
 
-Do not create a separate `Code` tab yet.
-Ship inside existing project properties first.
+No crear aún una pestaña `Code` separada.
+Enviar primero dentro de las propiedades de proyecto existentes.
 
-### Add or re-enable sections
+### Agregar o rehabilitar secciones
 
 - `Project Workspaces`
 - `Execution Defaults`
@@ -616,117 +615,116 @@ Ship inside existing project properties first.
 - `Previews and Runtime`
 - `Cleanup`
 
-### Display rules
+### Reglas de visualización
 
-- only show when `experimental.workspaces=true`
-- keep wording generic enough for local and remote setups
-- only show git-specific fields when `sourceType=git_repo`
-- only show local-path-specific fields when not `remote_managed`
+- mostrar solo cuando `experimental.workspaces=true`
+- mantener el texto lo suficientemente genérico para configuraciones locales y remotas
+- mostrar campos específicos de git solo cuando `sourceType=git_repo`
+- mostrar campos específicos de ruta local solo cuando no es `remote_managed`
 
-## 3. Issue create dialog
+## 3. Diálogo de creación de issue
 
-When the workspace experimental flag is on and the selected project has workspace automation or workspaces:
+Cuando el flag experimental de espacios de trabajo está activado y el proyecto seleccionado tiene automatización de espacios de trabajo o espacios de trabajo:
 
-### Basic fields
+### Campos básicos
 
 - `Codebase`
-  - select from project workspaces
-  - default to policy default or primary workspace
+  - seleccionar de espacios de trabajo de proyecto
+  - predeterminado a la política predeterminada o espacio de trabajo primario
 - `Execution mode`
   - `Project default`
   - `Shared workspace`
   - `Isolated workspace`
   - `Operator branch`
 
-### Advanced section
+### Sección avanzada
 
 - `Reuse existing execution workspace`
 
-This control should query only:
+Este control debería consultar solo:
 
-- same project
-- same codebase if selected
-- active/recent workspaces
-- compact labels with branch or workspace name
+- mismo proyecto
+- misma base de código si se selecciona
+- espacios de trabajo activos/recientes
+- etiquetas compactas con rama o nombre de espacio de trabajo
 
-Do not expose all execution workspaces in a noisy unfiltered list.
+No exponer todos los espacios de trabajo de ejecución en una lista ruidosa sin filtrar.
 
-## 4. Issue detail
+## 4. Detalle de issue
 
-Add a `Work Product` tab when:
+Agregar una pestaña `Work Product` cuando:
 
-- the experimental flag is on, or
-- the issue already has work products
+- el flag experimental está activado, o
+- el issue ya tiene productos de trabajo
 
-### Show
+### Mostrar
 
-- current execution workspace summary
-- PR cards
-- preview cards
-- branch/commit rows
-- artifacts/documents
+- resumen del espacio de trabajo de ejecución actual
+- tarjetas de PR
+- tarjetas de vistas previas
+- filas de rama/commit
+- artefactos/documentos
 
-Add compact header chips:
+Agregar chips compactos de encabezado:
 
-- codebase
-- workspace
-- PR count/status
-- preview status
+- base de código
+- espacio de trabajo
+- conteo/estado de PR
+- estado de vista previa
 
-## 5. Execution workspace detail page
+## 5. Página de detalle de espacio de trabajo de ejecución
 
-Add a detail route but no nav item.
+Agregar una ruta de detalle pero sin elemento de navegación.
 
-Linked from:
+Enlazada desde:
 
-- issue work product tab
-- project workspace/execution panels
+- pestaña de producto de trabajo del issue
+- paneles de proyecto/espacio de trabajo de ejecución
 
-### Show
+### Mostrar
 
-- identity and status
-- project workspace origin
-- source issue
-- linked issues
-- branch/ref/provider info
-- runtime services
-- work products
-- cleanup state
+- identidad y estado
+- origen de espacio de trabajo de proyecto
+- issue fuente
+- issues vinculados
+- info de rama/ref/proveedor
+- servicios de tiempo de ejecución
+- productos de trabajo
+- estado de limpieza
+## Comportamiento de tiempo de ejecución y adaptadores
 
-## Runtime and Adapter Behavior
+## 1. Adaptadores locales
 
-## 1. Local adapters
+Para adaptadores locales:
 
-For local adapters:
+- seguir usando las rutas existentes de realización de cwd/worktree
+- persistir el resultado como espacios de trabajo de ejecución
+- adjuntar servicios de tiempo de ejecución y producto de trabajo al espacio de trabajo de ejecución y al issue
 
-- continue to use existing cwd/worktree realization paths
-- persist the result as execution workspaces
-- attach runtime services and work product to the execution workspace and issue
+## 2. Adaptadores remotos o en la nube
 
-## 2. Remote or cloud adapters
+Para adaptadores remotos:
 
-For remote adapters:
+- permitir espacios de trabajo de ejecución con `cwd` null
+- requerir metadatos de proveedor suficientes para identificar el espacio de trabajo/sesión remoto
+- permitir la creación de producto de trabajo sin ninguna propiedad de proceso local del host
 
-- allow execution workspaces with null `cwd`
-- require provider metadata sufficient to identify the remote workspace/session
-- allow work product creation without any host-local process ownership
+Ejemplos:
 
-Examples:
+- un agente de codificación en la nube abre una rama y PR en GitHub
+- una URL de vista previa de Vercel se reporta de vuelta como un producto de trabajo de vista previa
+- un sandbox remoto emite URLs de artefactos
 
-- cloud coding agent opens a branch and PR on GitHub
-- Vercel preview URL is reported back as a preview work product
-- remote sandbox emits artifact URLs
+## 3. Flujo de trabajo de PR consciente de aprobaciones
 
-## 3. Approval-aware PR workflow
+V1 debería admitir un seguimiento de estado de PR más rico, pero no un motor completo de revisión.
 
-V1 should support richer PR state tracking, but not a full review engine.
-
-### Required actions
+### Acciones requeridas
 
 - `open_pr`
 - `mark_ready`
 
-### Required review states
+### Estados de revisión requeridos
 
 - `draft`
 - `ready_for_review`
@@ -735,148 +733,148 @@ V1 should support richer PR state tracking, but not a full review engine.
 - `merged`
 - `closed`
 
-### Storage approach
+### Enfoque de almacenamiento
 
-- represent these as `issue_work_products` with `type='pull_request'`
-- use `status` and `review_state`
-- store provider-specific details in `metadata`
+- representarlos como `issue_work_products` con `type='pull_request'`
+- usar `status` y `review_state`
+- almacenar detalles específicos de proveedor en `metadata`
 
-## Migration Plan
+## Plan de migración
 
-## 1. Existing installs
+## 1. Instalaciones existentes
 
-The migration posture is backward-compatible by default.
+La postura de migración es compatible hacia atrás por defecto.
 
-### Guarantees
+### Garantías
 
-- no existing project must be edited before it keeps working
-- no existing issue flow should start requiring workspace input
-- all new nullable columns must preserve current behavior when absent
+- ningún proyecto existente debe editarse antes de seguir funcionando
+- ningún flujo de issue existente debería empezar a requerir entrada de espacios de trabajo
+- todas las nuevas columnas nullables deben preservar el comportamiento actual cuando están ausentes
 
-## 2. Project workspace migration
+## 2. Migración de espacios de trabajo de proyecto
 
-Migrate `project_workspaces` in place.
+Migrar `project_workspaces` en su lugar.
 
 ### Backfill
 
-- derive `source_type`
-- copy `repo_ref` to `default_ref`
-- leave new optional fields null
+- derivar `source_type`
+- copiar `repo_ref` a `default_ref`
+- dejar los nuevos campos opcionales en null
 
-## 3. Issue migration
+## 3. Migración de issue
 
-Do not backfill `project_workspace_id` or `execution_workspace_id` on all existing issues.
+No rellenar `project_workspace_id` ni `execution_workspace_id` en todos los issues existentes.
 
-Reason:
+Razón:
 
-- the safest migration is to preserve current runtime behavior and bind explicitly only when new workspace-aware flows are used
+- la migración más segura es preservar el comportamiento actual de tiempo de ejecución y vincular explícitamente solo cuando se usen nuevos flujos conscientes de espacios de trabajo
 
-Interpret old issues as:
+Interpretar los issues antiguos como:
 
 - `executionWorkspacePreference = inherit`
-- compatibility/shared behavior
+- comportamiento de compatibilidad/compartido
 
-## 4. Runtime history migration
+## 4. Migración de historial de tiempo de ejecución
 
-Do not attempt a perfect historical reconstruction of execution workspaces in the migration itself.
+No intentar una reconstrucción histórica perfecta de espacios de trabajo de ejecución en la migración misma.
 
-Instead:
+En su lugar:
 
-- create execution workspace records forward from first new run
-- optionally add a later backfill tool for recent runtime services if it proves valuable
+- crear registros de espacios de trabajo de ejecución hacia adelante desde la primera nueva ejecución
+- opcionalmente agregar más adelante una herramienta de backfill para servicios de tiempo de ejecución recientes si resulta valiosa
 
-## Rollout Order
+## Orden de despliegue
 
-## Phase 1: Schema and shared contracts
+## Fase 1: Esquema y contratos compartidos
 
-1. extend `project_workspaces`
-2. add `execution_workspaces`
-3. add `issue_work_products`
-4. extend `issues`
-5. extend `workspace_runtime_services`
-6. update shared types and validators
+1. extender `project_workspaces`
+2. agregar `execution_workspaces`
+3. agregar `issue_work_products`
+4. extender `issues`
+5. extender `workspace_runtime_services`
+6. actualizar tipos y validadores compartidos
 
-## Phase 2: Service wiring
+## Fase 2: Cableado de servicios
 
-1. update project workspace CRUD
-2. update issue create/update resolution
-3. refactor workspace realization to persist execution workspaces
-4. attach runtime services to execution workspaces
-5. add work product service and persistence
+1. actualizar CRUD de espacios de trabajo de proyecto
+2. actualizar resolución de creación/actualización de issue
+3. refactorizar la realización de espacios de trabajo para persistir espacios de trabajo de ejecución
+4. adjuntar servicios de tiempo de ejecución a espacios de trabajo de ejecución
+5. agregar servicio de producto de trabajo y persistencia
 
-## Phase 3: API and UI
+## Fase 3: API y UI
 
-1. add execution workspace routes
-2. add work product routes
-3. add instance experimental settings toggle
-4. re-enable and revise project workspace UI behind the flag
-5. add issue create/update controls behind the flag
-6. add issue work product tab
-7. add execution workspace detail page
+1. agregar rutas de espacios de trabajo de ejecución
+2. agregar rutas de producto de trabajo
+3. agregar toggle de ajustes experimentales de instancia
+4. rehabilitar y revisar la UI de espacios de trabajo de proyecto detrás del flag
+5. agregar controles de espacios de trabajo de creación/actualización de issue detrás del flag
+6. agregar pestaña de producto de trabajo de issue
+7. agregar página de detalle de espacio de trabajo de ejecución
 
-## Phase 4: Provider integrations
+## Fase 4: Integraciones de proveedores
 
-1. GitHub PR reporting
-2. preview URL reporting
-3. runtime-service-to-work-product linking
-4. remote/cloud provider references
+1. Reporte de PR de GitHub
+2. reporte de URL de vista previa
+3. vinculación de servicio de tiempo de ejecución a producto de trabajo
+4. referencias de proveedor remoto/en la nube
 
-## Acceptance Criteria
+## Criterios de aceptación
 
-1. Existing installs continue to behave predictably with no required reconfiguration.
-2. Projects can define local, git, non-git, and remote-managed project workspaces.
-3. Issues can explicitly select a project workspace and execution preference.
-4. Each issue can point to one current execution workspace.
-5. Multiple issues can intentionally reuse the same execution workspace.
-6. Execution workspaces are persisted for both local and remote execution flows.
-7. Work products can be attached to issues with optional execution workspace linkage.
-8. GitHub PRs can be represented with richer lifecycle states.
-9. The main UI remains simple when the experimental flag is off.
-10. No top-level workspace navigation is required for this first slice.
+1. Las instalaciones existentes siguen comportándose de forma predecible sin reconfiguración requerida.
+2. Los proyectos pueden definir espacios de trabajo de proyecto locales, git, no git y gestionados remotamente.
+3. Los issues pueden seleccionar explícitamente un espacio de trabajo de proyecto y preferencia de ejecución.
+4. Cada issue puede apuntar a un espacio de trabajo de ejecución actual.
+5. Múltiples issues pueden reutilizar intencionalmente el mismo espacio de trabajo de ejecución.
+6. Los espacios de trabajo de ejecución se persisten tanto para flujos de ejecución locales como remotos.
+7. Los productos de trabajo pueden adjuntarse a issues con vinculación opcional de espacio de trabajo de ejecución.
+8. Los PRs de GitHub pueden representarse con estados de ciclo de vida más ricos.
+9. La UI principal sigue siendo simple cuando el flag experimental está apagado.
+10. No se requiere navegación de nivel superior de espacios de trabajo para este primer segmento.
 
-## Risks and Mitigations
+## Riesgos y mitigaciones
 
-## Risk: too many overlapping workspace concepts
+## Riesgo: demasiados conceptos de espacio de trabajo traslapados
 
-Mitigation:
+Mitigación:
 
-- keep issue UI to `Codebase` and `Execution mode`
-- reserve execution workspace details for advanced pages
+- mantener la UI de issue en `Codebase` y `Execution mode`
+- reservar los detalles de espacios de trabajo de ejecución para páginas avanzadas
 
-## Risk: breaking current projects on upgrade
+## Riesgo: romper proyectos actuales en la actualización
 
-Mitigation:
+Mitigación:
 
-- nullable schema additions
-- in-place `project_workspaces` migration
-- compatibility defaults
+- adiciones de esquema nullables
+- migración de `project_workspaces` en su lugar
+- valores predeterminados de compatibilidad
 
-## Risk: local-only assumptions leaking into cloud mode
+## Riesgo: supuestos solo locales filtrándose al modo nube
 
-Mitigation:
+Mitigación:
 
-- make `cwd` optional for execution workspaces
-- use `provider_type` and `provider_ref`
-- use `PAPERCLIP_EXECUTION_TOPOLOGY` as a defaulting guardrail
+- hacer `cwd` opcional para espacios de trabajo de ejecución
+- usar `provider_type` y `provider_ref`
+- usar `PAPERCLIP_EXECUTION_TOPOLOGY` como baranda de valores predeterminados
 
-## Risk: turning PRs into a bespoke subsystem too early
+## Riesgo: convertir los PRs en un subsistema a medida demasiado pronto
 
-Mitigation:
+Mitigación:
 
-- represent PRs as work products in V1
-- keep provider-specific details in metadata
-- defer a dedicated PR table unless usage proves it necessary
+- representar PRs como productos de trabajo en V1
+- mantener detalles específicos de proveedor en metadatos
+- diferir una tabla PR dedicada a menos que el uso pruebe que es necesaria
 
-## Recommended First Engineering Slice
+## Primer segmento de ingeniería recomendado
 
-If we want the narrowest useful implementation:
+Si queremos la implementación más estrecha útil:
 
-1. extend `project_workspaces`
-2. add `execution_workspaces`
-3. extend `issues` with explicit workspace fields
-4. persist execution workspaces from existing local workspace realization
-5. add `issue_work_products`
-6. show project workspace controls and issue workspace controls behind the experimental flag
-7. add issue `Work Product` tab with PR/preview/runtime service display
+1. extender `project_workspaces`
+2. agregar `execution_workspaces`
+3. extender `issues` con campos explícitos de espacios de trabajo
+4. persistir espacios de trabajo de ejecución desde la realización existente de espacios de trabajo locales
+5. agregar `issue_work_products`
+6. mostrar controles de espacios de trabajo de proyecto y controles de espacios de trabajo de issue detrás del flag experimental
+7. agregar pestaña `Work Product` de issue con visualización de PR/vista previa/servicio de tiempo de ejecución
 
-This slice is enough to validate the model without yet building every provider integration or cleanup workflow.
+Este segmento es suficiente para validar el modelo sin aún construir cada integración de proveedor o flujo de trabajo de limpieza.

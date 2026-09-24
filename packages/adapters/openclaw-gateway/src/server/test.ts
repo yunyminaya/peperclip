@@ -104,7 +104,7 @@ async function probeGateway(input: {
       try {
         ws.close();
       } catch {
-        // ignore
+        // ignorar
       }
       resolve("failed");
     }, input.timeoutMs);
@@ -118,7 +118,7 @@ async function probeGateway(input: {
       try {
         ws.close();
       } catch {
-        // ignore
+        // ignorar
       }
       resolve(status);
     };
@@ -198,8 +198,8 @@ export async function testEnvironment(
     checks.push({
       code: "openclaw_gateway_url_missing",
       level: "error",
-      message: "OpenClaw gateway adapter requires a WebSocket URL.",
-      hint: "Set adapterConfig.url to ws://host:port (or wss://).",
+      message: "El adaptador del gateway de OpenClaw requiere una URL de WebSocket.",
+      hint: "Configura adapterConfig.url como ws://host:puerto (o wss://).",
     });
     return {
       adapterType: ctx.adapterType,
@@ -216,7 +216,7 @@ export async function testEnvironment(
     checks.push({
       code: "openclaw_gateway_url_invalid",
       level: "error",
-      message: `Invalid URL: ${urlValue}`,
+      message: `URL no válida: ${urlValue}`,
     });
   }
 
@@ -224,8 +224,8 @@ export async function testEnvironment(
     checks.push({
       code: "openclaw_gateway_url_protocol_invalid",
       level: "error",
-      message: `Unsupported URL protocol: ${url.protocol}`,
-      hint: "Use ws:// or wss://.",
+      message: `Protocolo de URL no admitido: ${url.protocol}`,
+      hint: "Usa ws:// o wss://.",
     });
   }
 
@@ -233,15 +233,15 @@ export async function testEnvironment(
     checks.push({
       code: "openclaw_gateway_url_valid",
       level: "info",
-      message: `Configured gateway URL: ${url.toString()}`,
+      message: `URL del gateway configurada: ${url.toString()}`,
     });
 
     if (url.protocol === "ws:" && !isLoopbackHost(url.hostname)) {
       checks.push({
         code: "openclaw_gateway_plaintext_remote_ws",
         level: "warn",
-        message: "Gateway URL uses plaintext ws:// on a non-loopback host.",
-        hint: "Prefer wss:// for remote gateways.",
+        message: "La URL del gateway usa ws:// sin cifrar en un host que no es loopback.",
+        hint: "Prefiere wss:// para gateways remotos.",
       });
     }
   }
@@ -256,14 +256,14 @@ export async function testEnvironment(
     checks.push({
       code: "openclaw_gateway_auth_present",
       level: "info",
-      message: "Gateway credentials are configured.",
+      message: "Las credenciales del gateway están configuradas.",
     });
   } else {
     checks.push({
       code: "openclaw_gateway_auth_missing",
       level: "warn",
-      message: "No gateway credentials detected in adapter config.",
-      hint: "Set authToken/password or headers.x-openclaw-token for authenticated gateways.",
+      message: "No se detectaron credenciales del gateway en la configuración del adaptador.",
+      hint: "Configura authToken/password o headers.x-openclaw-token para gateways autenticados.",
     });
   }
 
@@ -282,28 +282,28 @@ export async function testEnvironment(
         checks.push({
           code: "openclaw_gateway_probe_ok",
           level: "info",
-          message: "Gateway connect probe succeeded.",
+          message: "La sonda de conexión del gateway se completó correctamente.",
         });
       } else if (probeResult === "challenge_only") {
         checks.push({
           code: "openclaw_gateway_probe_challenge_only",
           level: "warn",
-          message: "Gateway challenge was received, but connect probe was rejected.",
-          hint: "Check gateway credentials, scopes, role, and device-auth requirements.",
+          message: "Se recibió el desafío del gateway, pero la sonda de conexión fue rechazada.",
+          hint: "Revisa las credenciales del gateway, los ámbitos, el rol y los requisitos de autenticación del dispositivo.",
         });
       } else {
         checks.push({
           code: "openclaw_gateway_probe_failed",
           level: "warn",
-          message: "Gateway probe failed.",
-          hint: "Verify network reachability and gateway URL from the Paperclip server host.",
+          message: "La sonda del gateway falló.",
+          hint: "Verifica la conectividad de red y la URL del gateway desde el host del servidor de Paperclip.",
         });
       }
     } catch (err) {
       checks.push({
         code: "openclaw_gateway_probe_error",
         level: "warn",
-        message: err instanceof Error ? err.message : "Gateway probe failed",
+        message: err instanceof Error ? err.message : "La sonda del gateway falló",
       });
     }
   }

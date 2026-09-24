@@ -36,8 +36,8 @@ async function authPost(path: string, body: Record<string, unknown>) {
     const message =
       (payload as { error?: { message?: string } | string } | null)?.error &&
       typeof (payload as { error?: { message?: string } | string }).error === "object"
-        ? ((payload as { error?: { message?: string } }).error?.message ?? `Request failed: ${res.status}`)
-        : (payload as { error?: string } | null)?.error ?? `Request failed: ${res.status}`;
+        ? ((payload as { error?: { message?: string } }).error?.message ?? `La solicitud falló: ${res.status}`)
+        : (payload as { error?: string } | null)?.error ?? `La solicitud falló: ${res.status}`;
     throw new Error(message);
   }
   return payload;
@@ -52,7 +52,7 @@ export const authApi = {
     if (res.status === 401) return null;
     const payload = await res.json().catch(() => null);
     if (!res.ok) {
-      throw new Error(`Failed to load session (${res.status})`);
+      throw new Error(`No se pudo cargar la sesión (${res.status})`);
     }
     const direct = toSession(payload);
     if (direct) return direct;

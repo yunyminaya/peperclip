@@ -1,15 +1,15 @@
 #!/usr/bin/env npx tsx
 /**
- * Generate org chart images and READMEs for agent company packages.
+ * Genera imágenes de organigrama y READMEs para paquetes de empresas de agentes.
  *
- * Reads company packages from a directory, builds manifest-like data,
- * then uses the existing server-side SVG renderer (sharp, no browser)
- * and README generator.
+ * Lee los paquetes de empresas desde un directorio, construye datos tipo manifiesto,
+ * y luego usa el renderizador SVG del lado del servidor (sharp, sin navegador)
+ * y el generador de README.
  *
- * Usage:
- *   npx tsx scripts/generate-company-assets.ts /path/to/companies-repo
+ * Uso:
+ *   npx tsx scripts/generate-company-assets.ts /ruta/al/repositorio-de-empresas
  *
- * Processes each subdirectory that contains a COMPANY.md file.
+ * Procesa cada subdirectorio que contiene un archivo COMPANY.md.
  */
 import * as fs from "fs";
 import * as path from "path";
@@ -17,7 +17,7 @@ import { renderOrgChartPng, type OrgNode, type OrgChartOverlay } from "../server
 import { generateReadme } from "../server/src/services/company-export-readme.js";
 import type { CompanyPortabilityManifest } from "@paperclipai/shared";
 
-// ── YAML frontmatter parser (minimal, no deps) ──────────────────
+// ── Analizador de frontmatter YAML (mínimo, sin dependencias) ──────────────────
 
 function parseFrontmatter(content: string): { data: Record<string, unknown>; body: string } {
   const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
@@ -31,27 +31,27 @@ function parseFrontmatter(content: string): { data: Record<string, unknown>; bod
   let inList = false;
 
   for (const line of yamlStr.split("\n")) {
-    // List item
+    // Elemento de lista
     if (inList && /^\s+-\s+/.test(line)) {
       const val = line.replace(/^\s+-\s+/, "").trim();
       (currentValue as string[]).push(val);
       continue;
     }
 
-    // Save previous key
+    // Guarda la clave anterior
     if (currentKey !== null && currentValue !== null) {
       data[currentKey] = currentValue;
     }
     inList = false;
 
-    // Key: value line
+    // Línea clave: valor
     const kvMatch = line.match(/^(\w[\w-]*)\s*:\s*(.*)$/);
     if (kvMatch) {
       currentKey = kvMatch[1];
       let val = kvMatch[2].trim();
 
       if (val === "" || val === ">") {
-        // Could be a multi-line value or list — peek ahead handled by next iterations
+        // Puede ser un valor multilínea o una lista — las siguientes iteraciones lo resuelven
         currentValue = "";
         continue;
       }
@@ -64,20 +64,20 @@ function parseFrontmatter(content: string): { data: Record<string, unknown>; bod
         continue;
       }
 
-      // Remove surrounding quotes
+      // Quita las comillas alrededor
       if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
         val = val.slice(1, -1);
       }
 
       currentValue = val;
     } else if (currentKey !== null && line.match(/^\s+-\s+/)) {
-      // Start of list
+      // Inicio de lista
       inList = true;
       currentValue = [];
       const val = line.replace(/^\s+-\s+/, "").trim();
       (currentValue as string[]).push(val);
     } else if (currentKey !== null && line.match(/^\s+\S/)) {
-      // Continuation of multi-line scalar
+      // Continuación de un escalar multilínea
       const trimmed = line.trim();
       if (typeof currentValue === "string") {
         currentValue = currentValue ? `${currentValue} ${trimmed}` : trimmed;
@@ -85,7 +85,7 @@ function parseFrontmatter(content: string): { data: Record<string, unknown>; bod
     }
   }
 
-  // Save last key
+  // Guarda la última clave
   if (currentKey !== null && currentValue !== null) {
     data[currentKey] = currentValue;
   }
@@ -93,7 +93,7 @@ function parseFrontmatter(content: string): { data: Record<string, unknown>; bod
   return { data, body };
 }
 
-// ── Slug to role mapping ─────────────────────────────────────────
+// ── Mapeo de slug a rol ─────────────────────────────────────────
 
 const SLUG_TO_ROLE: Record<string, string> = {
   ceo: "ceo",
@@ -104,10 +104,10 @@ const SLUG_TO_ROLE: Record<string, string> = {
 };
 
 function inferRole(slug: string, title: string | null): string {
-  // Check direct slug match first
+  // Primero revisa la coincidencia directa del slug
   if (SLUG_TO_ROLE[slug]) return SLUG_TO_ROLE[slug];
 
-  // Check title for C-suite
+  // Revisa el título para el nivel ejecutivo
   const t = (title || "").toLowerCase();
   if (t.includes("chief executive")) return "ceo";
   if (t.includes("chief technology")) return "cto";
@@ -118,11 +118,11 @@ function inferRole(slug: string, title: string | null): string {
   if (t.includes("manager")) return "manager";
   if (t.includes("qa") || t.includes("quality")) return "engineer";
 
-  // Default to engineer
+  // Por defecto, engineer
   return "engineer";
 }
 
-// ── Parse a company package directory ────────────────────────────
+// ── Analiza un directorio de paquete de empresa ────────────────────────────
 
 interface CompanyPackage {
   dir: string;
@@ -144,7 +144,7 @@ function parseCompanyPackage(companyDir: string): CompanyPackage | null {
   const description = (companyData.description as string) || null;
   const slug = (companyData.slug as string) || path.basename(companyDir);
 
-  // Parse agents
+  // Analiza los agentes
   const agentsDir = path.join(companyDir, "agents");
   const agents: CompanyPortabilityManifest["agents"] = [];
   if (fs.existsSync(agentsDir)) {
@@ -186,7 +186,7 @@ function parseCompanyPackage(companyDir: string): CompanyPackage | null {
     }
   }
 
-  // Parse skills
+  // Analiza las skills
   const skillsDir = path.join(companyDir, "skills");
   const skills: CompanyPortabilityManifest["skills"] = [];
   if (fs.existsSync(skillsDir)) {
@@ -200,13 +200,13 @@ function parseCompanyPackage(companyDir: string): CompanyPackage | null {
       const skillName = (skillData.name as string) || skillSlug;
       const skillDesc = (skillData.description as string) || null;
 
-      // Extract source info from metadata
+      // Extrae la info de origen desde los metadatos
       let sourceType = "local";
       let sourceLocator: string | null = null;
       const metadata = skillData.metadata as Record<string, unknown> | undefined;
       if (metadata) {
-        // metadata.sources is parsed as a nested structure, but our simple parser
-        // doesn't handle it well. Check for github repo in the raw SKILL.md instead.
+        // metadata.sources se analiza como una estructura anidada, pero nuestro analizador simple
+        // no lo maneja bien. Revisa en su lugar el repo de github en el SKILL.md crudo.
         const repoMatch = skillMd.match(/repo:\s*(.+)/);
         const pathMatch = skillMd.match(/path:\s*(.+)/);
         if (repoMatch) {
@@ -237,18 +237,18 @@ function parseCompanyPackage(companyDir: string): CompanyPackage | null {
   return { dir: companyDir, name, description, slug, agents, skills };
 }
 
-// ── Build OrgNode tree from agents ───────────────────────────────
+// ── Construye el árbol OrgNode desde los agentes ───────────────────────────────
 
 const ROLE_LABELS: Record<string, string> = {
-  ceo: "Chief Executive",
-  cto: "Technology",
+  ceo: "Director ejecutivo",
+  cto: "Tecnología",
   cmo: "Marketing",
-  cfo: "Finance",
-  coo: "Operations",
+  cfo: "Finanzas",
+  coo: "Operaciones",
   vp: "VP",
-  manager: "Manager",
-  engineer: "Engineer",
-  agent: "Agent",
+  manager: "Gerente",
+  engineer: "Ingeniero",
+  agent: "Agente",
 };
 
 function buildOrgTree(agents: CompanyPortabilityManifest["agents"]): OrgNode[] {
@@ -286,18 +286,18 @@ function buildOrgTree(agents: CompanyPortabilityManifest["agents"]): OrgNode[] {
   return tree;
 }
 
-// ── Main ─────────────────────────────────────────────────────────
+// ── Principal ─────────────────────────────────────────────────────────
 
 async function main() {
   const companiesDir = process.argv[2];
   if (!companiesDir) {
-    console.error("Usage: npx tsx scripts/generate-company-assets.ts <companies-dir>");
+    console.error("Uso: npx tsx scripts/generate-company-assets.ts <directorio-de-empresas>");
     process.exit(1);
   }
 
   const resolvedDir = path.resolve(companiesDir);
   if (!fs.existsSync(resolvedDir)) {
-    console.error(`Directory not found: ${resolvedDir}`);
+    console.error(`Directorio no encontrado: ${resolvedDir}`);
     process.exit(1);
   }
 
@@ -311,16 +311,16 @@ async function main() {
     if (!pkg) continue;
 
     console.log(`\n── ${pkg.name} (${pkg.slug}) ──`);
-    console.log(`   ${pkg.agents.length} agents, ${pkg.skills.length} skills`);
+    console.log(`   ${pkg.agents.length} agentes, ${pkg.skills.length} skills`);
 
-    // Generate org chart PNG
+    // Genera el PNG del organigrama
     if (pkg.agents.length > 0) {
       const orgTree = buildOrgTree(pkg.agents);
-      console.log(`   Org tree roots: ${orgTree.map((n) => n.name).join(", ")}`);
+      console.log(`   Raíces del árbol de la organización: ${orgTree.map((n) => n.name).join(", ")}`);
 
       const overlay: OrgChartOverlay = {
         companyName: pkg.name,
-        stats: `Agents: ${pkg.agents.length}, Skills: ${pkg.skills.length}`,
+        stats: `Agentes: ${pkg.agents.length}, Skills: ${pkg.skills.length}`,
       };
       const pngBuffer = await renderOrgChartPng(orgTree, "warmth", overlay);
       const imagesDir = path.join(companyDir, "images");
@@ -330,7 +330,7 @@ async function main() {
       console.log(`   ✓ ${path.relative(resolvedDir, pngPath)} (${(pngBuffer.length / 1024).toFixed(1)}kb)`);
     }
 
-    // Generate README
+    // Genera el README
     const manifest: CompanyPortabilityManifest = {
       schemaVersion: 1,
       generatedAt: new Date().toISOString(),
@@ -355,7 +355,7 @@ async function main() {
     processed++;
   }
 
-  console.log(`\n✓ Processed ${processed} companies.`);
+  console.log(`\n✓ Se procesaron ${processed} empresas.`);
 }
 
 main().catch((e) => {

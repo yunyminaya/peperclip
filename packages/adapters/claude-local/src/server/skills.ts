@@ -42,12 +42,12 @@ async function buildClaudeSkillSnapshot(config: Record<string, unknown>): Promis
     managed: true,
     state: desiredSet.has(entry.key) ? "configured" : "available",
     origin: entry.required ? "paperclip_required" : "company_managed",
-    originLabel: entry.required ? "Required by Paperclip" : "Managed by Paperclip",
+    originLabel: entry.required ? "Requerida por Paperclip" : "Administrada por Paperclip",
     readOnly: false,
     sourcePath: entry.source,
     targetPath: null,
     detail: desiredSet.has(entry.key)
-      ? "Will be mounted into the ephemeral Claude skill directory on the next run."
+      ? "Se montará en el directorio efímero de habilidades de Claude en la próxima ejecución."
       : null,
     required: Boolean(entry.required),
     requiredReason: entry.requiredReason ?? null,
@@ -56,7 +56,7 @@ async function buildClaudeSkillSnapshot(config: Record<string, unknown>): Promis
 
   for (const desiredSkill of desiredSkills) {
     if (availableByKey.has(desiredSkill)) continue;
-    warnings.push(`Desired skill "${desiredSkill}" is not available from the Paperclip skills directory.`);
+    warnings.push(`La habilidad deseada "${desiredSkill}" no está disponible en el directorio de habilidades de Paperclip.`);
     entries.push({
       key: desiredSkill,
       runtimeName: null,
@@ -64,11 +64,11 @@ async function buildClaudeSkillSnapshot(config: Record<string, unknown>): Promis
       managed: true,
       state: "missing",
       origin: "external_unknown",
-      originLabel: "External or unavailable",
+      originLabel: "Externa o no disponible",
       readOnly: false,
       sourcePath: undefined,
       targetPath: undefined,
-      detail: "Paperclip cannot find this skill in the local runtime skills directory.",
+      detail: "Paperclip no encuentra esta habilidad en el directorio local de habilidades de ejecución.",
     });
   }
 
@@ -81,12 +81,12 @@ async function buildClaudeSkillSnapshot(config: Record<string, unknown>): Promis
       managed: false,
       state: "external",
       origin: "user_installed",
-      originLabel: "User-installed",
+      originLabel: "Instalada por el usuario",
       locationLabel: "~/.claude/skills",
       readOnly: true,
       sourcePath: null,
       targetPath: installedEntry.targetPath ?? path.join(skillsHome, name),
-      detail: "Installed outside Paperclip management in the Claude skills home.",
+      detail: "Instalada fuera de la administración de Paperclip en el directorio de habilidades de Claude.",
     });
   }
 

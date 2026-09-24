@@ -48,7 +48,7 @@ export function Sidebar() {
 
   return (
     <aside className="w-60 h-full min-h-0 border-r border-border bg-background flex flex-col">
-      {/* Top bar: Company name (bold) + Search — aligned with top sections (no visible border) */}
+      {/* Barra superior: nombre de la empresa (negrita) + búsqueda — alineada con las secciones superiores (sin borde visible) */}
       <div className="flex items-center gap-1 px-3 h-12 shrink-0">
         {selectedCompany?.brandColor && (
           <div
@@ -57,7 +57,7 @@ export function Sidebar() {
           />
         )}
         <span className="flex-1 text-sm font-bold text-foreground truncate pl-1">
-          {selectedCompany?.name ?? "Select company"}
+          {selectedCompany?.name ?? "Seleccionar empresa"}
         </span>
         <Button
           variant="ghost"
@@ -71,18 +71,18 @@ export function Sidebar() {
 
       <nav className="flex-1 min-h-0 overflow-y-auto scrollbar-auto-hide flex flex-col gap-4 px-3 py-2">
         <div className="flex flex-col gap-0.5">
-          {/* New Issue button aligned with nav items */}
+          {/* Botón de nuevo issue alineado con los elementos de navegación */}
           <button
             onClick={() => openNewIssue()}
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
           >
             <SquarePen className="h-4 w-4 shrink-0" />
-            <span className="truncate">New Issue</span>
+            <span className="truncate">Nuevo issue</span>
           </button>
-          <SidebarNavItem to="/dashboard" label="Dashboard" icon={LayoutDashboard} liveCount={liveRunCount} />
+          <SidebarNavItem to="/dashboard" label="Panel" icon={LayoutDashboard} liveCount={liveRunCount} />
           <SidebarNavItem
             to="/inbox"
-            label="Inbox"
+            label="Bandeja de entrada"
             icon={Inbox}
             badge={inboxBadge.inbox}
             badgeTone={inboxBadge.failedRuns > 0 ? "danger" : "default"}
@@ -97,22 +97,22 @@ export function Sidebar() {
           />
         </div>
 
-        <SidebarSection label="Work">
+        <SidebarSection label="Trabajo">
           <SidebarNavItem to="/issues" label="Issues" icon={CircleDot} />
-          <SidebarNavItem to="/routines" label="Routines" icon={Repeat} textBadge="Beta" textBadgeTone="amber" />
-          <SidebarNavItem to="/goals" label="Goals" icon={Target} />
+          <SidebarNavItem to="/routines" label="Rutinas" icon={Repeat} textBadge="Beta" textBadgeTone="amber" />
+          <SidebarNavItem to="/goals" label="Objetivos" icon={Target} />
         </SidebarSection>
 
         <SidebarProjects />
 
         <SidebarAgents />
 
-        <SidebarSection label="Company">
-          <SidebarNavItem to="/org" label="Org" icon={Network} />
-          <SidebarNavItem to="/skills" label="Skills" icon={Boxes} />
-          <SidebarNavItem to="/costs" label="Costs" icon={DollarSign} />
-          <SidebarNavItem to="/activity" label="Activity" icon={History} />
-          <SidebarNavItem to="/company/settings" label="Settings" icon={Settings} />
+        <SidebarSection label="Empresa">
+          <SidebarNavItem to="/org" label="Organigrama" icon={Network} />
+          <SidebarNavItem to="/skills" label="Habilidades" icon={Boxes} />
+          <SidebarNavItem to="/costs" label="Costos" icon={DollarSign} />
+          <SidebarNavItem to="/activity" label="Actividad" icon={History} />
+          <SidebarNavItem to="/company/settings" label="Ajustes" icon={Settings} />
         </SidebarSection>
 
         <PluginSlotOutlet

@@ -1,34 +1,34 @@
 ---
-title: Adapters Overview
-summary: What adapters are and how they connect agents to Paperclip
+title: Resumen de adaptadores
+summary: Qué son los adaptadores y cómo conectan los agentes a Paperclip
 ---
 
-Adapters are the bridge between Paperclip's orchestration layer and agent runtimes. Each adapter knows how to invoke a specific type of AI agent and capture its results.
+Los adaptadores son el puente entre la capa de orquestación de Paperclip y los runtimes de los agentes. Cada adaptador sabe cómo invocar un tipo específico de agente de IA y capturar sus resultados.
 
-## How Adapters Work
+## Cómo funcionan los adaptadores
 
-When a heartbeat fires, Paperclip:
+Cuando se dispara un latido, Paperclip:
 
-1. Looks up the agent's `adapterType` and `adapterConfig`
-2. Calls the adapter's `execute()` function with the execution context
-3. The adapter spawns or calls the agent runtime
-4. The adapter captures stdout, parses usage/cost data, and returns a structured result
+1. Busca el `adapterType` y el `adapterConfig` del agente
+2. Llama la función `execute()` del adaptador con el contexto de ejecución
+3. El adaptador inicia o invoca el runtime del agente
+4. El adaptador captura stdout, analiza los datos de uso/costo y devuelve un resultado estructurado
 
-## Built-in Adapters
+## Adaptadores integrados
 
-| Adapter | Type Key | Description |
+| Adaptador | Clave de tipo | Descripción |
 |---------|----------|-------------|
-| [Claude Local](/adapters/claude-local) | `claude_local` | Runs Claude Code CLI locally |
-| [Codex Local](/adapters/codex-local) | `codex_local` | Runs OpenAI Codex CLI locally |
-| [Gemini Local](/adapters/gemini-local) | `gemini_local` | Runs Gemini CLI locally |
-| OpenCode Local | `opencode_local` | Runs OpenCode CLI locally (multi-provider `provider/model`) |
-| OpenClaw | `openclaw` | Sends wake payloads to an OpenClaw webhook |
-| [Process](/adapters/process) | `process` | Executes arbitrary shell commands |
-| [HTTP](/adapters/http) | `http` | Sends webhooks to external agents |
+| [Claude Local](/adapters/claude-local) | `claude_local` | Ejecuta el CLI de Claude Code localmente |
+| [Codex Local](/adapters/codex-local) | `codex_local` | Ejecuta el CLI de Codex de OpenAI localmente |
+| [Gemini Local](/adapters/gemini-local) | `gemini_local` | Ejecuta el CLI de Gemini localmente |
+| OpenCode Local | `opencode_local` | Ejecuta el CLI de OpenCode localmente (multi-proveedor `provider/model`) |
+| OpenClaw | `openclaw` | Envía payloads de activación a un webhook de OpenClaw |
+| [Adaptador de procesos](/adapters/process) | `process` | Ejecuta comandos de shell arbitrarios |
+| [Adaptador HTTP](/adapters/http) | `http` | Envía webhooks a agentes externos |
 
-## Adapter Architecture
+## Arquitectura de los adaptadores
 
-Each adapter is a package with three modules:
+Cada adaptador es un paquete con tres módulos:
 
 ```
 packages/adapters/<name>/
@@ -45,17 +45,17 @@ packages/adapters/<name>/
       format-event.ts   # Terminal output for `paperclipai run --watch`
 ```
 
-Three registries consume these modules:
+Tres registros consumen estos módulos:
 
-| Registry | What it does |
+| Registro | Qué hace |
 |----------|-------------|
-| **Server** | Executes agents, captures results |
-| **UI** | Renders run transcripts, provides config forms |
-| **CLI** | Formats terminal output for live watching |
+| **Servidor** | Ejecuta agentes, captura resultados |
+| **UI** | Renderiza transcripciones de ejecuciones, provee formularios de configuración |
+| **CLI** | Formatea la salida de terminal para monitoreo en vivo |
 
-## Choosing an Adapter
+## Cómo elegir un adaptador
 
-- **Need a coding agent?** Use `claude_local`, `codex_local`, `gemini_local`, or `opencode_local`
-- **Need to run a script or command?** Use `process`
-- **Need to call an external service?** Use `http`
-- **Need something custom?** [Create your own adapter](/adapters/creating-an-adapter)
+- **¿Necesitas un agente de programación?** Usa `claude_local`, `codex_local`, `gemini_local` o `opencode_local`
+- **¿Necesitas ejecutar un script o comando?** Usa `process`
+- **¿Necesitas llamar un servicio externo?** Usa `http`
+- **¿Necesitas algo personalizado?** [Crea tu propio adaptador](/adapters/creating-an-adapter)

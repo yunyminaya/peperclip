@@ -121,7 +121,7 @@ describe("codex execute", () => {
       expect(logs).toContainEqual(
         expect.objectContaining({
           stream: "stdout",
-          chunk: expect.stringContaining("Using Paperclip-managed Codex home"),
+          chunk: expect.stringContaining("gestionado-por-Paperclip"),
         }),
       );
     } finally {
@@ -186,7 +186,7 @@ describe("codex execute", () => {
       expect(result.exitCode).toBe(0);
       expect(result.errorMessage).toBeNull();
       expect(commandNotes).toContain(
-        "Codex exec automatically applies repo-scoped AGENTS.md instructions from the current workspace; Paperclip does not currently suppress that discovery.",
+        "Codex exec aplica automáticamente las instrucciones AGENTS.md del repositorio del workspace actual; Paperclip actualmente no suprime esa detección.",
       );
     } finally {
       if (previousHome === undefined) delete process.env.HOME;
@@ -288,13 +288,13 @@ describe("codex execute", () => {
       expect(logs).toContainEqual(
         expect.objectContaining({
           stream: "stdout",
-          chunk: expect.stringContaining("Using worktree-isolated Codex home"),
+          chunk: expect.stringContaining("aislado-por-worktree"),
         }),
       );
       expect(logs).toContainEqual(
         expect.objectContaining({
           stream: "stdout",
-          chunk: expect.stringContaining('Injected Codex skill "paperclip"'),
+          chunk: expect.stringContaining('Habilidad de Codex "paperclip" inyectada'),
         }),
       );
     } finally {

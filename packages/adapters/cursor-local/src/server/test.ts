@@ -102,13 +102,13 @@ export async function testEnvironment(
     checks.push({
       code: "cursor_cwd_valid",
       level: "info",
-      message: `Working directory is valid: ${cwd}`,
+      message: `El directorio de trabajo es válido: ${cwd}`,
     });
   } catch (err) {
     checks.push({
       code: "cursor_cwd_invalid",
       level: "error",
-      message: err instanceof Error ? err.message : "Invalid working directory",
+      message: err instanceof Error ? err.message : "Directorio de trabajo inválido",
       detail: cwd,
     });
   }
@@ -124,13 +124,13 @@ export async function testEnvironment(
     checks.push({
       code: "cursor_command_resolvable",
       level: "info",
-      message: `Command is executable: ${command}`,
+      message: `El comando es ejecutable: ${command}`,
     });
   } catch (err) {
     checks.push({
       code: "cursor_command_unresolvable",
       level: "error",
-      message: err instanceof Error ? err.message : "Command is not executable",
+      message: err instanceof Error ? err.message : "El comando no es ejecutable",
       detail: command,
     });
   }
@@ -138,12 +138,12 @@ export async function testEnvironment(
   const configCursorApiKey = env.CURSOR_API_KEY;
   const hostCursorApiKey = process.env.CURSOR_API_KEY;
   if (isNonEmpty(configCursorApiKey) || isNonEmpty(hostCursorApiKey)) {
-    const source = isNonEmpty(configCursorApiKey) ? "adapter config env" : "server environment";
+    const source = isNonEmpty(configCursorApiKey) ? "env de la configuración del adaptador" : "entorno del servidor";
     checks.push({
       code: "cursor_api_key_present",
       level: "info",
-      message: "CURSOR_API_KEY is set for Cursor authentication.",
-      detail: `Detected in ${source}.`,
+      message: "CURSOR_API_KEY está definida para la autenticación de Cursor.",
+      detail: `Detectado en ${source}.`,
     });
   } else {
     const cursorHome = isNonEmpty(env.CURSOR_HOME) ? env.CURSOR_HOME : undefined;
@@ -152,17 +152,17 @@ export async function testEnvironment(
       checks.push({
         code: "cursor_native_auth_present",
         level: "info",
-        message: "Cursor is authenticated via `agent login`.",
+        message: "Cursor está autenticado vía `agent login`.",
         detail: cursorAuth.email
-          ? `Logged in as ${cursorAuth.email}.`
-          : `Credentials found in ${cursorConfigPath(cursorHome)}.`,
+          ? `Sesión iniciada como ${cursorAuth.email}.`
+          : `Credenciales encontradas en ${cursorConfigPath(cursorHome)}.`,
       });
     } else {
       checks.push({
         code: "cursor_api_key_missing",
         level: "warn",
-        message: "CURSOR_API_KEY is not set. Cursor runs may fail until authentication is configured.",
-        hint: "Set CURSOR_API_KEY in adapter env or run `agent login`.",
+        message: "CURSOR_API_KEY no está definida. Las ejecuciones de Cursor pueden fallar hasta que se configure la autenticación.",
+        hint: "Define CURSOR_API_KEY en el env del adaptador o ejecuta `agent login`.",
       });
     }
   }
@@ -174,9 +174,9 @@ export async function testEnvironment(
       checks.push({
         code: "cursor_hello_probe_skipped_custom_command",
         level: "info",
-        message: "Skipped hello probe because command is not `agent`.",
+        message: "Prueba hello omitida porque el comando no es `agent`.",
         detail: command,
-        hint: "Use the `agent` CLI command to run the automatic installation and auth probe.",
+        hint: "Usa el comando CLI `agent` para ejecutar la prueba automática de instalación y autenticación.",
       });
     } else {
       const model = asString(config.model, DEFAULT_CURSOR_LOCAL_MODEL).trim();
@@ -212,8 +212,8 @@ export async function testEnvironment(
         checks.push({
           code: "cursor_hello_probe_timed_out",
           level: "warn",
-          message: "Cursor hello probe timed out.",
-          hint: "Retry the probe. If this persists, verify `agent -p --mode ask --output-format json \"Respond with hello.\"` manually.",
+          message: "La prueba hello de Cursor se agotó.",
+          hint: "Reintenta la prueba. Si persiste, verifica `agent -p --mode ask --output-format json \"Respond with hello.\"` manualmente.",
         });
       } else if ((probe.exitCode ?? 1) === 0) {
         const summary = parsed.summary.trim();
@@ -222,30 +222,30 @@ export async function testEnvironment(
           code: hasHello ? "cursor_hello_probe_passed" : "cursor_hello_probe_unexpected_output",
           level: hasHello ? "info" : "warn",
           message: hasHello
-            ? "Cursor hello probe succeeded."
-            : "Cursor probe ran but did not return `hello` as expected.",
+            ? "La prueba hello de Cursor tuvo éxito."
+            : "La prueba de Cursor se ejecutó pero no devolvió `hello` como se esperaba.",
           ...(summary ? { detail: summary.replace(/\s+/g, " ").trim().slice(0, 240) } : {}),
           ...(hasHello
             ? {}
             : {
-                hint: "Try `agent -p --mode ask --output-format json \"Respond with hello.\"` manually to inspect full output.",
+                hint: "Prueba `agent -p --mode ask --output-format json \"Respond with hello.\"` manualmente para inspeccionar la salida completa.",
               }),
         });
       } else if (CURSOR_AUTH_REQUIRED_RE.test(authEvidence)) {
         checks.push({
           code: "cursor_hello_probe_auth_required",
           level: "warn",
-          message: "Cursor CLI is installed, but authentication is not ready.",
+          message: "El CLI de Cursor está instalado, pero la autenticación no está lista.",
           ...(detail ? { detail } : {}),
-          hint: "Run `agent login` or configure CURSOR_API_KEY in adapter env/shell, then retry the probe.",
+          hint: "Ejecuta `agent login` o configura CURSOR_API_KEY en el env/shell del adaptador, luego reintenta la prueba.",
         });
       } else {
         checks.push({
           code: "cursor_hello_probe_failed",
           level: "error",
-          message: "Cursor hello probe failed.",
+          message: "La prueba hello de Cursor falló.",
           ...(detail ? { detail } : {}),
-          hint: "Run `agent -p --mode ask --output-format json \"Respond with hello.\"` manually in this working directory to debug.",
+          hint: "Ejecuta `agent -p --mode ask --output-format json \"Respond with hello.\"` manualmente en este directorio de trabajo para depurar.",
         });
       }
     }

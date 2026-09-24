@@ -12,25 +12,25 @@ fail() {
 
 require_cmd() {
   local cmd="$1"
-  command -v "$cmd" >/dev/null 2>&1 || fail "missing required command: $cmd"
+  command -v "$cmd" >/dev/null 2>&1 || fail "falta el comando requerido: $cmd"
 }
 
 reset_openclaw_state_dir() {
   local state_dir="$1"
   local resolved_state_dir resolved_home
 
-  [[ -n "$state_dir" ]] || fail "OPENCLAW_CONFIG_DIR must not be empty when resetting state"
+  [[ -n "$state_dir" ]] || fail "OPENCLAW_CONFIG_DIR no debe estar vacío al restablecer el estado"
   mkdir -p "$state_dir"
 
   resolved_state_dir="$(cd "$state_dir" && pwd -P)"
   resolved_home="$(cd "$HOME" && pwd -P)"
   case "$resolved_state_dir" in
     "/"|"$resolved_home")
-      fail "refusing to reset unsafe OPENCLAW_CONFIG_DIR: $resolved_state_dir"
+      fail "negándose a restablecer un OPENCLAW_CONFIG_DIR inseguro: $resolved_state_dir"
       ;;
   esac
 
-  log "resetting OpenClaw state under $resolved_state_dir"
+  log "restableciendo el estado de OpenClaw en $resolved_state_dir"
   rm -rf \
     "$resolved_state_dir/agents" \
     "$resolved_state_dir/canvas" \
@@ -71,7 +71,7 @@ OPENCLAW_BUILD="${OPENCLAW_BUILD:-1}"
 OPENCLAW_WAIT_SECONDS="${OPENCLAW_WAIT_SECONDS:-45}"
 OPENCLAW_OPEN_BROWSER="${OPENCLAW_OPEN_BROWSER:-0}"
 OPENCLAW_SECRETS_FILE="${OPENCLAW_SECRETS_FILE:-$HOME/.secrets}"
-# Keep default one-command UX: local smoke run should not require manual pairing.
+# Mantiene la UX predeterminada de un solo comando: la prueba de humo local no debe requerir emparejamiento manual.
 OPENCLAW_DISABLE_DEVICE_AUTH="${OPENCLAW_DISABLE_DEVICE_AUTH:-1}"
 OPENCLAW_MODEL_PRIMARY="${OPENCLAW_MODEL_PRIMARY:-openai/gpt-5.2}"
 OPENCLAW_MODEL_FALLBACK="${OPENCLAW_MODEL_FALLBACK:-openai/gpt-5.2-chat-latest}"
@@ -87,7 +87,7 @@ case "$OPENCLAW_DISABLE_DEVICE_AUTH" in
     OPENCLAW_DISABLE_DEVICE_AUTH_JSON="false"
     ;;
   *)
-    fail "OPENCLAW_DISABLE_DEVICE_AUTH must be one of: 1,0,true,false,yes,no"
+    fail "OPENCLAW_DISABLE_DEVICE_AUTH debe ser uno de: 1,0,true,false,yes,no"
     ;;
 esac
 
@@ -98,9 +98,9 @@ if [[ -z "${OPENAI_API_KEY:-}" && -f "$OPENCLAW_SECRETS_FILE" ]]; then
   set -u
 fi
 
-[[ -n "${OPENAI_API_KEY:-}" ]] || fail "OPENAI_API_KEY is required (set env var or include it in $OPENCLAW_SECRETS_FILE)"
+[[ -n "${OPENAI_API_KEY:-}" ]] || fail "Se requiere OPENAI_API_KEY (define la variable de entorno o inclúyela en $OPENCLAW_SECRETS_FILE)"
 
-log "preparing OpenClaw repo at $OPENCLAW_DOCKER_DIR"
+log "preparando el repo de OpenClaw en $OPENCLAW_DOCKER_DIR"
 if [[ -d "$OPENCLAW_DOCKER_DIR/.git" ]]; then
   git -C "$OPENCLAW_DOCKER_DIR" fetch --quiet --tags origin || true
 else
@@ -115,18 +115,18 @@ if git -C "$OPENCLAW_DOCKER_DIR" rev-parse --verify --quiet "origin/$OPENCLAW_RE
 elif git -C "$OPENCLAW_DOCKER_DIR" rev-parse --verify --quiet "$OPENCLAW_REPO_REF" >/dev/null; then
   resolved_openclaw_ref="$OPENCLAW_REPO_REF"
 fi
-[[ -n "$resolved_openclaw_ref" ]] || fail "unable to resolve OPENCLAW_REPO_REF=$OPENCLAW_REPO_REF in $OPENCLAW_DOCKER_DIR"
+[[ -n "$resolved_openclaw_ref" ]] || fail "no se pudo resolver OPENCLAW_REPO_REF=$OPENCLAW_REPO_REF en $OPENCLAW_DOCKER_DIR"
 git -C "$OPENCLAW_DOCKER_DIR" checkout --quiet "$resolved_openclaw_ref"
-log "using OpenClaw ref $resolved_openclaw_ref ($(git -C "$OPENCLAW_DOCKER_DIR" rev-parse --short HEAD))"
+log "usando la ref de OpenClaw $resolved_openclaw_ref ($(git -C "$OPENCLAW_DOCKER_DIR" rev-parse --short HEAD))"
 
 if [[ "$OPENCLAW_BUILD" == "1" ]]; then
-  log "building Docker image $OPENCLAW_IMAGE"
+  log "compilando la imagen Docker $OPENCLAW_IMAGE"
   docker build -t "$OPENCLAW_IMAGE" -f "$OPENCLAW_DOCKER_DIR/Dockerfile" "$OPENCLAW_DOCKER_DIR"
 fi
 
-log "writing OpenClaw config under $OPENCLAW_CONFIG_DIR"
+log "escribiendo la configuración de OpenClaw en $OPENCLAW_CONFIG_DIR"
 if [[ "$OPENCLAW_RESET_STATE" == "1" ]]; then
-  # Ensure deterministic smoke behavior across reruns by restarting with a clean state dir.
+  # Garantiza un comportamiento determinista de la prueba de humo entre ejecuciones reiniciando con un directorio de estado limpio.
   OPENCLAW_CONFIG_DIR="$OPENCLAW_CONFIG_DIR" \
     OPENCLAW_WORKSPACE_DIR="$OPENCLAW_WORKSPACE_DIR" \
     OPENCLAW_GATEWAY_PORT="$OPENCLAW_GATEWAY_PORT" \
@@ -223,10 +223,10 @@ detect_paperclip_base_url() {
   return 1
 }
 
-log "starting OpenClaw gateway container"
+log "iniciando el contenedor del gateway de OpenClaw"
 compose up -d openclaw-gateway
 
-log "waiting for gateway health on http://127.0.0.1:${OPENCLAW_GATEWAY_PORT}/"
+log "esperando la salud del gateway en http://127.0.0.1:${OPENCLAW_GATEWAY_PORT}/"
 READY="0"
 for _ in $(seq 1 "$OPENCLAW_WAIT_SECONDS"); do
   code="$(curl -sS -o /dev/null -w "%{http_code}" "http://127.0.0.1:${OPENCLAW_GATEWAY_PORT}/" || true)"
@@ -238,7 +238,7 @@ for _ in $(seq 1 "$OPENCLAW_WAIT_SECONDS"); do
 done
 if [[ "$READY" != "1" ]]; then
   compose logs --tail=100 openclaw-gateway || true
-  fail "gateway did not become healthy in ${OPENCLAW_WAIT_SECONDS}s"
+  fail "el gateway no estuvo saludable en ${OPENCLAW_WAIT_SECONDS}s"
 fi
 
 paperclip_base_url="$(detect_paperclip_base_url || true)"
@@ -250,80 +250,80 @@ fi
 
 cat <<EOF
 
-OpenClaw gateway is running.
+El gateway de OpenClaw está en ejecución.
 
-Dashboard URL:
+URL del panel:
 $dashboard_url
 EOF
 
 if [[ "$OPENCLAW_DISABLE_DEVICE_AUTH_JSON" == "true" ]]; then
   cat <<EOF
-Pairing:
-  Device pairing is disabled by default for this local smoke run.
-  No extra env vars are required for the default path.
-  (Security tradeoff: enable pairing with OPENCLAW_DISABLE_DEVICE_AUTH=0.)
-Model:
-  ${OPENCLAW_MODEL_PRIMARY} (fallback: ${OPENCLAW_MODEL_FALLBACK})
-State:
+Emparejamiento:
+  El emparejamiento de dispositivos está desactivado por defecto para esta prueba de humo local.
+  No se requieren variables de entorno adicionales para la ruta predeterminada.
+  (Compromiso de seguridad: habilita el emparejamiento con OPENCLAW_DISABLE_DEVICE_AUTH=0.)
+Modelo:
+  ${OPENCLAW_MODEL_PRIMARY} (respaldo: ${OPENCLAW_MODEL_FALLBACK})
+Estado:
   OPENCLAW_RESET_STATE=$OPENCLAW_RESET_STATE
-Paperclip URL for OpenClaw container:
+URL de Paperclip para el contenedor de OpenClaw:
 EOF
   if [[ -n "$paperclip_base_url" ]]; then
     cat <<EOF
   $paperclip_base_url
-  (Use this base URL for invite/onboarding links from inside OpenClaw Docker.)
+  (Usa esta URL base para los enlaces de invitación/incorporación desde dentro del Docker de OpenClaw.)
 EOF
   else
     cat <<EOF
-  Auto-detect failed. Try: http://host.docker.internal:${PAPERCLIP_HOST_PORT}
-  (Do not use http://127.0.0.1:${PAPERCLIP_HOST_PORT} inside the container.)
-  If Paperclip rejects the host, run on host machine:
+  La detección automática falló. Prueba: http://host.docker.internal:${PAPERCLIP_HOST_PORT}
+  (No uses http://127.0.0.1:${PAPERCLIP_HOST_PORT} dentro del contenedor.)
+  Si Paperclip rechaza el host, ejecuta en la máquina anfitriona:
     pnpm paperclipai allowed-hostname host.docker.internal
-  Then restart Paperclip and re-run this script.
+  Luego reinicia Paperclip y vuelve a ejecutar este script.
 EOF
   fi
   cat <<EOF
 
-Useful commands:
+Comandos útiles:
   docker compose -f "$OPENCLAW_DOCKER_DIR/docker-compose.yml" -f "$COMPOSE_OVERRIDE" logs -f openclaw-gateway
   docker compose -f "$OPENCLAW_DOCKER_DIR/docker-compose.yml" -f "$COMPOSE_OVERRIDE" down
 EOF
 else
   cat <<EOF
-Pairing:
-  Device pairing is enabled.
-  If UI shows "pairing required", run:
+Emparejamiento:
+  El emparejamiento de dispositivos está habilitado.
+  Si la UI muestra "pairing required", ejecuta:
     docker compose -f "$OPENCLAW_DOCKER_DIR/docker-compose.yml" -f "$COMPOSE_OVERRIDE" run --rm openclaw-cli devices list
     docker compose -f "$OPENCLAW_DOCKER_DIR/docker-compose.yml" -f "$COMPOSE_OVERRIDE" run --rm openclaw-cli devices approve --latest
-Model:
-  ${OPENCLAW_MODEL_PRIMARY} (fallback: ${OPENCLAW_MODEL_FALLBACK})
-State:
+Modelo:
+  ${OPENCLAW_MODEL_PRIMARY} (respaldo: ${OPENCLAW_MODEL_FALLBACK})
+Estado:
   OPENCLAW_RESET_STATE=$OPENCLAW_RESET_STATE
-Paperclip URL for OpenClaw container:
+URL de Paperclip para el contenedor de OpenClaw:
 EOF
   if [[ -n "$paperclip_base_url" ]]; then
     cat <<EOF
   $paperclip_base_url
-  (Use this base URL for invite/onboarding links from inside OpenClaw Docker.)
+  (Usa esta URL base para los enlaces de invitación/incorporación desde dentro del Docker de OpenClaw.)
 EOF
   else
     cat <<EOF
-  Auto-detect failed. Try: http://host.docker.internal:${PAPERCLIP_HOST_PORT}
-  (Do not use http://127.0.0.1:${PAPERCLIP_HOST_PORT} inside the container.)
-  If Paperclip rejects the host, run on host machine:
+  La detección automática falló. Prueba: http://host.docker.internal:${PAPERCLIP_HOST_PORT}
+  (No uses http://127.0.0.1:${PAPERCLIP_HOST_PORT} dentro del contenedor.)
+  Si Paperclip rechaza el host, ejecuta en la máquina anfitriona:
     pnpm paperclipai allowed-hostname host.docker.internal
-  Then restart Paperclip and re-run this script.
+  Luego reinicia Paperclip y vuelve a ejecutar este script.
 EOF
   fi
   cat <<EOF
 
-Useful commands:
+Comandos útiles:
   docker compose -f "$OPENCLAW_DOCKER_DIR/docker-compose.yml" -f "$COMPOSE_OVERRIDE" logs -f openclaw-gateway
   docker compose -f "$OPENCLAW_DOCKER_DIR/docker-compose.yml" -f "$COMPOSE_OVERRIDE" down
 EOF
 fi
 
 if [[ "$OPENCLAW_OPEN_BROWSER" == "1" ]] && command -v open >/dev/null 2>&1; then
-  log "opening dashboard in browser"
+  log "abriendo el panel en el navegador"
   open "$dashboard_url"
 fi

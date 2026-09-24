@@ -1,50 +1,50 @@
 ---
-title: Environment Variables
-summary: Full environment variable reference
+title: Variables de entorno
+summary: Referencia completa de variables de entorno
 ---
 
-All environment variables that Paperclip uses for server configuration.
+Todas las variables de entorno que Paperclip usa para la configuración del servidor.
 
-## Server Configuration
+## Configuración del servidor
 
-| Variable | Default | Description |
+| Variable | Por defecto | Descripción |
 |----------|---------|-------------|
-| `PORT` | `3100` | Server port |
-| `HOST` | `127.0.0.1` | Server host binding |
-| `DATABASE_URL` | (embedded) | PostgreSQL connection string |
-| `PAPERCLIP_HOME` | `~/.paperclip` | Base directory for all Paperclip data |
-| `PAPERCLIP_INSTANCE_ID` | `default` | Instance identifier (for multiple local instances) |
-| `PAPERCLIP_DEPLOYMENT_MODE` | `local_trusted` | Runtime mode override |
+| `PORT` | `3100` | Puerto del servidor |
+| `HOST` | `127.0.0.1` | Enlace de host del servidor |
+| `DATABASE_URL` | (embebida) | Cadena de conexión de PostgreSQL |
+| `PAPERCLIP_HOME` | `~/.paperclip` | Directorio base para todos los datos de Paperclip |
+| `PAPERCLIP_INSTANCE_ID` | `default` | Identificador de la instancia (para múltiples instancias locales) |
+| `PAPERCLIP_DEPLOYMENT_MODE` | `local_trusted` | Sobrescritura del modo de ejecución |
 
-## Secrets
+## Secretos
 
-| Variable | Default | Description |
+| Variable | Por defecto | Descripción |
 |----------|---------|-------------|
-| `PAPERCLIP_SECRETS_MASTER_KEY` | (from file) | 32-byte encryption key (base64/hex/raw) |
-| `PAPERCLIP_SECRETS_MASTER_KEY_FILE` | `~/.paperclip/.../secrets/master.key` | Path to key file |
-| `PAPERCLIP_SECRETS_STRICT_MODE` | `false` | Require secret refs for sensitive env vars |
+| `PAPERCLIP_SECRETS_MASTER_KEY` | (desde el archivo) | Clave de cifrado de 32 bytes (base64/hex/cruda) |
+| `PAPERCLIP_SECRETS_MASTER_KEY_FILE` | `~/.paperclip/.../secrets/master.key` | Ruta al archivo de clave |
+| `PAPERCLIP_SECRETS_STRICT_MODE` | `false` | Requiere referencias de secretos para variables de entorno sensibles |
 
-## Agent Runtime (Injected into agent processes)
+## Tiempo de ejecución del agente (inyectadas en los procesos del agente)
 
-These are set automatically by the server when invoking agents:
+El servidor las define automáticamente al invocar agentes:
 
-| Variable | Description |
+| Variable | Descripción |
 |----------|-------------|
-| `PAPERCLIP_AGENT_ID` | Agent's unique ID |
-| `PAPERCLIP_COMPANY_ID` | Company ID |
-| `PAPERCLIP_API_URL` | Paperclip API base URL |
-| `PAPERCLIP_API_KEY` | Short-lived JWT for API auth |
-| `PAPERCLIP_RUN_ID` | Current heartbeat run ID |
-| `PAPERCLIP_TASK_ID` | Issue that triggered this wake |
-| `PAPERCLIP_WAKE_REASON` | Wake trigger reason |
-| `PAPERCLIP_WAKE_COMMENT_ID` | Comment that triggered this wake |
-| `PAPERCLIP_APPROVAL_ID` | Resolved approval ID |
-| `PAPERCLIP_APPROVAL_STATUS` | Approval decision |
-| `PAPERCLIP_LINKED_ISSUE_IDS` | Comma-separated linked issue IDs |
+| `PAPERCLIP_AGENT_ID` | ID único del agente |
+| `PAPERCLIP_COMPANY_ID` | ID de la empresa |
+| `PAPERCLIP_API_URL` | URL base de la API de Paperclip |
+| `PAPERCLIP_API_KEY` | JWT de corta duración para autenticación de la API |
+| `PAPERCLIP_RUN_ID` | ID de la ejecución actual del latido |
+| `PAPERCLIP_TASK_ID` | Issue que activó este despertar |
+| `PAPERCLIP_WAKE_REASON` | Motivo del disparador del despertar |
+| `PAPERCLIP_WAKE_COMMENT_ID` | Comentario que activó este despertar |
+| `PAPERCLIP_APPROVAL_ID` | ID de la aprobación resuelta |
+| `PAPERCLIP_APPROVAL_STATUS` | Decisión de la aprobación |
+| `PAPERCLIP_LINKED_ISSUE_IDS` | IDs de issues vinculados separados por comas |
 
-## LLM Provider Keys (for adapters)
+## Claves de proveedores LLM (para adaptadores)
 
-| Variable | Description |
+| Variable | Descripción |
 |----------|-------------|
-| `ANTHROPIC_API_KEY` | Anthropic API key (for Claude Local adapter) |
-| `OPENAI_API_KEY` | OpenAI API key (for Codex Local adapter) |
+| `ANTHROPIC_API_KEY` | Clave de API de Anthropic (para el adaptador local de Claude) |
+| `OPENAI_API_KEY` | Clave de API de OpenAI (para el adaptador local de Codex) |

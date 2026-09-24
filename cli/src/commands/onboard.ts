@@ -245,14 +245,14 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
   );
 
   if (configExists(opts.config)) {
-    p.log.message(pc.dim(`${configPath} exists, updating config`));
+    p.log.message(pc.dim(`${configPath} existe, actualizando la config`));
 
     try {
       readConfig(opts.config);
     } catch (err) {
       p.log.message(
         pc.yellow(
-          `Existing config appears invalid and will be updated.\n${err instanceof Error ? err.message : String(err)}`,
+          `La config existente parece inválida y será actualizada.\n${err instanceof Error ? err.message : String(err)}`,
         ),
       );
     }
@@ -260,26 +260,26 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
 
   let setupMode: SetupMode = "quickstart";
   if (opts.yes) {
-    p.log.message(pc.dim("`--yes` enabled: using Quickstart defaults."));
+    p.log.message(pc.dim("`--yes` activado: usando valores por defecto de la instalación rápida."));
   } else {
     const setupModeChoice = await p.select({
-      message: "Choose setup path",
+      message: "Elige el modo de instalación",
       options: [
         {
           value: "quickstart" as const,
-          label: "Quickstart",
-          hint: "Recommended: local defaults + ready to run",
+          label: "Instalación rápida",
+          hint: "Recomendada: valores locales por defecto + listo para ejecutar",
         },
         {
           value: "advanced" as const,
-          label: "Advanced setup",
-          hint: "Customize database, server, storage, and more",
+          label: "Instalación avanzada",
+          hint: "Personaliza la base de datos, el servidor, el almacenamiento y más",
         },
       ],
       initialValue: "quickstart",
     });
     if (p.isCancel(setupModeChoice)) {
-      p.cancel("Setup cancelled.");
+      p.cancel("Instalación cancelada.");
       return;
     }
     setupMode = setupModeChoice as SetupMode;
@@ -297,28 +297,28 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
   } = derivedDefaults;
 
   if (setupMode === "advanced") {
-    p.log.step(pc.bold("Database"));
+    p.log.step(pc.bold("Base de datos"));
     database = await promptDatabase(database);
 
     if (database.mode === "postgres" && database.connectionString) {
       const s = p.spinner();
-      s.start("Testing database connection...");
+      s.start("Probando la conexión a la base de datos...");
       try {
         const { createDb } = await import("@paperclipai/db");
         const db = createDb(database.connectionString);
         await db.execute("SELECT 1");
-        s.stop("Database connection successful");
+        s.stop("Conexión a la base de datos exitosa");
       } catch {
-        s.stop(pc.yellow("Could not connect to database — you can fix this later with `paperclipai doctor`"));
+        s.stop(pc.yellow("No se pudo conectar a la base de datos — puedes corregirlo luego con `paperclipai doctor`"));
       }
     }
 
-    p.log.step(pc.bold("LLM Provider"));
+    p.log.step(pc.bold("Proveedor de LLM"));
     llm = await promptLlm();
 
     if (llm?.apiKey) {
       const s = p.spinner();
-      s.start("Validating API key...");
+      s.start("Validando la API key...");
       try {
         if (llm.provider === "claude") {
           const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -335,39 +335,39 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
             }),
           });
           if (res.ok || res.status === 400) {
-            s.stop("API key is valid");
+            s.stop("La API key es válida");
           } else if (res.status === 401) {
-            s.stop(pc.yellow("API key appears invalid — you can update it later"));
+            s.stop(pc.yellow("La API key parece inválida — puedes actualizarla luego"));
           } else {
-            s.stop(pc.yellow("Could not validate API key — continuing anyway"));
+            s.stop(pc.yellow("No se pudo validar la API key — continuando de todos modos"));
           }
         } else {
           const res = await fetch("https://api.openai.com/v1/models", {
             headers: { Authorization: `Bearer ${llm.apiKey}` },
           });
           if (res.ok) {
-            s.stop("API key is valid");
+            s.stop("La API key es válida");
           } else if (res.status === 401) {
-            s.stop(pc.yellow("API key appears invalid — you can update it later"));
+            s.stop(pc.yellow("La API key parece inválida — puedes actualizarla luego"));
           } else {
-            s.stop(pc.yellow("Could not validate API key — continuing anyway"));
+            s.stop(pc.yellow("No se pudo validar la API key — continuando de todos modos"));
           }
         }
       } catch {
-        s.stop(pc.yellow("Could not reach API — continuing anyway"));
+        s.stop(pc.yellow("No se pudo contactar la API — continuando de todos modos"));
       }
     }
 
-    p.log.step(pc.bold("Logging"));
+    p.log.step(pc.bold("Logs"));
     logging = await promptLogging();
 
-    p.log.step(pc.bold("Server"));
+    p.log.step(pc.bold("Servidor"));
     ({ server, auth } = await promptServer({ currentServer: server, currentAuth: auth }));
 
-    p.log.step(pc.bold("Storage"));
+    p.log.step(pc.bold("Almacenamiento"));
     storage = await promptStorage(storage);
 
-    p.log.step(pc.bold("Secrets"));
+    p.log.step(pc.bold("Secretos"));
     const secretsDefaults = defaultSecretsConfig();
     secrets = {
       provider: secrets.provider ?? secretsDefaults.provider,
@@ -378,32 +378,32 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
     };
     p.log.message(
       pc.dim(
-        `Using defaults: provider=${secrets.provider}, strictMode=${secrets.strictMode}, keyFile=${secrets.localEncrypted.keyFilePath}`,
+        `Usando valores por defecto: provider=${secrets.provider}, strictMode=${secrets.strictMode}, keyFile=${secrets.localEncrypted.keyFilePath}`,
       ),
     );
   } else {
-    p.log.step(pc.bold("Quickstart"));
-    p.log.message(pc.dim("Using quickstart defaults."));
+    p.log.step(pc.bold("Instalación rápida"));
+    p.log.message(pc.dim("Usando valores por defecto de la instalación rápida."));
     if (usedEnvKeys.length > 0) {
-      p.log.message(pc.dim(`Environment-aware defaults active (${usedEnvKeys.length} env var(s) detected).`));
+      p.log.message(pc.dim(`Valores por defecto según el entorno activos (${usedEnvKeys.length} variable(s) de entorno detectada(s)).`));
     } else {
       p.log.message(
-        pc.dim("No environment overrides detected: embedded database, file storage, local encrypted secrets."),
+        pc.dim("No se detectaron sobrescrituras de entorno: base de datos embebida, almacenamiento en archivo, secretos cifrados locales."),
       );
     }
     for (const ignored of ignoredEnvKeys) {
-      p.log.message(pc.dim(`Ignored ${ignored.key}: ${ignored.reason}`));
+      p.log.message(pc.dim(`Ignorado ${ignored.key}: ${ignored.reason}`));
     }
   }
 
   const jwtSecret = ensureAgentJwtSecret(configPath);
   const envFilePath = resolveAgentJwtEnvFile(configPath);
   if (jwtSecret.created) {
-    p.log.success(`Created ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")} in ${pc.dim(envFilePath)}`);
+    p.log.success(`Se creó ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")} en ${pc.dim(envFilePath)}`);
   } else if (process.env.PAPERCLIP_AGENT_JWT_SECRET?.trim()) {
-    p.log.info(`Using existing ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")} from environment`);
+    p.log.info(`Usando el ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")} existente del entorno`);
   } else {
-    p.log.info(`Using existing ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")} in ${pc.dim(envFilePath)}`);
+    p.log.info(`Usando el ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")} existente en ${pc.dim(envFilePath)}`);
   }
 
   const config: PaperclipConfig = {
@@ -423,46 +423,46 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
 
   const keyResult = ensureLocalSecretsKeyFile(config, configPath);
   if (keyResult.status === "created") {
-    p.log.success(`Created local secrets key file at ${pc.dim(keyResult.path)}`);
+    p.log.success(`Archivo de clave local de secretos creado en ${pc.dim(keyResult.path)}`);
   } else if (keyResult.status === "existing") {
-    p.log.message(pc.dim(`Using existing local secrets key file at ${keyResult.path}`));
+    p.log.message(pc.dim(`Usando el archivo de clave local de secretos existente en ${keyResult.path}`));
   }
 
   writeConfig(config, opts.config);
 
   p.note(
     [
-      `Database: ${database.mode}`,
-      llm ? `LLM: ${llm.provider}` : "LLM: not configured",
-      `Logging: ${logging.mode} -> ${logging.logDir}`,
-      `Server: ${server.deploymentMode}/${server.exposure} @ ${server.host}:${server.port}`,
-      `Allowed hosts: ${server.allowedHostnames.length > 0 ? server.allowedHostnames.join(", ") : "(loopback only)"}`,
-      `Auth URL mode: ${auth.baseUrlMode}${auth.publicBaseUrl ? ` (${auth.publicBaseUrl})` : ""}`,
-      `Storage: ${storage.provider}`,
-      `Secrets: ${secrets.provider} (strict mode ${secrets.strictMode ? "on" : "off"})`,
-      "Agent auth: PAPERCLIP_AGENT_JWT_SECRET configured",
+      `Base de datos: ${database.mode}`,
+      llm ? `LLM: ${llm.provider}` : "LLM: no configurado",
+      `Logs: ${logging.mode} -> ${logging.logDir}`,
+      `Servidor: ${server.deploymentMode}/${server.exposure} @ ${server.host}:${server.port}`,
+      `Hosts permitidos: ${server.allowedHostnames.length > 0 ? server.allowedHostnames.join(", ") : "(solo loopback)"}`,
+      `Modo de URL de auth: ${auth.baseUrlMode}${auth.publicBaseUrl ? ` (${auth.publicBaseUrl})` : ""}`,
+      `Almacenamiento: ${storage.provider}`,
+      `Secretos: ${secrets.provider} (modo estricto ${secrets.strictMode ? "activado" : "desactivado"})`,
+      "Auth de agentes: PAPERCLIP_AGENT_JWT_SECRET configurado",
     ].join("\n"),
-    "Configuration saved",
+    "Configuración guardada",
   );
 
   p.note(
     [
-      `Run: ${pc.cyan("paperclipai run")}`,
-      `Reconfigure later: ${pc.cyan("paperclipai configure")}`,
-      `Diagnose setup: ${pc.cyan("paperclipai doctor")}`,
+      `Ejecutar: ${pc.cyan("paperclipai run")}`,
+      `Reconfigurar luego: ${pc.cyan("paperclipai configure")}`,
+      `Diagnosticar instalación: ${pc.cyan("paperclipai doctor")}`,
     ].join("\n"),
-    "Next commands",
+    "Próximos comandos",
   );
 
   if (canCreateBootstrapInviteImmediately({ database, server })) {
-    p.log.step("Generating bootstrap CEO invite");
+    p.log.step("Generando invitación bootstrap de CEO");
     await bootstrapCeoInvite({ config: configPath });
   }
 
   let shouldRunNow = opts.run === true || opts.yes === true;
   if (!shouldRunNow && !opts.invokedByRun && process.stdin.isTTY && process.stdout.isTTY) {
     const answer = await p.confirm({
-      message: "Start Paperclip now?",
+      message: "¿Iniciar Paperclip ahora?",
       initialValue: true,
     });
     if (!p.isCancel(answer)) {
@@ -480,12 +480,12 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
   if (server.deploymentMode === "authenticated" && database.mode === "embedded-postgres") {
     p.log.info(
       [
-        "Bootstrap CEO invite will be created after the server starts.",
-        `Next: ${pc.cyan("paperclipai run")}`,
-        `Then: ${pc.cyan("paperclipai auth bootstrap-ceo")}`,
+        "La invitación bootstrap de CEO se creará cuando inicie el servidor.",
+        `Siguiente: ${pc.cyan("paperclipai run")}`,
+        `Luego: ${pc.cyan("paperclipai auth bootstrap-ceo")}`,
       ].join("\n"),
     );
   }
 
-  p.outro("You're all set!");
+  p.outro("¡Todo listo!");
 }

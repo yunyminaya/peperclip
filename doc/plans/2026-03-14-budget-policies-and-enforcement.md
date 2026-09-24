@@ -1,180 +1,180 @@
-# Budget Policies and Enforcement
+# Políticas de presupuesto y cumplimiento
 
-## Context
+## Contexto
 
-Paperclip already treats budgets as a core control-plane responsibility:
+Paperclip ya trata los presupuestos como una responsabilidad central del plano de control:
 
-- `doc/SPEC.md` gives the Board authority to set budgets, pause agents, pause work, and override any budget.
-- `doc/SPEC-implementation.md` says V1 must support monthly UTC budget windows, soft alerts, and hard auto-pause.
-- the current code only partially implements that intent.
+- `doc/SPEC.md` otorga al tablero la autoridad para establecer presupuestos, pausar agentes, pausar trabajo y anular cualquier presupuesto.
+- `doc/SPEC-implementation.md` dice que V1 debe admitir ventanas de presupuesto mensuales en UTC, alertas suaves y pausa automática dura.
+- el código actual solo implementa parcialmente esa intención.
 
-Today the system has narrow money-budget behavior:
+Hoy el sistema tiene un comportamiento estrecho de presupuesto de dinero:
 
-- companies track `budgetMonthlyCents` and `spentMonthlyCents`
-- agents track `budgetMonthlyCents` and `spentMonthlyCents`
-- `cost_events` ingestion increments those counters
-- when an agent exceeds its monthly budget, the agent is paused
+- las empresas rastrean `budgetMonthlyCents` y `spentMonthlyCents`
+- los agentes rastrean `budgetMonthlyCents` y `spentMonthlyCents`
+- la ingesta de `cost_events` incrementa esos contadores
+- cuando un agente excede su presupuesto mensual, el agente se pausa
 
-That leaves major product gaps:
+Eso deja brechas importantes de producto:
 
-- no project budget model
-- no approval generated when budget is hit
-- no generic budget policy system
-- no project pause semantics tied to budget
-- no durable incident tracking to prevent duplicate alerts
-- no separation between enforceable spend budgets and advisory usage quotas
+- sin modelo de presupuesto de proyecto
+- sin aprobación generada cuando se alcanza el presupuesto
+- sin sistema genérico de políticas de presupuesto
+- sin semántica de pausa de proyecto ligada al presupuesto
+- sin seguimiento durable de incidentes para prevenir alertas duplicadas
+- sin separación entre presupuestos de gasto exigibles y cuotas de uso de asesoría
 
-This plan defines the concrete budgeting model Paperclip should implement next.
+Este plan define el modelo concreto de presupuesto que Paperclip debería implementar a continuación.
 
-## Product Goals
+## Objetivos del producto
 
-Paperclip should let operators:
+Paperclip debería permitir a los operadores:
 
-1. Set budgets on agents and projects.
-2. Understand whether a budget is based on money or usage.
-3. Be warned before a budget is exhausted.
-4. Automatically pause work when a hard budget is hit.
-5. Approve, raise, or resume from a budget stop using obvious UI.
-6. See budget state on the dashboard, `/costs`, and scope detail pages.
+1. Establecer presupuestos en agentes y proyectos.
+2. Entender si un presupuesto se basa en dinero o en uso.
+3. Ser advertidos antes de que se agote un presupuesto.
+4. Pausar automáticamente el trabajo cuando se alcanza un presupuesto duro.
+5. Aprobar, aumentar o reanudar desde una detención de presupuesto usando una UI obvia.
+6. Ver el estado del presupuesto en el panel, `/costs` y las páginas de detalle de alcance.
 
-The system should make one thing very clear:
+El sistema debería dejar muy claro una cosa:
 
-- budgets are policy controls
-- quotas are usage visibility
+- los presupuestos son controles de política
+- las cuotas son visibilidad de uso
 
-They are related, but they are not the same concept.
+Están relacionados, pero no son el mismo concepto.
 
-## Product Decisions
+## Decisiones de producto
 
-### V1 Budget Defaults
+### Valores predeterminados de presupuesto V1
 
-For the next implementation pass, Paperclip should enforce these defaults:
+Para el próximo pase de implementación, Paperclip debería aplicar estos valores predeterminados:
 
-- agent budgets are recurring monthly budgets
-- project budgets are lifetime total budgets
-- hard-stop enforcement uses billed dollars, not tokens
-- monthly windows use UTC calendar months
-- project total budgets do not reset automatically
+- los presupuestos de agentes son presupuestos mensuales recurrentes
+- los presupuestos de proyectos son presupuestos totales de por vida
+- el cumplimiento de detención dura usa dólares facturados, no tokens
+- las ventanas mensuales usan meses calendario en UTC
+- los presupuestos totales de proyecto no se reinician automáticamente
 
-This gives a clean mental model:
+Esto da un modelo mental limpio:
 
-- agents are ongoing workers, so monthly recurring budget is natural
-- projects are bounded workstreams, so lifetime cap is natural
+- los agentes son trabajadores continuos, así que el presupuesto mensual recurrente es natural
+- los proyectos son flujos de trabajo acotados, así que un tope de por vida es natural
 
-### Metric To Enforce First
+### Métrica a exigir primero
 
-The first enforceable metric should be `billed_cents`.
+La primera métrica exigible debería ser `billed_cents`.
 
-Reasoning:
+Razonamiento:
 
-- it works across providers, billers, and models
-- it maps directly to real financial risk
-- it handles overage and metered usage consistently
-- it avoids cross-provider token normalization problems
-- it applies cleanly even when future finance events are not token-based
+- funciona entre proveedores, facturadores y modelos
+- se mapea directamente al riesgo financiero real
+- maneja el excedente y el uso medido de forma consistente
+- evita problemas de normalización de tokens entre proveedores
+- se aplica limpiamente incluso cuando futuros eventos financieros no estén basados en tokens
 
-Token budgets should not be the first hard-stop policy.
-They should come later as advisory usage controls once the money-based system is solid.
+Los presupuestos de tokens no deberían ser la primera política de detención dura.
+Deberían llegar después como controles de uso de asesoría una vez que el sistema basado en dinero sea sólido.
 
-### Subscription Usage Decision
+### Decisión de uso de suscripción
 
-Paperclip should separate subscription-included usage from billed spend:
+Paperclip debería separar el uso incluido en suscripción del gasto facturado:
 
 - `subscription_included`
-  - visible in reporting
-  - visible in usage summaries
-  - does not count against money budget
+  - visible en informes
+  - visible en resúmenes de uso
+  - no cuenta contra el presupuesto de dinero
 - `subscription_overage`
-  - visible in reporting
-  - counts against money budget
+  - visible en informes
+  - cuenta contra el presupuesto de dinero
 - `metered_api`
-  - visible in reporting
-  - counts against money budget
+  - visible en informes
+  - cuenta contra el presupuesto de dinero
 
-This keeps the budget system honest:
+Esto mantiene honesto el sistema de presupuesto:
 
-- users should not see "spend" rise for usage that did not incur marginal billed cost
-- users should still see the token usage and provider quota state
+- los usuarios no deberían ver subir el "gasto" por uso que no incurrió costo facturado marginal
+- los usuarios aún deberían ver el uso de tokens y el estado de cuota del proveedor
 
-### Soft Alert Versus Hard Stop
+### Alerta suave vs detención dura
 
-Paperclip should have two threshold classes:
+Paperclip debería tener dos clases de umbral:
 
-- soft alert
-  - creates visible notification state
-  - does not create an approval
-  - does not pause work
-- hard stop
-  - pauses the affected scope automatically
-  - creates an approval requiring human resolution
-  - prevents additional heartbeats or task pickup in that scope
+- alerta suave
+  - crea estado de notificación visible
+  - no crea una aprobación
+  - no pausa el trabajo
+- detención dura
+  - pausa automáticamente el alcance afectado
+  - crea una aprobación que requiere resolución humana
+  - impide latidos adicionales o toma de tareas en ese alcance
 
-Default thresholds:
+Umbrales predeterminados:
 
-- soft alert at `80%`
-- hard stop at `100%`
+- alerta suave al `80%`
+- detención dura al `100%`
 
-These should be configurable per policy later, but they are good defaults now.
+Deberían ser configurables por política más adelante, pero son buenos valores predeterminados ahora.
 
-## Scope Model
+## Modelo de alcance
 
-### Supported Scope Types
+### Tipos de alcance admitidos
 
-Budget policies should support:
+Las políticas de presupuesto deberían admitir:
 
 - `company`
 - `agent`
 - `project`
 
-This plan focuses on finishing `agent` and `project` first while preserving the existing company budget behavior.
+Este plan se enfoca en terminar `agent` y `project` primero mientras preserva el comportamiento actual de presupuesto de empresa.
 
-### Recommended V1.5 Policy Presets
+### Preajustes de política V1.5 recomendados
 
-- Company
-  - metric: `billed_cents`
-  - window: `calendar_month_utc`
-- Agent
-  - metric: `billed_cents`
-  - window: `calendar_month_utc`
-- Project
-  - metric: `billed_cents`
-  - window: `lifetime`
+- Empresa
+  - métrica: `billed_cents`
+  - ventana: `calendar_month_utc`
+- Agente
+  - métrica: `billed_cents`
+  - ventana: `calendar_month_utc`
+- Proyecto
+  - métrica: `billed_cents`
+  - ventana: `lifetime`
 
-Future extensions can add:
+Extensiones futuras pueden agregar:
 
-- token advisory policies
-- daily or weekly spend windows
-- provider- or biller-scoped budgets
-- inherited delegated budgets down the org tree
+- políticas de asesoría de tokens
+- ventanas de gasto diarias o semanales
+- presupuestos con alcance de proveedor o facturador
+- presupuestos delegados heredados por el organigrama
 
-## Current Implementation Baseline
+## Base de implementación actual
 
-The current codebase is not starting from zero, but the existing shape is too ad hoc to extend safely.
+La base de código actual no parte de cero, pero la forma existente es demasiado ad hoc para extenderse con seguridad.
 
-### What Exists Today
+### Lo que existe hoy
 
-- company and agent monthly cents counters
-- cost ingestion that updates those counters
-- agent hard-stop pause on monthly budget overrun
+- contadores mensuales de centavos de empresa y agente
+- ingesta de costos que actualiza esos contadores
+- pausa de detención dura del agente al exceder el presupuesto mensual
 
-### What Is Missing
+### Lo que falta
 
-- project budgets
-- generic budget policy persistence
-- generic threshold crossing detection
-- incident deduplication per scope/window
-- approval creation on hard-stop
-- project execution blocking
-- budget timeline and incident UI
-- distinction between advisory quota and enforceable budget
+- presupuestos de proyecto
+- persistencia genérica de políticas de presupuesto
+- detección genérica de cruce de umbrales
+- deduplicación de incidentes por alcance/ventana
+- creación de aprobación en detención dura
+- bloqueo de ejecución de proyecto
+- UI de línea de tiempo e incidentes de presupuesto
+- distinción entre cuota de asesoría y presupuesto exigible
 
-## Proposed Data Model
+## Modelo de datos propuesto
 
 ### 1. `budget_policies`
 
-Create a new table for canonical budget definitions.
+Crear una nueva tabla para definiciones canónicas de presupuesto.
 
-Suggested fields:
+Campos sugeridos:
 
 - `id`
 - `company_id`
@@ -192,19 +192,19 @@ Suggested fields:
 - `created_at`
 - `updated_at`
 
-Notes:
+Notas:
 
-- `scope_type` is one of `company | agent | project`
-- `scope_id` is nullable only for company-level policy if company is implied; otherwise keep it explicit
-- `metric` should start with `billed_cents`
-- `window_kind` starts with `calendar_month_utc | lifetime`
-- `amount` is stored in the natural unit of the metric
+- `scope_type` es uno de `company | agent | project`
+- `scope_id` es anulable solo para política a nivel de empresa si la empresa está implícita; de lo contrario mantenerlo explícito
+- `metric` debería comenzar con `billed_cents`
+- `window_kind` comienza con `calendar_month_utc | lifetime`
+- `amount` se almacena en la unidad natural de la métrica
 
 ### 2. `budget_incidents`
 
-Create a durable record of threshold crossings.
+Crear un registro durable de cruces de umbral.
 
-Suggested fields:
+Campos sugeridos:
 
 - `id`
 - `company_id`
@@ -219,135 +219,135 @@ Suggested fields:
 - `amount_limit`
 - `amount_observed`
 - `status`
-- `approval_id` nullable
-- `activity_id` nullable
-- `resolved_at` nullable
+- `approval_id` anulable
+- `activity_id` anulable
+- `resolved_at` anulable
 - `created_at`
 - `updated_at`
 
-Notes:
+Notas:
 
 - `threshold_type`: `soft | hard`
 - `status`: `open | acknowledged | resolved | dismissed`
-- one open incident per policy per threshold per window prevents duplicate approvals and alert spam
+- un incidente abierto por política por umbral por ventana previene aprobaciones duplicadas y spam de alertas
 
-### 3. Project Pause State
+### 3. Estado de pausa de proyecto
 
-Projects need explicit pause semantics.
+Los proyectos necesitan semántica de pausa explícita.
 
-Recommended approach:
+Enfoque recomendado:
 
-- extend project status or add a pause field so a project can be blocked by budget
-- preserve whether the project is paused due to budget versus manually paused
+- extender el estado del proyecto o agregar un campo de pausa para que un proyecto pueda bloquearse por presupuesto
+- preservar si el proyecto está pausado por presupuesto vs pausado manualmente
 
-Preferred shape:
+Forma preferida:
 
-- keep project workflow status as-is
-- add execution-state fields:
+- mantener el estado de flujo de trabajo del proyecto como está
+- agregar campos de estado de ejecución:
   - `execution_status`: `active | paused | archived`
   - `pause_reason`: `manual | budget | system | null`
 
-If that is too large for the immediate pass, a smaller version is:
+Si eso es demasiado grande para el pase inmediato, una versión más pequeña es:
 
-- add `paused_at`
-- add `pause_reason`
+- agregar `paused_at`
+- agregar `pause_reason`
 
-The key requirement is behavioral, not cosmetic:
-Paperclip must know that a project is budget-paused and enforce it.
+El requisito clave es conductual, no cosmético:
+Paperclip debe saber que un proyecto está pausado por presupuesto y hacerlo cumplir.
 
-### 4. Compatibility With Existing Budget Columns
+### 4. Compatibilidad con columnas de presupuesto existentes
 
-Existing company and agent monthly budget columns should remain temporarily for compatibility.
+Las columnas mensuales de presupuesto existentes de empresa y agente deberían permanecer temporalmente por compatibilidad.
 
-Migration plan:
+Plan de migración:
 
-1. keep reading existing columns during transition
-2. create equivalent `budget_policies` rows
-3. switch enforcement and UI to policies
-4. later remove or deprecate legacy columns
+1. seguir leyendo las columnas existentes durante la transición
+2. crear filas equivalentes de `budget_policies`
+3. cambiar el cumplimiento y la UI a políticas
+4. más adelante eliminar o marcar como obsoletas las columnas heredadas
 
-## Budget Engine
+## Motor de presupuesto
 
-Budget enforcement should move into a dedicated service.
+El cumplimiento de presupuesto debería moverse a un servicio dedicado.
 
-Current logic is buried inside cost ingestion.
-That is too narrow because budget checks must apply at more than one execution boundary.
+La lógica actual está enterrada dentro de la ingesta de costos.
+Eso es demasiado estrecho porque las verificaciones de presupuesto deben aplicarse en más de un límite de ejecución.
 
-### Responsibilities
+### Responsabilidades
 
-New service: `budgetService`
+Nuevo servicio: `budgetService`
 
-Responsibilities:
+Responsabilidades:
 
-- resolve applicable policies for a cost event
-- compute current window totals
-- detect threshold crossings
-- create incidents, activities, and approvals
-- pause affected scopes on hard-stop
-- provide preflight enforcement checks for execution entry points
+- resolver políticas aplicables para un evento de costo
+- calcular totales de ventana actuales
+- detectar cruces de umbral
+- crear incidentes, actividades y aprobaciones
+- pausar alcances afectados en detención dura
+- proporcionar verificaciones previas de cumplimiento para puntos de entrada de ejecución
 
-### Canonical Evaluation Flow
+### Flujo canónico de evaluación
 
-When a new `cost_event` is written:
+Cuando se escribe un nuevo `cost_event`:
 
-1. persist the `cost_event`
-2. identify affected scopes
-   - company
-   - agent
-   - project
-3. fetch active policies for those scopes
-4. compute current observed amount for each policy window
-5. compare to thresholds
-6. create soft incident if soft threshold crossed for first time in window
-7. create hard incident if hard threshold crossed for first time in window
-8. if hard incident:
-   - pause the scope
-   - create approval
-   - create activity event
-   - emit notification state
+1. persistir el `cost_event`
+2. identificar alcances afectados
+   - empresa
+   - agente
+   - proyecto
+3. obtener políticas activas para esos alcances
+4. calcular el monto observado actual para cada ventana de política
+5. comparar con umbrales
+6. crear incidente suave si el umbral suave se cruza por primera vez en la ventana
+7. crear incidente duro si el umbral duro se cruza por primera vez en la ventana
+8. si hay incidente duro:
+   - pausar el alcance
+   - crear aprobación
+   - crear evento de actividad
+   - emitir estado de notificación
 
-### Preflight Enforcement Checks
+### Verificaciones previas de cumplimiento
 
-Budget enforcement cannot rely only on post-hoc cost ingestion.
+El cumplimiento de presupuesto no puede depender solo de la ingesta posterior de costos.
 
-Paperclip must also block execution before new work starts.
+Paperclip también debe bloquear la ejecución antes de que comience nuevo trabajo.
 
-Add budget checks to:
+Agregar verificaciones de presupuesto a:
 
-- scheduler heartbeat dispatch
-- manual invoke endpoints
-- assignment-driven wakeups
-- queued run promotion
-- issue checkout or pickup paths where applicable
+- despacho de latido del programador
+- endpoints de invocación manual
+- activaciones impulsadas por asignación
+- promoción de ejecuciones en cola
+- rutas de checkout o toma de issues donde aplique
 
-If a scope is budget-paused:
+Si un alcance está pausado por presupuesto:
 
-- do not start a new heartbeat
-- do not let the agent pick up additional work
-- present a clear reason in API and UI
+- no iniciar un nuevo latido
+- no dejar que el agente tome trabajo adicional
+- presentar una razón clara en API y UI
 
-### Active Run Behavior
+### Comportamiento de ejecución activa
 
-When a hard-stop is triggered while a run is already active:
+Cuando se activa una detención dura mientras una ejecución ya está activa:
 
-- mark scope paused immediately for future work
-- request graceful cancellation of the current run
-- allow normal cancellation timeout behavior
-- write activity explaining that pause came from budget enforcement
+- marcar el alcance pausado de inmediato para trabajo futuro
+- solicitar cancelación elegante de la ejecución actual
+- permitir el comportamiento normal de tiempo de espera de cancelación
+- escribir actividad explicando que la pausa vino del cumplimiento de presupuesto
 
-This mirrors the general pause semantics already expected by the product.
+Esto refleja la semántica general de pausa ya esperada por el producto.
 
-## Approval Model
+## Modelo de aprobación
 
-Budget hard-stops should create a first-class approval.
+Las detenciones duras de presupuesto deberían crear una aprobación de primera clase.
 
-### New Approval Type
+### Nuevo tipo de aprobación
 
-Add approval type:
+Agregar tipo de aprobación:
 
 - `budget_override_required`
 
-Payload should include:
+La carga útil debería incluir:
 
 - `scopeType`
 - `scopeId`
@@ -362,173 +362,173 @@ Payload should include:
 - `topDrivers`
 - `paused`
 
-### Resolution Actions
+### Acciones de resolución
 
-The approval UI should support:
+La UI de aprobación debería admitir:
 
-- raise budget and resume
-- resume once without changing policy
-- keep paused
+- aumentar presupuesto y reanudar
+- reanudar una vez sin cambiar la política
+- mantener pausado
 
-Optional later action:
+Acción opcional posterior:
 
-- disable budget policy
+- deshabilitar política de presupuesto
 
-### Soft Alerts Do Not Need Approval
+### Las alertas suaves no necesitan aprobación
 
-Soft alerts should create:
+Las alertas suaves deberían crear:
 
-- activity event
-- dashboard alert
-- inbox notification or similar board-visible signal
+- evento de actividad
+- alerta de panel
+- notificación de bandeja de entrada o señal similar visible del tablero
 
-They should not create an approval by default.
+No deberían crear una aprobación por defecto.
 
-## Notification And Activity Model
+## Modelo de notificación y actividad
 
-Budget events need obvious operator visibility.
+Los eventos de presupuesto necesitan visibilidad obvia del operador.
 
-Required outputs:
+Salidas requeridas:
 
-- activity log entry on threshold crossings
-- dashboard surface for active budget incidents
-- detail page banner on paused agent or project
-- `/costs` summary of active incidents and policy health
+- entrada de registro de actividad en cruces de umbral
+- superficie de panel para incidentes de presupuesto activos
+- banner de página de detalle en agente o proyecto pausado
+- resumen en `/costs` de incidentes activos y salud de políticas
 
-Later channels:
+Canales posteriores:
 
-- email
+- correo
 - webhook
-- Slack or other integrations
+- Slack u otras integraciones
 
-## API Plan
+## Plan de API
 
-### Policy Management
+### Gestión de políticas
 
-Add routes for:
+Agregar rutas para:
 
-- list budget policies for company
-- create budget policy
-- update budget policy
-- archive or disable budget policy
+- listar políticas de presupuesto de empresa
+- crear política de presupuesto
+- actualizar política de presupuesto
+- archivar o deshabilitar política de presupuesto
 
-### Incident Surfaces
+### Superficies de incidentes
 
-Add routes for:
+Agregar rutas para:
 
-- list active budget incidents
-- list incident history
-- get incident detail for a scope
+- listar incidentes de presupuesto activos
+- listar historial de incidentes
+- obtener detalle de incidente para un alcance
 
-### Approval Resolution
+### Resolución de aprobación
 
-Budget approvals should use the existing approval system once the new approval type is added.
+Las aprobaciones de presupuesto deberían usar el sistema de aprobaciones existente una vez agregado el nuevo tipo de aprobación.
 
-Expected flows:
+Flujos esperados:
 
-- create approval on hard-stop
-- resolve approval by changing policy and resuming
-- resolve approval by resuming once
+- crear aprobación en detención dura
+- resolver aprobación cambiando la política y reanudando
+- resolver aprobación reanudando una vez
 
-### Execution Errors
+### Errores de ejecución
 
-When work is blocked by budget, the API should return explicit errors.
+Cuando el trabajo es bloqueado por presupuesto, la API debería retornar errores explícitos.
 
-Examples:
+Ejemplos:
 
-- agent invocation blocked because agent budget is paused
-- issue execution blocked because project budget is paused
+- invocación de agente bloqueada porque el presupuesto del agente está pausado
+- ejecución de issue bloqueada porque el presupuesto del proyecto está pausado
 
-Do not silently no-op.
+No hacer no-op silencioso.
 
-## UI Plan
+## Plan de UI
 
-Budgeting should be visible in the places where operators make decisions.
+El presupuesto debería ser visible en los lugares donde los operadores toman decisiones.
 
 ### `/costs`
 
-Add a budget section that includes:
+Agregar una sección de presupuesto que incluya:
 
-- active budget incidents
-- policy list with scope, window, metric, and threshold state
-- progress bars for current period or total
-- clear distinction between:
-  - spend budget
-  - subscription quota
-- quick actions:
-  - raise budget
-  - open approval
-  - resume scope if permitted
+- incidentes de presupuesto activos
+- lista de políticas con alcance, ventana, métrica y estado de umbral
+- barras de progreso para el periodo actual o total
+- distinción clara entre:
+  - presupuesto de gasto
+  - cuota de suscripción
+- acciones rápidas:
+  - aumentar presupuesto
+  - abrir aprobación
+  - reanudar alcance si está permitido
 
-The page should make this visual distinction obvious:
+La página debería hacer obvia esta distinción visual:
 
-- Budget
-  - enforceable spend policy
-- Quota
-  - provider or subscription usage window
+- Presupuesto
+  - política de gasto exigible
+- Cuota
+  - ventana de uso de proveedor o suscripción
 
-### Agent Detail
+### Detalle de agente
 
-Add an agent budget card:
+Agregar una tarjeta de presupuesto de agente:
 
-- monthly budget amount
-- current month spend
-- remaining spend
-- status
-- warning or paused banner
-- link to approval if blocked
+- monto de presupuesto mensual
+- gasto del mes actual
+- gasto restante
+- estado
+- banner de advertencia o pausa
+- enlace a la aprobación si está bloqueado
 
-### Project Detail
+### Detalle de proyecto
 
-Add a project budget card:
+Agregar una tarjeta de presupuesto de proyecto:
 
-- total budget amount
-- total spend to date
-- remaining spend
-- pause status
-- approval link
+- monto de presupuesto total
+- gasto total a la fecha
+- gasto restante
+- estado de pausa
+- enlace de aprobación
 
-Project detail should also show if issue execution is blocked because the project is budget-paused.
+El detalle de proyecto también debería mostrar si la ejecución de issues está bloqueada porque el proyecto está pausado por presupuesto.
 
-### Dashboard
+### Panel
 
-Add a high-signal budget section:
+Agregar una sección de presupuesto de alta señal:
 
-- active budget breaches
-- upcoming soft alerts
-- counts of paused agents and paused projects due to budget
+- brechas de presupuesto activas
+- próximas alertas suaves
+- conteos de agentes pausados y proyectos pausados por presupuesto
 
-The operator should not have to visit `/costs` to learn that work has stopped.
+El operador no debería tener que visitar `/costs` para saber que el trabajo se detuvo.
 
-## Budget Math
+## Matemática de presupuesto
 
-### What Counts Toward Budget
+### Qué cuenta hacia el presupuesto
 
-For V1.5 enforcement, include:
+Para el cumplimiento V1.5, incluir:
 
-- `metered_api` cost events
-- `subscription_overage` cost events
-- any future request-scoped cost event with non-zero billed cents
+- eventos de costo `metered_api`
+- eventos de costo `subscription_overage`
+- cualquier futuro evento de costo con alcance de solicitud con centavos facturados distintos de cero
 
-Do not include:
+No incluir:
 
-- `subscription_included` cost events with zero billed cents
-- advisory quota rows
-- account-level finance events unless and until company-level financial budgets are added explicitly
+- eventos de costo `subscription_included` con cero centavos facturados
+- filas de cuota de asesoría
+- eventos financieros a nivel de cuenta a menos que y hasta que se agreguen explícitamente presupuestos financieros a nivel de empresa
 
-### Why Not Tokens First
+### Por qué no tokens primero
 
-Token budgets should not be the first hard-stop because:
+Los presupuestos de tokens no deberían ser la primera detención dura porque:
 
-- providers count tokens differently
-- cached tokens complicate simple totals
-- some future charges are not token-based
-- subscription tokens do not necessarily imply spend
-- money remains the cleanest cross-provider enforcement metric
+- los proveedores cuentan tokens de forma diferente
+- los tokens en caché complican los totales simples
+- algunos cargos futuros no están basados en tokens
+- los tokens de suscripción no implican necesariamente gasto
+- el dinero sigue siendo la métrica de cumplimiento más limpia entre proveedores
 
-### Future Budget Metrics
+### Métricas futuras de presupuesto
 
-Future policy metrics can include:
+Las métricas futuras de política pueden incluir:
 
 - `total_tokens`
 - `input_tokens`
@@ -536,76 +536,76 @@ Future policy metrics can include:
 - `requests`
 - `finance_amount_cents`
 
-But they should enter only after the money-budget path is stable.
+Pero deberían entrar solo después de que la ruta de presupuesto de dinero esté estable.
 
-## Migration Plan
+## Plan de migración
 
-### Phase 1: Foundation
+### Fase 1: Base
 
-- add `budget_policies`
-- add `budget_incidents`
-- add new approval type
-- add project pause metadata
+- agregar `budget_policies`
+- agregar `budget_incidents`
+- agregar nuevo tipo de aprobación
+- agregar metadatos de pausa de proyecto
 
-### Phase 2: Compatibility
+### Fase 2: Compatibilidad
 
-- backfill policies from existing company and agent monthly budget columns
-- keep legacy columns readable during migration
+- rellenar políticas desde las columnas mensuales de presupuesto existentes de empresa y agente
+- mantener legibles las columnas heredadas durante la migración
 
-### Phase 3: Enforcement
+### Fase 3: Cumplimiento
 
-- move budget logic into dedicated service
-- add hard-stop incident creation
-- add activity and approval creation
-- add execution guards on heartbeat and invoke paths
+- mover la lógica de presupuesto a un servicio dedicado
+- agregar creación de incidentes de detención dura
+- agregar creación de actividad y aprobación
+- agregar protecciones de ejecución en rutas de latido e invocación
 
-### Phase 4: UI
+### Fase 4: UI
 
-- `/costs` budget section
-- agent detail budget card
-- project detail budget card
-- dashboard incident summary
+- sección de presupuesto en `/costs`
+- tarjeta de presupuesto en detalle de agente
+- tarjeta de presupuesto en detalle de proyecto
+- resumen de incidentes en panel
 
-### Phase 5: Cleanup
+### Fase 5: Limpieza
 
-- move all reads/writes to `budget_policies`
-- reduce legacy column reliance
-- decide whether to remove old budget columns
+- mover todas las lecturas/escrituras a `budget_policies`
+- reducir la dependencia de columnas heredadas
+- decidir si eliminar las columnas antiguas de presupuesto
 
-## Tests
+## Pruebas
 
-Required coverage:
+Cobertura requerida:
 
-- agent monthly budget soft alert at 80%
-- agent monthly budget hard-stop at 100%
-- project lifetime budget soft alert
-- project lifetime budget hard-stop
-- `subscription_included` usage does not consume money budget
-- `subscription_overage` does consume money budget
-- hard-stop creates one incident per threshold per window
-- hard-stop creates approval and pauses correct scope
-- paused project blocks new issue execution
-- paused agent blocks new heartbeat dispatch
-- policy update and resume clears or resolves active incident correctly
-- dashboard and `/costs` surface active incidents
+- alerta suave de presupuesto mensual de agente al 80%
+- detención dura de presupuesto mensual de agente al 100%
+- alerta suave de presupuesto de por vida de proyecto
+- detención dura de presupuesto de por vida de proyecto
+- el uso `subscription_included` no consume presupuesto de dinero
+- el `subscription_overage` sí consume presupuesto de dinero
+- la detención dura crea un incidente por umbral por ventana
+- la detención dura crea aprobación y pausa el alcance correcto
+- el proyecto pausado bloquea nueva ejecución de issues
+- el agente pausado bloquea nuevo despacho de latido
+- la actualización de política y reanudación limpia o resuelve correctamente el incidente activo
+- el panel y `/costs` muestran incidentes activos
 
-## Open Questions
+## Preguntas abiertas
 
-These should be explicitly deferred unless they block implementation:
+Deberían diferirse explícitamente a menos que bloqueen la implementación:
 
-- Should project budgets also support monthly mode, or is lifetime enough for the first release?
-- Should company-level budgets eventually include `finance_events` such as OpenRouter top-up fees and Bedrock provisioned charges?
-- Should delegated budget editing be limited by org hierarchy in V1, or remain board-only in the UI even if the data model can support delegation later?
-- Do we need "resume once" immediately, or can first approval resolution be "raise budget and resume" plus "keep paused"?
+- ¿Los presupuestos de proyecto también deberían admitir modo mensual, o es suficiente de por vida para la primera versión?
+- ¿Los presupuestos a nivel de empresa deberían eventualmente incluir `finance_events` como cargos de recarga de OpenRouter y cargos provisionados de Bedrock?
+- ¿La edición delegada de presupuestos debería limitarse por jerarquía de organización en V1, o permanecer solo del tablero en la UI aunque el modelo de datos pueda admitir delegación más adelante?
+- ¿Necesitamos "reanudar una vez" de inmediato, o la primera resolución de aprobación puede ser "aumentar presupuesto y reanudar" más "mantener pausado"?
 
-## Recommendation
+## Recomendación
 
-Implement the first coherent budgeting system with these rules:
+Implementar el primer sistema de presupuesto coherente con estas reglas:
 
-- Agent budget = monthly billed dollars
-- Project budget = lifetime billed dollars
-- Hard-stop = auto-pause + approval
-- Soft alert = visible warning, no approval
-- Subscription usage = visible quota and token reporting, not money-budget enforcement
+- Presupuesto de agente = dólares facturados mensuales
+- Presupuesto de proyecto = dólares facturados de por vida
+- Detención dura = pausa automática + aprobación
+- Alerta suave = advertencia visible, sin aprobación
+- Uso de suscripción = cuota visible e informes de tokens, no cumplimiento de presupuesto de dinero
 
-This solves the real operator problem without mixing together spend control, provider quota windows, and token accounting.
+Esto resuelve el problema real del operador sin mezclar el control de gasto, las ventanas de cuota de proveedor y la contabilidad de tokens.

@@ -12,7 +12,7 @@ export const envBindingSecretRefSchema = z.object({
   version: z.union([z.literal("latest"), z.number().int().positive()]).optional(),
 });
 
-// Backward-compatible union that accepts legacy inline values.
+// Unión compatible hacia atrás que acepta valores heredados en línea.
 export const envBindingSchema = z.union([
   z.string(),
   envBindingPlainSchema,

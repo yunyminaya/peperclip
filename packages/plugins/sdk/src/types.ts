@@ -1,12 +1,13 @@
 /**
- * Core types for the Paperclip plugin worker-side SDK.
+ * Tipos centrales del SDK del worker de plugins de Paperclip.
  *
- * These types define the stable public API surface that plugin workers import
- * from `@paperclipai/plugin-sdk`.  The host provides a concrete implementation
- * of `PluginContext` to the plugin at initialisation time.
+ * Estos tipos definen la superficie pública estable de la API que los workers
+ * de plugins importan desde `@paperclipai/plugin-sdk`. El host proporciona
+ * una implementación concreta de `PluginContext` al plugin en el momento
+ * de la inicialización.
  *
- * @see PLUGIN_SPEC.md §14 — SDK Surface
- * @see PLUGIN_SPEC.md §29.2 — SDK Versioning
+ * @see PLUGIN_SPEC.md §14 — Superficie SDK
+ * @see PLUGIN_SPEC.md §29.2 — Versionado del SDK
  */
 
 import type {
@@ -26,7 +27,7 @@ import type {
 } from "@paperclipai/shared";
 
 // ---------------------------------------------------------------------------
-// Re-exports from @paperclipai/shared (plugin authors import from one place)
+// Reexportaciones de @paperclipai/shared (los autores de plugins importan desde un solo lugar)
 // ---------------------------------------------------------------------------
 
 export type {
@@ -70,591 +71,602 @@ export type {
 } from "@paperclipai/shared";
 
 // ---------------------------------------------------------------------------
-// Scope key — identifies where plugin state is stored
+// Clave de ámbito: identifica dónde se almacena el estado del plugin
 // ---------------------------------------------------------------------------
 
 /**
- * A scope key identifies the exact location where plugin state is stored.
- * Scope is partitioned by `scopeKind` and optional `scopeId`.
+ * Una clave de ámbito identifica la ubicación exacta donde se almacena el estado del plugin.
+ * El ámbito se divide por `scopeKind` y `scopeId` opcional.
  *
- * Examples:
- * - `{ scopeKind: "instance" }` — single global value for the whole instance
- * - `{ scopeKind: "project", scopeId: "proj-uuid" }` — per-project state
- * - `{ scopeKind: "issue", scopeId: "iss-uuid" }` — per-issue state
+ * Ejemplos:
+ * - `{ scopeKind: "instance" }` — un único valor global para toda la instancia
+ * - `{ scopeKind: "project", scopeId: "proj-uuid" }` — estado por proyecto
+ * - `{ scopeKind: "issue", scopeId: "iss-uuid" }` — estado por issue
  *
  * @see PLUGIN_SPEC.md §21.3 `plugin_state`
  */
 export interface ScopeKey {
-  /** What kind of Paperclip object this state is scoped to. */
+  /** Tipo de objeto de Paperclip al que está acotado este estado. */
   scopeKind: PluginStateScopeKind;
-  /** UUID or text identifier for the scoped object. Omit for `instance` scope. */
+  /** UUID o identificador de texto del objeto acotado. Omitir para el ámbito `instance`. */
   scopeId?: string;
-  /** Optional sub-namespace within the scope to avoid key collisions. Defaults to `"default"`. */
+  /** Subespacio de nombres opcional dentro del ámbito para evitar colisiones de claves. Por defecto `"default"`. */
   namespace?: string;
-  /** The state key within the namespace. */
+  /** La clave de estado dentro del espacio de nombres. */
   stateKey: string;
 }
 
 // ---------------------------------------------------------------------------
-// Event types
+// Tipos de eventos
 // ---------------------------------------------------------------------------
 
 /**
- * Optional filter applied when subscribing to an event. The host evaluates
- * the filter server-side so filtered-out events never cross the process boundary.
+ * Filtro opcional que se aplica al suscribirse a un evento. El host evalúa
+ * el filtro en el servidor para que los eventos filtrados nunca crucen
+ * el límite del proceso.
  *
- * All filter fields are optional. If omitted the plugin receives every event
- * of the subscribed type.
+ * Todos los campos del filtro son opcionales. Si se omiten, el plugin recibe
+ * todos los eventos del tipo suscrito.
  *
  * @see PLUGIN_SPEC.md §16.1 — Event Filtering
  */
 export interface EventFilter {
-  /** Only receive events for this project. */
+  /** Recibir solo eventos de este proyecto. */
   projectId?: string;
-  /** Only receive events for this company. */
+  /** Recibir solo eventos de esta empresa. */
   companyId?: string;
-  /** Only receive events for this agent. */
+  /** Recibir solo eventos de este agente. */
   agentId?: string;
-  /** Additional arbitrary filter fields. */
+  /** Campos de filtro arbitrarios adicionales. */
   [key: string]: unknown;
 }
 
 /**
- * Envelope wrapping every domain event delivered to a plugin worker.
+ * Envoltorio de cada evento de dominio entregado a un worker de plugin.
  *
  * @see PLUGIN_SPEC.md §16 — Event System
  */
 export interface PluginEvent<TPayload = unknown> {
-  /** Unique event identifier (UUID). */
+  /** Identificador único del evento (UUID). */
   eventId: string;
-  /** The event type (e.g. `"issue.created"`). */
+  /** El tipo de evento (p. ej. `"issue.created"`). */
   eventType: PluginEventType | `plugin.${string}`;
-  /** ISO 8601 timestamp when the event occurred. */
+  /** Marca de tiempo ISO 8601 de cuándo ocurrió el evento. */
   occurredAt: string;
-  /** ID of the actor that caused the event, if applicable. */
+  /** ID del actor que causó el evento, si aplica. */
   actorId?: string;
-  /** Type of actor: `"user"`, `"agent"`, `"system"`, or `"plugin"`. */
+  /** Tipo de actor: `"user"`, `"agent"`, `"system"` o `"plugin"`. */
   actorType?: "user" | "agent" | "system" | "plugin";
-  /** Primary entity involved in the event. */
+  /** Entidad principal involucrada en el evento. */
   entityId?: string;
-  /** Type of the primary entity. */
+  /** Tipo de la entidad principal. */
   entityType?: string;
-  /** UUID of the company this event belongs to. */
+  /** UUID de la empresa a la que pertenece este evento. */
   companyId: string;
-  /** Typed event payload. */
+  /** Carga útil tipada del evento. */
   payload: TPayload;
 }
 
 // ---------------------------------------------------------------------------
-// Job context
+// Contexto de tarea
 // ---------------------------------------------------------------------------
 
 /**
- * Context passed to a plugin job handler when the host triggers a scheduled run.
+ * Contexto pasado al manejador de una tarea de plugin cuando el host
+ * dispara una ejecución programada.
  *
  * @see PLUGIN_SPEC.md §13.6 — `runJob`
  */
 export interface PluginJobContext {
-  /** Stable job key matching the declaration in the manifest. */
+  /** Clave estable de la tarea que coincide con la declaración del manifiesto. */
   jobKey: string;
-  /** UUID for this specific job run instance. */
+  /** UUID de esta instancia específica de ejecución de la tarea. */
   runId: string;
-  /** What triggered this run. */
+  /** Qué desencadenó esta ejecución. */
   trigger: "schedule" | "manual" | "retry";
-  /** ISO 8601 timestamp when the run was scheduled to start. */
+  /** Marca de tiempo ISO 8601 de cuándo se programó el inicio de la ejecución. */
   scheduledAt: string;
 }
 
 // ---------------------------------------------------------------------------
-// Tool run context
+// Contexto de ejecución de herramienta
 // ---------------------------------------------------------------------------
 
 /**
- * Run context passed to a plugin tool handler when an agent invokes the tool.
+ * Contexto de ejecución pasado al manejador de una herramienta de plugin
+ * cuando un agente invoca la herramienta.
  *
  * @see PLUGIN_SPEC.md §13.10 — `executeTool`
  */
 export interface ToolRunContext {
-  /** UUID of the agent invoking the tool. */
+  /** UUID del agente que invoca la herramienta. */
   agentId: string;
-  /** UUID of the current agent run. */
+  /** UUID de la ejecución actual del agente. */
   runId: string;
-  /** UUID of the company the run belongs to. */
+  /** UUID de la empresa a la que pertenece la ejecución. */
   companyId: string;
-  /** UUID of the project the run belongs to. */
+  /** UUID del proyecto al que pertenece la ejecución. */
   projectId: string;
 }
 
 /**
- * Result returned from a plugin tool handler.
+ * Resultado devuelto por el manejador de una herramienta de plugin.
  *
  * @see PLUGIN_SPEC.md §13.10 — `executeTool`
  */
 export interface ToolResult {
-  /** String content returned to the agent. Required for success responses. */
+  /** Contenido de texto devuelto al agente. Requerido para respuestas exitosas. */
   content?: string;
-  /** Structured data returned alongside or instead of string content. */
+  /** Datos estructurados devueltos junto con el contenido de texto o en su lugar. */
   data?: unknown;
-  /** If present, indicates the tool call failed. */
+  /** Si está presente, indica que la llamada a la herramienta falló. */
   error?: string;
 }
 
 // ---------------------------------------------------------------------------
-// Plugin entity store
+// Almacén de entidades del plugin
 // ---------------------------------------------------------------------------
 
 /**
- * Input for creating or updating a plugin-owned entity.
+ * Entrada para crear o actualizar una entidad propiedad del plugin.
  *
  * @see PLUGIN_SPEC.md §21.3 `plugin_entities`
  */
 export interface PluginEntityUpsert {
-  /** Plugin-defined entity type (e.g. `"linear-issue"`, `"github-pr"`). */
+  /** Tipo de entidad definido por el plugin (p. ej. `"linear-issue"`, `"github-pr"`). */
   entityType: string;
-  /** Scope where this entity lives. */
+  /** Ámbito donde reside esta entidad. */
   scopeKind: PluginStateScopeKind;
-  /** Optional scope ID. */
+  /** ID de ámbito opcional. */
   scopeId?: string;
-  /** External identifier in the remote system (e.g. Linear issue ID). */
+  /** Identificador externo en el sistema remoto (p. ej. ID de issue de Linear). */
   externalId?: string;
-  /** Human-readable title for display in the Paperclip UI. */
+  /** Título legible para mostrarse en la interfaz de Paperclip. */
   title?: string;
-  /** Optional status string. */
+  /** Cadena de estado opcional. */
   status?: string;
-  /** Full entity data blob. Must be JSON-serializable. */
+  /** Blob completo de datos de la entidad. Debe ser serializable a JSON. */
   data: Record<string, unknown>;
 }
 
 /**
- * A plugin-owned entity record as returned by `ctx.entities.list()`.
+ * Registro de entidad propiedad de un plugin, tal como lo devuelve `ctx.entities.list()`.
  *
  * @see PLUGIN_SPEC.md §21.3 `plugin_entities`
  */
 export interface PluginEntityRecord {
-  /** UUID primary key. */
+  /** Clave primaria UUID. */
   id: string;
-  /** Plugin-defined entity type. */
+  /** Tipo de entidad definido por el plugin. */
   entityType: string;
-  /** Scope kind. */
+  /** Tipo de ámbito. */
   scopeKind: PluginStateScopeKind;
-  /** Scope ID, if any. */
+  /** ID de ámbito, si lo hay. */
   scopeId: string | null;
-  /** External identifier, if any. */
+  /** Identificador externo, si lo hay. */
   externalId: string | null;
-  /** Human-readable title. */
+  /** Título legible. */
   title: string | null;
-  /** Status string. */
+  /** Cadena de estado. */
   status: string | null;
-  /** Full entity data. */
+  /** Datos completos de la entidad. */
   data: Record<string, unknown>;
-  /** ISO 8601 creation timestamp. */
+  /** Marca de tiempo ISO 8601 de creación. */
   createdAt: string;
-  /** ISO 8601 last-updated timestamp. */
+  /** Marca de tiempo ISO 8601 de última actualización. */
   updatedAt: string;
 }
 
 /**
- * Query parameters for `ctx.entities.list()`.
+ * Parámetros de consulta para `ctx.entities.list()`.
  */
 export interface PluginEntityQuery {
-  /** Filter by entity type. */
+  /** Filtrar por tipo de entidad. */
   entityType?: string;
-  /** Filter by scope kind. */
+  /** Filtrar por tipo de ámbito. */
   scopeKind?: PluginStateScopeKind;
-  /** Filter by scope ID. */
+  /** Filtrar por ID de ámbito. */
   scopeId?: string;
-  /** Filter by external ID. */
+  /** Filtrar por ID externo. */
   externalId?: string;
-  /** Maximum number of results to return. */
+  /** Número máximo de resultados a devolver. */
   limit?: number;
-  /** Number of results to skip (for pagination). */
+  /** Número de resultados a omitir (para paginación). */
   offset?: number;
 }
 
 // ---------------------------------------------------------------------------
-// Project workspace metadata (read-only via ctx.projects)
+// Metadatos del espacio de trabajo del proyecto (solo lectura vía ctx.projects)
 // ---------------------------------------------------------------------------
 
 /**
- * Workspace metadata provided by the host. Plugins use this to resolve local
- * filesystem paths for file browsing, git, terminal, and process operations.
+ * Metadatos del espacio de trabajo proporcionados por el host. Los plugins los usan
+ * para resolver rutas locales del sistema de archivos para operaciones de
+ * exploración de archivos, git, terminal y procesos.
  *
  * @see PLUGIN_SPEC.md §7 — Project Workspaces
  * @see PLUGIN_SPEC.md §20 — Local Tooling
  */
 export interface PluginWorkspace {
-  /** UUID primary key. */
+  /** Clave primaria UUID. */
   id: string;
-  /** UUID of the parent project. */
+  /** UUID del proyecto padre. */
   projectId: string;
-  /** Display name for this workspace. */
+  /** Nombre para mostrar de este espacio de trabajo. */
   name: string;
-  /** Absolute filesystem path to the workspace directory. */
+  /** Ruta absoluta del sistema de archivos al directorio del espacio de trabajo. */
   path: string;
-  /** Whether this is the project's primary workspace. */
+  /** Indica si este es el espacio de trabajo principal del proyecto. */
   isPrimary: boolean;
-  /** ISO 8601 creation timestamp. */
+  /** Marca de tiempo ISO 8601 de creación. */
   createdAt: string;
-  /** ISO 8601 last-updated timestamp. */
+  /** Marca de tiempo ISO 8601 de última actualización. */
   updatedAt: string;
 }
 
 // ---------------------------------------------------------------------------
-// Host API surfaces exposed via PluginContext
+// Superficies de la API del host expuestas vía PluginContext
 // ---------------------------------------------------------------------------
 
 /**
- * `ctx.config` — read resolved operator configuration for this plugin.
+ * `ctx.config`: lee la configuración resuelta del operador para este plugin.
  *
- * Plugin workers receive the resolved config at initialisation. Use `get()`
- * to access the current configuration at any time. The host calls
- * `configChanged` on the worker when the operator updates config at runtime.
+ * Los workers de plugins reciben la configuración resuelta en la inicialización.
+ * Usar `get()` para acceder a la configuración actual en cualquier momento. El host
+ * llama a `configChanged` en el worker cuando el operador actualiza la
+ * configuración en tiempo de ejecución.
  *
  * @see PLUGIN_SPEC.md §13.3 — `validateConfig`
  * @see PLUGIN_SPEC.md §13.4 — `configChanged`
  */
 export interface PluginConfigClient {
   /**
-   * Returns the resolved operator configuration for this plugin instance.
-   * Values are validated against the plugin's `instanceConfigSchema` by the
-   * host before being passed to the worker.
+   * Devuelve la configuración resuelta del operador para esta instancia del plugin.
+   * El host valida los valores contra el `instanceConfigSchema` del plugin
+   * antes de pasarlos al worker.
    */
   get(): Promise<Record<string, unknown>>;
 }
 
 /**
- * `ctx.events` — subscribe to and emit Paperclip domain events.
+ * `ctx.events`: suscribirse a eventos de dominio de Paperclip y emitirlos.
  *
- * Requires `events.subscribe` capability for `on()`.
- * Requires `events.emit` capability for `emit()`.
+ * Requiere la capacidad `events.subscribe` para `on()`.
+ * Requiere la capacidad `events.emit` para `emit()`.
  *
  * @see PLUGIN_SPEC.md §16 — Event System
  */
 export interface PluginEventsClient {
   /**
-   * Subscribe to a core Paperclip domain event or a plugin-namespaced event.
+   * Suscribirse a un evento de dominio central de Paperclip o a un evento
+   * con espacio de nombres de plugin.
    *
-   * @param name - Event type, e.g. `"issue.created"` or `"plugin.@acme/linear.sync-done"`
-   * @param fn - Async event handler
+   * @param name - Tipo de evento, p. ej. `"issue.created"` o `"plugin.@acme/linear.sync-done"`
+   * @param fn - Manejador de evento asíncrono
    */
   on(name: PluginEventType | `plugin.${string}`, fn: (event: PluginEvent) => Promise<void>): () => void;
 
   /**
-   * Subscribe to an event with an optional server-side filter.
+   * Suscribirse a un evento con un filtro opcional del lado del servidor.
    *
-   * @param name - Event type
-   * @param filter - Server-side filter evaluated before dispatching to the worker
-   * @param fn - Async event handler
-   * @returns An unsubscribe function that removes the handler
+   * @param name - Tipo de evento
+   * @param filter - Filtro del lado del servidor evaluado antes de despachar al worker
+   * @param fn - Manejador de evento asíncrono
+   * @returns Una función para cancelar la suscripción que elimina el manejador
    */
   on(name: PluginEventType | `plugin.${string}`, filter: EventFilter, fn: (event: PluginEvent) => Promise<void>): () => void;
 
   /**
-   * Emit a plugin-namespaced event. Other plugins with `events.subscribe` can
-   * subscribe to it using `"plugin.<pluginId>.<eventName>"`.
+   * Emitir un evento con espacio de nombres de plugin. Otros plugins con
+   * `events.subscribe` pueden suscribirse usando `"plugin.<pluginId>.<eventName>"`.
    *
-   * Requires the `events.emit` capability.
+   * Requiere la capacidad `events.emit`.
    *
-   * Plugin-emitted events are automatically namespaced: if the plugin ID is
-   * `"acme.linear"` and the event name is `"sync-done"`, the full event type
-   * becomes `"plugin.acme.linear.sync-done"`.
+   * Los eventos emitidos por plugins reciben el espacio de nombres automáticamente:
+   * si el ID del plugin es `"acme.linear"` y el nombre del evento es `"sync-done"`,
+   * el tipo completo del evento se convierte en `"plugin.acme.linear.sync-done"`.
    *
    * @see PLUGIN_SPEC.md §16.2 — Plugin-to-Plugin Events
    *
-   * @param name - Bare event name (e.g. `"sync-done"`)
-   * @param companyId - UUID of the company this event belongs to
-   * @param payload - JSON-serializable event payload
+   * @param name - Nombre simple del evento (p. ej. `"sync-done"`)
+   * @param companyId - UUID de la empresa a la que pertenece este evento
+   * @param payload - Carga útil del evento serializable a JSON
    */
   emit(name: string, companyId: string, payload: unknown): Promise<void>;
 }
 
 /**
- * `ctx.jobs` — register handlers for scheduled jobs declared in the manifest.
+ * `ctx.jobs`: registra manejadores para tareas programadas declaradas en el manifiesto.
  *
- * Requires `jobs.schedule` capability.
+ * Requiere la capacidad `jobs.schedule`.
  *
  * @see PLUGIN_SPEC.md §17 — Scheduled Jobs
  */
 export interface PluginJobsClient {
   /**
-   * Register a handler for a scheduled job.
+   * Registra un manejador para una tarea programada.
    *
-   * The `key` must match a `jobKey` declared in the plugin manifest.
-   * The host calls this handler according to the job's declared `schedule`.
+   * La `key` debe coincidir con un `jobKey` declarado en el manifiesto del plugin.
+   * El host llama a este manejador según el `schedule` declarado de la tarea.
    *
-   * @param key - Job key matching the manifest declaration
-   * @param fn - Async job handler
+   * @param key - Clave de tarea que coincide con la declaración del manifiesto
+   * @param fn - Manejador de tarea asíncrono
    */
   register(key: string, fn: (job: PluginJobContext) => Promise<void>): void;
 }
 
 /**
- * A runtime launcher registration uses the same declaration shape as a
- * manifest launcher entry.
+ * Un registro de lanzador en tiempo de ejecución usa la misma forma de declaración
+ * que una entrada de lanzador del manifiesto.
  */
 export type PluginLauncherRegistration = PluginLauncherDeclaration;
 
 /**
- * `ctx.launchers` — register launcher declarations at runtime.
+ * `ctx.launchers`: registra declaraciones de lanzadores en tiempo de ejecución.
  */
 export interface PluginLaunchersClient {
   /**
-   * Register launcher metadata for host discovery.
+   * Registra metadatos de lanzador para que el host los descubra.
    *
-   * If a launcher with the same id is registered more than once, the latest
-   * declaration replaces the previous one.
+   * Si un lanzador con el mismo id se registra más de una vez, la declaración
+   * más reciente reemplaza a la anterior.
    */
   register(launcher: PluginLauncherRegistration): void;
 }
 
 /**
- * `ctx.http` — make outbound HTTP requests.
+ * `ctx.http`: realiza solicitudes HTTP salientes.
  *
- * Requires `http.outbound` capability.
+ * Requiere la capacidad `http.outbound`.
  *
  * @see PLUGIN_SPEC.md §15.1 — Capabilities: Runtime/Integration
  */
 export interface PluginHttpClient {
   /**
-   * Perform an outbound HTTP request.
+   * Realiza una solicitud HTTP saliente.
    *
-   * The host enforces `http.outbound` capability before allowing the call.
-   * Plugins may also use standard Node `fetch` or other libraries directly —
-   * this client exists for host-managed tracing and audit logging.
+   * El host exige la capacidad `http.outbound` antes de permitir la llamada.
+   * Los plugins también pueden usar el `fetch` estándar de Node u otras
+   * bibliotecas directamente; este cliente existe para el rastreo gestionado
+   * por el host y el registro de auditoría.
    *
-   * @param url - Target URL
-   * @param init - Standard `RequestInit` options
-   * @returns The response
+   * @param url - URL de destino
+   * @param init - Opciones estándar de `RequestInit`
+   * @returns La respuesta
    */
   fetch(url: string, init?: RequestInit): Promise<Response>;
 }
 
 /**
- * `ctx.secrets` — resolve secret references.
+ * `ctx.secrets`: resuelve referencias a secretos.
  *
- * Requires `secrets.read-ref` capability.
+ * Requiere la capacidad `secrets.read-ref`.
  *
- * Plugins store secret *references* in their config (e.g. a secret name).
- * This client resolves the reference through the Paperclip secret provider
- * system and returns the resolved value at execution time.
+ * Los plugins almacenan *referencias* a secretos en su configuración (p. ej. un
+ * nombre de secreto). Este cliente resuelve la referencia mediante el sistema
+ * de proveedores de secretos de Paperclip y devuelve el valor resuelto en el
+ * momento de la ejecución.
  *
  * @see PLUGIN_SPEC.md §22 — Secrets
  */
 export interface PluginSecretsClient {
   /**
-   * Resolve a secret reference to its current value.
+   * Resuelve una referencia a un secreto a su valor actual.
    *
-   * The reference is a string identifier pointing to a secret configured
-   * in the Paperclip secret provider (e.g. `"MY_API_KEY"`).
+   * La referencia es un identificador de cadena que apunta a un secreto
+   * configurado en el proveedor de secretos de Paperclip (p. ej. `"MY_API_KEY"`).
    *
-   * Secret values are resolved at call time and must never be cached or
-   * written to logs, config, or other persistent storage.
+   * Los valores de secretos se resuelven en el momento de la llamada y nunca
+   * deben almacenarse en caché ni escribirse en registros, configuración u
+   * otro almacenamiento persistente.
    *
-   * @param secretRef - The secret reference string from plugin config
-   * @returns The resolved secret value
+   * @param secretRef - La cadena de referencia al secreto de la configuración del plugin
+   * @returns El valor resuelto del secreto
    */
   resolve(secretRef: string): Promise<string>;
 }
 
 /**
- * Input for writing a plugin activity log entry.
+ * Entrada para escribir un registro de actividad del plugin.
  *
  * @see PLUGIN_SPEC.md §21.4 — Activity Log Changes
  */
 export interface PluginActivityLogEntry {
-  /** UUID of the company this activity belongs to. Required for auditing. */
+  /** UUID de la empresa a la que pertenece esta actividad. Requerido para auditoría. */
   companyId: string;
-  /** Human-readable description of the activity. */
+  /** Descripción legible de la actividad. */
   message: string;
-  /** Optional entity type this activity relates to. */
+  /** Tipo de entidad opcional al que se refiere esta actividad. */
   entityType?: string;
-  /** Optional entity ID this activity relates to. */
+  /** ID de entidad opcional al que se refiere esta actividad. */
   entityId?: string;
-  /** Optional additional metadata. */
+  /** Metadatos adicionales opcionales. */
   metadata?: Record<string, unknown>;
 }
 
 /**
- * `ctx.activity` — write plugin-originated activity log entries.
+ * `ctx.activity`: escribe entradas de registro de actividad originadas por el plugin.
  *
- * Requires `activity.log.write` capability.
+ * Requiere la capacidad `activity.log.write`.
  *
  * @see PLUGIN_SPEC.md §21.4 — Activity Log Changes
  */
 export interface PluginActivityClient {
   /**
-   * Write an activity log entry attributed to this plugin.
+   * Escribe una entrada de registro de actividad atribuida a este plugin.
    *
-   * The host writes the entry with `actor_type = plugin` and
+   * El host escribe la entrada con `actor_type = plugin` y
    * `actor_id = <pluginId>`.
    *
-   * @param entry - The activity log entry to write
+   * @param entry - La entrada de registro de actividad a escribir
    */
   log(entry: PluginActivityLogEntry): Promise<void>;
 }
 
 /**
- * `ctx.state` — read and write plugin-scoped key-value state.
+ * `ctx.state`: lee y escribe estado clave-valor acotado al plugin.
  *
- * Each plugin gets an isolated namespace: state written by plugin A can never
- * be read or overwritten by plugin B. Within a plugin, state is partitioned by
- * a five-part composite key: `(pluginId, scopeKind, scopeId, namespace, stateKey)`.
+ * Cada plugin obtiene un espacio de nombres aislado: el estado escrito por el
+ * plugin A nunca puede ser leído ni sobrescrito por el plugin B. Dentro de un
+ * plugin, el estado se divide por una clave compuesta de cinco partes:
+ * `(pluginId, scopeKind, scopeId, namespace, stateKey)`.
  *
- * **Scope kinds**
+ * **Tipos de ámbito**
  *
- * | `scopeKind` | `scopeId` | Typical use |
+ * | `scopeKind` | `scopeId` | Uso típico |
  * |-------------|-----------|-------------|
- * | `"instance"` | omit | Global flags, last full-sync timestamps |
- * | `"company"` | company UUID | Per-company sync cursors |
- * | `"project"` | project UUID | Per-project settings, branch tracking |
- * | `"project_workspace"` | workspace UUID | Per-workspace state |
- * | `"agent"` | agent UUID | Per-agent memory |
- * | `"issue"` | issue UUID | Idempotency keys, linked external IDs |
- * | `"goal"` | goal UUID | Per-goal progress |
- * | `"run"` | run UUID | Per-run checkpoints |
+ * | `"instance"` | omitir | Banderas globales, marcas de tiempo de última sincronización completa |
+ * | `"company"` | UUID de empresa | Cursores de sincronización por empresa |
+ * | `"project"` | UUID de proyecto | Ajustes por proyecto, seguimiento de ramas |
+ * | `"project_workspace"` | UUID de espacio de trabajo | Estado por espacio de trabajo |
+ * | `"agent"` | UUID de agente | Memoria por agente |
+ * | `"issue"` | UUID de issue | Claves de idempotencia, IDs externos vinculados |
+ * | `"goal"` | UUID de objetivo | Progreso por objetivo |
+ * | `"run"` | UUID de ejecución | Puntos de control por ejecución |
  *
- * **Namespaces**
+ * **Espacios de nombres**
  *
- * The optional `namespace` field (default: `"default"`) lets you group related
- * keys within a scope without risking collisions between different logical
- * subsystems inside the same plugin.
+ * El campo opcional `namespace` (por defecto: `"default"`) permite agrupar
+ * claves relacionadas dentro de un ámbito sin riesgo de colisiones entre
+ * distintos subsistemas lógicos dentro del mismo plugin.
  *
- * **Security**
+ * **Seguridad**
  *
- * Never store resolved secret values. Store only secret references and resolve
- * them at call time via `ctx.secrets.resolve()`.
+ * Nunca almacenar valores resueltos de secretos. Almacenar solo referencias a
+ * secretos y resolverlas en el momento de la llamada vía `ctx.secrets.resolve()`.
  *
  * @example
  * ```ts
- * // Instance-global flag
+ * // Bandera global de instancia
  * await ctx.state.set({ scopeKind: "instance", stateKey: "schema-version" }, 2);
  *
- * // Idempotency key per issue
+ * // Clave de idempotencia por issue
  * const synced = await ctx.state.get({ scopeKind: "issue", scopeId: issueId, stateKey: "synced-to-linear" });
  * if (!synced) {
  *   await syncToLinear(issueId);
  *   await ctx.state.set({ scopeKind: "issue", scopeId: issueId, stateKey: "synced-to-linear" }, true);
  * }
  *
- * // Per-project, namespaced for two integrations
+ * // Por proyecto, con espacio de nombres para dos integraciones
  * await ctx.state.set({ scopeKind: "project", scopeId: projectId, namespace: "linear", stateKey: "cursor" }, cursor);
  * await ctx.state.set({ scopeKind: "project", scopeId: projectId, namespace: "github", stateKey: "last-event" }, eventId);
  * ```
  *
- * `plugin.state.read` capability required for `get()`.
- * `plugin.state.write` capability required for `set()` and `delete()`.
+ * Se requiere la capacidad `plugin.state.read` para `get()`.
+ * Se requiere la capacidad `plugin.state.write` para `set()` y `delete()`.
  *
  * @see PLUGIN_SPEC.md §21.3 `plugin_state`
  */
 export interface PluginStateClient {
   /**
-   * Read a state value.
+   * Lee un valor de estado.
    *
-   * Returns the stored JSON value as-is, or `null` if no entry has been set
-   * for this scope+key combination. Falsy values (`false`, `0`, `""`) are
-   * returned correctly and are not confused with "not set".
+   * Devuelve el valor JSON almacenado tal cual, o `null` si no se ha establecido
+   * ninguna entrada para esta combinación de ámbito+clave. Los valores falsy
+   * (`false`, `0`, `""`) se devuelven correctamente y no se confunden con
+   * "no establecido".
    *
-   * @param input - Scope key identifying the entry to read
-   * @returns The stored JSON value, or `null` if no value has been set
+   * @param input - Clave de ámbito que identifica la entrada a leer
+   * @returns El valor JSON almacenado, o `null` si no se ha establecido ningún valor
    */
   get(input: ScopeKey): Promise<unknown>;
 
   /**
-   * Write a state value. Creates the row if it does not exist; replaces it
-   * atomically (upsert) if it does. Safe to call concurrently.
+   * Escribe un valor de estado. Crea la fila si no existe; la reemplaza
+   * atómicamente (upsert) si existe. Seguro para llamadas concurrentes.
    *
-   * Any JSON-serializable value is accepted: objects, arrays, strings,
-   * numbers, booleans, and `null`.
+   * Se acepta cualquier valor serializable a JSON: objetos, arreglos, cadenas,
+   * números, booleanos y `null`.
    *
-   * @param input - Scope key identifying the entry to write
-   * @param value - JSON-serializable value to store
+   * @param input - Clave de ámbito que identifica la entrada a escribir
+   * @param value - Valor serializable a JSON a almacenar
    */
   set(input: ScopeKey, value: unknown): Promise<void>;
 
   /**
-   * Delete a state value. No-ops silently if the entry does not exist
-   * (idempotent by design — safe to call without prior `get()`).
+   * Elimina un valor de estado. No hace nada silenciosamente si la entrada no
+   * existe (idempotente por diseño: seguro llamarlo sin un `get()` previo).
    *
-   * @param input - Scope key identifying the entry to delete
+   * @param input - Clave de ámbito que identifica la entrada a eliminar
    */
   delete(input: ScopeKey): Promise<void>;
 }
 
 /**
- * `ctx.entities` — create and query plugin-owned entity records.
+ * `ctx.entities`: crea y consulta registros de entidades propiedad del plugin.
  *
  * @see PLUGIN_SPEC.md §21.3 `plugin_entities`
  */
 export interface PluginEntitiesClient {
   /**
-   * Create or update a plugin entity record (upsert by `externalId` within
-   * the given scope, or by `id` if provided).
+   * Crea o actualiza un registro de entidad de plugin (upsert por `externalId`
+   * dentro del ámbito dado, o por `id` si se proporciona).
    *
-   * @param input - Entity data to upsert
+   * @param input - Datos de la entidad para upsert
    */
   upsert(input: PluginEntityUpsert): Promise<PluginEntityRecord>;
 
   /**
-   * Query plugin entity records.
+   * Consulta registros de entidades de plugin.
    *
-   * @param query - Filter criteria
-   * @returns Matching entity records
+   * @param query - Criterios de filtro
+   * @returns Registros de entidades coincidentes
    */
   list(query: PluginEntityQuery): Promise<PluginEntityRecord[]>;
 }
 
 /**
- * `ctx.projects` — read project and workspace metadata.
+ * `ctx.projects`: lee metadatos de proyectos y espacios de trabajo.
  *
- * Requires `projects.read` capability.
- * Requires `project.workspaces.read` capability for workspace operations.
+ * Requiere la capacidad `projects.read`.
+ * Requiere la capacidad `project.workspaces.read` para operaciones de espacio de trabajo.
  *
  * @see PLUGIN_SPEC.md §7 — Project Workspaces
  */
 export interface PluginProjectsClient {
   /**
-   * List projects visible to the plugin.
+   * Lista los proyectos visibles para el plugin.
    *
-   * Requires the `projects.read` capability.
+   * Requiere la capacidad `projects.read`.
    */
   list(input: { companyId: string; limit?: number; offset?: number }): Promise<Project[]>;
 
   /**
-   * Get a single project by ID.
+   * Obtiene un solo proyecto por ID.
    *
-   * Requires the `projects.read` capability.
+   * Requiere la capacidad `projects.read`.
    */
   get(projectId: string, companyId: string): Promise<Project | null>;
 
   /**
-   * List all workspaces attached to a project.
+   * Lista todos los espacios de trabajo adjuntos a un proyecto.
    *
-   * @param projectId - UUID of the project
-   * @param companyId - UUID of the company that owns the project
-   * @returns All workspaces for the project, ordered with primary first
+   * @param projectId - UUID del proyecto
+   * @param companyId - UUID de la empresa propietaria del proyecto
+   * @returns Todos los espacios de trabajo del proyecto, ordenados con el principal primero
    */
   listWorkspaces(projectId: string, companyId: string): Promise<PluginWorkspace[]>;
 
   /**
-   * Get the primary workspace for a project.
+   * Obtiene el espacio de trabajo principal de un proyecto.
    *
-   * @param projectId - UUID of the project
-   * @param companyId - UUID of the company that owns the project
-   * @returns The primary workspace, or `null` if no workspace is configured
+   * @param projectId - UUID del proyecto
+   * @param companyId - UUID de la empresa propietaria del proyecto
+   * @returns El espacio de trabajo principal, o `null` si no hay ningún espacio de trabajo configurado
    */
   getPrimaryWorkspace(projectId: string, companyId: string): Promise<PluginWorkspace | null>;
 
   /**
-   * Resolve the primary workspace for an issue by looking up the issue's
-   * project and returning its primary workspace.
+   * Resuelve el espacio de trabajo principal de un issue buscando el proyecto
+   * del issue y devolviendo su espacio de trabajo principal.
    *
-   * This is a convenience method that combines `issues.get()` and
-   * `getPrimaryWorkspace()` in a single RPC call.
+   * Este es un método de conveniencia que combina `issues.get()` y
+   * `getPrimaryWorkspace()` en una sola llamada RPC.
    *
-   * @param issueId - UUID of the issue
-   * @param companyId - UUID of the company that owns the issue
-   * @returns The primary workspace for the issue's project, or `null` if
-   *   the issue has no project or the project has no workspace
+   * @param issueId - UUID del issue
+   * @param companyId - UUID de la empresa propietaria del issue
+   * @returns El espacio de trabajo principal del proyecto del issue, o `null`
+   *   si el issue no tiene proyecto o el proyecto no tiene espacio de trabajo
    *
    * @see PLUGIN_SPEC.md §20 — Local Tooling
    */
@@ -662,56 +674,56 @@ export interface PluginProjectsClient {
 }
 
 /**
- * `ctx.data` — register `getData` handlers that back `usePluginData()` in the
- * plugin's frontend components.
+ * `ctx.data`: registra manejadores `getData` que respaldan `usePluginData()` en
+ * los componentes frontend del plugin.
  *
- * The plugin's UI calls `usePluginData(key, params)` which routes through the
- * host bridge to the worker's registered handler.
+ * La interfaz del plugin llama a `usePluginData(key, params)`, que se enruta a
+ * través del puente del host hasta el manejador registrado del worker.
  *
  * @see PLUGIN_SPEC.md §13.8 — `getData`
  */
 export interface PluginDataClient {
   /**
-   * Register a handler for a plugin-defined data key.
+   * Registra un manejador para una clave de datos definida por el plugin.
    *
-   * @param key - Stable string identifier for this data type (e.g. `"sync-health"`)
-   * @param handler - Async function that receives request params and returns JSON-serializable data
+   * @param key - Identificador de cadena estable para este tipo de datos (p. ej. `"sync-health"`)
+   * @param handler - Función asíncrona que recibe los parámetros de la solicitud y devuelve datos serializables a JSON
    */
   register(key: string, handler: (params: Record<string, unknown>) => Promise<unknown>): void;
 }
 
 /**
- * `ctx.actions` — register `performAction` handlers that back
- * `usePluginAction()` in the plugin's frontend components.
+ * `ctx.actions`: registra manejadores `performAction` que respaldan
+ * `usePluginAction()` en los componentes frontend del plugin.
  *
  * @see PLUGIN_SPEC.md §13.9 — `performAction`
  */
 export interface PluginActionsClient {
   /**
-   * Register a handler for a plugin-defined action key.
+   * Registra un manejador para una clave de acción definida por el plugin.
    *
-   * @param key - Stable string identifier for this action (e.g. `"resync"`)
-   * @param handler - Async function that receives action params and returns a result
+   * @param key - Identificador de cadena estable para esta acción (p. ej. `"resync"`)
+   * @param handler - Función asíncrona que recibe los parámetros de la acción y devuelve un resultado
    */
   register(key: string, handler: (params: Record<string, unknown>) => Promise<unknown>): void;
 }
 
 /**
- * `ctx.tools` — register handlers for agent tools declared in the manifest.
+ * `ctx.tools`: registra manejadores para herramientas de agente declaradas en el manifiesto.
  *
- * Requires `agent.tools.register` capability.
+ * Requiere la capacidad `agent.tools.register`.
  *
- * Tool names are automatically namespaced by plugin ID at runtime.
+ * Los nombres de herramientas reciben automáticamente el espacio de nombres del ID del plugin en tiempo de ejecución.
  *
  * @see PLUGIN_SPEC.md §11 — Agent Tools
  */
 export interface PluginToolsClient {
   /**
-   * Register a handler for a plugin-contributed agent tool.
+   * Registra un manejador para una herramienta de agente contribuida por el plugin.
    *
-   * @param name - Tool name matching the manifest declaration (without namespace prefix)
-   * @param declaration - Tool metadata (displayName, description, parametersSchema)
-   * @param fn - Async handler that executes the tool
+   * @param name - Nombre de la herramienta que coincide con la declaración del manifiesto (sin prefijo de espacio de nombres)
+   * @param declaration - Metadatos de la herramienta (displayName, description, parametersSchema)
+   * @param fn - Manejador asíncrono que ejecuta la herramienta
    */
   register(
     name: string,
@@ -721,105 +733,106 @@ export interface PluginToolsClient {
 }
 
 /**
- * `ctx.logger` — structured logging from the plugin worker.
+ * `ctx.logger`: registro estructurado desde el worker del plugin.
  *
- * Log output is captured by the host, stored, and surfaced in the plugin
- * health dashboard.
+ * La salida de registro es capturada por el host, almacenada y mostrada en el
+ * panel de salud del plugin.
  *
  * @see PLUGIN_SPEC.md §26.1 — Logging
  */
 export interface PluginLogger {
-  /** Log an informational message. */
+  /** Registra un mensaje informativo. */
   info(message: string, meta?: Record<string, unknown>): void;
-  /** Log a warning. */
+  /** Registra una advertencia. */
   warn(message: string, meta?: Record<string, unknown>): void;
-  /** Log an error. */
+  /** Registra un error. */
   error(message: string, meta?: Record<string, unknown>): void;
-  /** Log a debug message (may be suppressed in production). */
+  /** Registra un mensaje de depuración (puede suprimirse en producción). */
   debug(message: string, meta?: Record<string, unknown>): void;
 }
 
 // ---------------------------------------------------------------------------
-// Plugin metrics
+// Métricas del plugin
 // ---------------------------------------------------------------------------
 
 /**
- * `ctx.metrics` — write plugin-contributed metrics.
+ * `ctx.metrics`: escribe métricas contribuidas por el plugin.
  *
- * Requires `metrics.write` capability.
+ * Requiere la capacidad `metrics.write`.
  *
  * @see PLUGIN_SPEC.md §15.1 — Capabilities: Data Write
  */
 export interface PluginMetricsClient {
   /**
-   * Write a numeric metric data point.
+   * Escribe un punto de datos de métrica numérica.
    *
-   * @param name - Metric name (plugin-namespaced by the host)
-   * @param value - Numeric value
-   * @param tags - Optional key-value tags for filtering
+   * @param name - Nombre de la métrica (el host le aplica el espacio de nombres del plugin)
+   * @param value - Valor numérico
+   * @param tags - Etiquetas clave-valor opcionales para filtrar
    */
   write(name: string, value: number, tags?: Record<string, string>): Promise<void>;
 }
 
 /**
- * `ctx.companies` — read company metadata.
+ * `ctx.companies`: lee metadatos de empresas.
  *
- * Requires `companies.read` capability.
+ * Requiere la capacidad `companies.read`.
  */
 export interface PluginCompaniesClient {
   /**
-   * List companies visible to this plugin.
+   * Lista las empresas visibles para este plugin.
    */
   list(input?: { limit?: number; offset?: number }): Promise<Company[]>;
 
   /**
-   * Get one company by ID.
+   * Obtiene una empresa por ID.
    */
   get(companyId: string): Promise<Company | null>;
 }
 
 /**
- * `ctx.issues.documents` — read and write issue documents.
+ * `ctx.issues.documents`: lee y escribe documentos de issues.
  *
- * Requires:
- * - `issue.documents.read` for `list` and `get`
- * - `issue.documents.write` for `upsert` and `delete`
+ * Requiere:
+ * - `issue.documents.read` para `list` y `get`
+ * - `issue.documents.write` para `upsert` y `delete`
  *
- * @see PLUGIN_SPEC.md §14 — SDK Surface
+ * @see PLUGIN_SPEC.md §14 — Superficie SDK
  */
 export interface PluginIssueDocumentsClient {
   /**
-   * List all documents attached to an issue.
+   * Lista todos los documentos adjuntos a un issue.
    *
-   * Returns summary metadata (id, key, title, format, timestamps) without
-   * the full document body. Use `get()` to fetch a specific document's body.
+   * Devuelve metadatos de resumen (id, key, title, format, timestamps) sin
+   * el cuerpo completo del documento. Usar `get()` para obtener el cuerpo de
+   * un documento específico.
    *
-   * Requires the `issue.documents.read` capability.
+   * Requiere la capacidad `issue.documents.read`.
    */
   list(issueId: string, companyId: string): Promise<IssueDocumentSummary[]>;
 
   /**
-   * Get a single document by key, including its full body content.
+   * Obtiene un solo documento por clave, incluyendo su contenido completo.
    *
-   * Returns `null` if no document exists with the given key.
+   * Devuelve `null` si no existe ningún documento con la clave dada.
    *
-   * Requires the `issue.documents.read` capability.
+   * Requiere la capacidad `issue.documents.read`.
    *
-   * @param issueId - UUID of the issue
-   * @param key - Document key (e.g. `"plan"`, `"design-spec"`)
-   * @param companyId - UUID of the company
+   * @param issueId - UUID del issue
+   * @param key - Clave del documento (p. ej. `"plan"`, `"design-spec"`)
+   * @param companyId - UUID de la empresa
    */
   get(issueId: string, key: string, companyId: string): Promise<IssueDocument | null>;
 
   /**
-   * Create or update a document on an issue.
+   * Crea o actualiza un documento en un issue.
    *
-   * If a document with the given key already exists, it is updated and a new
-   * revision is created. If it does not exist, it is created.
+   * Si ya existe un documento con la clave dada, se actualiza y se crea una
+   * nueva revisión. Si no existe, se crea.
    *
-   * Requires the `issue.documents.write` capability.
+   * Requiere la capacidad `issue.documents.write`.
    *
-   * @param input - Document data including issueId, key, body, and optional title/format/changeSummary
+   * @param input - Datos del documento incluyendo issueId, key, body y title/format/changeSummary opcionales
    */
   upsert(input: {
     issueId: string;
@@ -832,30 +845,30 @@ export interface PluginIssueDocumentsClient {
   }): Promise<IssueDocument>;
 
   /**
-   * Delete a document and all its revisions.
+   * Elimina un documento y todas sus revisiones.
    *
-   * No-ops silently if the document does not exist (idempotent).
+   * No hace nada silenciosamente si el documento no existe (idempotente).
    *
-   * Requires the `issue.documents.write` capability.
+   * Requiere la capacidad `issue.documents.write`.
    *
-   * @param issueId - UUID of the issue
-   * @param key - Document key to delete
-   * @param companyId - UUID of the company
+   * @param issueId - UUID del issue
+   * @param key - Clave del documento a eliminar
+   * @param companyId - UUID de la empresa
    */
   delete(issueId: string, key: string, companyId: string): Promise<void>;
 }
 
 /**
- * `ctx.issues` — read and mutate issues plus comments.
+ * `ctx.issues`: lee y modifica issues además de comentarios.
  *
- * Requires:
- * - `issues.read` for read operations
- * - `issues.create` for create
- * - `issues.update` for update
- * - `issue.comments.read` for `listComments`
- * - `issue.comments.create` for `createComment`
- * - `issue.documents.read` for `documents.list` and `documents.get`
- * - `issue.documents.write` for `documents.upsert` and `documents.delete`
+ * Requiere:
+ * - `issues.read` para operaciones de lectura
+ * - `issues.create` para crear
+ * - `issues.update` para actualizar
+ * - `issue.comments.read` para `listComments`
+ * - `issue.comments.create` para `createComment`
+ * - `issue.documents.read` para `documents.list` y `documents.get`
+ * - `issue.documents.write` para `documents.upsert` y `documents.delete`
  */
 export interface PluginIssuesClient {
   list(input: {
@@ -887,36 +900,36 @@ export interface PluginIssuesClient {
   ): Promise<Issue>;
   listComments(issueId: string, companyId: string): Promise<IssueComment[]>;
   createComment(issueId: string, body: string, companyId: string): Promise<IssueComment>;
-  /** Read and write issue documents. Requires `issue.documents.read` / `issue.documents.write`. */
+  /** Lee y escribe documentos de issues. Requiere `issue.documents.read` / `issue.documents.write`. */
   documents: PluginIssueDocumentsClient;
 }
 
 /**
- * `ctx.agents` — read and manage agents.
+ * `ctx.agents`: lee y gestiona agentes.
  *
- * Requires `agents.read` for reads; `agents.pause` / `agents.resume` /
- * `agents.invoke` for write operations.
+ * Requiere `agents.read` para lecturas; `agents.pause` / `agents.resume` /
+ * `agents.invoke` para operaciones de escritura.
  */
 export interface PluginAgentsClient {
   list(input: { companyId: string; status?: Agent["status"]; limit?: number; offset?: number }): Promise<Agent[]>;
   get(agentId: string, companyId: string): Promise<Agent | null>;
-  /** Pause an agent. Throws if agent is terminated or not found. Requires `agents.pause`. */
+  /** Pausa un agente. Lanza si el agente está terminado o no se encuentra. Requiere `agents.pause`. */
   pause(agentId: string, companyId: string): Promise<Agent>;
-  /** Resume a paused agent (sets status to idle). Throws if terminated, pending_approval, or not found. Requires `agents.resume`. */
+  /** Reanuda un agente pausado (establece el estado en inactivo). Lanza si está terminado, pending_approval o no se encuentra. Requiere `agents.resume`. */
   resume(agentId: string, companyId: string): Promise<Agent>;
-  /** Invoke (wake up) an agent with a prompt payload. Throws if paused, terminated, pending_approval, or not found. Requires `agents.invoke`. */
+  /** Invoca (despierta) un agente con un payload de prompt. Lanza si está pausado, terminado, pending_approval o no se encuentra. Requiere `agents.invoke`. */
   invoke(agentId: string, companyId: string, opts: { prompt: string; reason?: string }): Promise<{ runId: string }>;
-  /** Create, message, and close agent chat sessions. Requires `agent.sessions.*` capabilities. */
+  /** Crea, envía mensajes y cierra sesiones de chat de agentes. Requiere capacidades `agent.sessions.*`. */
   sessions: PluginAgentSessionsClient;
 }
 
 // ---------------------------------------------------------------------------
-// Agent Sessions — two-way chat with agents
+// Sesiones de agente: chat bidireccional con agentes
 // ---------------------------------------------------------------------------
 
 /**
- * Represents an active conversational session with an agent.
- * Maps to an `AgentTaskSession` row on the host.
+ * Representa una sesión conversacional activa con un agente.
+ * Corresponde a una fila `AgentTaskSession` en el host.
  */
 export interface AgentSession {
   sessionId: string;
@@ -927,14 +940,14 @@ export interface AgentSession {
 }
 
 /**
- * A streaming event received during a session's `sendMessage` call.
- * Delivered via JSON-RPC notifications from host to worker.
+ * Un evento de flujo recibido durante una llamada `sendMessage` de la sesión.
+ * Entregado vía notificaciones JSON-RPC del host al worker.
  */
 export interface AgentSessionEvent {
   sessionId: string;
   runId: string;
   seq: number;
-  /** The kind of event: "chunk" for output data, "status" for run state changes, "done" for end-of-stream, "error" for failures. */
+  /** El tipo de evento: "chunk" para datos de salida, "status" para cambios de estado de la ejecución, "done" para fin del flujo, "error" para fallos. */
   eventType: "chunk" | "status" | "done" | "error";
   stream: "stdout" | "stderr" | "system" | null;
   message: string | null;
@@ -942,32 +955,32 @@ export interface AgentSessionEvent {
 }
 
 /**
- * Result of sending a message to a session.
+ * Resultado de enviar un mensaje a una sesión.
  */
 export interface AgentSessionSendResult {
   runId: string;
 }
 
 /**
- * `ctx.agents.sessions` — create, message, and close agent chat sessions.
+ * `ctx.agents.sessions`: crea, envía mensajes y cierra sesiones de chat de agentes.
  *
- * Requires `agent.sessions.create` for create, `agent.sessions.list` for list,
- * `agent.sessions.send` for sendMessage, `agent.sessions.close` for close.
+ * Requiere `agent.sessions.create` para crear, `agent.sessions.list` para listar,
+ * `agent.sessions.send` para sendMessage, `agent.sessions.close` para cerrar.
  */
 export interface PluginAgentSessionsClient {
-  /** Create a new conversational session with an agent. Requires `agent.sessions.create`. */
+  /** Crea una nueva sesión conversacional con un agente. Requiere `agent.sessions.create`. */
   create(agentId: string, companyId: string, opts?: {
     taskKey?: string;
     reason?: string;
   }): Promise<AgentSession>;
 
-  /** List active sessions for an agent owned by this plugin. Requires `agent.sessions.list`. */
+  /** Lista las sesiones activas de un agente propiedad de este plugin. Requiere `agent.sessions.list`. */
   list(agentId: string, companyId: string): Promise<AgentSession[]>;
 
   /**
-   * Send a message to a session and receive streaming events via the `onEvent` callback.
-   * Returns immediately with `{ runId }`. Events are delivered asynchronously.
-   * Requires `agent.sessions.send`.
+   * Envía un mensaje a una sesión y recibe eventos de flujo mediante el callback `onEvent`.
+   * Devuelve inmediatamente con `{ runId }`. Los eventos se entregan de forma asíncrona.
+   * Requiere `agent.sessions.send`.
    */
   sendMessage(sessionId: string, companyId: string, opts: {
     prompt: string;
@@ -975,17 +988,17 @@ export interface PluginAgentSessionsClient {
     onEvent?: (event: AgentSessionEvent) => void;
   }): Promise<AgentSessionSendResult>;
 
-  /** Close a session, releasing resources. Requires `agent.sessions.close`. */
+  /** Cierra una sesión, liberando recursos. Requiere `agent.sessions.close`. */
   close(sessionId: string, companyId: string): Promise<void>;
 }
 
 /**
- * `ctx.goals` — read and mutate goals.
+ * `ctx.goals`: lee y modifica objetivos.
  *
- * Requires:
- * - `goals.read` for read operations
- * - `goals.create` for create
- * - `goals.update` for update
+ * Requiere:
+ * - `goals.read` para operaciones de lectura
+ * - `goals.create` para crear
+ * - `goals.update` para actualizar
  */
 export interface PluginGoalsClient {
   list(input: {
@@ -1016,22 +1029,22 @@ export interface PluginGoalsClient {
 }
 
 // ---------------------------------------------------------------------------
-// Streaming (worker → UI push channel)
+// Streaming (canal push de worker a interfaz)
 // ---------------------------------------------------------------------------
 
 /**
- * `ctx.streams` — push real-time events from the worker to the plugin UI.
+ * `ctx.streams`: envía eventos en tiempo real del worker a la interfaz del plugin.
  *
- * The worker opens a named channel, emits events on it, and closes it when
- * done. On the UI side, `usePluginStream(channel)` receives these events in
- * real time via SSE.
+ * El worker abre un canal con nombre, emite eventos en él y lo cierra al
+ * terminar. En el lado de la interfaz, `usePluginStream(channel)` recibe
+ * estos eventos en tiempo real vía SSE.
  *
- * Streams are scoped to `(pluginId, channel, companyId)`. Multiple UI clients
- * can subscribe to the same channel concurrently.
+ * Los flujos están acotados a `(pluginId, channel, companyId)`. Múltiples clientes
+ * de interfaz pueden suscribirse al mismo canal al mismo tiempo.
  *
  * @example
  * ```ts
- * // Worker: stream chat tokens to the UI
+ * // Worker: envía tokens de chat a la interfaz
  * ctx.streams.open("chat", companyId);
  * for await (const token of tokenStream) {
  *   ctx.streams.emit("chat", { type: "token", text: token });
@@ -1043,36 +1056,37 @@ export interface PluginGoalsClient {
  */
 export interface PluginStreamsClient {
   /**
-   * Open a named stream channel. Optional — `emit()` implicitly opens if needed.
-   * Sends a `stream:open` event to connected UI clients.
+   * Abre un canal de flujo con nombre. Opcional: `emit()` lo abre implícitamente si es necesario.
+   * Envía un evento `stream:open` a los clientes de interfaz conectados.
    */
   open(channel: string, companyId: string): void;
 
   /**
-   * Push an event to all UI clients subscribed to this channel.
+   * Envía un evento a todos los clientes de interfaz suscritos a este canal.
    *
-   * @param channel - Stream channel name (e.g. `"chat"`, `"logs"`)
-   * @param event - JSON-serializable event payload
+   * @param channel - Nombre del canal de flujo (p. ej. `"chat"`, `"logs"`)
+   * @param event - Carga útil del evento serializable a JSON
    */
   emit(channel: string, event: unknown): void;
 
   /**
-   * Close a stream channel. Sends a `stream:close` event to connected UI
-   * clients so they know no more events will arrive.
+   * Cierra un canal de flujo. Envía un evento `stream:close` a los clientes
+   * de interfaz conectados para que sepan que no llegarán más eventos.
    */
   close(channel: string): void;
 }
 
 // ---------------------------------------------------------------------------
-// Full plugin context
+// Contexto completo del plugin
 // ---------------------------------------------------------------------------
 
 /**
- * The full plugin context object passed to the plugin worker at initialisation.
+ * El objeto de contexto completo del plugin pasado al worker del plugin en la inicialización.
  *
- * This is the central interface plugin authors use to interact with the host.
- * Every client is capability-gated: calling a client method without the
- * required capability declared in the manifest results in a runtime error.
+ * Esta es la interfaz central que los autores de plugins usan para interactuar
+ * con el host. Cada cliente está protegido por capacidades: llamar a un método
+ * de cliente sin la capacidad requerida declarada en el manifiesto produce un
+ * error en tiempo de ejecución.
  *
  * @example
  * ```ts
@@ -1081,7 +1095,7 @@ export interface PluginStreamsClient {
  * export default definePlugin({
  *   async setup(ctx) {
  *     ctx.events.on("issue.created", async (event) => {
- *       ctx.logger.info("Issue created", { issueId: event.entityId });
+ *       ctx.logger.info("Issue creado", { issueId: event.entityId });
  *     });
  *
  *     ctx.data.register("sync-health", async ({ companyId }) => {
@@ -1092,69 +1106,69 @@ export interface PluginStreamsClient {
  * });
  * ```
  *
- * @see PLUGIN_SPEC.md §14 — SDK Surface
+ * @see PLUGIN_SPEC.md §14 — Superficie SDK
  */
 export interface PluginContext {
-  /** The plugin's manifest as validated at install time. */
+  /** El manifiesto del plugin tal como se validó en el momento de la instalación. */
   manifest: PaperclipPluginManifestV1;
 
-  /** Read resolved operator configuration. */
+  /** Lee la configuración resuelta del operador. */
   config: PluginConfigClient;
 
-  /** Subscribe to and emit domain events. Requires `events.subscribe` / `events.emit`. */
+  /** Suscribirse a eventos de dominio y emitirlos. Requiere `events.subscribe` / `events.emit`. */
   events: PluginEventsClient;
 
-  /** Register handlers for scheduled jobs. Requires `jobs.schedule`. */
+  /** Registra manejadores para tareas programadas. Requiere `jobs.schedule`. */
   jobs: PluginJobsClient;
 
-  /** Register launcher metadata that the host can surface in plugin UI entry points. */
+  /** Registra metadatos de lanzador que el host puede mostrar en puntos de entrada de la interfaz del plugin. */
   launchers: PluginLaunchersClient;
 
-  /** Make outbound HTTP requests. Requires `http.outbound`. */
+  /** Realiza solicitudes HTTP salientes. Requiere `http.outbound`. */
   http: PluginHttpClient;
 
-  /** Resolve secret references. Requires `secrets.read-ref`. */
+  /** Resuelve referencias a secretos. Requiere `secrets.read-ref`. */
   secrets: PluginSecretsClient;
 
-  /** Write activity log entries. Requires `activity.log.write`. */
+  /** Escribe entradas de registro de actividad. Requiere `activity.log.write`. */
   activity: PluginActivityClient;
 
-  /** Read and write scoped plugin state. Requires `plugin.state.read` / `plugin.state.write`. */
+  /** Lee y escribe estado acotado al plugin. Requiere `plugin.state.read` / `plugin.state.write`. */
   state: PluginStateClient;
 
-  /** Create and query plugin-owned entity records. */
+  /** Crea y consulta registros de entidades propiedad del plugin. */
   entities: PluginEntitiesClient;
 
-  /** Read project and workspace metadata. Requires `projects.read` / `project.workspaces.read`. */
+  /** Lee metadatos de proyectos y espacios de trabajo. Requiere `projects.read` / `project.workspaces.read`. */
   projects: PluginProjectsClient;
 
-  /** Read company metadata. Requires `companies.read`. */
+  /** Lee metadatos de empresas. Requiere `companies.read`. */
   companies: PluginCompaniesClient;
 
-  /** Read and write issues, comments, and documents. Requires issue capabilities. */
+  /** Lee y escribe issues, comentarios y documentos. Requiere capacidades de issues. */
   issues: PluginIssuesClient;
 
-  /** Read and manage agents. Requires `agents.read` for reads; `agents.pause` / `agents.resume` / `agents.invoke` for write ops. */
+  /** Lee y gestiona agentes. Requiere `agents.read` para lecturas; `agents.pause` / `agents.resume` / `agents.invoke` para operaciones de escritura. */
   agents: PluginAgentsClient;
 
-  /** Read and mutate goals. Requires `goals.read` for reads; `goals.create` / `goals.update` for write ops. */
+  /** Lee y modifica objetivos. Requiere `goals.read` para lecturas; `goals.create` / `goals.update` para operaciones de escritura. */
   goals: PluginGoalsClient;
 
-  /** Register getData handlers for the plugin's UI components. */
+  /** Registra manejadores getData para los componentes de interfaz del plugin. */
   data: PluginDataClient;
 
-  /** Register performAction handlers for the plugin's UI components. */
+  /** Registra manejadores performAction para los componentes de interfaz del plugin. */
   actions: PluginActionsClient;
 
-  /** Push real-time events from the worker to the plugin UI via SSE. */
+  /** Envía eventos en tiempo real del worker a la interfaz del plugin vía SSE. */
   streams: PluginStreamsClient;
 
-  /** Register agent tool handlers. Requires `agent.tools.register`. */
+  /** Registra manejadores de herramientas de agente. Requiere `agent.tools.register`. */
   tools: PluginToolsClient;
 
-  /** Write plugin metrics. Requires `metrics.write`. */
+  /** Escribe métricas del plugin. Requiere `metrics.write`. */
   metrics: PluginMetricsClient;
 
-  /** Structured logger. Output is captured and surfaced in the plugin health dashboard. */
+  /** Registrador estructurado. La salida se captura y se muestra en el panel de salud del plugin. */
   logger: PluginLogger;
 }

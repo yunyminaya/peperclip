@@ -11,12 +11,12 @@ worktree_env_path="$paperclip_dir/.env"
 worktree_name="${PAPERCLIP_WORKSPACE_BRANCH:-$(basename "$worktree_cwd")}"
 
 if [[ ! -d "$base_cwd" ]]; then
-  echo "Base workspace does not exist: $base_cwd" >&2
+  echo "El workspace base no existe: $base_cwd" >&2
   exit 1
 fi
 
 if [[ ! -d "$worktree_cwd" ]]; then
-  echo "Derived worktree does not exist: $worktree_cwd" >&2
+  echo "El worktree derivado no existe: $worktree_cwd" >&2
   exit 1
 fi
 
@@ -128,7 +128,7 @@ async function findAvailablePort(preferredPort, reserved = new Set()) {
     server.listen(0, "127.0.0.1", () => {
       const address = server.address();
       if (!address || typeof address === "string") {
-        server.close(() => reject(new Error("Failed to allocate a port.")));
+        server.close(() => reject(new Error("No se pudo asignar un puerto.")));
         return;
       }
       const port = address.port;
@@ -296,7 +296,7 @@ EOF
 }
 
 if ! run_isolated_worktree_init; then
-  echo "paperclipai CLI not available in this workspace; writing isolated fallback config without DB seeding." >&2
+  echo "La CLI paperclipai no está disponible en este workspace; escribiendo configuración de respaldo aislada sin seeding de BD." >&2
   write_fallback_worktree_config
 fi
 

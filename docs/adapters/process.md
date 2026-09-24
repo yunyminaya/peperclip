@@ -1,40 +1,40 @@
 ---
-title: Process Adapter
-summary: Generic shell process adapter
+title: Adaptador de procesos
+summary: Adaptador genérico de procesos de shell
 ---
 
-The `process` adapter executes arbitrary shell commands. Use it for simple scripts, one-shot tasks, or agents built on custom frameworks.
+El adaptador `process` ejecuta comandos de shell arbitrarios. Úsalo para scripts simples, tareas únicas o agentes construidos sobre frameworks personalizados.
 
-## When to Use
+## Cuándo usarlo
 
-- Running a Python script that calls the Paperclip API
-- Executing a custom agent loop
-- Any runtime that can be invoked as a shell command
+- Ejecutar un script de Python que llame la API de Paperclip
+- Ejecutar un ciclo de agente personalizado
+- Cualquier runtime que se pueda invocar como un comando de shell
 
-## When Not to Use
+## Cuándo no usarlo
 
-- If you need session persistence across runs (use `claude_local` or `codex_local`)
-- If the agent needs conversational context between heartbeats
+- Si necesitas persistencia de sesión entre ejecuciones (usa `claude_local` o `codex_local`)
+- Si el agente necesita contexto conversacional entre latidos
 
-## Configuration
+## Configuración
 
-| Field | Type | Required | Description |
+| Campo | Tipo | Requerido | Descripción |
 |-------|------|----------|-------------|
-| `command` | string | Yes | Shell command to execute |
-| `cwd` | string | No | Working directory |
-| `env` | object | No | Environment variables |
-| `timeoutSec` | number | No | Process timeout |
+| `command` | string | Sí | Comando de shell a ejecutar |
+| `cwd` | string | No | Directorio de trabajo |
+| `env` | object | No | Variables de entorno |
+| `timeoutSec` | number | No | Tiempo de espera del proceso |
 
-## How It Works
+## Cómo funciona
 
-1. Paperclip spawns the configured command as a child process
-2. Standard Paperclip environment variables are injected (`PAPERCLIP_AGENT_ID`, `PAPERCLIP_API_KEY`, etc.)
-3. The process runs to completion
-4. Exit code determines success/failure
+1. Paperclip inicia el comando configurado como un proceso hijo
+2. Se inyectan las variables de entorno estándar de Paperclip (`PAPERCLIP_AGENT_ID`, `PAPERCLIP_API_KEY`, etc.)
+3. El proceso se ejecuta hasta completarse
+4. El código de salida determina el éxito o la falla
 
-## Example
+## Ejemplo
 
-An agent that runs a Python script:
+Un agente que ejecuta un script de Python:
 
 ```json
 {
@@ -47,4 +47,4 @@ An agent that runs a Python script:
 }
 ```
 
-The script can use the injected environment variables to authenticate with the Paperclip API and perform work.
+El script puede usar las variables de entorno inyectadas para autenticarse con la API de Paperclip y realizar trabajo.

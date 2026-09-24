@@ -8,7 +8,7 @@ function normalizeDocumentKey(key: string) {
   const normalized = key.trim().toLowerCase();
   const parsed = issueDocumentKeySchema.safeParse(normalized);
   if (!parsed.success) {
-    throw unprocessable("Invalid document key", parsed.error.issues);
+    throw unprocessable("Clave de documento no válida", parsed.error.issues);
   }
   return parsed.data;
 }
@@ -222,7 +222,7 @@ export function documentService(db: Db) {
         .from(issues)
         .where(eq(issues.id, input.issueId))
         .then((rows) => rows[0] ?? null);
-      if (!issue) throw notFound("Issue not found");
+      if (!issue) throw notFound("Issue no encontrado");
 
       try {
         return await db.transaction(async (tx) => {
@@ -252,12 +252,12 @@ export function documentService(db: Db) {
 
           if (existing) {
             if (!input.baseRevisionId) {
-              throw conflict("Document update requires baseRevisionId", {
+              throw conflict("La actualización del documento requiere baseRevisionId", {
                 currentRevisionId: existing.latestRevisionId,
               });
             }
             if (input.baseRevisionId !== existing.latestRevisionId) {
-              throw conflict("Document was updated by someone else", {
+              throw conflict("El documento fue actualizado por otra persona", {
                 currentRevisionId: existing.latestRevisionId,
               });
             }
@@ -313,7 +313,7 @@ export function documentService(db: Db) {
           }
 
           if (input.baseRevisionId) {
-            throw conflict("Document does not exist yet", { key });
+            throw conflict("El documento aún no existe", { key });
           }
 
           const [document] = await tx
@@ -385,7 +385,7 @@ export function documentService(db: Db) {
         });
       } catch (error) {
         if (isUniqueViolation(error)) {
-          throw conflict("Document key already exists on this issue", { key });
+          throw conflict("La clave de documento ya existe en este issue", { key });
         }
         throw error;
       }

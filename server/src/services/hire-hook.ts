@@ -7,7 +7,7 @@ import { logger } from "../middleware/logger.js";
 import { logActivity } from "./activity-log.js";
 
 const HIRE_APPROVED_MESSAGE =
-  "Tell your user that your hire was approved, now they should assign you a task in Paperclip or ask you to create issues.";
+  "Dile a tu usuario que tu contratación fue aprobada; ahora debería asignarte una tarea en Paperclip o pedirte que crees issues.";
 
 export interface NotifyHireApprovedInput {
   companyId: string;
@@ -18,8 +18,8 @@ export interface NotifyHireApprovedInput {
 }
 
 /**
- * Invokes the adapter's onHireApproved hook when an agent is approved (join-request or hire_agent approval).
- * Failures are non-fatal: we log and write to activity, never throw.
+ * Invoca el hook onHireApproved del adaptador cuando se aprueba un agente (solicitud de incorporación o aprobación hire_agent).
+ * Los fallos no son fatales: se registran en el log y en la actividad, nunca se lanza una excepción.
  */
 export async function notifyHireApproved(
   db: Db,
@@ -35,7 +35,7 @@ export async function notifyHireApproved(
     .then((rows) => rows[0] ?? null);
 
   if (!row) {
-    logger.warn({ companyId, agentId, source, sourceId }, "hire hook: agent not found in company, skipping");
+    logger.warn({ companyId, agentId, source, sourceId }, "hire hook: agente no encontrado en la empresa, se omite");
     return;
   }
 
@@ -79,7 +79,7 @@ export async function notifyHireApproved(
 
     logger.warn(
       { companyId, agentId, adapterType, source, sourceId, error: result.error, detail: result.detail },
-      "hire hook: adapter returned failure",
+      "hire hook: el adaptador devolvió un fallo",
     );
     await logActivity(db, {
       companyId,
@@ -93,7 +93,7 @@ export async function notifyHireApproved(
   } catch (err) {
     logger.error(
       { err, companyId, agentId, adapterType, source, sourceId },
-      "hire hook: adapter threw",
+      "hire hook: el adaptador lanzó una excepción",
     );
     await logActivity(db, {
       companyId,

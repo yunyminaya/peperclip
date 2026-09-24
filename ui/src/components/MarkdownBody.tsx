@@ -8,7 +8,7 @@ import { mentionChipInlineStyle, parseMentionChipHref } from "../lib/mention-chi
 interface MarkdownBodyProps {
   children: string;
   className?: string;
-  /** Optional resolver for relative image paths (e.g. within export packages) */
+  /** Resuelve rutas de imágenes relativas (p. ej. dentro de paquetes de exportación). */
   resolveImageSrc?: (src: string) => string | null;
 }
 
@@ -64,7 +64,7 @@ function MermaidDiagramBlock({ source, darkMode }: { source: string; darkMode: b
         const message =
           err instanceof Error && err.message
             ? err.message
-            : "Failed to render Mermaid diagram.";
+            : "No se pudo renderizar el diagrama Mermaid.";
         setError(message);
       });
 
@@ -80,7 +80,7 @@ function MermaidDiagramBlock({ source, darkMode }: { source: string; darkMode: b
       ) : (
         <>
           <p className={cn("paperclip-mermaid-status", error && "paperclip-mermaid-status-error")}>
-            {error ? `Unable to render Mermaid diagram: ${error}` : "Rendering Mermaid diagram..."}
+            {error ? `No se pudo renderizar el diagrama Mermaid: ${error}` : "Renderizando el diagrama Mermaid…"}
           </p>
           <pre className="paperclip-mermaid-source">
             <code className="language-mermaid">{source}</code>

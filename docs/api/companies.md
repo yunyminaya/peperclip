@@ -1,27 +1,27 @@
 ---
-title: Companies
-summary: Company CRUD endpoints
+title: Empresas
+summary: Endpoints CRUD de empresas
 ---
 
-Manage companies within your Paperclip instance.
+Gestiona empresas dentro de tu instancia de Paperclip.
 
-## List Companies
+## Listar empresas
 
 ```
 GET /api/companies
 ```
 
-Returns all companies the current user/agent has access to.
+Devuelve todas las empresas a las que el usuario/agente actual tiene acceso.
 
-## Get Company
+## Obtener empresa
 
 ```
 GET /api/companies/{companyId}
 ```
 
-Returns company details including name, description, budget, and status.
+Devuelve los detalles de la empresa, incluidos nombre, descripción, presupuesto y estado.
 
-## Create Company
+## Crear empresa
 
 ```
 POST /api/companies
@@ -31,7 +31,7 @@ POST /api/companies
 }
 ```
 
-## Update Company
+## Actualizar empresa
 
 ```
 PATCH /api/companies/{companyId}
@@ -43,16 +43,16 @@ PATCH /api/companies/{companyId}
 }
 ```
 
-## Upload Company Logo
+## Subir el logo de la empresa
 
-Upload an image for a company icon and store it as that company’s logo.
+Sube una imagen para el icono de la empresa y guárdala como su logo.
 
 ```
 POST /api/companies/{companyId}/logo
 Content-Type: multipart/form-data
 ```
 
-Valid image content types:
+Tipos de contenido de imagen válidos:
 
 - `image/png`
 - `image/jpeg`
@@ -61,28 +61,28 @@ Valid image content types:
 - `image/gif`
 - `image/svg+xml`
 
-Company logo uploads use the normal Paperclip attachment size limit.
+Las subidas del logo de empresa usan el límite normal de tamaño de adjuntos de Paperclip.
 
-Then set the company logo by PATCHing the returned `assetId` into `logoAssetId`.
+Luego establece el logo de la empresa aplicando PATCH con el `assetId` devuelto en `logoAssetId`.
 
-## Archive Company
+## Archivar empresa
 
 ```
 POST /api/companies/{companyId}/archive
 ```
 
-Archives a company. Archived companies are hidden from default listings.
+Archiva una empresa. Las empresas archivadas se ocultan de los listados por defecto.
 
-## Company Fields
+## Campos de empresa
 
-| Field | Type | Description |
+| Campo | Tipo | Descripción |
 |-------|------|-------------|
-| `id` | string | Unique identifier |
-| `name` | string | Company name |
-| `description` | string | Company description |
+| `id` | string | Identificador único |
+| `name` | string | Nombre de la empresa |
+| `description` | string | Descripción de la empresa |
 | `status` | string | `active`, `paused`, `archived` |
-| `logoAssetId` | string | Optional asset id for the stored logo image |
-| `logoUrl` | string | Optional Paperclip asset content path for the stored logo image |
-| `budgetMonthlyCents` | number | Monthly budget limit |
-| `createdAt` | string | ISO timestamp |
-| `updatedAt` | string | ISO timestamp |
+| `logoAssetId` | string | ID de asset opcional para la imagen del logo almacenada |
+| `logoUrl` | string | Ruta de contenido de asset de Paperclip opcional para la imagen del logo almacenada |
+| `budgetMonthlyCents` | number | Límite de presupuesto mensual |
+| `createdAt` | string | Marca de tiempo ISO |
+| `updatedAt` | string | Marca de tiempo ISO |

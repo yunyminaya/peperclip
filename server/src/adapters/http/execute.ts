@@ -4,7 +4,7 @@ import { asString, asNumber, parseObject } from "../utils.js";
 export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExecutionResult> {
   const { config, runId, agent, context } = ctx;
   const url = asString(config.url, "");
-  if (!url) throw new Error("HTTP adapter missing url");
+  if (!url) throw new Error("Falta la url del adaptador HTTP");
 
   const method = asString(config.method, "POST");
   const timeoutMs = asNumber(config.timeoutMs, 0);
@@ -27,7 +27,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     });
 
     if (!res.ok) {
-      throw new Error(`HTTP invoke failed with status ${res.status}`);
+      throw new Error(`La invocación HTTP falló con estado ${res.status}`);
     }
 
     return {

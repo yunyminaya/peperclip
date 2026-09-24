@@ -1,72 +1,72 @@
-# Agent Authentication — P0 Local Adapter JWT Implementation
+# Autenticación de agentes — Implementación JWT del adaptador local P0
 
-## Scope
+## Alcance
 
-- In-scope adapters: `claude_local`, `codex_local`.
-- Goal: zero-configuration auth for local adapters while preserving static keys for all other call paths.
-- Out-of-scope for P0: rotation UX, per-device revocation list, and CLI onboarding.
+- Adaptadores en alcance: `claude_local`, `codex_local`.
+- Objetivo: autenticación de cero configuración para adaptadores locales preservando claves estáticas para todas las demás rutas de llamada.
+- Fuera de alcance para P0: UX de rotación, lista de revocación por dispositivo e incorporación vía CLI.
 
-## 1) Token format and config
+## 1) Formato de token y configuración
 
-- Use HS256 JWTs with claims:
-  - `sub` (agent id)
+- Usar JWT HS256 con claims:
+  - `sub` (id del agente)
   - `company_id`
   - `adapter_type`
   - `run_id`
   - `iat`
   - `exp`
-  - optional `jti` (run token id)
-- New config/env settings:
+  - opcional `jti` (id de token de ejecución)
+- Nuevos ajustes/variables de entorno:
   - `PAPERCLIP_AGENT_JWT_SECRET`
-  - `PAPERCLIP_AGENT_JWT_TTL_SECONDS` (default: `172800`)
-  - `PAPERCLIP_AGENT_JWT_ISSUER` (default: `paperclip`)
-  - `PAPERCLIP_AGENT_JWT_AUDIENCE` (default: `paperclip-api`)
+  - `PAPERCLIP_AGENT_JWT_TTL_SECONDS` (por defecto: `172800`)
+  - `PAPERCLIP_AGENT_JWT_ISSUER` (por defecto: `paperclip`)
+  - `PAPERCLIP_AGENT_JWT_AUDIENCE` (por defecto: `paperclip-api`)
 
-## 2) Dual authentication path in `actorMiddleware`
+## 2) Ruta de autenticación dual en `actorMiddleware`
 
-1. Keep the existing DB key lookup path unchanged (`agent_api_keys` hash lookup).
-2. If no DB key matches, add JWT verification in `server/src/middleware/auth.ts`.
-3. On JWT success:
-   - set `req.actor = { type: "agent", agentId, companyId }`.
-   - optionally guard against terminated agents.
-4. Continue board fallback for requests without valid authentication.
+1. Mantener sin cambios la ruta existente de búsqueda de claves en DB (`agent_api_keys` búsqueda de hash).
+2. Si ninguna clave de DB coincide, agregar verificación JWT en `server/src/middleware/auth.ts`.
+3. En caso de éxito del JWT:
+   - establecer `req.actor = { type: "agent", agentId, companyId }`.
+   - opcionalmente protegerse contra agentes terminados.
+4. Continuar el fallback del tablero para solicitudes sin autenticación válida.
 
-## 3) Opt-in adapter capability
+## 3) Capacidad de adaptador opt-in
 
-1. Extend `ServerAdapterModule` (likely `packages/adapter-utils/src/types.ts`) with a capability flag:
+1. Extender `ServerAdapterModule` (probablemente `packages/adapter-utils/src/types.ts`) con un flag de capacidad:
    - `supportsLocalAgentJwt?: true`.
-2. Enable it on:
-   - `server/src/adapters/registry.ts` for `claude_local` and `codex_local`.
-3. Keep `process`/`http` adapters unset for P0.
-4. In `server/src/services/heartbeat.ts`, when adapter supports JWT:
-   - mint JWT per heartbeat run before execute.
-   - include token in adapter execution context.
+2. Habilitarlo en:
+   - `server/src/adapters/registry.ts` para `claude_local` y `codex_local`.
+3. Dejar sin definir los adaptadores `process`/`http` para P0.
+4. En `server/src/services/heartbeat.ts`, cuando el adaptador soporta JWT:
+   - emitir un JWT por ejecución de latido antes de ejecutar.
+   - incluir el token en el contexto de ejecución del adaptador.
 
-## 4) Local env injection behavior
+## 4) Comportamiento de inyección de env local
 
-1. In:
+1. En:
    - `packages/adapters/claude-local/src/server/execute.ts`
    - `packages/adapters/codex-local/src/server/execute.ts`
 
-   inject `PAPERCLIP_API_KEY` from context token.
+   inyectar `PAPERCLIP_API_KEY` desde el token del contexto.
 
-- Preserve existing behavior for explicit user-defined env vars in `adapterConfig.env`:
-  - if user already sets `PAPERCLIP_API_KEY`, do not overwrite it.
-- Continue injecting:
+- Preservar el comportamiento existente para variables de entorno explícitas definidas por el usuario en `adapterConfig.env`:
+  - si el usuario ya define `PAPERCLIP_API_KEY`, no sobrescribirla.
+- Continuar inyectando:
   - `PAPERCLIP_AGENT_ID`
   - `PAPERCLIP_COMPANY_ID`
   - `PAPERCLIP_API_URL`
 
-## 5) Documentation updates
+## 5) Actualizaciones de documentación
 
-- Update operator-facing docs to remove manual key setup expectation for local adapters:
+- Actualizar los documentos orientados al operador para eliminar la expectativa de configuración manual de claves para adaptadores locales:
   - `skills/paperclip/SKILL.md`
-  - `cli/src/commands/heartbeat-run.ts` output/help examples if they mention manual API key setup.
+  - la salida/ejemplos de ayuda de `cli/src/commands/heartbeat-run.ts` si mencionan configuración manual de la API key.
 
-## 6) P0 acceptance criteria
+## 6) Criterios de aceptación P0
 
-- Local adapters authenticate without manual `PAPERCLIP_API_KEY` config.
-- Existing static keys (`agent_api_keys`) still work unchanged.
-- Auth remains company-scoped (`req.actor.companyId` used by existing checks).
-- JWT generation and verification errors are logged as non-leaking structured events.
-- Scope remains local-only (`claude_local`, `codex_local`) while adapter capability model is generic.
+- Los adaptadores locales se autentican sin configuración manual de `PAPERCLIP_API_KEY`.
+- Las claves estáticas existentes (`agent_api_keys`) siguen funcionando sin cambios.
+- La autenticación sigue con alcance de empresa (`req.actor.companyId` usado por las verificaciones existentes).
+- Los errores de generación y verificación de JWT se registran como eventos estructurados que no filtran información.
+- El alcance sigue siendo solo local (`claude_local`, `codex_local`) mientras el modelo de capacidades del adaptador es genérico.

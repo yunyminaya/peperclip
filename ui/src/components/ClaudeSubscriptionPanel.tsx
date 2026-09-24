@@ -31,7 +31,7 @@ function detailText(window: QuotaWindow): string | null {
       minute: "2-digit",
       timeZoneName: "short",
     });
-    return `Resets ${formatted}`;
+    return `Se reinicia ${formatted}`;
   }
   return null;
 }
@@ -63,10 +63,10 @@ export function ClaudeSubscriptionPanel({
       <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            Anthropic subscription
+            Suscripción de Anthropic
           </div>
           <div className="mt-1 text-sm text-muted-foreground">
-            Live Claude quota windows.
+            Ventanas de cuota de Claude en vivo.
           </div>
         </div>
         {source ? (
@@ -120,7 +120,7 @@ export function ClaudeSubscriptionPanel({
                 </div>
                 {window.usedPercent != null ? (
                   <div className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
-                    {window.usedPercent}% used
+                    {window.usedPercent}% usado
                   </div>
                 ) : null}
               </div>

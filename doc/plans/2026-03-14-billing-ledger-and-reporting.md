@@ -1,190 +1,190 @@
-# Billing Ledger and Reporting
+# Libro de facturación e informes
 
-## Context
+## Contexto
 
-Paperclip currently stores model spend in `cost_events` and operational run state in `heartbeat_runs`.
-That split is fine, but the current reporting code tries to infer billing semantics by mixing both tables:
+Paperclip actualmente almacena el gasto de modelos en `cost_events` y el estado operativo de ejecuciones en `heartbeat_runs`.
+Esa división está bien, pero el código actual de informes intenta inferir la semántica de facturación mezclando ambas tablas:
 
-- `cost_events` knows provider, model, tokens, and dollars
-- `heartbeat_runs.usage_json` knows some per-run billing metadata
-- `heartbeat_runs.usage_json` does **not** currently carry enough normalized billing dimensions to support honest provider-level reporting
+- `cost_events` conoce proveedor, modelo, tokens y dólares
+- `heartbeat_runs.usage_json` conoce algunos metadatos de facturación por ejecución
+- `heartbeat_runs.usage_json` actualmente **no** lleva suficientes dimensiones de facturación normalizadas para admitir informes honestos a nivel de proveedor
 
-This becomes incorrect as soon as a company uses more than one provider, more than one billing channel, or more than one billing mode.
+Esto se vuelve incorrecto tan pronto como una empresa usa más de un proveedor, más de un canal de facturación o más de un modo de facturación.
 
-Examples:
+Ejemplos:
 
-- direct OpenAI API usage
-- Claude subscription usage with zero marginal dollars
-- subscription overage with dollars and tokens
-- OpenRouter billing where the biller is OpenRouter but the upstream provider is Anthropic or OpenAI
+- uso directo de la API de OpenAI
+- uso de suscripción de Claude con cero dólares marginales
+- excedente de suscripción con dólares y tokens
+- facturación de OpenRouter donde el facturador es OpenRouter pero el proveedor upstream es Anthropic u OpenAI
 
-The system needs to support:
+El sistema necesita admitir:
 
-- dollar reporting
-- token reporting
-- subscription-included usage
-- subscription overage
-- direct metered API usage
-- future aggregator billing such as OpenRouter
+- informes de dólares
+- informes de tokens
+- uso incluido en suscripción
+- excedente de suscripción
+- uso directo de API medida
+- facturación futura de agregadores como OpenRouter
 
-## Product Decision
+## Decisión de producto
 
-`cost_events` becomes the canonical billing and usage ledger for reporting.
+`cost_events` se convierte en el libro canónico de facturación y uso para informes.
 
-`heartbeat_runs` remains an operational execution log. It may keep mirrored billing metadata for debugging and transcripts, but reporting must not reconstruct billing semantics from `heartbeat_runs.usage_json`.
+`heartbeat_runs` sigue siendo un registro operativo de ejecución. Puede mantener metadatos de facturación espejados para depuración y transcripciones, pero los informes no deben reconstruir la semántica de facturación desde `heartbeat_runs.usage_json`.
 
-## Decision: One Ledger Or Two
+## Decisión: un libro o dos
 
-We do **not** need two tables to solve the current PR's problem.
-For request-level inference reporting, `cost_events` is enough if it carries the right dimensions:
+**No** necesitamos dos tablas para resolver el problema del PR actual.
+Para informes de inferencia a nivel de solicitud, `cost_events` es suficiente si lleva las dimensiones correctas:
 
-- upstream provider
-- biller
-- billing type
-- model
-- token fields
-- billed amount
+- proveedor upstream
+- facturador
+- tipo de facturación
+- modelo
+- campos de tokens
+- monto facturado
 
-That is why the first implementation pass extends `cost_events` instead of introducing a second table immediately.
+Por eso el primer pase de implementación extiende `cost_events` en lugar de introducir una segunda tabla de inmediato.
 
-However, if Paperclip needs to account for the full billing surface of aggregators and managed AI platforms, then `cost_events` alone is not enough.
-Some charges are not cleanly representable as a single model inference event:
+Sin embargo, si Paperclip necesita contabilizar toda la superficie de facturación de agregadores y plataformas de IA gestionadas, entonces `cost_events` solo no es suficiente.
+Algunos cargos no se representan limpiamente como un solo evento de inferencia de modelo:
 
-- account top-ups and credit purchases
-- platform fees charged at purchase time
-- BYOK platform fees that are account-level or threshold-based
-- prepaid credit expirations, refunds, and adjustments
-- provisioned throughput commitments
-- fine-tuning, training, model import, and storage charges
-- gateway logging or other platform overhead that is not attributable to one prompt/response pair
+- recargas de cuenta y compras de créditos
+- cargos de plataforma cobrados al momento de la compra
+- cargos de plataforma BYOK que son a nivel de cuenta o basados en umbral
+- vencimientos de créditos prepagados, reembolsos y ajustes
+- compromisos de rendimiento provisionado
+- ajuste fino, entrenamiento, importación de modelos y cargos de almacenamiento
+- registro de gateway u otra sobrecarga de plataforma no atribuible a un par prompt/respuesta
 
-So the decision is:
+Así que la decisión es:
 
-- near term: keep `cost_events` as the inference and usage ledger
-- next phase: add `finance_events` for non-inference financial events
+- corto plazo: mantener `cost_events` como el libro de inferencia y uso
+- próxima fase: agregar `finance_events` para eventos financieros no de inferencia
 
-This is a deliberate split between:
+Esta es una división deliberada entre:
 
-- usage and inference accounting
-- account-level and platform-level financial accounting
+- contabilidad de uso e inferencia
+- contabilidad financiera a nivel de cuenta y de plataforma
 
-That separation keeps request reporting honest without forcing us to fake invoice semantics onto rows that were never request-scoped.
+Esa separación mantiene honestos los informes de solicitudes sin forzarnos a fingir semántica de factura en filas que nunca tuvieron alcance de solicitud.
 
-## External Motivation And Sources
+## Motivación externa y fuentes
 
-The need for this model is not theoretical.
-It follows directly from the billing systems of providers and aggregators Paperclip needs to support.
+La necesidad de este modelo no es teórica.
+Sigue directamente de los sistemas de facturación de los proveedores y agregadores que Paperclip necesita admitir.
 
 ### OpenRouter
 
-Source URLs:
+URLs de fuente:
 
 - https://openrouter.ai/docs/faq#credit-and-billing-systems
 - https://openrouter.ai/pricing
 
-Relevant billing behavior as of March 14, 2026:
+Comportamiento de facturación relevante al 14 de marzo de 2026:
 
-- OpenRouter passes through underlying inference pricing and deducts request cost from purchased credits.
-- OpenRouter charges a 5.5% fee with a $0.80 minimum when purchasing credits.
-- Crypto payments are charged a 5% fee.
-- BYOK has its own fee model after a free request threshold.
-- OpenRouter billing is aggregated at the OpenRouter account level even when the upstream provider is Anthropic, OpenAI, Google, or another provider.
+- OpenRouter traslada el precio de inferencia subyacente y descuenta el costo de la solicitud de los créditos comprados.
+- OpenRouter cobra un 5.5% de cargo con un mínimo de $0.80 al comprar créditos.
+- Los pagos con cripto tienen un cargo del 5%.
+- BYOK tiene su propio modelo de cargos tras un umbral de solicitudes gratuitas.
+- La facturación de OpenRouter se agrega a nivel de cuenta de OpenRouter incluso cuando el proveedor upstream es Anthropic, OpenAI, Google u otro proveedor.
 
-Implication for Paperclip:
+Implicación para Paperclip:
 
-- request usage belongs in `cost_events`
-- credit purchases, purchase fees, BYOK fees, refunds, and expirations belong in `finance_events`
-- `biller=openrouter` must remain distinct from `provider=anthropic|openai|google|...`
+- el uso de solicitudes pertenece a `cost_events`
+- las compras de créditos, cargos de compra, cargos BYOK, reembolsos y vencimientos pertenecen a `finance_events`
+- `biller=openrouter` debe seguir siendo distinto de `provider=anthropic|openai|google|...`
 
-### Cloudflare AI Gateway Unified Billing
+### Facturación unificada de Cloudflare AI Gateway
 
-Source URL:
+URL de fuente:
 
 - https://developers.cloudflare.com/ai-gateway/features/unified-billing/
 
-Relevant billing behavior as of March 14, 2026:
+Comportamiento de facturación relevante al 14 de marzo de 2026:
 
-- Unified Billing lets users call multiple upstream providers while receiving a single Cloudflare bill.
-- Usage is paid from Cloudflare-loaded credits.
-- Cloudflare supports manual top-ups and auto top-up thresholds.
-- Spend limits can stop request processing on daily, weekly, or monthly boundaries.
-- Unified Billing traffic can use Cloudflare-managed credentials rather than the user's direct provider key.
+- la Facturación unificada permite a los usuarios llamar a múltiples proveedores upstream recibiendo una sola factura de Cloudflare.
+- El uso se paga con créditos cargados de Cloudflare.
+- Cloudflare admite recargas manuales y umbrales de recarga automática.
+- Los límites de gasto pueden detener el procesamiento de solicitudes en límites diarios, semanales o mensuales.
+- El tráfico de Facturación unificada puede usar credenciales gestionadas por Cloudflare en lugar de la clave directa del proveedor del usuario.
 
-Implication for Paperclip:
+Implicación para Paperclip:
 
-- request usage needs `biller=cloudflare`
-- upstream provider still needs to be preserved separately
-- Cloudflare credit loads and related account-level events are not inference rows and should not be forced into `cost_events`
-- quota and limits reporting must support biller-level controls, not just upstream provider limits
+- el uso de solicitudes necesita `biller=cloudflare`
+- el proveedor upstream aún necesita conservarse por separado
+- las cargas de créditos de Cloudflare y eventos relacionados a nivel de cuenta no son filas de inferencia y no deberían forzarse en `cost_events`
+- los informes de cuota y límites deben admitir controles a nivel de facturador, no solo límites de proveedor upstream
 
 ### Amazon Bedrock
 
-Source URL:
+URL de fuente:
 
 - https://aws.amazon.com/bedrock/pricing/
 
-Relevant billing behavior as of March 14, 2026:
+Comportamiento de facturación relevante al 14 de marzo de 2026:
 
-- Bedrock supports on-demand and batch pricing.
-- Bedrock pricing varies by region.
-- some pricing tiers add premiums or discounts relative to standard pricing
-- provisioned throughput is commitment-based rather than request-based
-- custom model import uses Custom Model Units billed per minute, with monthly storage charges
-- imported model copies are billed in 5-minute windows once active
-- customization and fine-tuning introduce training and hosted-model charges beyond normal inference
+- Bedrock admite precios bajo demanda y por lotes.
+- Los precios de Bedrock varían por región.
+- algunos niveles de precios agregan primas o descuentos relativos al precio estándar
+- el rendimiento provisionado es basado en compromiso en lugar de basado en solicitud
+- la importación de modelos personalizados usa Custom Model Units facturadas por minuto, con cargos mensuales de almacenamiento
+- las copias de modelos importados se facturan en ventanas de 5 minutos una vez activas
+- la personalización y el ajuste fino introducen cargos de entrenamiento y de modelos alojados más allá de la inferencia normal
 
-Implication for Paperclip:
+Implicación para Paperclip:
 
-- normal tokenized inference fits in `cost_events`
-- provisioned throughput, custom model unit charges, training, and storage charges require `finance_events`
-- region and pricing tier need to be first-class dimensions in the financial model
+- la inferencia normal con tokens encaja en `cost_events`
+- el rendimiento provisionado, los cargos de Custom Model Units, el entrenamiento y los cargos de almacenamiento requieren `finance_events`
+- la región y el nivel de precios necesitan ser dimensiones de primera clase en el modelo financiero
 
-## Ledger Boundary
+## Límite del libro
 
-To keep the system coherent, the table boundary should be explicit.
+Para mantener el sistema coherente, el límite de la tabla debería ser explícito.
 
 ### `cost_events`
 
-Use `cost_events` for request-scoped usage and inference charges:
+Usar `cost_events` para uso con alcance de solicitud y cargos de inferencia:
 
-- one row per billable or usage-bearing run event
-- provider/model/biller/billingType/tokens/cost
-- optionally tied to `heartbeat_run_id`
-- supports direct APIs, subscriptions, overage, OpenRouter-routed inference, Cloudflare-routed inference, and Bedrock on-demand inference
+- una fila por evento de ejecución facturable o con uso
+- proveedor/modelo/facturador/tipo de facturación/tokens/costo
+- opcionalmente ligado a `heartbeat_run_id`
+- admite API directas, suscripciones, excedente, inferencia enrutada por OpenRouter, inferencia enrutada por Cloudflare e inferencia bajo demanda de Bedrock
 
 ### `finance_events`
 
-Use `finance_events` for account-scoped or platform-scoped financial events:
+Usar `finance_events` para eventos financieros con alcance de cuenta o de plataforma:
 
-- credit purchase
-- top-up
-- refund
-- fee
-- expiry
-- provisioned capacity
-- training
-- model import
-- storage
-- invoice adjustment
+- compra de créditos
+- recarga
+- reembolso
+- cargo
+- vencimiento
+- capacidad provisionada
+- entrenamiento
+- importación de modelo
+- almacenamiento
+- ajuste de factura
 
-These rows may or may not have a related model, provider, or run id.
-Trying to force them into `cost_events` would either create fake request rows or create null-heavy rows that mean something fundamentally different from inference usage.
+Estas filas pueden o no tener un modelo, proveedor o id de ejecución relacionado.
+Intentar forzarlas en `cost_events` crearía filas de solicitud falsas o filas pesadas en nulos que significan algo fundamentalmente distinto del uso de inferencia.
 
-## Canonical Billing Dimensions
+## Dimensiones canónicas de facturación
 
-Every persisted billing event should model four separate axes:
+Cada evento de facturación persistido debería modelar cuatro ejes separados:
 
-1. Usage provider
-   The upstream provider whose model performed the work.
-   Examples: `openai`, `anthropic`, `google`.
+1. Proveedor de uso
+   El proveedor upstream cuyo modelo realizó el trabajo.
+   Ejemplos: `openai`, `anthropic`, `google`.
 
-2. Biller
-   The system that charged for the usage.
-   Examples: `openai`, `anthropic`, `openrouter`, `cursor`, `chatgpt`.
+2. Facturador
+   El sistema que cobró por el uso.
+   Ejemplos: `openai`, `anthropic`, `openrouter`, `cursor`, `chatgpt`.
 
-3. Billing type
-   The pricing mode applied to the event.
-   Initial canonical values:
+3. Tipo de facturación
+   El modo de precio aplicado al evento.
+   Valores canónicos iniciales:
    - `metered_api`
    - `subscription_included`
    - `subscription_overage`
@@ -192,43 +192,43 @@ Every persisted billing event should model four separate axes:
    - `fixed`
    - `unknown`
 
-4. Measures
-   Usage and billing must both be storable:
+4. Medidas
+   El uso y la facturación deben ser ambos almacenables:
    - `input_tokens`
    - `output_tokens`
    - `cached_input_tokens`
    - `cost_cents`
 
-These dimensions are independent.
-For example, an event may be:
+Estas dimensiones son independientes.
+Por ejemplo, un evento puede ser:
 
-- provider: `anthropic`
-- biller: `openrouter`
-- billing type: `metered_api`
-- tokens: non-zero
-- cost cents: non-zero
+- proveedor: `anthropic`
+- facturador: `openrouter`
+- tipo de facturación: `metered_api`
+- tokens: distintos de cero
+- centavos de costo: distintos de cero
 
-Or:
+O:
 
-- provider: `anthropic`
-- biller: `anthropic`
-- billing type: `subscription_included`
-- tokens: non-zero
-- cost cents: `0`
+- proveedor: `anthropic`
+- facturador: `anthropic`
+- tipo de facturación: `subscription_included`
+- tokens: distintos de cero
+- centavos de costo: `0`
 
-## Schema Changes
+## Cambios de esquema
 
-Extend `cost_events` with:
+Extender `cost_events` con:
 
 - `heartbeat_run_id uuid null references heartbeat_runs.id`
 - `biller text not null default 'unknown'`
 - `billing_type text not null default 'unknown'`
 - `cached_input_tokens int not null default 0`
 
-Keep `provider` as the upstream usage provider.
-Do not overload `provider` to mean biller.
+Mantener `provider` como el proveedor de uso upstream.
+No sobrecargar `provider` para que signifique facturador.
 
-Add a future `finance_events` table for account-level financial events with fields along these lines:
+Agregar una futura tabla `finance_events` para eventos financieros a nivel de cuenta con campos en esta línea:
 
 - `company_id`
 - `occurred_at`
@@ -250,219 +250,219 @@ Add a future `finance_events` table for account-level financial events with fiel
 - `external_invoice_id nullable`
 - `metadata_json nullable`
 
-Add indexes:
+Agregar índices:
 
 - `(company_id, biller, occurred_at)`
 - `(company_id, provider, occurred_at)`
-- `(company_id, heartbeat_run_id)` if distinct-run reporting remains common
+- `(company_id, heartbeat_run_id)` si los informes distintos por ejecución siguen siendo comunes
 
-## Shared Contract Changes
+## Cambios de contrato compartido
 
-### Shared types
+### Tipos compartidos
 
-Add a shared billing type union and enrich cost types with:
-
-- `heartbeatRunId`
-- `biller`
-- `billingType`
-- `cachedInputTokens`
-
-Update reporting response types so the provider breakdown reflects the ledger directly rather than inferred run metadata.
-
-### Validators
-
-Extend `createCostEventSchema` to accept:
+Agregar una unión de tipo de facturación compartida y enriquecer los tipos de costo con:
 
 - `heartbeatRunId`
 - `biller`
 - `billingType`
 - `cachedInputTokens`
 
-Defaults:
+Actualizar los tipos de respuesta de informes para que el desglose por proveedor refleje el libro directamente en lugar de metadatos de ejecución inferidos.
 
-- `biller` defaults to `provider`
-- `billingType` defaults to `unknown`
-- `cachedInputTokens` defaults to `0`
+### Validadores
 
-## Adapter Contract Changes
+Extender `createCostEventSchema` para aceptar:
 
-Extend adapter execution results so they can report:
+- `heartbeatRunId`
+- `biller`
+- `billingType`
+- `cachedInputTokens`
+
+Valores predeterminados:
+
+- `biller` usa por defecto `provider`
+- `billingType` usa por defecto `unknown`
+- `cachedInputTokens` usa por defecto `0`
+
+## Cambios de contrato del adaptador
+
+Extender los resultados de ejecución del adaptador para que puedan reportar:
 
 - `biller`
-- richer billing type values
+- valores de tipo de facturación más ricos
 
-Backwards compatibility:
+Compatibilidad con versiones anteriores:
 
-- existing adapter values `api` and `subscription` are treated as legacy aliases
-- map `api -> metered_api`
-- map `subscription -> subscription_included`
+- los valores existentes de adaptador `api` y `subscription` se tratan como alias heredados
+- mapear `api -> metered_api`
+- mapear `subscription -> subscription_included`
 
-Future adapters may emit the canonical values directly.
+Los futuros adaptadores pueden emitir los valores canónicos directamente.
 
-OpenRouter support will use:
+El soporte de OpenRouter usará:
 
-- `provider` = upstream provider when known
+- `provider` = proveedor upstream cuando se conozca
 - `biller` = `openrouter`
-- `billingType` = `metered_api` unless OpenRouter later exposes another billing mode
+- `billingType` = `metered_api` a menos que OpenRouter exponga más adelante otro modo de facturación
 
-Cloudflare Unified Billing support will use:
+El soporte de Facturación unificada de Cloudflare usará:
 
-- `provider` = upstream provider when known
+- `provider` = proveedor upstream cuando se conozca
 - `biller` = `cloudflare`
-- `billingType` = `credits` or `metered_api` depending on the normalized request billing contract
+- `billingType` = `credits` o `metered_api` según el contrato normalizado de facturación de solicitud
 
-Bedrock support will use:
+El soporte de Bedrock usará:
 
-- `provider` = upstream provider or `aws_bedrock` depending on adapter shape
+- `provider` = proveedor upstream o `aws_bedrock` según la forma del adaptador
 - `biller` = `aws_bedrock`
-- `billingType` = request-scoped mode for inference rows
-- `finance_events` for provisioned, training, import, and storage charges
+- `billingType` = modo con alcance de solicitud para filas de inferencia
+- `finance_events` para cargos provisionados, de entrenamiento, de importación y de almacenamiento
 
-## Write Path Changes
+## Cambios de ruta de escritura
 
-### Heartbeat-created events
+### Eventos creados por latido
 
-When a heartbeat run produces usage or spend:
+Cuando una ejecución de latido produce uso o gasto:
 
-1. normalize adapter billing metadata
-2. write a ledger row to `cost_events`
-3. attach `heartbeat_run_id`
-4. set `provider`, `biller`, `billing_type`, token fields, and `cost_cents`
+1. normalizar los metadatos de facturación del adaptador
+2. escribir una fila del libro en `cost_events`
+3. adjuntar `heartbeat_run_id`
+4. establecer `provider`, `biller`, `billing_type`, campos de tokens y `cost_cents`
 
-The write path should no longer depend on later inference from `heartbeat_runs`.
+La ruta de escritura ya no debería depender de inferencia posterior desde `heartbeat_runs`.
 
-### Manual API-created events
+### Eventos creados manualmente por API
 
-Manual cost event creation remains supported.
-These events may have `heartbeatRunId = null`.
+La creación manual de eventos de costo sigue admitida.
+Estos eventos pueden tener `heartbeatRunId = null`.
 
-Rules:
+Reglas:
 
-- `provider` remains required
-- `biller` defaults to `provider`
-- `billingType` defaults to `unknown`
+- `provider` sigue siendo requerido
+- `biller` usa por defecto `provider`
+- `billingType` usa por defecto `unknown`
 
-## Reporting Changes
+## Cambios de informes
 
-### Server
+### Servidor
 
-Refactor reporting queries to use `cost_events` only.
+Refactorizar las consultas de informes para usar solo `cost_events`.
 
 #### `summary`
 
-- sum `cost_cents`
+- sumar `cost_cents`
 
 #### `by-agent`
 
-- sum costs and token fields from `cost_events`
-- use `count(distinct heartbeat_run_id)` filtered by billing type for run counts
-- use token sums filtered by billing type for subscription usage
+- sumar costos y campos de tokens desde `cost_events`
+- usar `count(distinct heartbeat_run_id)` filtrado por tipo de facturación para conteos de ejecuciones
+- usar sumas de tokens filtradas por tipo de facturación para uso de suscripción
 
 #### `by-provider`
 
-- group by `provider`, `model`
-- sum costs and token fields directly from the ledger
-- derive billing-type slices from `cost_events.billing_type`
-- never pro-rate from unrelated `heartbeat_runs`
+- agrupar por `provider`, `model`
+- sumar costos y campos de tokens directamente desde el libro
+- derivar segmentos de tipo de facturación desde `cost_events.billing_type`
+- nunca prorratear desde `heartbeat_runs` no relacionados
 
-#### future `by-biller`
+#### futuro `by-biller`
 
-- group by `biller`
-- this is the right view for invoice and subscription accountability
+- agrupar por `biller`
+- esta es la vista correcta para responsabilidad de facturas y suscripciones
 
 #### `window-spend`
 
-- continue to use `cost_events`
+- seguir usando `cost_events`
 
-#### project attribution
+#### atribución de proyecto
 
-Keep current project attribution logic for now, but prefer `cost_events.heartbeat_run_id` as the join anchor whenever possible.
+Mantener por ahora la lógica actual de atribución de proyecto, pero preferir `cost_events.heartbeat_run_id` como ancla de unión cuando sea posible.
 
-## UI Changes
+## Cambios de UI
 
-### Principles
+### Principios
 
-- Spend, usage, and quota are related but distinct
-- a missing quota fetch is not the same as “no quota”
-- provider and biller are different dimensions
+- Gasto, uso y cuota están relacionados pero son distintos
+- una obtención de cuota faltante no es lo mismo que "sin cuota"
+- proveedor y facturador son dimensiones diferentes
 
-### Immediate UI changes
+### Cambios inmediatos de UI
 
-1. Keep the current costs page structure.
-2. Make the provider cards accurate by reading only ledger-backed values.
-3. Show provider quota fetch errors explicitly instead of dropping them.
+1. Mantener la estructura actual de la página de costos.
+2. Hacer precisas las tarjetas de proveedor leyendo solo valores respaldados por el libro.
+3. Mostrar explícitamente los errores de obtención de cuota de proveedor en lugar de descartarlos.
 
-### Follow-up UI direction
+### Dirección futura de UI
 
-The long-term board UI should expose:
+La UI de tablero a largo plazo debería exponer:
 
-- Spend
-  Dollars by biller, provider, model, agent, project
-- Usage
-  Tokens by provider, model, agent, project
-- Quotas
-  Live provider or biller limits, credits, and reset windows
-- Financial events
-  Credit purchases, top-ups, fees, refunds, commitments, storage, and other non-inference charges
+- Gasto
+  Dólares por facturador, proveedor, modelo, agente, proyecto
+- Uso
+  Tokens por proveedor, modelo, agente, proyecto
+- Cuotas
+  Límites vivos de proveedor o facturador, créditos y ventanas de reinicio
+- Eventos financieros
+  Compras de créditos, recargas, cargos, reembolsos, compromisos, almacenamiento y otros cargos no de inferencia
 
-## Migration Plan
+## Plan de migración
 
-Migration behavior:
+Comportamiento de migración:
 
-- add new non-destructive columns with defaults
-- backfill existing rows:
+- agregar nuevas columnas no destructivas con valores predeterminados
+- rellenar filas existentes:
   - `biller = provider`
   - `billing_type = 'unknown'`
   - `cached_input_tokens = 0`
   - `heartbeat_run_id = null`
 
-Do **not** attempt to backfill historical provider-level subscription attribution from `heartbeat_runs`.
-That data was never stored with the required dimensions.
+**No** intentar rellenar la atribución histórica de suscripción a nivel de proveedor desde `heartbeat_runs`.
+Esos datos nunca se almacenaron con las dimensiones requeridas.
 
-## Testing Plan
+## Plan de pruebas
 
-Add or update tests for:
+Agregar o actualizar pruebas para:
 
-1. heartbeat-created ledger rows persist `heartbeatRunId`, `biller`, `billingType`, and cached tokens
-2. legacy adapter billing values map correctly
-3. provider reporting uses ledger data only
-4. mixed-provider companies do not cross-attribute subscription usage
-5. zero-dollar subscription usage still appears in token reporting
-6. quota fetch failures render explicit UI state
-7. manual cost events still validate and write correctly
-8. biller reporting keeps upstream provider breakdowns separate
-9. OpenRouter-style rows can show `biller=openrouter` with non-OpenRouter upstream providers
-10. Cloudflare-style rows can show `biller=cloudflare` with preserved upstream provider identity
-11. future `finance_events` aggregation handles non-request charges without requiring a model or run id
+1. las filas del libro creadas por latido persisten `heartbeatRunId`, `biller`, `billingType` y tokens en caché
+2. los valores heredados de facturación del adaptador se mapean correctamente
+3. los informes de proveedor usan solo datos del libro
+4. las empresas con múltiples proveedores no atribuyen uso de suscripción cruzado
+5. el uso de suscripción de cero dólares aún aparece en informes de tokens
+6. las fallas de obtención de cuota renderizan estado explícito de UI
+7. los eventos de costo manuales aún se validan y escriben correctamente
+8. los informes de facturador mantienen separados los desgloses de proveedor upstream
+9. las filas estilo OpenRouter pueden mostrar `biller=openrouter` con proveedores upstream no OpenRouter
+10. las filas estilo Cloudflare pueden mostrar `biller=cloudflare` con identidad de proveedor upstream preservada
+11. la futura agregación de `finance_events` maneja cargos no de solicitud sin requerir un modelo o id de ejecución
 
-## Delivery Plan
+## Plan de entrega
 
-### Step 1
+### Paso 1
 
-- land the ledger contract and query rewrite
-- make the current costs page correct
+- aterrizar el contrato del libro y la reescritura de consultas
+- hacer correcta la página actual de costos
 
-### Step 2
+### Paso 2
 
-- add biller-oriented reporting endpoints and UI
+- agregar endpoints de informes orientados a facturador y UI
 
-### Step 3
+### Paso 3
 
-- wire OpenRouter and any future aggregator adapters to the same contract
+- conectar OpenRouter y cualquier adaptador agregador futuro al mismo contrato
 
-### Step 4
+### Paso 4
 
-- add `executionAdapterType` to persisted cost reporting if adapter-level grouping becomes a product requirement
+- agregar `executionAdapterType` al informe de costos persistido si la agrupación a nivel de adaptador se convierte en un requisito de producto
 
-### Step 5
+### Paso 5
 
-- introduce `finance_events`
-- add non-inference accounting endpoints
-- add UI for platform/account charges alongside inference spend and usage
+- introducir `finance_events`
+- agregar endpoints de contabilidad no de inferencia
+- agregar UI para cargos de plataforma/cuenta junto al gasto y uso de inferencia
 
-## Non-Goals For This Change
+## No objetivos de este cambio
 
-- multi-currency support
-- invoice reconciliation
-- provider-specific cost estimation beyond persisted billed cost
-- replacing `heartbeat_runs` as the operational run record
+- soporte multimoneda
+- conciliación de facturas
+- estimación de costos específica de proveedor más allá del costo facturado persistido
+- reemplazar `heartbeat_runs` como el registro operativo de ejecución

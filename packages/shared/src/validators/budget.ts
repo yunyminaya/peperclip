@@ -28,7 +28,7 @@ export const resolveBudgetIncidentSchema = z.object({
   if (value.action === "raise_budget_and_resume" && typeof value.amount !== "number") {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "amount is required when raising a budget",
+      message: "amount es obligatorio al aumentar un presupuesto",
       path: ["amount"],
     });
   }

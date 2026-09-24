@@ -11,9 +11,9 @@ import { ArrowLeft } from "lucide-react";
 import { NotFoundPage } from "./NotFound";
 
 /**
- * Company-context plugin page. Renders a plugin's `page` slot at
- * `/:companyPrefix/plugins/:pluginId` when the plugin declares a page slot
- * and is enabled for that company.
+ * Página de plugin en contexto de empresa. Renderiza el slot `page` de un plugin en
+ * `/:companyPrefix/plugins/:pluginId` cuando el plugin declara un slot de página
+ * y está habilitado para esa empresa.
  *
  * @see doc/plugins/PLUGIN_SPEC.md §19.2 — Company-Context Routes
  * @see doc/plugins/PLUGIN_SPEC.md §24.4 — Company-Context Plugin Page
@@ -104,13 +104,13 @@ export function PluginPage() {
     }
     return (
       <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">Select a company to view this page.</p>
+        <p className="text-sm text-muted-foreground">Selecciona una empresa para ver esta página.</p>
       </div>
     );
   }
 
   if (!contributions) {
-    return <div className="text-sm text-muted-foreground">Loading…</div>;
+    return <div className="text-sm text-muted-foreground">Cargando…</div>;
   }
 
   if (!pluginId && pluginRoutePath) {
@@ -120,7 +120,7 @@ export function PluginPage() {
     if (duplicateMatches.length > 1) {
       return (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          Multiple plugins declare the route <code>{pluginRoutePath}</code>. Use the plugin-id route until the conflict is resolved.
+          Varios plugins declaran la ruta <code>{pluginRoutePath}</code>. Usa la ruta con el ID del plugin hasta que se resuelva el conflicto.
         </div>
       );
     }
@@ -130,7 +130,7 @@ export function PluginPage() {
     if (pluginRoutePath) {
       return <NotFoundPage scope="board" />;
     }
-    // No page slot: redirect to plugin settings where plugin info is always shown
+    // Sin slot de página: redirigir a los ajustes del plugin, donde la información del plugin siempre se muestra
     const settingsPath = pluginId ? `/instance/settings/plugins/${pluginId}` : "/instance/settings/plugins";
     return <Navigate to={settingsPath} replace />;
   }
@@ -141,7 +141,7 @@ export function PluginPage() {
         <Button variant="ghost" size="sm" asChild>
           <Link to={companyPrefix ? `/${companyPrefix}/dashboard` : "/dashboard"}>
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
+            Atrás
           </Link>
         </Button>
       </div>

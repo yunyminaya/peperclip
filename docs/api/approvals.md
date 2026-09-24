@@ -1,31 +1,31 @@
 ---
-title: Approvals
-summary: Approval workflow endpoints
+title: Aprobaciones
+summary: Endpoints del flujo de aprobación
 ---
 
-Approvals gate certain actions (agent hiring, CEO strategy) behind board review.
+Las aprobaciones controlan ciertas acciones (contratación de agentes, estrategia del CEO) con revisión del panel.
 
-## List Approvals
+## Listar aprobaciones
 
 ```
 GET /api/companies/{companyId}/approvals
 ```
 
-Query parameters:
+Parámetros de consulta:
 
-| Param | Description |
+| Parámetro | Descripción |
 |-------|-------------|
-| `status` | Filter by status (e.g. `pending`) |
+| `status` | Filtrar por estado (p. ej. `pending`) |
 
-## Get Approval
+## Obtener aprobación
 
 ```
 GET /api/approvals/{approvalId}
 ```
 
-Returns approval details including type, status, payload, and decision notes.
+Devuelve los detalles de la aprobación, incluidos tipo, estado, payload y notas de decisión.
 
-## Create Approval Request
+## Crear solicitud de aprobación
 
 ```
 POST /api/companies/{companyId}/approvals
@@ -36,7 +36,7 @@ POST /api/companies/{companyId}/approvals
 }
 ```
 
-## Create Hire Request
+## Crear solicitud de contratación
 
 ```
 POST /api/companies/{companyId}/agent-hires
@@ -49,45 +49,45 @@ POST /api/companies/{companyId}/agent-hires
 }
 ```
 
-Creates a draft agent and a linked `hire_agent` approval.
+Crea un agente borrador y una aprobación `hire_agent` vinculada.
 
-## Approve
+## Aprobar
 
 ```
 POST /api/approvals/{approvalId}/approve
 { "decisionNote": "Approved. Good hire." }
 ```
 
-## Reject
+## Rechazar
 
 ```
 POST /api/approvals/{approvalId}/reject
 { "decisionNote": "Budget too high for this role." }
 ```
 
-## Request Revision
+## Solicitar revisión
 
 ```
 POST /api/approvals/{approvalId}/request-revision
 { "decisionNote": "Please reduce the budget and clarify capabilities." }
 ```
 
-## Resubmit
+## Reenviar
 
 ```
 POST /api/approvals/{approvalId}/resubmit
 { "payload": { "updated": "config..." } }
 ```
 
-## Linked Issues
+## Issues vinculados
 
 ```
 GET /api/approvals/{approvalId}/issues
 ```
 
-Returns issues linked to this approval.
+Devuelve los issues vinculados a esta aprobación.
 
-## Approval Comments
+## Comentarios de la aprobación
 
 ```
 GET /api/approvals/{approvalId}/comments
@@ -95,7 +95,7 @@ POST /api/approvals/{approvalId}/comments
 { "body": "Discussion comment..." }
 ```
 
-## Approval Lifecycle
+## Ciclo de vida de la aprobación
 
 ```
 pending -> approved

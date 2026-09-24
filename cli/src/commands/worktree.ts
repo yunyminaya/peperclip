@@ -178,11 +178,11 @@ const WORKTREE_NAME_PREFIX = "paperclip-";
 function resolveWorktreeMakeName(name: string): string {
   const value = nonEmpty(name);
   if (!value) {
-    throw new Error("Worktree name is required.");
+    throw new Error("Se requiere el nombre del worktree.");
   }
   if (!/^[A-Za-z0-9._-]+$/.test(value)) {
     throw new Error(
-      "Worktree name must contain only letters, numbers, dots, underscores, or dashes.",
+      "El nombre del worktree solo puede contener letras, números, puntos, guiones bajos o guiones.",
     );
   }
   return value.startsWith(WORKTREE_NAME_PREFIX) ? value : `${WORKTREE_NAME_PREFIX}${value}`;
@@ -203,18 +203,18 @@ type ConfiguredStorage = {
 
 function assertStorageCompanyPrefix(companyId: string, objectKey: string): void {
   if (!objectKey.startsWith(`${companyId}/`) || objectKey.includes("..")) {
-    throw new Error(`Invalid object key for company ${companyId}.`);
+    throw new Error(`Clave de objeto inválida para la empresa ${companyId}.`);
   }
 }
 
 function normalizeStorageObjectKey(objectKey: string): string {
   const normalized = objectKey.replace(/\\/g, "/").trim();
   if (!normalized || normalized.startsWith("/")) {
-    throw new Error("Invalid object key.");
+    throw new Error("Clave de objeto inválida.");
   }
   const parts = normalized.split("/").filter((part) => part.length > 0);
   if (parts.length === 0 || parts.some((part) => part === "." || part === "..")) {
-    throw new Error("Invalid object key.");
+    throw new Error("Clave de objeto inválida.");
   }
   return parts.join("/");
 }
@@ -223,14 +223,14 @@ function resolveLocalStoragePath(baseDir: string, objectKey: string): string {
   const resolved = path.resolve(baseDir, normalizeStorageObjectKey(objectKey));
   const root = path.resolve(baseDir);
   if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) {
-    throw new Error("Invalid object key path.");
+    throw new Error("Ruta de clave de objeto inválida.");
   }
   return resolved;
 }
 
 async function s3BodyToBuffer(body: unknown): Promise<Buffer> {
   if (!body) {
-    throw new Error("Object not found.");
+    throw new Error("Objeto no encontrado.");
   }
   if (Buffer.isBuffer(body)) {
     return body;
@@ -258,7 +258,7 @@ async function s3BodyToBuffer(body: unknown): Promise<Buffer> {
     return Buffer.from(await candidate.arrayBuffer());
   }
 
-  throw new Error("Unsupported storage response body.");
+  throw new Error("Cuerpo de respuesta de almacenamiento no soportado.");
 }
 
 function normalizeS3Prefix(prefix: string | undefined): string {
@@ -339,7 +339,7 @@ function createConfiguredStorageFromPaperclipConfig(config: PaperclipConfig): Co
 function openConfiguredStorage(configPath: string): ConfiguredStorage {
   const config = readConfig(configPath);
   if (!config) {
-    throw new Error(`Config not found at ${configPath}.`);
+    throw new Error(`No se encontró config en ${configPath}.`);
   }
   return createConfiguredStorageFromPaperclipConfig(config);
 }
@@ -516,7 +516,7 @@ function collectClaimedWorktreePorts(homeDir: string, currentInstanceId: string,
         databasePorts.add(config.database.embeddedPostgresPort);
       }
     } catch {
-      // Ignore malformed sibling configs.
+      // Ignorar configs hermanas malformadas.
     }
   }
 
@@ -726,7 +726,7 @@ function resolveSourceConnectionString(config: PaperclipConfig, envEntries: Reco
     const connectionString = nonEmpty(envEntries.DATABASE_URL) ?? nonEmpty(config.database.connectionString);
     if (!connectionString) {
       throw new Error(
-        "Source instance uses postgres mode but has no connection string in config or adjacent .env.",
+        "La instancia fuente usa modo postgres pero no tiene connection string en la config ni en el .env adyacente.",
       );
     }
     return connectionString;
@@ -773,7 +773,7 @@ export function copySeededSecretsKey(input: {
 
   if (!existsSync(sourceKeyFilePath)) {
     throw new Error(
-      `Cannot seed worktree database because source local_encrypted secrets key was not found at ${sourceKeyFilePath}.`,
+      `No se puede sembrar la base de datos del worktree porque no se encontró la clave local_encrypted de secretos fuente en ${sourceKeyFilePath}.`,
     );
   }
 
@@ -793,7 +793,7 @@ async function ensureEmbeddedPostgres(dataDir: string, preferredPort: number): P
     EmbeddedPostgres = mod.default as EmbeddedPostgresCtor;
   } catch {
     throw new Error(
-      "Embedded PostgreSQL support requires dependency `embedded-postgres`. Reinstall dependencies and try again.",
+      "El soporte de PostgreSQL embebido requiere la dependencia `embedded-postgres`. Reinstala las dependencias e inténtalo de nuevo.",
     );
   }
 
@@ -825,7 +825,7 @@ async function ensureEmbeddedPostgres(dataDir: string, preferredPort: number): P
       await instance.initialise();
     } catch (error) {
       throw formatEmbeddedPostgresError(error, {
-        fallbackMessage: `Failed to initialize embedded PostgreSQL cluster in ${dataDir} on port ${port}`,
+        fallbackMessage: `No se pudo inicializar el clúster de PostgreSQL embebido en ${dataDir} en el puerto ${port}`,
         recentLogs: logBuffer.getRecentLogs(),
       });
     }
@@ -837,7 +837,7 @@ async function ensureEmbeddedPostgres(dataDir: string, preferredPort: number): P
     await instance.start();
   } catch (error) {
     throw formatEmbeddedPostgresError(error, {
-      fallbackMessage: `Failed to start embedded PostgreSQL on port ${port}`,
+      fallbackMessage: `No se pudo iniciar PostgreSQL embebido en el puerto ${port}`,
       recentLogs: logBuffer.getRecentLogs(),
     });
   }
@@ -933,7 +933,7 @@ async function runWorktreeInit(opts: WorktreeInitOptions): Promise<void> {
   );
   const seedMode = opts.seedMode ?? "minimal";
   if (!isWorktreeSeedMode(seedMode)) {
-    throw new Error(`Unsupported seed mode "${seedMode}". Expected one of: minimal, full.`);
+    throw new Error(`Modo de siembra no soportado "${seedMode}". Se esperaba uno de: minimal, full.`);
   }
   const instanceId = sanitizeWorktreeInstanceId(opts.instance ?? worktreeName);
   const paths = resolveWorktreeLocalPaths({
@@ -950,7 +950,7 @@ async function runWorktreeInit(opts: WorktreeInitOptions): Promise<void> {
 
   if ((existsSync(paths.configPath) || existsSync(paths.instanceRoot)) && !opts.force) {
     throw new Error(
-      `Worktree config already exists at ${paths.configPath} or instance data exists at ${paths.instanceRoot}. Re-run with --force to replace it.`,
+      `La config del worktree ya existe en ${paths.configPath} o los datos de instancia existen en ${paths.instanceRoot}. Re-ejecuta con --force para reemplazarla.`,
     );
   }
 
@@ -995,11 +995,11 @@ async function runWorktreeInit(opts: WorktreeInitOptions): Promise<void> {
   if (opts.seed !== false) {
     if (!sourceConfig) {
       throw new Error(
-        `Cannot seed worktree database because source config was not found at ${sourceConfigPath}. Use --no-seed or provide --from-config.`,
+        `No se puede sembrar la base de datos del worktree porque no se encontró la config fuente en ${sourceConfigPath}. Usa --no-seed o proporciona --from-config.`,
       );
     }
     const spinner = p.spinner();
-    spinner.start(`Seeding isolated worktree database from source instance (${seedMode})...`);
+    spinner.start(`Sembrando la base de datos aislada del worktree desde la instancia fuente (${seedMode})...`);
     try {
       const seeded = await seedWorktreeDatabase({
         sourceConfigPath,
@@ -1011,36 +1011,36 @@ async function runWorktreeInit(opts: WorktreeInitOptions): Promise<void> {
       });
       seedSummary = seeded.backupSummary;
       reboundWorkspaceSummary = seeded.reboundWorkspaces;
-      spinner.stop(`Seeded isolated worktree database (${seedMode}).`);
+      spinner.stop(`Base de datos aislada del worktree sembrada (${seedMode}).`);
     } catch (error) {
-      spinner.stop(pc.red("Failed to seed worktree database."));
+      spinner.stop(pc.red("No se pudo sembrar la base de datos del worktree."));
       throw error;
     }
   }
 
-  p.log.message(pc.dim(`Repo config: ${paths.configPath}`));
-  p.log.message(pc.dim(`Repo env: ${paths.envPath}`));
-  p.log.message(pc.dim(`Isolated home: ${paths.homeDir}`));
-  p.log.message(pc.dim(`Instance: ${paths.instanceId}`));
-  p.log.message(pc.dim(`Worktree badge: ${branding.name} (${branding.color})`));
-  p.log.message(pc.dim(`Server port: ${serverPort} | DB port: ${databasePort}`));
+  p.log.message(pc.dim(`Config del repo: ${paths.configPath}`));
+  p.log.message(pc.dim(`Env del repo: ${paths.envPath}`));
+  p.log.message(pc.dim(`Home aislado: ${paths.homeDir}`));
+  p.log.message(pc.dim(`Instancia: ${paths.instanceId}`));
+  p.log.message(pc.dim(`Insignia del worktree: ${branding.name} (${branding.color})`));
+  p.log.message(pc.dim(`Puerto del servidor: ${serverPort} | Puerto de BD: ${databasePort}`));
   if (copiedGitHooks?.copied) {
     p.log.message(
-      pc.dim(`Mirrored git hooks: ${copiedGitHooks.sourceHooksPath} -> ${copiedGitHooks.targetHooksPath}`),
+      pc.dim(`Hooks de git replicados: ${copiedGitHooks.sourceHooksPath} -> ${copiedGitHooks.targetHooksPath}`),
     );
   }
   if (seedSummary) {
-    p.log.message(pc.dim(`Seed mode: ${seedMode}`));
-    p.log.message(pc.dim(`Seed snapshot: ${seedSummary}`));
+    p.log.message(pc.dim(`Modo de siembra: ${seedMode}`));
+    p.log.message(pc.dim(`Snapshot de siembra: ${seedSummary}`));
     for (const rebound of reboundWorkspaceSummary) {
       p.log.message(
-        pc.dim(`Rebound workspace ${rebound.name}: ${rebound.fromCwd} -> ${rebound.toCwd}`),
+        pc.dim(`Workspace redirigido ${rebound.name}: ${rebound.fromCwd} -> ${rebound.toCwd}`),
       );
     }
   }
   p.outro(
     pc.green(
-      `Worktree ready. Run Paperclip inside this repo and the CLI/server will use ${paths.instanceId} automatically.`,
+      `Worktree listo. Ejecuta Paperclip dentro de este repo y el CLI/servidor usará ${paths.instanceId} automáticamente.`,
     ),
   );
 }
@@ -1061,7 +1061,7 @@ export async function worktreeMakeCommand(nameArg: string, opts: WorktreeMakeOpt
   const sourceConfigPath = resolveSourceConfigPath(opts);
   const targetPath = resolveWorktreeMakeTargetPath(name);
   if (existsSync(targetPath)) {
-    throw new Error(`Target path already exists: ${targetPath}`);
+    throw new Error(`La ruta destino ya existe: ${targetPath}`);
   }
 
   mkdirSync(path.dirname(targetPath), { recursive: true });
@@ -1074,7 +1074,7 @@ export async function worktreeMakeCommand(nameArg: string, opts: WorktreeMakeOpt
       });
     } catch (error) {
       throw new Error(
-        `Failed to fetch from remote "${remote}": ${extractExecSyncErrorMessage(error) ?? String(error)}`,
+        `No se pudo hacer fetch desde el remoto "${remote}": ${extractExecSyncErrorMessage(error) ?? String(error)}`,
       );
     }
   }
@@ -1087,28 +1087,28 @@ export async function worktreeMakeCommand(nameArg: string, opts: WorktreeMakeOpt
   });
 
   const spinner = p.spinner();
-  spinner.start(`Creating git worktree at ${targetPath}...`);
+  spinner.start(`Creando git worktree en ${targetPath}...`);
   try {
     execFileSync("git", worktreeArgs, {
       cwd: sourceCwd,
       stdio: ["ignore", "pipe", "pipe"],
     });
-    spinner.stop(`Created git worktree at ${targetPath}.`);
+    spinner.stop(`Git worktree creado en ${targetPath}.`);
   } catch (error) {
-    spinner.stop(pc.red("Failed to create git worktree."));
+    spinner.stop(pc.red("No se pudo crear el git worktree."));
     throw new Error(extractExecSyncErrorMessage(error) ?? String(error));
   }
 
   const installSpinner = p.spinner();
-  installSpinner.start("Installing dependencies...");
+  installSpinner.start("Instalando dependencias...");
   try {
     execFileSync("pnpm", ["install"], {
       cwd: targetPath,
       stdio: ["ignore", "pipe", "pipe"],
     });
-    installSpinner.stop("Installed dependencies.");
+    installSpinner.stop("Dependencias instaladas.");
   } catch (error) {
-    installSpinner.stop(pc.yellow("Failed to install dependencies (continuing anyway)."));
+    installSpinner.stop(pc.yellow("No se pudieron instalar las dependencias (continuando de todos modos)."));
     p.log.warning(extractExecSyncErrorMessage(error) ?? String(error));
   }
 
@@ -1270,12 +1270,12 @@ export async function worktreeCleanupCommand(nameArg: string, opts: WorktreeClea
   );
 
   if (!hasBranch && !hasTargetDir && !hasInstanceData && !linkedWorktree) {
-    p.log.info("Nothing to clean up — no branch, worktree directory, or instance data found.");
-    p.outro(pc.green("Already clean."));
+    p.log.info("No hay nada que limpiar — no se encontraron rama, directorio de worktree ni datos de instancia.");
+    p.outro(pc.green("Ya estaba limpio."));
     return;
   }
 
-  // ── 2. Safety checks ────────────────────────────────────────────────
+  // ── 2. Chequeos de seguridad ────────────────────────────────────────────────
 
   const problems: string[] = [];
 
@@ -1283,19 +1283,19 @@ export async function worktreeCleanupCommand(nameArg: string, opts: WorktreeClea
     const onRemote = branchExistsOnAnyRemote(sourceCwd, name);
     if (onRemote) {
       p.log.info(
-        `Branch "${name}" has unique local commits, but the branch also exists on a remote — safe to delete locally.`,
+        `La rama "${name}" tiene commits locales únicos, pero la rama también existe en un remoto — es seguro eliminarla localmente.`,
       );
     } else {
       problems.push(
-        `Branch "${name}" has commits not found on any other branch or remote. ` +
-          `Deleting it will lose work. Push it first, or use --force.`,
+        `La rama "${name}" tiene commits que no están en ninguna otra rama o remoto. ` +
+          `Eliminarla perderá trabajo. Haz push primero o usa --force.`,
       );
     }
   }
 
   if (hasTargetDir && worktreePathHasUncommittedChanges(targetPath)) {
     problems.push(
-      `Worktree directory ${targetPath} has uncommitted changes. Commit or stash first, or use --force.`,
+      `El directorio del worktree ${targetPath} tiene cambios sin commit. Haz commit o stash primero, o usa --force.`,
     );
   }
 
@@ -1303,22 +1303,22 @@ export async function worktreeCleanupCommand(nameArg: string, opts: WorktreeClea
     for (const problem of problems) {
       p.log.error(problem);
     }
-    throw new Error("Safety checks failed. Resolve the issues above or re-run with --force.");
+    throw new Error("Los chequeos de seguridad fallaron. Resuelve los problemas de arriba o re-ejecuta con --force.");
   }
   if (problems.length > 0 && opts.force) {
     for (const problem of problems) {
-      p.log.warning(`Overridden by --force: ${problem}`);
+      p.log.warning(`Sobrescrito por --force: ${problem}`);
     }
   }
 
-  // ── 3. Clean up (idempotent steps) ──────────────────────────────────
+  // ── 3. Limpieza (pasos idempotentes) ──────────────────────────────────
 
   // 3a. Remove the git worktree registration
   if (linkedWorktree) {
     const worktreeDirExists = existsSync(linkedWorktree.worktree);
     const spinner = p.spinner();
     if (worktreeDirExists) {
-      spinner.start(`Removing git worktree at ${linkedWorktree.worktree}...`);
+      spinner.start(`Eliminando git worktree en ${linkedWorktree.worktree}...`);
       try {
         const removeArgs = ["worktree", "remove", linkedWorktree.worktree];
         if (opts.force) removeArgs.push("--force");
@@ -1326,21 +1326,21 @@ export async function worktreeCleanupCommand(nameArg: string, opts: WorktreeClea
           cwd: sourceCwd,
           stdio: ["ignore", "pipe", "pipe"],
         });
-        spinner.stop(`Removed git worktree at ${linkedWorktree.worktree}.`);
+        spinner.stop(`Git worktree eliminado en ${linkedWorktree.worktree}.`);
       } catch (error) {
-        spinner.stop(pc.yellow(`Could not remove worktree cleanly, will prune instead.`));
+        spinner.stop(pc.yellow(`No se pudo eliminar el worktree limpiamente, se hará prune en su lugar.`));
         p.log.warning(extractExecSyncErrorMessage(error) ?? String(error));
       }
     } else {
-      spinner.start("Pruning stale worktree entry...");
+      spinner.start("Haciendo prune de la entrada obsoleta del worktree...");
       execFileSync("git", ["worktree", "prune"], {
         cwd: sourceCwd,
         stdio: ["ignore", "pipe", "pipe"],
       });
-      spinner.stop("Pruned stale worktree entry.");
+      spinner.stop("Entrada obsoleta del worktree eliminada.");
     }
   } else {
-    // Even without a linked worktree, prune to clean up any orphaned entries
+    // Incluso sin un worktree vinculado, podar para limpiar entradas huérfanas
     execFileSync("git", ["worktree", "prune"], {
       cwd: sourceCwd,
       stdio: ["ignore", "pipe", "pipe"],
@@ -1350,24 +1350,24 @@ export async function worktreeCleanupCommand(nameArg: string, opts: WorktreeClea
   // 3b. Remove the worktree directory if it still exists (e.g. partial creation)
   if (existsSync(targetPath)) {
     const spinner = p.spinner();
-    spinner.start(`Removing worktree directory ${targetPath}...`);
+    spinner.start(`Eliminando directorio del worktree ${targetPath}...`);
     rmSync(targetPath, { recursive: true, force: true });
-    spinner.stop(`Removed worktree directory ${targetPath}.`);
+    spinner.stop(`Directorio del worktree eliminado ${targetPath}.`);
   }
 
   // 3c. Delete the local branch (now safe — worktree is gone)
   if (localBranchExists(sourceCwd, name)) {
     const spinner = p.spinner();
-    spinner.start(`Deleting local branch "${name}"...`);
+    spinner.start(`Eliminando rama local "${name}"...`);
     try {
       const deleteFlag = opts.force ? "-D" : "-d";
       execFileSync("git", ["branch", deleteFlag, name], {
         cwd: sourceCwd,
         stdio: ["ignore", "pipe", "pipe"],
       });
-      spinner.stop(`Deleted local branch "${name}".`);
+      spinner.stop(`Rama local "${name}" eliminada.`);
     } catch (error) {
-      spinner.stop(pc.yellow(`Could not delete branch "${name}".`));
+      spinner.stop(pc.yellow(`No se pudo eliminar la rama "${name}".`));
       p.log.warning(extractExecSyncErrorMessage(error) ?? String(error));
     }
   }
@@ -1375,12 +1375,12 @@ export async function worktreeCleanupCommand(nameArg: string, opts: WorktreeClea
   // 3d. Remove instance data
   if (existsSync(instanceRoot)) {
     const spinner = p.spinner();
-    spinner.start(`Removing instance data at ${instanceRoot}...`);
+    spinner.start(`Eliminando datos de instancia en ${instanceRoot}...`);
     rmSync(instanceRoot, { recursive: true, force: true });
-    spinner.stop(`Removed instance data at ${instanceRoot}.`);
+    spinner.stop(`Datos de instancia eliminados en ${instanceRoot}.`);
   }
 
-  p.outro(pc.green("Cleanup complete."));
+  p.outro(pc.green("Limpieza completa."));
 }
 
 export async function worktreeEnvCommand(opts: WorktreeEnvOptions): Promise<void> {
@@ -1457,7 +1457,7 @@ function resolveAttachmentLookupStorages(input: {
 async function openConfiguredDb(configPath: string): Promise<OpenDbHandle> {
   const config = readConfig(configPath);
   if (!config) {
-    throw new Error(`Config not found at ${configPath}.`);
+    throw new Error(`No se encontró config en ${configPath}.`);
   }
   const envEntries = readPaperclipEnvEntries(resolvePaperclipEnvFile(configPath));
   let embeddedHandle: EmbeddedPostgresHandle | null = null;
@@ -1477,7 +1477,7 @@ async function openConfiguredDb(configPath: string): Promise<OpenDbHandle> {
           ? ` Pending migrations: ${migrationState.pendingMigrations.join(", ")}.`
           : "";
       throw new Error(
-        `Database for ${configPath} is not up to date.${pending} Run \`pnpm db:migrate\` (or start Paperclip once) before using worktree merge history.`,
+        `La base de datos de ${configPath} no está actualizada.${pending} Ejecuta \`pnpm db:migrate\` (o inicia Paperclip una vez) antes de usar el historial de merges del worktree.`,
       );
     }
     const db = createDb(connectionString) as ClosableDb;
@@ -1528,7 +1528,7 @@ async function resolveMergeCompany(input: {
       (company) => company.id === selector || company.issuePrefix.toLowerCase() === selector.toLowerCase(),
     );
     if (!matched) {
-      throw new Error(`Could not resolve company "${selector}" in both source and target databases.`);
+      throw new Error(`No se pudo resolver la empresa "${selector}" en las bases de datos fuente y destino.`);
     }
     return matched;
   }
@@ -1538,13 +1538,13 @@ async function resolveMergeCompany(input: {
   }
 
   if (shared.length === 0) {
-    throw new Error("Source and target databases do not share a company id. Pass --company explicitly once both sides match.");
+    throw new Error("Las bases de datos fuente y destino no comparten un id de empresa. Pasa --company explícitamente cuando ambos lados coincidan.");
   }
 
   const options = shared
     .map((company) => `${company.issuePrefix} (${company.name})`)
     .join(", ");
-  throw new Error(`Multiple shared companies found. Re-run with --company <id-or-prefix>. Options: ${options}`);
+  throw new Error(`Se encontraron múltiples empresas compartidas. Re-ejecuta con --company <id-o-prefix>. Opciones: ${options}`);
 }
 
 function renderMergePlan(plan: Awaited<ReturnType<typeof collectMergePlan>>["plan"], extras: {
@@ -1560,23 +1560,23 @@ function renderMergePlan(plan: Awaited<ReturnType<typeof collectMergePlan>>["pla
     return `${value.slice(0, Math.max(0, maxWidth - 1)).trimEnd()}…`;
   };
   const lines = [
-    `Mode: preview`,
-    `Source: ${extras.sourcePath}`,
-    `Target: ${extras.targetPath}`,
-    `Company: ${plan.companyName} (${plan.issuePrefix})`,
+    `Modo: preview`,
+    `Fuente: ${extras.sourcePath}`,
+    `Destino: ${extras.targetPath}`,
+    `Empresa: ${plan.companyName} (${plan.issuePrefix})`,
     "",
-    "Projects",
-    `- import: ${plan.counts.projectsToImport}`,
+    "Proyectos",
+    `- importar: ${plan.counts.projectsToImport}`,
     "",
     "Issues",
-    `- insert: ${plan.counts.issuesToInsert}`,
-    `- already present: ${plan.counts.issuesExisting}`,
-    `- shared/imported issues with drift: ${plan.counts.issueDrift}`,
+    `- insertar: ${plan.counts.issuesToInsert}`,
+    `- ya presentes: ${plan.counts.issuesExisting}`,
+    `- issues compartidos/importados con desviación: ${plan.counts.issueDrift}`,
   ];
 
   if (plan.projectImports.length > 0) {
     lines.push("");
-    lines.push("Planned project imports");
+    lines.push("Importaciones de proyectos planificadas");
     for (const project of plan.projectImports) {
       lines.push(
         `- ${project.source.name} (${project.workspaces.length} workspace${project.workspaces.length === 1 ? "" : "s"})`,
@@ -1587,7 +1587,7 @@ function renderMergePlan(plan: Awaited<ReturnType<typeof collectMergePlan>>["pla
   const issueInserts = plan.issuePlans.filter((item): item is PlannedIssueInsert => item.action === "insert");
   if (issueInserts.length > 0) {
     lines.push("");
-    lines.push("Planned issue imports");
+    lines.push("Importaciones de issues planificadas");
     for (const issue of issueInserts) {
       const projectNote =
         (issue.projectResolution === "mapped" || issue.projectResolution === "imported")
@@ -1606,44 +1606,44 @@ function renderMergePlan(plan: Awaited<ReturnType<typeof collectMergePlan>>["pla
 
   if (plan.scopes.includes("comments")) {
     lines.push("");
-    lines.push("Comments");
-    lines.push(`- insert: ${plan.counts.commentsToInsert}`);
-    lines.push(`- already present: ${plan.counts.commentsExisting}`);
-    lines.push(`- skipped (missing parent): ${plan.counts.commentsMissingParent}`);
+    lines.push("Comentarios");
+    lines.push(`- insertar: ${plan.counts.commentsToInsert}`);
+    lines.push(`- ya presentes: ${plan.counts.commentsExisting}`);
+    lines.push(`- omitidos (sin padre): ${plan.counts.commentsMissingParent}`);
   }
 
   lines.push("");
-  lines.push("Documents");
-  lines.push(`- insert: ${plan.counts.documentsToInsert}`);
-  lines.push(`- merge existing: ${plan.counts.documentsToMerge}`);
-  lines.push(`- already present: ${plan.counts.documentsExisting}`);
-  lines.push(`- skipped (conflicting key): ${plan.counts.documentsConflictingKey}`);
-  lines.push(`- skipped (missing parent): ${plan.counts.documentsMissingParent}`);
-  lines.push(`- revisions insert: ${plan.counts.documentRevisionsToInsert}`);
+  lines.push("Documentos");
+  lines.push(`- insertar: ${plan.counts.documentsToInsert}`);
+  lines.push(`- fusionar existentes: ${plan.counts.documentsToMerge}`);
+  lines.push(`- ya presentes: ${plan.counts.documentsExisting}`);
+  lines.push(`- omitidos (clave en conflicto): ${plan.counts.documentsConflictingKey}`);
+  lines.push(`- omitidos (sin padre): ${plan.counts.documentsMissingParent}`);
+  lines.push(`- revisiones a insertar: ${plan.counts.documentRevisionsToInsert}`);
 
   lines.push("");
-  lines.push("Attachments");
-  lines.push(`- insert: ${plan.counts.attachmentsToInsert}`);
-  lines.push(`- already present: ${plan.counts.attachmentsExisting}`);
-  lines.push(`- skipped (missing parent): ${plan.counts.attachmentsMissingParent}`);
+  lines.push("Adjuntos");
+  lines.push(`- insertar: ${plan.counts.attachmentsToInsert}`);
+  lines.push(`- ya presentes: ${plan.counts.attachmentsExisting}`);
+  lines.push(`- omitidos (sin padre): ${plan.counts.attachmentsMissingParent}`);
 
   lines.push("");
-  lines.push("Adjustments");
-  lines.push(`- cleared assignee agents: ${plan.adjustments.clear_assignee_agent}`);
-  lines.push(`- cleared projects: ${plan.adjustments.clear_project}`);
-  lines.push(`- cleared project workspaces: ${plan.adjustments.clear_project_workspace}`);
-  lines.push(`- cleared goals: ${plan.adjustments.clear_goal}`);
-  lines.push(`- cleared comment author agents: ${plan.adjustments.clear_author_agent}`);
-  lines.push(`- cleared document agents: ${plan.adjustments.clear_document_agent}`);
-  lines.push(`- cleared document revision agents: ${plan.adjustments.clear_document_revision_agent}`);
-  lines.push(`- cleared attachment author agents: ${plan.adjustments.clear_attachment_agent}`);
-  lines.push(`- coerced in_progress to todo: ${plan.adjustments.coerce_in_progress_to_todo}`);
+  lines.push("Ajustes");
+  lines.push(`- agentes asignados borrados: ${plan.adjustments.clear_assignee_agent}`);
+  lines.push(`- proyectos borrados: ${plan.adjustments.clear_project}`);
+  lines.push(`- workspaces de proyecto borrados: ${plan.adjustments.clear_project_workspace}`);
+  lines.push(`- objetivos borrados: ${plan.adjustments.clear_goal}`);
+  lines.push(`- agentes autores de comentarios borrados: ${plan.adjustments.clear_author_agent}`);
+  lines.push(`- agentes de documentos borrados: ${plan.adjustments.clear_document_agent}`);
+  lines.push(`- agentes de revisiones de documentos borrados: ${plan.adjustments.clear_document_revision_agent}`);
+  lines.push(`- agentes autores de adjuntos borrados: ${plan.adjustments.clear_attachment_agent}`);
+  lines.push(`- in_progress convertidos a todo: ${plan.adjustments.coerce_in_progress_to_todo}`);
 
   lines.push("");
-  lines.push("Not imported in this phase");
-  lines.push(`- heartbeat runs: ${extras.unsupportedRunCount}`);
+  lines.push("No importado en esta fase");
+  lines.push(`- ejecuciones de latido: ${extras.unsupportedRunCount}`);
   lines.push("");
-  lines.push("Identifiers shown above are provisional preview values. `--apply` reserves fresh issue numbers at write time.");
+  lines.push("Los identificadores mostrados arriba son valores provisionales de vista previa. `--apply` reserva números de issue nuevos al escribir.");
 
   return lines.join("\n");
 }
@@ -1863,7 +1863,7 @@ async function collectMergePlan(input: {
   ]);
 
   if (!targetCompanyRow) {
-    throw new Error(`Target company ${companyId} was not found.`);
+    throw new Error(`No se encontró la empresa destino ${companyId}.`);
   }
 
   const plan = buildWorktreeMergePlan({
@@ -1944,31 +1944,31 @@ async function promptForProjectMappings(input: {
     );
     const importSelectionValue = `__import__:${sourceProjectId}`;
     const selection = await p.select<string | null>({
-      message: `Project "${sourceProject.name}" is missing in target. How should ${input.plan.issuePrefix} imports handle it?`,
+      message: `El proyecto "${sourceProject.name}" falta en el destino. ¿Cómo deben manejarlo las importaciones de ${input.plan.issuePrefix}?`,
       options: [
         {
           value: importSelectionValue,
-          label: `Import ${sourceProject.name}`,
-          hint: "Create the project and copy its workspace settings",
+          label: `Importar ${sourceProject.name}`,
+          hint: "Crear el proyecto y copiar sus ajustes de workspace",
         },
         ...(nameMatch
           ? [{
               value: nameMatch.id,
-              label: `Map to ${nameMatch.name}`,
-              hint: "Recommended: exact name match",
+              label: `Mapear a ${nameMatch.name}`,
+              hint: "Recomendado: coincidencia exacta de nombre",
             }]
           : []),
         {
           value: null,
-          label: "Leave unset",
-          hint: "Keep imported issues without a project",
+          label: "Dejar sin definir",
+          hint: "Mantener los issues importados sin proyecto",
         },
         ...targetChoices.filter((choice) => choice.value !== nameMatch?.id),
       ],
       initialValue: nameMatch?.id ?? null,
     });
     if (p.isCancel(selection)) {
-      throw new Error("Project mapping cancelled.");
+      throw new Error("Mapeo de proyectos cancelado.");
     }
     if (selection === importSelectionValue) {
       importProjectIds.add(sourceProjectId);
@@ -2018,7 +2018,7 @@ function resolveWorktreeEndpointFromSelector(
   const trimmed = selector.trim();
   const allowCurrent = opts?.allowCurrent !== false;
   if (trimmed.length === 0) {
-    throw new Error("Worktree selector cannot be empty.");
+    throw new Error("El selector de worktree no puede estar vacío.");
   }
 
   const currentEndpoint = resolveCurrentEndpoint();
@@ -2034,7 +2034,7 @@ function resolveWorktreeEndpointFromSelector(
     }
     const configPath = path.resolve(directPath, ".paperclip", "config.json");
     if (!existsSync(configPath)) {
-      throw new Error(`Resolved worktree path ${directPath} does not contain .paperclip/config.json.`);
+      throw new Error(`La ruta de worktree resuelta ${directPath} no contiene .paperclip/config.json.`);
     }
     return {
       rootPath: directPath,
@@ -2056,7 +2056,7 @@ function resolveWorktreeEndpointFromSelector(
     );
   }
   if (!matched.hasPaperclipConfig && !matched.isCurrent) {
-    throw new Error(`Resolved worktree "${selector}" does not look like a Paperclip worktree.`);
+    throw new Error(`El worktree resuelto "${selector}" no parece un worktree de Paperclip.`);
   }
   return resolveEndpointFromChoice(matched);
 }
@@ -2070,17 +2070,17 @@ async function promptForSourceEndpoint(excludeWorktreePath?: string): Promise<Re
     .map((choice) => ({
       value: choice.isCurrent ? "__current__" : choice.worktree,
       label: choice.branchLabel,
-      hint: `${choice.worktree}${choice.isCurrent ? " (current)" : ""}`,
+      hint: `${choice.worktree}${choice.isCurrent ? " (actual)" : ""}`,
     }));
   if (choices.length === 0) {
-    throw new Error("No Paperclip worktrees were found. Run `paperclipai worktree:list` to inspect the repo worktrees.");
+    throw new Error("No se encontraron worktrees de Paperclip. Ejecuta `paperclipai worktree:list` para inspeccionar los worktrees del repo.");
   }
   const selection = await p.select<string>({
-    message: "Choose the source worktree to import from",
+    message: "Elige el worktree fuente del que importar",
     options: choices,
   });
   if (p.isCancel(selection)) {
-    throw new Error("Source worktree selection cancelled.");
+    throw new Error("Selección de worktree fuente cancelada.");
   }
   if (selection === "__current__") {
     return currentEndpoint;
@@ -2483,11 +2483,11 @@ async function applyMergePlan(input: {
 
 export async function worktreeMergeHistoryCommand(sourceArg: string | undefined, opts: WorktreeMergeHistoryOptions): Promise<void> {
   if (opts.apply && opts.dry) {
-    throw new Error("Use either --apply or --dry, not both.");
+    throw new Error("Usa --apply o --dry, no ambos.");
   }
 
   if (sourceArg && opts.from) {
-    throw new Error("Use either the positional source argument or --from, not both.");
+    throw new Error("Usa el argumento fuente posicional o --from, no ambos.");
   }
 
   const targetEndpoint = opts.to
@@ -2500,7 +2500,7 @@ export async function worktreeMergeHistoryCommand(sourceArg: string | undefined,
       : await promptForSourceEndpoint(targetEndpoint.rootPath);
 
   if (path.resolve(sourceEndpoint.configPath) === path.resolve(targetEndpoint.configPath)) {
-    throw new Error("Source and target Paperclip configs are the same. Choose different --from/--to worktrees.");
+    throw new Error("Las configs de Paperclip fuente y destino son la misma. Elige worktrees --from/--to diferentes.");
   }
 
   const scopes = parseWorktreeMergeScopes(opts.scope);
@@ -2558,11 +2558,11 @@ export async function worktreeMergeHistoryCommand(sourceArg: string | undefined,
     const confirmed = opts.yes
       ? true
       : await p.confirm({
-        message: `Import ${collected.plan.counts.issuesToInsert} issues and ${collected.plan.counts.commentsToInsert} comments from ${sourceEndpoint.label} into ${targetEndpoint.label}?`,
+        message: `¿Importar ${collected.plan.counts.issuesToInsert} issues y ${collected.plan.counts.commentsToInsert} comentarios de ${sourceEndpoint.label} a ${targetEndpoint.label}?`,
         initialValue: false,
       });
     if (p.isCancel(confirmed) || !confirmed) {
-      p.log.warn("Import cancelled.");
+      p.log.warn("Importación cancelada.");
       return;
     }
 
@@ -2575,12 +2575,12 @@ export async function worktreeMergeHistoryCommand(sourceArg: string | undefined,
     });
     if (applied.skippedMissingAttachmentObjects > 0) {
       p.log.warn(
-        `Skipped ${applied.skippedMissingAttachmentObjects} attachments whose source files were missing from storage.`,
+        `Se omitieron ${applied.skippedMissingAttachmentObjects} adjuntos cuyos archivos fuente no estaban en el almacenamiento.`,
       );
     }
     p.outro(
       pc.green(
-        `Imported ${applied.insertedProjects} projects (${applied.insertedProjectWorkspaces} workspaces), ${applied.insertedIssues} issues, ${applied.insertedComments} comments, ${applied.insertedDocuments} documents (${applied.insertedDocumentRevisions} revisions, ${applied.mergedDocuments} merged), and ${applied.insertedAttachments} attachments into ${company.issuePrefix}.`,
+        `Se importaron ${applied.insertedProjects} proyectos (${applied.insertedProjectWorkspaces} workspaces), ${applied.insertedIssues} issues, ${applied.insertedComments} comentarios, ${applied.insertedDocuments} documentos (${applied.insertedDocumentRevisions} revisiones, ${applied.mergedDocuments} fusionados) y ${applied.insertedAttachments} adjuntos a ${company.issuePrefix}.`,
       ),
     );
   } finally {
@@ -2590,73 +2590,73 @@ export async function worktreeMergeHistoryCommand(sourceArg: string | undefined,
 }
 
 export function registerWorktreeCommands(program: Command): void {
-  const worktree = program.command("worktree").description("Worktree-local Paperclip instance helpers");
+  const worktree = program.command("worktree").description("Utilidades de instancia Paperclip local del worktree");
 
   program
     .command("worktree:make")
-    .description("Create ~/NAME as a git worktree, then initialize an isolated Paperclip instance inside it")
-    .argument("<name>", "Worktree name — auto-prefixed with paperclip- if needed (created at ~/paperclip-NAME)")
-    .option("--start-point <ref>", "Remote ref to base the new branch on (env: PAPERCLIP_WORKTREE_START_POINT)")
-    .option("--instance <id>", "Explicit isolated instance id")
-    .option("--home <path>", `Home root for worktree instances (env: PAPERCLIP_WORKTREES_DIR, default: ${DEFAULT_WORKTREE_HOME})`)
-    .option("--from-config <path>", "Source config.json to seed from")
-    .option("--from-data-dir <path>", "Source PAPERCLIP_HOME used when deriving the source config")
-    .option("--from-instance <id>", "Source instance id when deriving the source config", "default")
-    .option("--server-port <port>", "Preferred server port", (value) => Number(value))
-    .option("--db-port <port>", "Preferred embedded Postgres port", (value) => Number(value))
-    .option("--seed-mode <mode>", "Seed profile: minimal or full (default: minimal)", "minimal")
-    .option("--no-seed", "Skip database seeding from the source instance")
-    .option("--force", "Replace existing repo-local config and isolated instance data", false)
+    .description("Crea ~/NAME como un git worktree y luego inicializa una instancia aislada de Paperclip dentro de él")
+    .argument("<name>", "Nombre del worktree — se le antepone paperclip- si es necesario (creado en ~/paperclip-NAME)")
+    .option("--start-point <ref>", "Ref remota en la que basar la nueva rama (env: PAPERCLIP_WORKTREE_START_POINT)")
+    .option("--instance <id>", "Id explícito de instancia aislada")
+    .option("--home <path>", `Raíz de home para instancias de worktree (env: PAPERCLIP_WORKTREES_DIR, por defecto: ${DEFAULT_WORKTREE_HOME})`)
+    .option("--from-config <path>", "config.json fuente del que sembrar")
+    .option("--from-data-dir <path>", "PAPERCLIP_HOME fuente usado al derivar la config fuente")
+    .option("--from-instance <id>", "Id de instancia fuente al derivar la config fuente", "default")
+    .option("--server-port <port>", "Puerto de servidor preferido", (value) => Number(value))
+    .option("--db-port <port>", "Puerto preferido de Postgres embebido", (value) => Number(value))
+    .option("--seed-mode <mode>", "Perfil de siembra: minimal o full (por defecto: minimal)", "minimal")
+    .option("--no-seed", "Omitir la siembra de la base de datos desde la instancia fuente")
+    .option("--force", "Reemplazar la config repo-local existente y los datos de instancia aislada", false)
     .action(worktreeMakeCommand);
 
   worktree
     .command("init")
-    .description("Create repo-local config/env and an isolated instance for this worktree")
-    .option("--name <name>", "Display name used to derive the instance id")
-    .option("--instance <id>", "Explicit isolated instance id")
-    .option("--home <path>", `Home root for worktree instances (env: PAPERCLIP_WORKTREES_DIR, default: ${DEFAULT_WORKTREE_HOME})`)
-    .option("--from-config <path>", "Source config.json to seed from")
-    .option("--from-data-dir <path>", "Source PAPERCLIP_HOME used when deriving the source config")
-    .option("--from-instance <id>", "Source instance id when deriving the source config", "default")
-    .option("--server-port <port>", "Preferred server port", (value) => Number(value))
-    .option("--db-port <port>", "Preferred embedded Postgres port", (value) => Number(value))
-    .option("--seed-mode <mode>", "Seed profile: minimal or full (default: minimal)", "minimal")
-    .option("--no-seed", "Skip database seeding from the source instance")
-    .option("--force", "Replace existing repo-local config and isolated instance data", false)
+    .description("Crear config/env repo-local y una instancia aislada para este worktree")
+    .option("--name <name>", "Nombre de visualización usado para derivar el id de instancia")
+    .option("--instance <id>", "Id explícito de instancia aislada")
+    .option("--home <path>", `Raíz de home para instancias de worktree (env: PAPERCLIP_WORKTREES_DIR, por defecto: ${DEFAULT_WORKTREE_HOME})`)
+    .option("--from-config <path>", "config.json fuente del que sembrar")
+    .option("--from-data-dir <path>", "PAPERCLIP_HOME fuente usado al derivar la config fuente")
+    .option("--from-instance <id>", "Id de instancia fuente al derivar la config fuente", "default")
+    .option("--server-port <port>", "Puerto de servidor preferido", (value) => Number(value))
+    .option("--db-port <port>", "Puerto preferido de Postgres embebido", (value) => Number(value))
+    .option("--seed-mode <mode>", "Perfil de siembra: minimal o full (por defecto: minimal)", "minimal")
+    .option("--no-seed", "Omitir la siembra de la base de datos desde la instancia fuente")
+    .option("--force", "Reemplazar la config repo-local existente y los datos de instancia aislada", false)
     .action(worktreeInitCommand);
 
   worktree
     .command("env")
-    .description("Print shell exports for the current worktree-local Paperclip instance")
-    .option("-c, --config <path>", "Path to config file")
-    .option("--json", "Print JSON instead of shell exports")
+    .description("Imprimir exportaciones de shell para la instancia Paperclip actual local del worktree")
+    .option("-c, --config <path>", "Ruta al archivo de config")
+    .option("--json", "Imprimir JSON en lugar de exportaciones de shell")
     .action(worktreeEnvCommand);
 
   program
     .command("worktree:list")
-    .description("List git worktrees visible from this repo and whether they look like Paperclip worktrees")
-    .option("--json", "Print JSON instead of text output")
+    .description("Listar los git worktrees visibles desde este repo y si parecen worktrees de Paperclip")
+    .option("--json", "Imprimir JSON en lugar de salida de texto")
     .action(worktreeListCommand);
 
   program
     .command("worktree:merge-history")
-    .description("Preview or import issue/comment history from another worktree into the current instance")
-    .argument("[source]", "Optional source worktree path, directory name, or branch name (back-compat alias for --from)")
-    .option("--from <worktree>", "Source worktree path, directory name, branch name, or current")
-    .option("--to <worktree>", "Target worktree path, directory name, branch name, or current (defaults to current)")
-    .option("--company <id-or-prefix>", "Shared company id or issue prefix inside the chosen source/target instances")
-    .option("--scope <items>", "Comma-separated scopes to import (issues, comments)", "issues,comments")
-    .option("--apply", "Apply the import after previewing the plan", false)
-    .option("--dry", "Preview only and do not import anything", false)
-    .option("--yes", "Skip the interactive confirmation prompt when applying", false)
+    .description("Previsualizar o importar el historial de issues/comentarios de otro worktree a la instancia actual")
+    .argument("[source]", "Ruta, nombre de directorio o nombre de rama del worktree fuente opcional (alias de compatibilidad para --from)")
+    .option("--from <worktree>", "Ruta, nombre de directorio, nombre de rama del worktree fuente, o current")
+    .option("--to <worktree>", "Ruta, nombre de directorio, nombre de rama del worktree destino, o current (por defecto: current)")
+    .option("--company <id-or-prefix>", "Id de empresa compartida o prefijo de issue dentro de las instancias fuente/destino elegidas")
+    .option("--scope <items>", "Alcances a importar separados por comas (issues, comments)", "issues,comments")
+    .option("--apply", "Aplicar la importación después de previsualizar el plan", false)
+    .option("--dry", "Solo previsualizar y no importar nada", false)
+    .option("--yes", "Omitir la confirmación interactiva al aplicar", false)
     .action(worktreeMergeHistoryCommand);
 
   program
     .command("worktree:cleanup")
-    .description("Safely remove a worktree, its branch, and its isolated instance data")
-    .argument("<name>", "Worktree name — auto-prefixed with paperclip- if needed")
-    .option("--instance <id>", "Explicit instance id (if different from the worktree name)")
-    .option("--home <path>", `Home root for worktree instances (env: PAPERCLIP_WORKTREES_DIR, default: ${DEFAULT_WORKTREE_HOME})`)
-    .option("--force", "Bypass safety checks (uncommitted changes, unique commits)", false)
+    .description("Eliminar de forma segura un worktree, su rama y sus datos de instancia aislada")
+    .argument("<name>", "Nombre del worktree — se le antepone paperclip- si es necesario")
+    .option("--instance <id>", "Id de instancia explícito (si difiere del nombre del worktree)")
+    .option("--home <path>", `Raíz de home para instancias de worktree (env: PAPERCLIP_WORKTREES_DIR, por defecto: ${DEFAULT_WORKTREE_HOME})`)
+    .option("--force", "Omitir chequeos de seguridad (cambios sin commit, commits únicos)", false)
     .action(worktreeCleanupCommand);
 }

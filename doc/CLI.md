@@ -1,49 +1,49 @@
-# CLI Reference
+# Referencia del CLI
 
-Paperclip CLI now supports both:
+El CLI de Paperclip ahora soporta tanto:
 
-- instance setup/diagnostics (`onboard`, `doctor`, `configure`, `env`, `allowed-hostname`)
-- control-plane client operations (issues, approvals, agents, activity, dashboard)
+- configuración/diagnóstico de instancia (`onboard`, `doctor`, `configure`, `env`, `allowed-hostname`)
+- operaciones de cliente del plano de control (issues, aprobaciones, agentes, actividad, panel)
 
-## Base Usage
+## Uso base
 
-Use repo script in development:
+Usa el script del repo en desarrollo:
 
 ```sh
 pnpm paperclipai --help
 ```
 
-First-time local bootstrap + run:
+Bootstrap + ejecución local por primera vez:
 
 ```sh
 pnpm paperclipai run
 ```
 
-Choose local instance:
+Elige instancia local:
 
 ```sh
 pnpm paperclipai run --instance dev
 ```
 
-## Deployment Modes
+## Modos de despliegue
 
-Mode taxonomy and design intent are documented in `doc/DEPLOYMENT-MODES.md`.
+La taxonomía de modos y la intención de diseño están documentadas en `doc/DEPLOYMENT-MODES.md`.
 
-Current CLI behavior:
+Comportamiento actual del CLI:
 
-- `paperclipai onboard` and `paperclipai configure --section server` set deployment mode in config
-- runtime can override mode with `PAPERCLIP_DEPLOYMENT_MODE`
-- `paperclipai run` and `paperclipai doctor` do not yet expose a direct `--mode` flag
+- `paperclipai onboard` y `paperclipai configure --section server` definen el modo de despliegue en la configuración
+- el runtime puede hacer override del modo con `PAPERCLIP_DEPLOYMENT_MODE`
+- `paperclipai run` y `paperclipai doctor` aún no exponen un flag `--mode` directo
 
-Target behavior (planned) is documented in `doc/DEPLOYMENT-MODES.md` section 5.
+El comportamiento objetivo (planificado) está documentado en `doc/DEPLOYMENT-MODES.md` sección 5.
 
-Allow an authenticated/private hostname (for example custom Tailscale DNS):
+Permite un hostname autenticado/privado (por ejemplo DNS Tailscale personalizado):
 
 ```sh
 pnpm paperclipai allowed-hostname dotta-macbook-pro
 ```
 
-All client commands support:
+Todos los comandos de cliente soportan:
 
 - `--data-dir <path>`
 - `--api-base <url>`
@@ -52,18 +52,18 @@ All client commands support:
 - `--profile <name>`
 - `--json`
 
-Company-scoped commands also support `--company-id <id>`.
+Los comandos con alcance de empresa también soportan `--company-id <id>`.
 
-Use `--data-dir` on any CLI command to isolate all default local state (config/context/db/logs/storage/secrets) away from `~/.paperclip`:
+Usa `--data-dir` en cualquier comando del CLI para aislar todo el estado local por defecto (config/contexto/bd/logs/almacenamiento/secretos) fuera de `~/.paperclip`:
 
 ```sh
 pnpm paperclipai run --data-dir ./tmp/paperclip-dev
 pnpm paperclipai issue list --data-dir ./tmp/paperclip-dev
 ```
 
-## Context Profiles
+## Perfiles de contexto
 
-Store local defaults in `~/.paperclip/context.json`:
+Almacena valores locales por defecto en `~/.paperclip/context.json`:
 
 ```sh
 pnpm paperclipai context set --api-base http://localhost:3100 --company-id <company-id>
@@ -72,14 +72,14 @@ pnpm paperclipai context list
 pnpm paperclipai context use default
 ```
 
-To avoid storing secrets in context, set `apiKeyEnvVarName` and keep the key in env:
+Para evitar almacenar secretos en el contexto, define `apiKeyEnvVarName` y mantén la clave en env:
 
 ```sh
 pnpm paperclipai context set --api-key-env-var-name PAPERCLIP_API_KEY
 export PAPERCLIP_API_KEY=...
 ```
 
-## Company Commands
+## Comandos de empresa
 
 ```sh
 pnpm paperclipai company list
@@ -87,19 +87,19 @@ pnpm paperclipai company get <company-id>
 pnpm paperclipai company delete <company-id-or-prefix> --yes --confirm <same-id-or-prefix>
 ```
 
-Examples:
+Ejemplos:
 
 ```sh
 pnpm paperclipai company delete PAP --yes --confirm PAP
 pnpm paperclipai company delete 5cbe79ee-acb3-4597-896e-7662742593cd --yes --confirm 5cbe79ee-acb3-4597-896e-7662742593cd
 ```
 
-Notes:
+Notas:
 
-- Deletion is server-gated by `PAPERCLIP_ENABLE_COMPANY_DELETION`.
-- With agent authentication, company deletion is company-scoped. Use the current company ID/prefix (for example via `--company-id` or `PAPERCLIP_COMPANY_ID`), not another company.
+- La eliminación está controlada en el servidor por `PAPERCLIP_ENABLE_COMPANY_DELETION`.
+- Con autenticación de agente, la eliminación de empresa tiene alcance de empresa. Usa el ID/prefijo de empresa actual (por ejemplo vía `--company-id` o `PAPERCLIP_COMPANY_ID`), no el de otra empresa.
 
-## Issue Commands
+## Comandos de issue
 
 ```sh
 pnpm paperclipai issue list --company-id <company-id> [--status todo,in_progress] [--assignee-agent-id <agent-id>] [--match text]
@@ -111,7 +111,7 @@ pnpm paperclipai issue checkout <issue-id> --agent-id <agent-id> [--expected-sta
 pnpm paperclipai issue release <issue-id>
 ```
 
-## Agent Commands
+## Comandos de agente
 
 ```sh
 pnpm paperclipai agent list --company-id <company-id>
@@ -119,20 +119,20 @@ pnpm paperclipai agent get <agent-id>
 pnpm paperclipai agent local-cli <agent-id-or-shortname> --company-id <company-id>
 ```
 
-`agent local-cli` is the quickest way to run local Claude/Codex manually as a Paperclip agent:
+`agent local-cli` es la forma más rápida de ejecutar Claude/Codex locales manualmente como agente de Paperclip:
 
-- creates a new long-lived agent API key
-- installs missing Paperclip skills into `~/.codex/skills` and `~/.claude/skills`
-- prints `export ...` lines for `PAPERCLIP_API_URL`, `PAPERCLIP_COMPANY_ID`, `PAPERCLIP_AGENT_ID`, and `PAPERCLIP_API_KEY`
+- crea una nueva API key de agente de larga duración
+- instala las habilidades faltantes de Paperclip en `~/.codex/skills` y `~/.claude/skills`
+- imprime líneas `export ...` para `PAPERCLIP_API_URL`, `PAPERCLIP_COMPANY_ID`, `PAPERCLIP_AGENT_ID` y `PAPERCLIP_API_KEY`
 
-Example for shortname-based local setup:
+Ejemplo para configuración local basada en shortname:
 
 ```sh
 pnpm paperclipai agent local-cli codexcoder --company-id <company-id>
 pnpm paperclipai agent local-cli claudecoder --company-id <company-id>
 ```
 
-## Approval Commands
+## Comandos de aprobación
 
 ```sh
 pnpm paperclipai approval list --company-id <company-id> [--status pending]
@@ -145,51 +145,51 @@ pnpm paperclipai approval resubmit <approval-id> [--payload '{"...":"..."}']
 pnpm paperclipai approval comment <approval-id> --body "..."
 ```
 
-## Activity Commands
+## Comandos de actividad
 
 ```sh
 pnpm paperclipai activity list --company-id <company-id> [--agent-id <agent-id>] [--entity-type issue] [--entity-id <id>]
 ```
 
-## Dashboard Commands
+## Comandos de panel
 
 ```sh
 pnpm paperclipai dashboard get --company-id <company-id>
 ```
 
-## Heartbeat Command
+## Comando de latido
 
-`heartbeat run` now also supports context/api-key options and uses the shared client stack:
+`heartbeat run` ahora también soporta opciones de contexto/API key y usa la pila de cliente compartida:
 
 ```sh
 pnpm paperclipai heartbeat run --agent-id <agent-id> [--api-base http://localhost:3100] [--api-key <token>]
 ```
 
-## Local Storage Defaults
+## Valores por defecto de almacenamiento local
 
-Default local instance root is `~/.paperclip/instances/default`:
+La raíz de instancia local por defecto es `~/.paperclip/instances/default`:
 
 - config: `~/.paperclip/instances/default/config.json`
-- embedded db: `~/.paperclip/instances/default/db`
+- bd embebida: `~/.paperclip/instances/default/db`
 - logs: `~/.paperclip/instances/default/logs`
-- storage: `~/.paperclip/instances/default/data/storage`
-- secrets key: `~/.paperclip/instances/default/secrets/master.key`
+- almacenamiento: `~/.paperclip/instances/default/data/storage`
+- clave de secretos: `~/.paperclip/instances/default/secrets/master.key`
 
-Override base home or instance with env vars:
+Haz override del home base o la instancia con variables de env:
 
 ```sh
 PAPERCLIP_HOME=/custom/home PAPERCLIP_INSTANCE_ID=dev pnpm paperclipai run
 ```
 
-## Storage Configuration
+## Configuración de almacenamiento
 
-Configure storage provider and settings:
+Configura el proveedor de almacenamiento y ajustes:
 
 ```sh
 pnpm paperclipai configure --section storage
 ```
 
-Supported providers:
+Proveedores soportados:
 
-- `local_disk` (default; local single-user installs)
-- `s3` (S3-compatible object storage)
+- `local_disk` (por defecto; instalaciones locales de un solo usuario)
+- `s3` (almacenamiento de objetos compatible con S3)

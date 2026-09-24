@@ -9,9 +9,9 @@ import type { CheckResult } from "./index.js";
 export function agentJwtSecretCheck(configPath?: string): CheckResult {
   if (readAgentJwtSecretFromEnv(configPath)) {
     return {
-      name: "Agent JWT secret",
+      name: "Secreto JWT del agente",
       status: "pass",
-      message: "PAPERCLIP_AGENT_JWT_SECRET is set in environment",
+      message: "PAPERCLIP_AGENT_JWT_SECRET está configurado en el entorno",
     };
   }
 
@@ -20,21 +20,21 @@ export function agentJwtSecretCheck(configPath?: string): CheckResult {
 
   if (fileSecret) {
     return {
-      name: "Agent JWT secret",
+      name: "Secreto JWT del agente",
       status: "warn",
-      message: `PAPERCLIP_AGENT_JWT_SECRET is present in ${envPath} but not loaded into environment`,
-      repairHint: `Set the value from ${envPath} in your shell before starting the Paperclip server`,
+      message: `PAPERCLIP_AGENT_JWT_SECRET está presente en ${envPath} pero no está cargado en el entorno`,
+      repairHint: `Establece el valor de ${envPath} en tu shell antes de iniciar el servidor de Paperclip`,
     };
   }
 
   return {
-    name: "Agent JWT secret",
+    name: "Secreto JWT del agente",
     status: "fail",
-    message: `PAPERCLIP_AGENT_JWT_SECRET missing from environment and ${envPath}`,
+    message: `PAPERCLIP_AGENT_JWT_SECRET no está en el entorno ni en ${envPath}`,
     canRepair: true,
     repair: () => {
       ensureAgentJwtSecret(configPath);
     },
-    repairHint: `Run with --repair to create ${envPath} containing PAPERCLIP_AGENT_JWT_SECRET`,
+    repairHint: `Ejecuta con --repair para crear ${envPath} con PAPERCLIP_AGENT_JWT_SECRET`,
   };
 }

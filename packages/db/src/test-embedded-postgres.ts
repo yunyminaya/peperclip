@@ -46,7 +46,7 @@ async function getAvailablePort(): Promise<number> {
     server.listen(0, "127.0.0.1", () => {
       const address = server.address();
       if (!address || typeof address === "string") {
-        server.close(() => reject(new Error("Failed to allocate test port")));
+        server.close(() => reject(new Error("No se pudo asignar un puerto de prueba")));
         return;
       }
       const { port } = address;
@@ -61,7 +61,7 @@ async function getAvailablePort(): Promise<number> {
 function formatEmbeddedPostgresError(error: unknown): string {
   if (error instanceof Error && error.message.length > 0) return error.message;
   if (typeof error === "string" && error.length > 0) return error;
-  return "embedded Postgres startup failed";
+  return "no se pudo iniciar embedded Postgres";
 }
 
 async function probeEmbeddedPostgresSupport(): Promise<EmbeddedPostgresTestSupport> {
@@ -138,7 +138,7 @@ export async function startEmbeddedPostgresTestDatabase(
     await instance.stop().catch(() => {});
     fs.rmSync(dataDir, { recursive: true, force: true });
     throw new Error(
-      `Failed to start embedded PostgreSQL test database: ${formatEmbeddedPostgresError(error)}`,
+      `No se pudo iniciar la base de datos de prueba de embedded PostgreSQL: ${formatEmbeddedPostgresError(error)}`,
     );
   }
 }

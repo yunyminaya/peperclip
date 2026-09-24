@@ -12,18 +12,18 @@ import { plugins } from "./plugins.js";
 import type { PluginJobStatus, PluginJobRunStatus, PluginJobRunTrigger } from "@paperclipai/shared";
 
 /**
- * `plugin_jobs` table — registration and runtime configuration for
- * scheduled jobs declared by plugins in their manifests.
+ * Tabla `plugin_jobs`: registro y configuración en tiempo de ejecución de
+ * los trabajos programados que declaran los plugins en sus manifiestos.
  *
- * Each row represents one scheduled job entry for a plugin. The
- * `job_key` matches the key declared in the manifest's `jobs` array.
- * The `schedule` column stores the cron expression or interval string
- * used by the job scheduler to decide when to fire the job.
+ * Cada fila representa una entrada de trabajo programado de un plugin. La
+ * `job_key` coincide con la clave declarada en el arreglo `jobs` del manifiesto.
+ * La columna `schedule` almacena la expresión cron o cadena de intervalo
+ * que usa el programador de trabajos para decidir cuándo ejecutar el trabajo.
  *
- * Status values:
- * - `active` — job is enabled and will run on schedule
- * - `paused` — job is temporarily disabled by the operator
- * - `error` — job has been disabled due to repeated failures
+ * Valores de estado:
+ * - `active`: el trabajo está habilitado y se ejecutará según lo programado
+ * - `paused`: el trabajo está deshabilitado temporalmente por el operador
+ * - `error`: el trabajo se deshabilitó por fallos repetidos
  *
  * @see PLUGIN_SPEC.md §21.3 — `plugin_jobs`
  */
@@ -31,19 +31,19 @@ export const pluginJobs = pgTable(
   "plugin_jobs",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    /** FK to the owning plugin. Cascades on delete. */
+    /** FK al plugin propietario. Se propaga al eliminar. */
     pluginId: uuid("plugin_id")
       .notNull()
       .references(() => plugins.id, { onDelete: "cascade" }),
-    /** Identifier matching the key in the plugin manifest's `jobs` array. */
+    /** Identificador que coincide con la clave en el arreglo `jobs` del manifiesto del plugin. */
     jobKey: text("job_key").notNull(),
-    /** Cron expression (e.g. `"0 * * * *"`) or interval string. */
+    /** Expresión cron (p. ej. `"0 * * * *"`) o cadena de intervalo. */
     schedule: text("schedule").notNull(),
-    /** Current scheduling state. */
+    /** Estado actual de la programación. */
     status: text("status").$type<PluginJobStatus>().notNull().default("active"),
-    /** Timestamp of the most recent successful execution. */
+    /** Marca de tiempo de la ejecución exitosa más reciente. */
     lastRunAt: timestamp("last_run_at", { withTimezone: true }),
-    /** Pre-computed timestamp of the next scheduled execution. */
+    /** Marca de tiempo precalculada de la próxima ejecución programada. */
     nextRunAt: timestamp("next_run_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -56,15 +56,15 @@ export const pluginJobs = pgTable(
 );
 
 /**
- * `plugin_job_runs` table — immutable execution history for plugin-owned jobs.
+ * Tabla `plugin_job_runs`: historial inmutable de ejecuciones de los trabajos propiedad de plugins.
  *
- * Each row is created when a job run begins and updated when it completes.
- * Rows are never modified after `status` reaches a terminal value
+ * Cada fila se crea cuando comienza una ejecución y se actualiza cuando termina.
+ * Las filas nunca se modifican después de que `status` alcance un valor terminal
  * (`succeeded` | `failed` | `cancelled`).
  *
- * Trigger values:
- * - `scheduled` — fired automatically by the cron/interval scheduler
- * - `manual` — triggered by an operator via the admin UI or API
+ * Valores de activación:
+ * - `scheduled`: activado automáticamente por el programador de cron/intervalos
+ * - `manual`: activado por un operador desde la interfaz de administración o la API
  *
  * @see PLUGIN_SPEC.md §21.3 — `plugin_job_runs`
  */
@@ -72,23 +72,23 @@ export const pluginJobRuns = pgTable(
   "plugin_job_runs",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    /** FK to the parent job definition. Cascades on delete. */
+    /** FK a la definición del trabajo padre. Se propaga al eliminar. */
     jobId: uuid("job_id")
       .notNull()
       .references(() => pluginJobs.id, { onDelete: "cascade" }),
-    /** Denormalized FK to the owning plugin for efficient querying. Cascades on delete. */
+    /** FK desnormalizada al plugin propietario para consultas eficientes. Se propaga al eliminar. */
     pluginId: uuid("plugin_id")
       .notNull()
       .references(() => plugins.id, { onDelete: "cascade" }),
-    /** What caused this run to start (`"scheduled"` or `"manual"`). */
+    /** Qué causó el inicio de esta ejecución (`"scheduled"` o `"manual"`). */
     trigger: text("trigger").$type<PluginJobRunTrigger>().notNull(),
-    /** Current lifecycle state of this run. */
+    /** Estado actual del ciclo de vida de esta ejecución. */
     status: text("status").$type<PluginJobRunStatus>().notNull().default("pending"),
-    /** Wall-clock duration in milliseconds. Null until the run finishes. */
+    /** Duración en milisegundos según el reloj del sistema. Nula hasta que la ejecución termine. */
     durationMs: integer("duration_ms"),
-    /** Error message if `status === "failed"`. */
+    /** Mensaje de error si `status === "failed"`. */
     error: text("error"),
-    /** Ordered list of log lines emitted during this run. */
+    /** Lista ordenada de líneas de registro emitidas durante esta ejecución. */
     logs: jsonb("logs").$type<string[]>().notNull().default([]),
     startedAt: timestamp("started_at", { withTimezone: true }),
     finishedAt: timestamp("finished_at", { withTimezone: true }),

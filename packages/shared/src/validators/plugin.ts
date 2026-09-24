@@ -14,44 +14,44 @@ import {
 } from "../constants.js";
 
 // ---------------------------------------------------------------------------
-// JSON Schema placeholder – a permissive validator for JSON Schema objects
+// Marcador de posición de JSON Schema – un validador permisivo para objetos JSON Schema
 // ---------------------------------------------------------------------------
 
 /**
- * Permissive validator for JSON Schema objects. Accepts any `Record<string, unknown>`
- * that contains at least a `type`, `$ref`, or composition keyword (`oneOf`/`anyOf`/`allOf`).
- * Empty objects are also accepted.
+ * Validador permisivo para objetos JSON Schema. Acepta cualquier `Record<string, unknown>`
+ * que contenga al menos un `type`, `$ref` o palabra clave de composición (`oneOf`/`anyOf`/`allOf`).
+ * También se aceptan objetos vacíos.
  *
- * Used to validate `instanceConfigSchema` and `parametersSchema` fields in the
- * plugin manifest without fully parsing JSON Schema.
+ * Usado para validar los campos `instanceConfigSchema` y `parametersSchema` en el
+ * manifiesto del plugin sin analizar JSON Schema por completo.
  *
  * @see PLUGIN_SPEC.md §10.1 — Manifest shape
  */
 export const jsonSchemaSchema = z.record(z.unknown()).refine(
   (val) => {
-    // Must have a "type" field if non-empty, or be a valid JSON Schema object
+    // Debe tener un campo "type" si no está vacío, o ser un objeto JSON Schema válido
     if (Object.keys(val).length === 0) return true;
     return typeof val.type === "string" || val.$ref !== undefined || val.oneOf !== undefined || val.anyOf !== undefined || val.allOf !== undefined;
   },
-  { message: "Must be a valid JSON Schema object (requires at least a 'type', '$ref', or composition keyword)" },
+  { message: "Debe ser un objeto JSON Schema válido (requiere al menos 'type', '$ref' o una palabra clave de composición)" },
 );
 
 // ---------------------------------------------------------------------------
-// Manifest sub-type schemas
+// Esquemas de subtipos del manifiesto
 // ---------------------------------------------------------------------------
 
 /**
- * Validates a {@link PluginJobDeclaration} — a scheduled job declared in the
- * plugin manifest. Requires `jobKey` and `displayName`; `description` and
- * `schedule` (cron expression) are optional.
+ * Valida un {@link PluginJobDeclaration} — un trabajo programado declarado en el
+ * manifiesto del plugin. Requiere `jobKey` y `displayName`; `description` y
+ * `schedule` (expresión cron) son opcionales.
  *
  * @see PLUGIN_SPEC.md §17 — Scheduled Jobs
  */
 /**
- * Validates a cron expression has exactly 5 whitespace-separated fields,
- * each containing only valid cron characters (digits, *, /, -, ,).
+ * Valida que una expresión cron tenga exactamente 5 campos separados por espacios,
+ * cada uno con solo caracteres cron válidos (dígitos, *, /, -, ,).
  *
- * Valid tokens per field: *, N, N-M, N/S, * /S, N-M/S, and comma-separated lists.
+ * Tokens válidos por campo: *, N, N-M, N/S, * /S, N-M/S y listas separadas por comas.
  */
 const CRON_FIELD_PATTERN = /^(\*(?:\/[0-9]+)?|[0-9]+(?:-[0-9]+)?(?:\/[0-9]+)?)(?:,(\*(?:\/[0-9]+)?|[0-9]+(?:-[0-9]+)?(?:\/[0-9]+)?))*$/;
 
@@ -69,15 +69,15 @@ export const pluginJobDeclarationSchema = z.object({
   description: z.string().optional(),
   schedule: z.string().refine(
     (val) => isValidCronExpression(val),
-    { message: "schedule must be a valid 5-field cron expression (e.g. '*/15 * * * *')" },
+    { message: "schedule debe ser una expresión cron válida de 5 campos (p. ej. '*/15 * * * *')" },
   ).optional(),
 });
 
 export type PluginJobDeclarationInput = z.infer<typeof pluginJobDeclarationSchema>;
 
 /**
- * Validates a {@link PluginWebhookDeclaration} — a webhook endpoint declared
- * in the plugin manifest. Requires `endpointKey` and `displayName`.
+ * Valida un {@link PluginWebhookDeclaration} — un endpoint de webhook declarado
+ * en el manifiesto del plugin. Requiere `endpointKey` y `displayName`.
  *
  * @see PLUGIN_SPEC.md §18 — Webhooks
  */
@@ -90,9 +90,9 @@ export const pluginWebhookDeclarationSchema = z.object({
 export type PluginWebhookDeclarationInput = z.infer<typeof pluginWebhookDeclarationSchema>;
 
 /**
- * Validates a {@link PluginToolDeclaration} — an agent tool contributed by the
- * plugin. Requires `name`, `displayName`, `description`, and a valid
- * `parametersSchema`. Requires the `agent.tools.register` capability.
+ * Valida un {@link PluginToolDeclaration} — una herramienta de agente aportada por el
+ * plugin. Requiere `name`, `displayName`, `description` y un `parametersSchema` válido.
+ * Requiere la capacidad `agent.tools.register`.
  *
  * @see PLUGIN_SPEC.md §11 — Agent Tools
  */
@@ -106,9 +106,9 @@ export const pluginToolDeclarationSchema = z.object({
 export type PluginToolDeclarationInput = z.infer<typeof pluginToolDeclarationSchema>;
 
 /**
- * Validates a {@link PluginUiSlotDeclaration} — a UI extension slot the plugin
- * fills with a React component. Includes `superRefine` checks for slot-specific
- * requirements such as `entityTypes` for context-sensitive slots.
+ * Valida un {@link PluginUiSlotDeclaration} — una ranura de extensión de UI que el plugin
+ * llena con un componente React. Incluye chequeos `superRefine` para requisitos
+ * específicos de ranura, como `entityTypes` para ranuras sensibles al contexto.
  *
  * @see PLUGIN_SPEC.md §19 — UI Extension Model
  */
@@ -119,11 +119,11 @@ export const pluginUiSlotDeclarationSchema = z.object({
   exportName: z.string().min(1),
   entityTypes: z.array(z.enum(PLUGIN_UI_SLOT_ENTITY_TYPES)).optional(),
   routePath: z.string().regex(/^[a-z0-9][a-z0-9-]*$/, {
-    message: "routePath must be a lowercase single-segment slug (letters, numbers, hyphens)",
+    message: "routePath debe ser un slug de un solo segmento en minúsculas (letras, números, guiones)",
   }).optional(),
   order: z.number().int().optional(),
 }).superRefine((value, ctx) => {
-  // context-sensitive slots require explicit entity targeting.
+  // las ranuras sensibles al contexto requieren orientación de entidad explícita.
   const entityScopedTypes = ["detailTab", "taskDetailView", "contextMenuItem", "commentAnnotation", "commentContextMenuItem", "projectSidebarItem"];
   if (
     entityScopedTypes.includes(value.type)
@@ -131,45 +131,45 @@ export const pluginUiSlotDeclarationSchema = z.object({
   ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `${value.type} slots require at least one entityType`,
+      message: `los slots ${value.type} requieren al menos un entityType`,
       path: ["entityTypes"],
     });
   }
-  // projectSidebarItem only makes sense for entityType "project".
+  // projectSidebarItem solo tiene sentido para entityType "project".
   if (value.type === "projectSidebarItem" && value.entityTypes && !value.entityTypes.includes("project")) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "projectSidebarItem slots require entityTypes to include \"project\"",
+      message: "los slots projectSidebarItem requieren que entityTypes incluya \"project\"",
       path: ["entityTypes"],
     });
   }
-  // commentAnnotation only makes sense for entityType "comment".
+  // commentAnnotation solo tiene sentido para entityType "comment".
   if (value.type === "commentAnnotation" && value.entityTypes && !value.entityTypes.includes("comment")) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "commentAnnotation slots require entityTypes to include \"comment\"",
+      message: "los slots commentAnnotation requieren que entityTypes incluya \"comment\"",
       path: ["entityTypes"],
     });
   }
-  // commentContextMenuItem only makes sense for entityType "comment".
+  // commentContextMenuItem solo tiene sentido para entityType "comment".
   if (value.type === "commentContextMenuItem" && value.entityTypes && !value.entityTypes.includes("comment")) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "commentContextMenuItem slots require entityTypes to include \"comment\"",
+      message: "los slots commentContextMenuItem requieren que entityTypes incluya \"comment\"",
       path: ["entityTypes"],
     });
   }
   if (value.routePath && value.type !== "page") {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "routePath is only supported for page slots",
+      message: "routePath solo es compatible con slots page",
       path: ["routePath"],
     });
   }
   if (value.routePath && PLUGIN_RESERVED_COMPANY_ROUTE_SEGMENTS.includes(value.routePath as (typeof PLUGIN_RESERVED_COMPANY_ROUTE_SEGMENTS)[number])) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `routePath "${value.routePath}" is reserved by the host`,
+      message: `routePath "${value.routePath}" está reservado por el host`,
       path: ["routePath"],
     });
   }
@@ -198,7 +198,7 @@ const launcherBoundsByEnvironment: Record<
 };
 
 /**
- * Validates the action payload for a declarative plugin launcher.
+ * Valida el payload de acción para un lanzador de plugin declarativo.
  */
 export const pluginLauncherActionDeclarationSchema = z.object({
   type: z.enum(PLUGIN_LAUNCHER_ACTIONS),
@@ -208,7 +208,7 @@ export const pluginLauncherActionDeclarationSchema = z.object({
   if (value.type === "performAction" && value.target.includes("/")) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "performAction launchers must target an action key, not a route or URL",
+      message: "los lanzadores performAction deben apuntar a una clave de acción, no a una ruta o URL",
       path: ["target"],
     });
   }
@@ -216,7 +216,7 @@ export const pluginLauncherActionDeclarationSchema = z.object({
   if (value.type === "navigate" && /^https?:\/\//.test(value.target)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "navigate launchers must target a host route, not an absolute URL",
+      message: "los lanzadores navigate deben apuntar a una ruta del host, no a una URL absoluta",
       path: ["target"],
     });
   }
@@ -226,7 +226,7 @@ export type PluginLauncherActionDeclarationInput =
   z.infer<typeof pluginLauncherActionDeclarationSchema>;
 
 /**
- * Validates optional render hints for a plugin launcher destination.
+ * Valida sugerencias de renderizado opcionales para un destino de lanzador de plugin.
  */
 export const pluginLauncherRenderDeclarationSchema = z.object({
   environment: z.enum(PLUGIN_LAUNCHER_RENDER_ENVIRONMENTS),
@@ -240,7 +240,7 @@ export const pluginLauncherRenderDeclarationSchema = z.object({
   if (!supportedBounds.includes(value.bounds)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `bounds "${value.bounds}" is not supported for render environment "${value.environment}"`,
+      message: `bounds "${value.bounds}" no es compatible con el entorno de renderizado "${value.environment}"`,
       path: ["bounds"],
     });
   }
@@ -250,7 +250,7 @@ export type PluginLauncherRenderDeclarationInput =
   z.infer<typeof pluginLauncherRenderDeclarationSchema>;
 
 /**
- * Validates declarative launcher metadata in a plugin manifest.
+ * Valida metadatos de lanzador declarativos en un manifiesto de plugin.
  */
 export const pluginLauncherDeclarationSchema = z.object({
   id: z.string().min(1),
@@ -269,7 +269,7 @@ export const pluginLauncherDeclarationSchema = z.object({
   ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `${value.placementZone} launchers require at least one entityType`,
+      message: `los lanzadores ${value.placementZone} requieren al menos un entityType`,
       path: ["entityTypes"],
     });
   }
@@ -281,7 +281,7 @@ export const pluginLauncherDeclarationSchema = z.object({
   ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "projectSidebarItem launchers require entityTypes to include \"project\"",
+      message: "los lanzadores projectSidebarItem requieren que entityTypes incluya \"project\"",
       path: ["entityTypes"],
     });
   }
@@ -289,7 +289,7 @@ export const pluginLauncherDeclarationSchema = z.object({
   if (value.action.type === "performAction" && value.render) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "performAction launchers cannot declare render hints",
+      message: "los lanzadores performAction no pueden declarar sugerencias de renderizado",
       path: ["render"],
     });
   }
@@ -300,7 +300,7 @@ export const pluginLauncherDeclarationSchema = z.object({
   ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `${value.action.type} launchers require render metadata`,
+      message: `los lanzadores ${value.action.type} requieren metadatos de renderizado`,
       path: ["render"],
     });
   }
@@ -308,7 +308,7 @@ export const pluginLauncherDeclarationSchema = z.object({
   if (value.action.type === "openModal" && value.render?.environment === "hostInline") {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "openModal launchers cannot use the hostInline render environment",
+      message: "los lanzadores openModal no pueden usar el entorno de renderizado hostInline",
       path: ["render", "environment"],
     });
   }
@@ -320,7 +320,7 @@ export const pluginLauncherDeclarationSchema = z.object({
   ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "openDrawer launchers must use hostOverlay or iframe render environments",
+      message: "los lanzadores openDrawer deben usar los entornos de renderizado hostOverlay o iframe",
       path: ["render", "environment"],
     });
   }
@@ -328,7 +328,7 @@ export const pluginLauncherDeclarationSchema = z.object({
   if (value.action.type === "openPopover" && value.render?.environment === "hostRoute") {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "openPopover launchers cannot use the hostRoute render environment",
+      message: "los lanzadores openPopover no pueden usar el entorno de renderizado hostRoute",
       path: ["render", "environment"],
     });
   }
@@ -337,52 +337,52 @@ export const pluginLauncherDeclarationSchema = z.object({
 export type PluginLauncherDeclarationInput = z.infer<typeof pluginLauncherDeclarationSchema>;
 
 // ---------------------------------------------------------------------------
-// Plugin Manifest V1 schema
+// Esquema del manifiesto de plugin V1
 // ---------------------------------------------------------------------------
 
 /**
- * Zod schema for {@link PaperclipPluginManifestV1} — the complete runtime
- * validator for plugin manifests read at install time.
+ * Esquema Zod para {@link PaperclipPluginManifestV1} — el validador completo en
+ * tiempo de ejecución para manifiestos de plugin leídos al momento de instalar.
  *
- * Field-level constraints (see PLUGIN_SPEC.md §10.1 for the normative rules):
+ * Restricciones por campo (ver PLUGIN_SPEC.md §10.1 para las reglas normativas):
  *
  * | Field                    | Type       | Constraints                                  |
  * |--------------------------|------------|----------------------------------------------|
  * | `id`                     | string     | `^[a-z0-9][a-z0-9._-]*$`                    |
- * | `apiVersion`             | literal 1  | must equal `PLUGIN_API_VERSION`              |
+ * | `apiVersion`             | literal 1  | debe ser igual a `PLUGIN_API_VERSION`        |
  * | `version`                | string     | semver (`\d+\.\d+\.\d+`)                    |
- * | `displayName`            | string     | 1–100 chars                                  |
- * | `description`            | string     | 1–500 chars                                  |
- * | `author`                 | string     | 1–200 chars                                  |
- * | `categories`             | enum[]     | at least one; values from PLUGIN_CATEGORIES  |
- * | `minimumHostVersion`     | string?    | semver lower bound if present, no leading `v`|
- * | `minimumPaperclipVersion`| string?    | legacy alias of `minimumHostVersion`         |
- * | `capabilities`           | enum[]     | at least one; values from PLUGIN_CAPABILITIES|
- * | `entrypoints.worker`     | string     | min 1 char                                   |
- * | `entrypoints.ui`         | string?    | required when `ui.slots` is declared         |
+ * | `displayName`            | string     | 1–100 caracteres                             |
+ * | `description`            | string     | 1–500 caracteres                             |
+ * | `author`                 | string     | 1–200 caracteres                             |
+ * | `categories`             | enum[]     | al menos uno; valores de PLUGIN_CATEGORIES   |
+ * | `minimumHostVersion`     | string?    | límite inferior semver, sin `v` inicial      |
+ * | `minimumPaperclipVersion`| string?    | alias heredado de `minimumHostVersion`       |
+ * | `capabilities`           | enum[]     | al menos uno; valores de PLUGIN_CAPABILITIES |
+ * | `entrypoints.worker`     | string     | mín. 1 carácter                              |
+ * | `entrypoints.ui`         | string?    | requerido cuando se declara `ui.slots`       |
  *
- * Cross-field rules enforced via `superRefine`:
- * - `entrypoints.ui` required when `ui.slots` declared
- * - `agent.tools.register` capability required when `tools` declared
- * - `jobs.schedule` capability required when `jobs` declared
- * - `webhooks.receive` capability required when `webhooks` declared
- * - duplicate `jobs[].jobKey` values are rejected
- * - duplicate `webhooks[].endpointKey` values are rejected
- * - duplicate `tools[].name` values are rejected
- * - duplicate `ui.slots[].id` values are rejected
+ * Reglas entre campos aplicadas mediante `superRefine`:
+ * - `entrypoints.ui` requerido cuando se declara `ui.slots`
+ * - capacidad `agent.tools.register` requerida cuando se declara `tools`
+ * - capacidad `jobs.schedule` requerida cuando se declara `jobs`
+ * - capacidad `webhooks.receive` requerida cuando se declara `webhooks`
+ * - los valores duplicados de `jobs[].jobKey` se rechazan
+ * - los valores duplicados de `webhooks[].endpointKey` se rechazan
+ * - los valores duplicados de `tools[].name` se rechazan
+ * - los valores duplicados de `ui.slots[].id` se rechazan
  *
  * @see PLUGIN_SPEC.md §10.1 — Manifest shape
- * @see {@link PaperclipPluginManifestV1} — the inferred TypeScript type
+ * @see {@link PaperclipPluginManifestV1} — el tipo TypeScript inferido
  */
 export const pluginManifestV1Schema = z.object({
   id: z.string().min(1).regex(
     /^[a-z0-9][a-z0-9._-]*$/,
-    "Plugin id must start with a lowercase alphanumeric and contain only lowercase letters, digits, dots, hyphens, or underscores",
+    "El id del plugin debe empezar con un alfanumérico en minúsculas y contener solo letras minúsculas, dígitos, puntos, guiones o guiones bajos",
   ),
   apiVersion: z.literal(1),
   version: z.string().min(1).regex(
     /^\d+\.\d+\.\d+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/,
-    "Version must follow semver (e.g. 1.0.0 or 1.0.0-beta.1)",
+    "La versión debe seguir semver (p. ej. 1.0.0 o 1.0.0-beta.1)",
   ),
   displayName: z.string().min(1).max(100),
   description: z.string().min(1).max(500),
@@ -390,11 +390,11 @@ export const pluginManifestV1Schema = z.object({
   categories: z.array(z.enum(PLUGIN_CATEGORIES)).min(1),
   minimumHostVersion: z.string().regex(
     /^\d+\.\d+\.\d+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/,
-    "minimumHostVersion must follow semver (e.g. 1.0.0)",
+    "minimumHostVersion debe seguir semver (p. ej. 1.0.0)",
   ).optional(),
   minimumPaperclipVersion: z.string().regex(
     /^\d+\.\d+\.\d+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/,
-    "minimumPaperclipVersion must follow semver (e.g. 1.0.0)",
+    "minimumPaperclipVersion debe seguir semver (p. ej. 1.0.0)",
   ).optional(),
   capabilities: z.array(z.enum(PLUGIN_CAPABILITIES)).min(1),
   entrypoints: z.object({
@@ -411,15 +411,15 @@ export const pluginManifestV1Schema = z.object({
     launchers: z.array(pluginLauncherDeclarationSchema).optional(),
   }).optional(),
 }).superRefine((manifest, ctx) => {
-  // ── Entrypoint ↔ UI slot consistency ──────────────────────────────────
-  // Plugins that declare UI slots must also declare a UI entrypoint so the
-  // host knows where to load the bundle from (PLUGIN_SPEC.md §10.1).
+  // ── Consistencia entrypoint ↔ ranura de UI ──────────────────────────────
+  // Los plugins que declaran ranuras de UI también deben declarar un entrypoint de UI para que el
+  // host sepa de dónde cargar el paquete (PLUGIN_SPEC.md §10.1).
   const hasUiSlots = (manifest.ui?.slots?.length ?? 0) > 0;
   const hasUiLaunchers = (manifest.ui?.launchers?.length ?? 0) > 0;
   if ((hasUiSlots || hasUiLaunchers) && !manifest.entrypoints.ui) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "entrypoints.ui is required when ui.slots or ui.launchers are declared",
+      message: "entrypoints.ui es obligatorio cuando se declaran ui.slots o ui.launchers",
       path: ["entrypoints", "ui"],
     });
   }
@@ -431,93 +431,93 @@ export const pluginManifestV1Schema = z.object({
   ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "minimumHostVersion and minimumPaperclipVersion must match when both are declared",
+      message: "minimumHostVersion y minimumPaperclipVersion deben coincidir cuando ambos se declaran",
       path: ["minimumHostVersion"],
     });
   }
 
-  // ── Capability ↔ feature declaration consistency ───────────────────────
-  // The host enforces capabilities at install and runtime. A plugin must
-  // declare every capability it needs up-front; silently having more features
-  // than capabilities would cause runtime rejections.
+  // ── Consistencia capacidad ↔ declaración de función ───────────────────────
+  // El host aplica las capacidades al instalar y en tiempo de ejecución. Un plugin debe
+  // declarar por adelantado cada capacidad que necesite; tener en silencio más funciones
+  // que capacidades causaría rechazos en tiempo de ejecución.
 
-  // tools require agent.tools.register (PLUGIN_SPEC.md §11)
+  // tools requiere agent.tools.register (PLUGIN_SPEC.md §11)
   if (manifest.tools && manifest.tools.length > 0) {
     if (!manifest.capabilities.includes("agent.tools.register")) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Capability 'agent.tools.register' is required when tools are declared",
+        message: "La capacidad 'agent.tools.register' es obligatoria cuando se declaran tools",
         path: ["capabilities"],
       });
     }
   }
 
-  // jobs require jobs.schedule (PLUGIN_SPEC.md §17)
+  // jobs requiere jobs.schedule (PLUGIN_SPEC.md §17)
   if (manifest.jobs && manifest.jobs.length > 0) {
     if (!manifest.capabilities.includes("jobs.schedule")) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Capability 'jobs.schedule' is required when jobs are declared",
+        message: "La capacidad 'jobs.schedule' es obligatoria cuando se declaran jobs",
         path: ["capabilities"],
       });
     }
   }
 
-  // webhooks require webhooks.receive (PLUGIN_SPEC.md §18)
+  // webhooks requiere webhooks.receive (PLUGIN_SPEC.md §18)
   if (manifest.webhooks && manifest.webhooks.length > 0) {
     if (!manifest.capabilities.includes("webhooks.receive")) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Capability 'webhooks.receive' is required when webhooks are declared",
+        message: "La capacidad 'webhooks.receive' es obligatoria cuando se declaran webhooks",
         path: ["capabilities"],
       });
     }
   }
 
-  // ── Uniqueness checks ──────────────────────────────────────────────────
-  // Duplicate keys within a plugin's own manifest are always a bug. The host
-  // would not know which declaration takes precedence, so we reject early.
+  // ── Chequeos de unicidad ────────────────────────────────────────────────
+  // Las claves duplicadas dentro del propio manifiesto de un plugin siempre son un error. El host
+  // no sabría qué declaración prevalece, así que rechazamos temprano.
 
-  // job keys must be unique within the plugin (used as identifiers in the DB)
+  // las claves de trabajo deben ser únicas dentro del plugin (usadas como identificadores en la BD)
   if (manifest.jobs) {
     const jobKeys = manifest.jobs.map((j) => j.jobKey);
     const duplicates = jobKeys.filter((key, i) => jobKeys.indexOf(key) !== i);
     if (duplicates.length > 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Duplicate job keys: ${[...new Set(duplicates)].join(", ")}`,
+        message: `Claves de trabajo duplicadas: ${[...new Set(duplicates)].join(", ")}`,
         path: ["jobs"],
       });
     }
   }
 
-  // webhook endpoint keys must be unique within the plugin (used in routes)
+  // las claves de endpoint de webhook deben ser únicas dentro del plugin (usadas en rutas)
   if (manifest.webhooks) {
     const endpointKeys = manifest.webhooks.map((w) => w.endpointKey);
     const duplicates = endpointKeys.filter((key, i) => endpointKeys.indexOf(key) !== i);
     if (duplicates.length > 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Duplicate webhook endpoint keys: ${[...new Set(duplicates)].join(", ")}`,
+        message: `Claves de endpoint de webhook duplicadas: ${[...new Set(duplicates)].join(", ")}`,
         path: ["webhooks"],
       });
     }
   }
 
-  // tool names must be unique within the plugin (namespaced at runtime)
+  // los nombres de herramienta deben ser únicos dentro del plugin (agrupados en tiempo de ejecución)
   if (manifest.tools) {
     const toolNames = manifest.tools.map((t) => t.name);
     const duplicates = toolNames.filter((name, i) => toolNames.indexOf(name) !== i);
     if (duplicates.length > 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Duplicate tool names: ${[...new Set(duplicates)].join(", ")}`,
+        message: `Nombres de herramienta duplicados: ${[...new Set(duplicates)].join(", ")}`,
         path: ["tools"],
       });
     }
   }
 
-  // UI slot ids must be unique within the plugin (namespaced at runtime)
+  // los ids de ranura de UI deben ser únicos dentro del plugin (agrupados en tiempo de ejecución)
   if (manifest.ui) {
     if (manifest.ui.slots) {
       const slotIds = manifest.ui.slots.map((s) => s.id);
@@ -525,14 +525,14 @@ export const pluginManifestV1Schema = z.object({
       if (duplicates.length > 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Duplicate UI slot ids: ${[...new Set(duplicates)].join(", ")}`,
+          message: `IDs de ranura de UI duplicados: ${[...new Set(duplicates)].join(", ")}`,
           path: ["ui", "slots"],
         });
       }
     }
   }
 
-  // launcher ids must be unique within the plugin
+  // los ids de lanzador deben ser únicos dentro del plugin
   const allLaunchers = [
     ...(manifest.launchers ?? []),
     ...(manifest.ui?.launchers ?? []),
@@ -543,7 +543,7 @@ export const pluginManifestV1Schema = z.object({
     if (duplicates.length > 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Duplicate launcher ids: ${[...new Set(duplicates)].join(", ")}`,
+        message: `IDs de lanzador duplicados: ${[...new Set(duplicates)].join(", ")}`,
         path: manifest.ui?.launchers ? ["ui", "launchers"] : ["launchers"],
       });
     }
@@ -553,31 +553,31 @@ export const pluginManifestV1Schema = z.object({
 export type PluginManifestV1Input = z.infer<typeof pluginManifestV1Schema>;
 
 // ---------------------------------------------------------------------------
-// Plugin installation / registration request
+// Solicitud de instalación / registro de plugin
 // ---------------------------------------------------------------------------
 
 /**
- * Schema for installing (registering) a plugin.
- * The server receives the packageName and resolves the manifest from the
- * installed package.
+ * Esquema para instalar (registrar) un plugin.
+ * El servidor recibe el packageName y resuelve el manifiesto desde el
+ * paquete instalado.
  */
 export const installPluginSchema = z.object({
   packageName: z.string().min(1),
   version: z.string().min(1).optional(),
-  /** Set by loader for local-path installs so the worker can be resolved. */
+  /** Definido por el cargador para instalaciones de ruta local para poder resolver el worker. */
   packagePath: z.string().min(1).optional(),
 });
 
 export type InstallPlugin = z.infer<typeof installPluginSchema>;
 
 // ---------------------------------------------------------------------------
-// Plugin config (instance configuration) schemas
+// Esquemas de config del plugin (configuración de instancia)
 // ---------------------------------------------------------------------------
 
 /**
- * Schema for creating or updating a plugin's instance configuration.
- * configJson is validated permissively here; runtime validation against
- * the plugin's instanceConfigSchema is done at the service layer.
+ * Esquema para crear o actualizar la configuración de instancia de un plugin.
+ * configJson se valida de forma permisiva aquí; la validación en tiempo de ejecución contra
+ * el instanceConfigSchema del plugin se hace en la capa de servicio.
  */
 export const upsertPluginConfigSchema = z.object({
   configJson: z.record(z.unknown()),
@@ -586,8 +586,8 @@ export const upsertPluginConfigSchema = z.object({
 export type UpsertPluginConfig = z.infer<typeof upsertPluginConfigSchema>;
 
 /**
- * Schema for partially updating a plugin's instance configuration.
- * Allows a partial merge of config values.
+ * Esquema para actualizar parcialmente la configuración de instancia de un plugin.
+ * Permite una fusión parcial de valores de config.
  */
 export const patchPluginConfigSchema = z.object({
   configJson: z.record(z.unknown()),
@@ -596,14 +596,14 @@ export const patchPluginConfigSchema = z.object({
 export type PatchPluginConfig = z.infer<typeof patchPluginConfigSchema>;
 
 // ---------------------------------------------------------------------------
-// Plugin status update
+// Actualización de estado del plugin
 // ---------------------------------------------------------------------------
 
 /**
- * Schema for updating a plugin's lifecycle status. Used by the lifecycle
- * manager to persist state transitions.
+ * Esquema para actualizar el estado del ciclo de vida de un plugin. Usado por el gestor
+ * del ciclo de vida para persistir transiciones de estado.
  *
- * @see {@link PLUGIN_STATUSES} for the valid status values
+ * @see {@link PLUGIN_STATUSES} para los valores de estado válidos
  */
 export const updatePluginStatusSchema = z.object({
   status: z.enum(PLUGIN_STATUSES),
@@ -613,10 +613,10 @@ export const updatePluginStatusSchema = z.object({
 export type UpdatePluginStatus = z.infer<typeof updatePluginStatusSchema>;
 
 // ---------------------------------------------------------------------------
-// Plugin uninstall
+// Desinstalación del plugin
 // ---------------------------------------------------------------------------
 
-/** Schema for the uninstall request. `removeData` controls hard vs soft delete. */
+/** Esquema para la solicitud de desinstalación. `removeData` controla borrado duro vs suave. */
 export const uninstallPluginSchema = z.object({
   removeData: z.boolean().optional().default(false),
 });
@@ -624,13 +624,13 @@ export const uninstallPluginSchema = z.object({
 export type UninstallPlugin = z.infer<typeof uninstallPluginSchema>;
 
 // ---------------------------------------------------------------------------
-// Plugin state (key-value storage) schemas
+// Esquemas de estado del plugin (almacenamiento clave-valor)
 // ---------------------------------------------------------------------------
 
 /**
- * Schema for a plugin state scope key — identifies the exact location where
- * state is stored. Used by the `ctx.state.get()`, `ctx.state.set()`, and
- * `ctx.state.delete()` SDK methods.
+ * Esquema para una clave de alcance de estado de plugin — identifica la ubicación exacta donde
+ * se almacena el estado. Usado por los métodos del SDK `ctx.state.get()`, `ctx.state.set()` y
+ * `ctx.state.delete()`.
  *
  * @see PLUGIN_SPEC.md §21.3 `plugin_state`
  */
@@ -644,22 +644,22 @@ export const pluginStateScopeKeySchema = z.object({
 export type PluginStateScopeKey = z.infer<typeof pluginStateScopeKeySchema>;
 
 /**
- * Schema for setting a plugin state value.
+ * Esquema para definir un valor de estado de plugin.
  */
 export const setPluginStateSchema = z.object({
   scopeKind: z.enum(PLUGIN_STATE_SCOPE_KINDS),
   scopeId: z.string().min(1).optional(),
   namespace: z.string().min(1).optional(),
   stateKey: z.string().min(1),
-  /** JSON-serializable value to store. */
+  /** Valor serializable a JSON para almacenar. */
   value: z.unknown(),
 });
 
 export type SetPluginState = z.infer<typeof setPluginStateSchema>;
 
 /**
- * Schema for querying plugin state entries. All fields are optional to allow
- * flexible list queries (e.g. all state for a plugin within a scope).
+ * Esquema para consultar entradas de estado de plugin. Todos los campos son opcionales para permitir
+ * consultas de listado flexibles (p. ej. todo el estado de un plugin dentro de un alcance).
  */
 export const listPluginStateSchema = z.object({
   scopeKind: z.enum(PLUGIN_STATE_SCOPE_KINDS).optional(),

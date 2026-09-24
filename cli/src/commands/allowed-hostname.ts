@@ -8,7 +8,7 @@ export async function addAllowedHostname(host: string, opts: { config?: string }
   const config = readConfig(opts.config);
 
   if (!config) {
-    p.log.error(`No config found at ${configPath}. Run ${pc.cyan("paperclip onboard")} first.`);
+    p.log.error(`No se encontró config en ${configPath}. Ejecuta primero ${pc.cyan("paperclip onboard")}.`);
     return;
   }
 
@@ -23,17 +23,17 @@ export async function addAllowedHostname(host: string, opts: { config?: string }
   writeConfig(config, opts.config);
 
   if (existed) {
-    p.log.info(`Hostname ${pc.cyan(normalized)} is already allowed.`);
+    p.log.info(`El hostname ${pc.cyan(normalized)} ya está permitido.`);
   } else {
-    p.log.success(`Added allowed hostname: ${pc.cyan(normalized)}`);
+    p.log.success(`Hostname permitido agregado: ${pc.cyan(normalized)}`);
     p.log.message(
-      pc.dim("Restart the Paperclip server for this change to take effect."),
+      pc.dim("Reinicia el servidor de Paperclip para que este cambio surta efecto."),
     );
   }
 
   if (!(config.server.deploymentMode === "authenticated" && config.server.exposure === "private")) {
     p.log.message(
-      pc.dim("Note: allowed hostnames are enforced only in authenticated/private mode."),
+      pc.dim("Nota: los hostnames permitidos solo se aplican en modo authenticated/private."),
     );
   }
 }

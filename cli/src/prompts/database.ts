@@ -23,16 +23,16 @@ export async function promptDatabase(current?: DatabaseConfig): Promise<Database
   };
 
   const mode = await p.select({
-    message: "Database mode",
+    message: "Modo de base de datos",
     options: [
-      { value: "embedded-postgres" as const, label: "Embedded PostgreSQL (managed locally)", hint: "recommended" },
-      { value: "postgres" as const, label: "PostgreSQL (external server)" },
+      { value: "embedded-postgres" as const, label: "PostgreSQL embebido (gestionado localmente)", hint: "recomendado" },
+      { value: "postgres" as const, label: "PostgreSQL (servidor externo)" },
     ],
     initialValue: base.mode,
   });
 
   if (p.isCancel(mode)) {
-    p.cancel("Setup cancelled.");
+    p.cancel("Configuración cancelada.");
     process.exit(0);
   }
 
@@ -42,47 +42,47 @@ export async function promptDatabase(current?: DatabaseConfig): Promise<Database
 
   if (mode === "postgres") {
     const value = await p.text({
-      message: "PostgreSQL connection string",
+      message: "Cadena de conexión de PostgreSQL",
       defaultValue: base.connectionString ?? "",
       placeholder: "postgres://user:pass@localhost:5432/paperclip",
       validate: (val) => {
-        if (!val) return "Connection string is required for PostgreSQL mode";
-        if (!val.startsWith("postgres")) return "Must be a postgres:// or postgresql:// URL";
+        if (!val) return "La cadena de conexión es requerida para el modo PostgreSQL";
+        if (!val.startsWith("postgres")) return "Debe ser una URL postgres:// o postgresql://";
       },
     });
 
     if (p.isCancel(value)) {
-      p.cancel("Setup cancelled.");
+      p.cancel("Configuración cancelada.");
       process.exit(0);
     }
 
     connectionString = value;
   } else {
     const dataDir = await p.text({
-      message: "Embedded PostgreSQL data directory",
+      message: "Directorio de datos de PostgreSQL embebido",
       defaultValue: base.embeddedPostgresDataDir || defaultEmbeddedDir,
       placeholder: defaultEmbeddedDir,
     });
 
     if (p.isCancel(dataDir)) {
-      p.cancel("Setup cancelled.");
+      p.cancel("Configuración cancelada.");
       process.exit(0);
     }
 
     embeddedPostgresDataDir = dataDir || defaultEmbeddedDir;
 
     const portValue = await p.text({
-      message: "Embedded PostgreSQL port",
+      message: "Puerto de PostgreSQL embebido",
       defaultValue: String(base.embeddedPostgresPort || 54329),
       placeholder: "54329",
       validate: (val) => {
         const n = Number(val);
-        if (!Number.isInteger(n) || n < 1 || n > 65535) return "Port must be an integer between 1 and 65535";
+        if (!Number.isInteger(n) || n < 1 || n > 65535) return "El puerto debe ser un entero entre 1 y 65535";
       },
     });
 
     if (p.isCancel(portValue)) {
-      p.cancel("Setup cancelled.");
+      p.cancel("Configuración cancelada.");
       process.exit(0);
     }
 
@@ -91,54 +91,54 @@ export async function promptDatabase(current?: DatabaseConfig): Promise<Database
   }
 
   const backupEnabled = await p.confirm({
-    message: "Enable automatic database backups?",
+    message: "¿Activar respaldos automáticos de la base de datos?",
     initialValue: base.backup.enabled,
   });
   if (p.isCancel(backupEnabled)) {
-    p.cancel("Setup cancelled.");
+    p.cancel("Configuración cancelada.");
     process.exit(0);
   }
 
   const backupDirInput = await p.text({
-    message: "Backup directory",
+    message: "Directorio de respaldos",
     defaultValue: base.backup.dir || defaultBackupDir,
     placeholder: defaultBackupDir,
-    validate: (val) => (!val || val.trim().length === 0 ? "Backup directory is required" : undefined),
+    validate: (val) => (!val || val.trim().length === 0 ? "El directorio de respaldos es requerido" : undefined),
   });
   if (p.isCancel(backupDirInput)) {
-    p.cancel("Setup cancelled.");
+    p.cancel("Configuración cancelada.");
     process.exit(0);
   }
 
   const backupIntervalInput = await p.text({
-    message: "Backup interval (minutes)",
+    message: "Intervalo de respaldo (minutos)",
     defaultValue: String(base.backup.intervalMinutes || 60),
     placeholder: "60",
     validate: (val) => {
       const n = Number(val);
-      if (!Number.isInteger(n) || n < 1) return "Interval must be a positive integer";
-      if (n > 10080) return "Interval must be 10080 minutes (7 days) or less";
+      if (!Number.isInteger(n) || n < 1) return "El intervalo debe ser un entero positivo";
+      if (n > 10080) return "El intervalo debe ser 10080 minutos (7 días) o menos";
       return undefined;
     },
   });
   if (p.isCancel(backupIntervalInput)) {
-    p.cancel("Setup cancelled.");
+    p.cancel("Configuración cancelada.");
     process.exit(0);
   }
 
   const backupRetentionInput = await p.text({
-    message: "Backup retention (days)",
+    message: "Retención de respaldos (días)",
     defaultValue: String(base.backup.retentionDays || 30),
     placeholder: "30",
     validate: (val) => {
       const n = Number(val);
-      if (!Number.isInteger(n) || n < 1) return "Retention must be a positive integer";
-      if (n > 3650) return "Retention must be 3650 days or less";
+      if (!Number.isInteger(n) || n < 1) return "La retención debe ser un entero positivo";
+      if (n > 3650) return "La retención debe ser 3650 días o menos";
       return undefined;
     },
   });
   if (p.isCancel(backupRetentionInput)) {
-    p.cancel("Setup cancelled.");
+    p.cancel("Configuración cancelada.");
     process.exit(0);
   }
 

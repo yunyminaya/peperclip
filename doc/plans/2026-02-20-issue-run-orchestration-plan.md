@@ -1,141 +1,141 @@
-# Issue Run Orchestration Plan
+# Plan de orquestación de ejecuciones de issues
 
-## Context
+## Contexto
 
-We observed cascaded wakeups on a single issue (for example PAP-39) that produced multiple runs at once:
+Observamos despertares en cascada en un solo issue (por ejemplo PAP-39) que produjeron múltiples ejecuciones a la vez:
 
-- assignee self-wake from `issue_commented`
-- mention wake to manager/CTO from `issue_comment_mentioned`
-- overlapping runs on the same issue
+- auto-despertar del asignado desde `issue_commented`
+- despertar por mención al gerente/CTO desde `issue_comment_mentioned`
+- ejecuciones superpuestas en el mismo issue
 
-Current behavior is run-centric and agent-centric. It coalesces per-agent+task in `heartbeat.wakeup`, but does not enforce a single active execution slot per issue across all agents.
+El comportamiento actual es céntrico en la ejecución y céntrico en el agente. Coalesce por agente+tarea en `heartbeat.wakeup`, pero no aplica un único slot de ejecución activa por issue entre todos los agentes.
 
-## What We Know Today
+## Lo que sabemos hoy
 
-- The only reliable issue/run linkage today is derived from `heartbeat_runs.context_snapshot.issueId` with run status `queued` or `running`.
-- `checkoutRunId` on issues is a work-ownership lock, not an orchestration lock.
-- Wakeups are created from multiple routes (`issues`, `approvals`, `agents`) and all funnel through `heartbeat.wakeup`.
+- El único enlace issue/ejecución confiable hoy se deriva de `heartbeat_runs.context_snapshot.issueId` con estado de ejecución `queued` o `running`.
+- `checkoutRunId` en los issues es un bloqueo de propiedad de trabajo, no un bloqueo de orquestación.
+- Los despertares se crean desde múltiples rutas (`issues`, `approvals`, `agents`) y todos fluyen a través de `heartbeat.wakeup`.
 
-## Goals
+## Objetivos
 
-1. Prevent self-wake cascades for the same issue when the target agent has the same normalized name as the currently active issue runner.
-2. Allow cross-agent wake requests, but do not run them until the current issue runner exits.
-3. Guarantee at most one active (queued or running) execution owner per issue at a time.
-4. Keep this enforcement centralized in orchestration (not prompt/skill rules).
+1. Prevenir cascadas de auto-despertar para el mismo issue cuando el agente objetivo tiene el mismo nombre normalizado que el ejecutor activo actual del issue.
+2. Permitir solicitudes de despertar entre agentes, pero no ejecutarlas hasta que el ejecutor actual del issue salga.
+3. Garantizar como máximo un dueño de ejecución activa (queued o running) por issue a la vez.
+4. Mantener esta aplicación centralizada en la orquestación (no reglas de prompt/habilidad).
 
-## Non-Goals
+## No objetivos
 
-- Replacing checkout semantics for code-change ownership.
-- Changing manager escalation policy itself.
-- Enforcing uniqueness of agent names globally (handled as a separate governance decision).
+- Reemplazar la semántica de checkout para propiedad de cambios de código.
+- Cambiar la propia política de escalación del gerente.
+- Aplicar unicidad de nombres de agente globalmente (manejado como decisión de gobernanza separada).
 
-## Proposed Model
+## Modelo propuesto
 
-Use an explicit issue-level orchestration lock on `issues`.
+Usar un bloqueo de orquestación explícito a nivel de issue en `issues`.
 
-### New Issue Properties
+### Nuevas propiedades de issue
 
-- `executionRunId: uuid | null` (FK to `heartbeat_runs.id`, `ON DELETE SET NULL`)
-- `executionAgentNameKey: text | null` (normalized lowercase/trimmed agent name)
+- `executionRunId: uuid | null` (FK a `heartbeat_runs.id`, `ON DELETE SET NULL`)
+- `executionAgentNameKey: text | null` (nombre de agente normalizado en minúsculas/recortado)
 - `executionLockedAt: timestamptz | null`
 
-`executionRunId` is the canonical “who currently owns orchestration for this issue” field.
+`executionRunId` es el campo canónico de "quién es dueño actualmente de la orquestación de este issue".
 
-## Orchestration Rules
+## Reglas de orquestación
 
-### Rule A: No Self-Wake by Same Agent Name
+### Regla A: Sin auto-despertar por el mismo nombre de agente
 
-If a wakeup is issue-scoped and `issues.executionRunId` points to an active run whose `executionAgentNameKey` matches the waking agent name key:
+Si un despertar tiene alcance de issue y `issues.executionRunId` apunta a una ejecución activa cuyo `executionAgentNameKey` coincide con la clave de nombre del agente que despierta:
 
-- do not create a new heartbeat run
-- write wakeup request as `coalesced` with reason `issue_execution_same_name`
-- return existing run reference
+- no crear una nueva ejecución de latido
+- escribir la solicitud de despertar como `coalesced` con motivo `issue_execution_same_name`
+- devolver la referencia de ejecución existente
 
-### Rule B: Different Name May Wake, But Waits
+### Regla B: Un nombre diferente puede despertar, pero espera
 
-If an issue has an active execution lock held by a different agent-name key:
+Si un issue tiene un bloqueo de ejecución activo en manos de una clave de nombre de agente diferente:
 
-- accept the wake request
-- persist request as deferred (new wakeup status `deferred_issue_execution`)
-- do not create a run yet
+- aceptar la solicitud de despertar
+- persistir la solicitud como diferida (nuevo estado de despertar `deferred_issue_execution`)
+- aún no crear una ejecución
 
-When the active issue run finishes, promote the oldest deferred request for that issue into a queued run and transfer `executionRunId`.
+Cuando la ejecución activa del issue termina, promover la solicitud diferida más antigua de ese issue a una ejecución en cola y transferir `executionRunId`.
 
-### Rule C: One Active Execution Owner Per Issue
+### Regla C: Un dueño de ejecución activa por issue
 
-For issue-scoped wakeups, run creation is done only while holding a transaction lock on the issue row. This ensures only one queued/running run can become owner at a time.
+Para despertares con alcance de issue, la creación de ejecuciones se hace solo mientras se mantiene un bloqueo de transacción en la fila del issue. Esto asegura que solo una ejecución queued/running pueda convertirse en dueña a la vez.
 
-## Implementation Plan
+## Plan de implementación
 
-## Phase 1: Schema + Shared Contracts
+## Fase 1: Esquema + contratos compartidos
 
-1. Add issue columns: `execution_run_id`, `execution_agent_name_key`, `execution_locked_at`.
-2. Extend shared `Issue` type in `packages/shared/src/types/issue.ts`.
-3. Add migration and export updates.
+1. Agregar columnas de issue: `execution_run_id`, `execution_agent_name_key`, `execution_locked_at`.
+2. Extender el tipo compartido `Issue` en `packages/shared/src/types/issue.ts`.
+3. Agregar migración y actualizaciones de exportaciones.
 
-## Phase 2: Centralize Issue Execution Gate in `heartbeat.wakeup`
+## Fase 2: Centralizar la puerta de ejecución de issues en `heartbeat.wakeup`
 
-1. In `enqueueWakeup`, derive `issueId` from context/payload as today.
-2. If no `issueId`, keep existing behavior.
-3. If `issueId` exists:
-   - transaction + `SELECT ... FOR UPDATE` on issue row
-   - resolve/repair stale `executionRunId` (if referenced run is not `queued|running`, clear lock)
-   - apply Rule A/Rule B/Rule C
-4. Name normalization helper:
+1. En `enqueueWakeup`, derivar `issueId` del contexto/payload como hoy.
+2. Si no hay `issueId`, mantener el comportamiento existente.
+3. Si existe `issueId`:
+   - transacción + `SELECT ... FOR UPDATE` en la fila del issue
+   - resolver/reparar `executionRunId` obsoleto (si la ejecución referenciada no es `queued|running`, limpiar el bloqueo)
+   - aplicar Regla A/Regla B/Regla C
+4. Helper de normalización de nombres:
    - `agentNameKey = agent.name.trim().toLowerCase()`
 
-## Phase 3: Deferred Queue Promotion on Run Finalization
+## Fase 3: Promoción de cola diferida al finalizar la ejecución
 
-1. On run terminal states (`succeeded`, `failed`, `cancelled`, orphan reaped):
-   - if run owns `issues.executionRunId`, clear issue lock
-   - promote oldest deferred issue wakeup to queued run
-   - set issue lock to the promoted run
-   - trigger `startNextQueuedRunForAgent(promotedAgentId)`
+1. En estados terminales de ejecución (`succeeded`, `failed`, `cancelled`, huérfano recolectado):
+   - si la ejecución es dueña de `issues.executionRunId`, limpiar el bloqueo del issue
+   - promover el despertar de issue diferido más antiguo a ejecución en cola
+   - establecer el bloqueo del issue a la ejecución promovida
+   - disparar `startNextQueuedRunForAgent(promotedAgentId)`
 
-## Phase 4: Route Hygiene (“Apply Everywhere”)
+## Fase 4: Higiene de rutas ("aplicar en todas partes")
 
-1. Keep route-side wakeup dedupe by agent id, but rely on heartbeat gate as source of truth.
-2. Ensure all issue-related wakeup calls include `issueId` in payload/context snapshot.
-3. Add explicit reason codes so logs make suppression/deferral obvious.
+1. Mantener el dedupe de despertares por id de agente en el lado de las rutas, pero confiar en la puerta de latido como fuente de verdad.
+2. Asegurar que todas las llamadas de despertar relacionadas con issues incluyan `issueId` en el payload/instantánea de contexto.
+3. Agregar códigos de motivo explícitos para que los registros hagan obvias la supresión/el diferimiento.
 
-## Phase 5: Tests
+## Fase 5: Pruebas
 
-1. Unit tests for `heartbeat.wakeup`:
-   - same-name self-wake suppressed
-   - different-name wake deferred
-   - lock released and deferred wake promoted on owner completion
-   - stale lock recovery
-2. Integration tests:
-   - comment with `@CTO` during active assignee run does not create concurrent active run
-   - only one active owner per issue at any time
-3. Regression tests:
-   - non-issue wakeups unchanged
-   - existing assignment/timer behavior unchanged for tasks without issue context
+1. Pruebas unitarias para `heartbeat.wakeup`:
+   - auto-despertar del mismo nombre suprimido
+   - despertar de nombre diferente diferido
+   - bloqueo liberado y despertar diferido promovido al completarse el dueño
+   - recuperación de bloqueo obsoleto
+2. Pruebas de integración:
+   - comentario con `@CTO` durante una ejecución activa del asignado no crea una ejecución activa concurrente
+   - solo un dueño activo por issue en cualquier momento
+3. Pruebas de regresión:
+   - despertares sin issue sin cambios
+   - comportamiento existente de asignación/temporizador sin cambios para tareas sin contexto de issue
 
-## Telemetry + Debuggability
+## Telemetría + depurabilidad
 
-- Add structured reasons in `agent_wakeup_requests.reason`:
+- Agregar motivos estructurados en `agent_wakeup_requests.reason`:
   - `issue_execution_same_name`
   - `issue_execution_deferred`
   - `issue_execution_promoted`
-- Add activity log details for lock transfer events:
-  - from run id / to run id / issue id / agent name key
+- Agregar detalles de registro de actividad para eventos de transferencia de bloqueo:
+  - desde id de ejecución / hacia id de ejecución / id de issue / clave de nombre de agente
 
-## Rollout Strategy
+## Estrategia de despliegue
 
-1. Ship schema + feature flag (`ISSUE_EXECUTION_LOCK_ENABLED`) default off.
-2. Enable in dev and verify PAP-39 style scenarios.
-3. Enable in staging with high log verbosity.
-4. Enable by default after stable run.
+1. Enviar esquema + feature flag (`ISSUE_EXECUTION_LOCK_ENABLED`) por defecto desactivado.
+2. Habilitar en dev y verificar escenarios estilo PAP-39.
+3. Habilitar en staging con alta verbosidad de registros.
+4. Habilitar por defecto después de una ejecución estable.
 
-## Acceptance Criteria
+## Criterios de aceptación
 
-1. A single issue never has more than one active execution owner run (`queued|running`) at once.
-2. Same-name self-wakes for the same issue are suppressed, not spawned.
-3. Different-name wakeups are accepted but deferred until issue execution lock is released.
-4. Mentioning CTO during an active issue run does not start CTO concurrently on that issue.
-5. Parallelism remains available via separate issues/subissues.
+1. Un solo issue nunca tiene más de una ejecución dueña activa (`queued|running`) a la vez.
+2. Los auto-despertares del mismo nombre para el mismo issue se suprimen, no se generan.
+3. Los despertares de nombre diferente se aceptan pero se difieren hasta que se libera el bloqueo de ejecución del issue.
+4. Mencionar al CTO durante una ejecución activa de un issue no inicia al CTO concurrentemente en ese issue.
+5. El paralelismo sigue disponible vía issues/subissues separados.
 
-## Follow-Up (Separate but Related)
+## Seguimiento (separado pero relacionado)
 
-Checkout conflict logic should be corrected independently so assignees with `checkoutRunId = null` can acquire checkout by current run id without false 409 loops.
+La lógica de conflicto de checkout debería corregirse independientemente para que los asignados con `checkoutRunId = null` puedan adquirir checkout por el id de ejecución actual sin falsos loops 409.

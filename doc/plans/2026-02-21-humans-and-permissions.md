@@ -1,421 +1,421 @@
-# Humans and Permissions Plan
+# Plan de humanos y permisos
 
-Status: Draft
-Date: 2026-02-21
-Owner: Server + UI + Shared + DB
+Estado: Borrador
+Fecha: 2026-02-21
+Responsable: Servidor + UI + Shared + DB
 
-## Goal
+## Objetivo
 
-Add first-class human users and permissions while preserving two deployment modes:
+Agregar usuarios humanos de primera clase y permisos preservando dos modos de despliegue:
 
-- local trusted single-user mode with no login friction
-- cloud-hosted multi-user mode with mandatory authentication and authorization
+- modo local confiable de un solo usuario sin fricción de login
+- modo hospedado en la nube multi-usuario con autenticación y autorización obligatorias
 
-## Why this plan
+## Por qué este plan
 
-Current V1 assumptions are centered on one board operator. We now need:
+Las suposiciones actuales de V1 están centradas en un operador del tablero. Ahora necesitamos:
 
-- multi-human collaboration with per-user permissions
-- safe cloud deployment defaults (no accidental loginless production)
-- local mode that still feels instant (`npx paperclipai run` and go)
-- agent-to-human task delegation, including a human inbox
-- one user account with access to multiple companies in one deployment
-- instance admins who can manage company access across the instance
-- join approvals surfaced as actionable inbox alerts, not buried in admin-only pages
-- a symmetric invite-and-approve onboarding path for both humans and agents
-- one shared membership and permission model for both humans and agents
+- colaboración multi-humana con permisos por usuario
+- defaults seguros de despliegue en la nube (sin producción sin login por accidente)
+- modo local que aún se sienta instantáneo (`npx paperclipai run` y listo)
+- delegación de tareas de agente a humano, incluyendo una bandeja de entrada humana
+- una cuenta de usuario con acceso a múltiples empresas en un despliegue
+- admins de instancia que pueden gestionar el acceso a empresas en toda la instancia
+- aprobaciones de unión expuestas como alertas accionables de la bandeja de entrada, no enterradas en páginas solo-admin
+- una ruta simétrica de invitación-y-aprobación de incorporación para humanos y agentes
+- un modelo compartido de membresía y permisos para humanos y agentes
 
-## Product constraints
+## Restricciones de producto
 
-1. Keep company scoping strict for every new table, endpoint, and permission check.
-2. Preserve existing control-plane invariants:
+1. Mantener el alcance de empresa estricto para cada nueva tabla, endpoint y verificación de permisos.
+2. Preservar las invariantes existentes del plano de control:
 
-- single-assignee task model
-- approval gates
-- budget hard-stop behavior
-- mutation activity logging
+- modelo de tarea con un solo asignado
+- puertas de aprobación
+- comportamiento de tope duro de presupuesto
+- registro de actividad de mutaciones
 
-3. Keep local mode easy and trusted, but prevent unsafe cloud posture.
+3. Mantener el modo local fácil y confiable, pero prevenir una postura insegura en la nube.
 
-## Deployment modes
+## Modos de despliegue
 
-## Mode A: `local_trusted`
+## Modo A: `local_trusted`
 
-Behavior:
+Comportamiento:
 
-- no login UI
-- browser opens directly into board context
-- embedded DB and local storage defaults remain
-- a local implicit human actor exists for attribution
-- local implicit actor has effective `instance_admin` authority for that instance
-- full invite/approval/permission settings flows remain available in local mode (including agent enrollment)
+- sin UI de login
+- el navegador abre directamente en contexto del tablero
+- la BD embebida y los defaults de almacenamiento local permanecen
+- existe un actor humano implícito local para atribución
+- el actor implícito local tiene autoridad efectiva de `instance_admin` para esa instancia
+- los flujos completos de ajustes/invitación/aprobación/permisos permanecen disponibles en modo local (incluida la inscripción de agentes)
 
-Guardrails:
+Guardas:
 
-- server binds to loopback by default
-- fail startup if mode is `local_trusted` with non-loopback bind
-- UI shows a persistent "Local trusted mode" badge
+- el servidor hace bind a loopback por defecto
+- fallar el arranque si el modo es `local_trusted` con bind no-loopback
+- la UI muestra una insignia persistente "Local trusted mode"
 
-## Mode B: `cloud_hosted`
+## Modo B: `cloud_hosted`
 
-Behavior:
+Comportamiento:
 
-- login required for all human endpoints
-- Better Auth for human auth
-- initial auth method: email + password
-- email verification is not required for initial release
-- hosted DB and remote deployment supported
-- multi-user sessions and role/permission enforcement
+- login requerido para todos los endpoints humanos
+- Better Auth para auth humana
+- método de autenticación inicial: email + contraseña
+- la verificación de email no se requiere para el release inicial
+- BD hospedada y despliegue remoto soportados
+- sesiones multi-usuario y aplicación de roles/permisos
 
-Guardrails:
+Guardas:
 
-- fail startup if auth provider/session config is missing
-- fail startup if insecure auth bypass flag is set
-- health payload includes mode and auth readiness
+- fallar el arranque si falta el proveedor de auth/configuración de sesión
+- fallar el arranque si se define un flag inseguro de bypass de auth
+- el payload de health incluye el modo y la preparación de auth
 
-## Authentication choice
+## Elección de autenticación
 
-- use Better Auth for human users
-- start with email/password login only
-- no email confirmation requirement in V1
-- keep implementation structured so social/SSO providers can be added later without changing membership/permission semantics
+- usar Better Auth para usuarios humanos
+- comenzar solo con login de email/contraseña
+- sin requisito de confirmación de email en V1
+- mantener la implementación estructurada para que proveedores sociales/SSO puedan agregarse más tarde sin cambiar la semántica de membresía/permisos
 
-## Auth and actor model
+## Modelo de auth y actor
 
-Unify request actors into a single model:
+Unificar los actores de solicitud en un solo modelo:
 
-- `user` (authenticated human)
+- `user` (humano autenticado)
 - `agent` (API key)
-- `local_board_implicit` (local trusted mode only)
+- `local_board_implicit` (solo modo local confiable)
 
-Rules:
+Reglas:
 
-- in `cloud_hosted`, only `user` and `agent` are valid actors
-- in `local_trusted`, unauthenticated browser/API requests resolve to `local_board_implicit`
-- `local_board_implicit` is authorized as an instance admin principal for local operations
-- all mutating actions continue writing `activity_log` with actor type/id
+- en `cloud_hosted`, solo `user` y `agent` son actores válidos
+- en `local_trusted`, las solicitudes de navegador/API no autenticadas se resuelven a `local_board_implicit`
+- `local_board_implicit` está autorizado como principal admin de instancia para operaciones locales
+- todas las acciones que mutan siguen escribiendo `activity_log` con tipo/id de actor
 
-## First admin bootstrap
+## Bootstrap del primer admin
 
-Problem:
+Problema:
 
-- new cloud deployments need a safe, explicit first human admin path
-- app cannot assume a pre-existing admin account
-- `local_trusted` does not use bootstrap flow because implicit local instance admin already exists
+- los nuevos despliegues en la nube necesitan una ruta explícita y segura para el primer admin humano
+- la app no puede asumir una cuenta de admin preexistente
+- `local_trusted` no usa el flujo de bootstrap porque el admin implícito de la instancia local ya existe
 
-Bootstrap flow:
+Flujo de bootstrap:
 
-1. If no `instance_admin` user exists for the deployment, instance is in `bootstrap_pending` state.
-2. CLI command `pnpm paperclipai auth bootstrap-ceo` creates a one-time CEO onboarding invite URL for that instance.
-3. `pnpm paperclipai onboard` runs this bootstrap check and prints the invite URL automatically when `bootstrap_pending`.
-4. Visiting the app while `bootstrap_pending` shows a blocking setup page with the exact CLI command to run (`pnpm paperclipai onboard`).
-5. Accepting that CEO invite creates the first admin user and exits bootstrap mode.
+1. Si no existe un usuario `instance_admin` para el despliegue, la instancia está en estado `bootstrap_pending`.
+2. El comando CLI `pnpm paperclipai auth bootstrap-ceo` crea una URL de invitación de incorporación de CEO de un solo uso para esa instancia.
+3. `pnpm paperclipai onboard` ejecuta esta verificación de bootstrap e imprime la URL de invitación automáticamente cuando hay `bootstrap_pending`.
+4. Visitar la app mientras hay `bootstrap_pending` muestra una página de configuración bloqueante con el comando CLI exacto a ejecutar (`pnpm paperclipai onboard`).
+5. Aceptar esa invitación de CEO crea el primer usuario admin y sale del modo bootstrap.
 
-Security rules:
+Reglas de seguridad:
 
-- bootstrap invite is single-use, short-lived, and token-hash stored at rest
-- only one active bootstrap invite at a time per instance (regeneration revokes prior token)
-- bootstrap actions are audited in `activity_log`
+- la invitación de bootstrap es de un solo uso, de vida corta y con hash de token almacenado en reposo
+- solo una invitación de bootstrap activa a la vez por instancia (regenerar revoca el token previo)
+- las acciones de bootstrap se auditan en `activity_log`
 
-## Data model additions
+## Adiciones al modelo de datos
 
-## New tables
+## Nuevas tablas
 
 1. `users`
 
-- identity record for human users (email-based)
-- optional instance-level role field (or companion table) for admin rights
+- registro de identidad para usuarios humanos (basado en email)
+- campo opcional de rol a nivel de instancia (o tabla compañera) para derechos de admin
 
 2. `company_memberships`
 
 - `company_id`, `principal_type` (`user | agent`), `principal_id`
-- status (`pending | active | suspended`), role metadata
-- stores effective access state for both humans and agents
-- many-to-many: one principal can belong to multiple companies
+- estado (`pending | active | suspended`), metadatos de rol
+- almacena el estado efectivo de acceso para humanos y agentes
+- muchos-a-muchos: un principal puede pertenecer a múltiples empresas
 
 3. `invites`
 
-- `company_id`, `invite_type` (`company_join | bootstrap_ceo`), token hash, expires_at, invited_by, revoked_at, accepted_at
-- one-time share link (no pre-bound invite email)
-- `allowed_join_types` (`human | agent | both`) for `company_join` links
-- optional defaults payload keyed by join type:
-  - human defaults: initial permissions/membership role
-  - agent defaults: proposed role/title/adapter defaults
+- `company_id`, `invite_type` (`company_join | bootstrap_ceo`), hash de token, expires_at, invited_by, revoked_at, accepted_at
+- enlace de un solo uso para compartir (sin email de invitación pre-vinculado)
+- `allowed_join_types` (`human | agent | both`) para enlaces `company_join`
+- payload opcional de defaults por tipo de unión:
+  - defaults humanos: permisos iniciales/rol de membresía
+  - defaults de agente: rol/título/defaults de adaptador propuestos
 
 4. `principal_permission_grants`
 
 - `company_id`, `principal_type` (`user | agent`), `principal_id`, `permission_key`
-- explicit grants such as `agents:create`
-- includes scope payload for chain-of-command limits
-- normalized table (not JSON blob) for auditable grant/revoke history
+- grants explícitos como `agents:create`
+- incluye payload de alcance para límites de cadena de mando
+- tabla normalizada (no blob JSON) para historial auditable de otorgar/revocar
 
 5. `join_requests`
 
 - `invite_id`, `company_id`, `request_type` (`human | agent`)
 - `status` (`pending_approval | approved | rejected`)
-- common review metadata:
+- metadatos comunes de revisión:
   - `request_ip`
   - `approved_by_user_id`, `approved_at`, `rejected_by_user_id`, `rejected_at`
-- human request fields:
+- campos de solicitud humana:
   - `requesting_user_id`, `request_email_snapshot`
-- agent request fields:
-  - `agent_name`, `adapter_type`, `capabilities`, `created_agent_id` nullable until approved
-- each consumed invite creates exactly one join request record after join type is selected
+- campos de solicitud de agente:
+  - `agent_name`, `adapter_type`, `capabilities`, `created_agent_id` nullable hasta la aprobación
+- cada invitación consumida crea exactamente un registro de solicitud de unión después de seleccionar el tipo de unión
 
-6. `issues` extension
+6. Extensión de `issues`
 
-- add `assignee_user_id` nullable
-- preserve single-assignee invariant with XOR check:
-  - exactly zero or one of `assignee_agent_id` / `assignee_user_id`
+- agregar `assignee_user_id` nullable
+- preservar la invariante de un solo asignado con verificación XOR:
+  - exactamente cero o uno de `assignee_agent_id` / `assignee_user_id`
 
-## Compatibility
+## Compatibilidad
 
-- existing `created_by_user_id` / `author_user_id` fields remain and become fully active
-- agent API keys remain auth credentials; membership + grants remain authorization source
+- los campos existentes `created_by_user_id` / `author_user_id` permanecen y se vuelven plenamente activos
+- las API keys de agentes siguen siendo credenciales de auth; la membresía + grants siguen siendo la fuente de autorización
 
-## Permission model (initial set)
+## Modelo de permisos (conjunto inicial)
 
-Principle:
+Principio:
 
-- humans and agents use the same membership + grant evaluation engine
-- permission checks resolve against `(company_id, principal_type, principal_id)` for both actor types
-- this avoids separate authz codepaths and keeps behavior consistent
+- humanos y agentes usan el mismo motor de evaluación de membresía + grants
+- las verificaciones de permisos se resuelven contra `(company_id, principal_type, principal_id)` para ambos tipos de actor
+- esto evita rutas de authz separadas y mantiene el comportamiento consistente
 
-Role layers:
+Capas de roles:
 
-- `instance_admin`: deployment-wide admin, can access/manage all companies and user-company access mapping
-- `company_member`: company-scoped permissions only
+- `instance_admin`: admin de todo el despliegue, puede acceder/gestionar todas las empresas y el mapeo de acceso usuario-empresa
+- `company_member`: solo permisos con alcance de empresa
 
-Core grants:
+Grants centrales:
 
 1. `agents:create`
 2. `users:invite`
 3. `users:manage_permissions`
 4. `tasks:assign`
-5. `tasks:assign_scope` (org-constrained delegation)
-6. `joins:approve` (approve/reject human and agent join requests)
+5. `tasks:assign_scope` (delegación restringida a la organización)
+6. `joins:approve` (aprobar/rechazar solicitudes de unión humanas y de agentes)
 
-Additional behavioral rules:
+Reglas de comportamiento adicionales:
 
-- instance admins can promote/demote instance admins and manage user access across companies
-- board-level users can manage company grants inside companies they control
-- non-admin principals can only act within explicit grants
-- assignment checks apply to both agent and human assignees
+- los admins de instancia pueden promover/degradar admins de instancia y gestionar el acceso de usuarios entre empresas
+- los usuarios de nivel tablero pueden gestionar grants de empresa dentro de las empresas que controlan
+- los principales no-admin solo pueden actuar dentro de grants explícitos
+- las verificaciones de asignación aplican a asignados tanto agentes como humanos
 
-## Chain-of-command scope design
+## Diseño de alcance de cadena de mando
 
-Initial approach:
+Enfoque inicial:
 
-- represent assignment scope as an allow rule over org hierarchy
-- examples:
-  - `subtree:<agentId>` (can assign into that manager subtree)
-  - `exclude:<agentId>` (cannot assign to protected roles, e.g., CEO)
+- representar el alcance de asignación como una regla de permiso sobre la jerarquía de la organización
+- ejemplos:
+  - `subtree:<agentId>` (puede asignar dentro de ese subárbol de gerente)
+  - `exclude:<agentId>` (no puede asignar a roles protegidos, p. ej., CEO)
 
-Enforcement:
+Aplicación:
 
-- resolve target assignee org position
-- evaluate allow/deny scope rules before assignment mutation
-- return `403` for out-of-scope assignments
+- resolver la posición en la organización del asignado objetivo
+- evaluar reglas de alcance permitir/denegar antes de la mutación de asignación
+- devolver `403` para asignaciones fuera de alcance
 
-## Invite and signup flow
+## Flujo de invitación y registro
 
-1. Authorized user creates one `company_join` invite share link with optional defaults + expiry.
-2. System sends invite URL containing one-time token.
-3. Invite landing page presents two paths: `Join as human` or `Join as agent` (subject to `allowed_join_types`).
-4. Requester selects join path and submits required data.
-5. Submission consumes token and creates a `pending_approval` join request (no access yet).
-6. Join request captures review metadata:
+1. Un usuario autorizado crea un enlace para compartir de invitación `company_join` con defaults + expiración opcionales.
+2. El sistema envía la URL de invitación que contiene un token de un solo uso.
+3. La página de aterrizaje de la invitación presenta dos rutas: `Join as human` o `Join as agent` (sujeto a `allowed_join_types`).
+4. El solicitante selecciona la ruta de unión y envía los datos requeridos.
+5. El envío consume el token y crea una solicitud de unión `pending_approval` (aún sin acceso).
+6. La solicitud de unión captura metadatos de revisión:
 
-- human: authenticated email
-- both: source IP
-- agent: proposed agent metadata
+- humano: email autenticado
+- ambos: IP de origen
+- agente: metadatos propuestos del agente
 
-7. Company admin/instance admin reviews request and approves or rejects.
-8. On approval:
+7. El admin de empresa/admin de instancia revisa la solicitud y la aprueba o rechaza.
+8. Al aprobar:
 
-- human: activate `company_membership` and apply permission grants
-- agent: create agent record and enable API-key claim flow
+- humano: activar `company_membership` y aplicar grants de permisos
+- agente: crear el registro del agente y habilitar el flujo de reclamo de API key
 
-9. Link is one-time and cannot be reused.
-10. Inviter/admin can revoke invite before acceptance.
+9. El enlace es de un solo uso y no puede reutilizarse.
+10. El invitador/admin puede revocar la invitación antes de la aceptación.
 
-Security rules:
+Reglas de seguridad:
 
-- store invite token hashed at rest
-- one-time use token with short expiry
-- all invite lifecycle events logged in `activity_log`
-- pending users cannot read or mutate any company data until approved
+- almacenar el token de invitación hasheado en reposo
+- token de un solo uso con expiración corta
+- todos los eventos del ciclo de vida de la invitación registrados en `activity_log`
+- los usuarios pendientes no pueden leer ni mutar datos de la empresa hasta ser aprobados
 
-## Join approval inbox
+## Bandeja de entrada de aprobación de uniones
 
-- join requests generate inbox alerts for eligible approvers (`joins:approve` or admin role)
-- alerts appear in both:
-  - global/company inbox feed
-  - dedicated pending-approvals UI
-- each alert includes approve/reject actions inline (no context switch required)
-- alert payload must include:
-  - requester email when `request_type=human`
-  - source IP
-  - request type (`human | agent`)
+- las solicitudes de unión generan alertas de bandeja de entrada para aprobadores elegibles (`joins:approve` o rol admin)
+- las alertas aparecen en ambos:
+  - feed global/de la empresa de la bandeja de entrada
+  - UI dedicada de aprobaciones pendientes
+- cada alerta incluye acciones de aprobar/rechazar inline (sin cambio de contexto requerido)
+- el payload de la alerta debe incluir:
+  - email del solicitante cuando `request_type=human`
+  - IP de origen
+  - tipo de solicitud (`human | agent`)
 
-## Human inbox and agent-to-human delegation
+## Bandeja de entrada humana y delegación de agente a humano
 
-Behavior:
+Comportamiento:
 
-- agents can assign tasks to humans when policy permits
-- humans see assigned tasks in inbox view (including in local trusted mode)
-- comment and status transitions follow same issue lifecycle guards
+- los agentes pueden asignar tareas a humanos cuando la política lo permite
+- los humanos ven las tareas asignadas en la vista de bandeja de entrada (incluso en modo local confiable)
+- los comentarios y transiciones de estado siguen las mismas guardas del ciclo de vida de issues
 
-## Agent join path (via unified invite link)
+## Ruta de unión de agentes (vía enlace de invitación unificado)
 
-1. Authorized user shares one `company_join` invite link (with `allowed_join_types` including `agent`).
-2. Agent operator opens link, chooses `Join as agent`, and submits join payload (name/role/adapter metadata).
-3. System creates `pending_approval` agent join request and captures source IP.
-4. Approver sees alert in inbox and approves or rejects.
-5. On approval, server creates the agent record and mints a long-lived API key.
-6. API key is shown exactly once via secure claim flow with explicit "save now" instruction.
+1. Un usuario autorizado comparte un enlace de invitación `company_join` (con `allowed_join_types` incluyendo `agent`).
+2. El operador del agente abre el enlace, elige `Join as agent` y envía el payload de unión (nombre/rol/metadatos de adaptador).
+3. El sistema crea una solicitud de unión de agente `pending_approval` y captura la IP de origen.
+4. El aprobador ve la alerta en la bandeja de entrada y aprueba o rechaza.
+5. Al aprobar, el servidor crea el registro del agente y emite una API key de vida larga.
+6. La API key se muestra exactamente una vez vía flujo de reclamo seguro con instrucción explícita de "guardar ahora".
 
-Long-lived token policy:
+Política de tokens de vida larga:
 
-- default to long-lived revocable API keys (hash stored at rest)
-- show plaintext key once only
-- support immediate revoke/regenerate from admin UI
-- optionally add expirations/rotation policy later without changing join flow
+- por defecto API keys revocables de vida larga (hash almacenado en reposo)
+- mostrar la clave en texto plano solo una vez
+- soportar revocación/regeneración inmediata desde la UI de admin
+- opcionalmente agregar expiraciones/política de rotación más tarde sin cambiar el flujo de unión
 
-API additions (proposed):
+Adiciones de API (propuestas):
 
-- `GET /companies/:companyId/inbox` (human actor scoped to self; includes task items + pending join approval alerts when authorized)
+- `GET /companies/:companyId/inbox` (actor humano con alcance a sí mismo; incluye elementos de tareas + alertas de aprobación de unión pendientes cuando está autorizado)
 - `POST /companies/:companyId/issues/:issueId/assign-user`
 - `POST /companies/:companyId/invites`
-- `GET /invites/:token` (invite landing payload with `allowed_join_types`)
-- `POST /invites/:token/accept` (body includes `requestType=human|agent` and request metadata)
+- `GET /invites/:token` (payload de aterrizaje de invitación con `allowed_join_types`)
+- `POST /invites/:token/accept` (el cuerpo incluye `requestType=human|agent` y metadatos de solicitud)
 - `POST /invites/:inviteId/revoke`
 - `GET /companies/:companyId/join-requests?status=pending_approval&requestType=human|agent`
 - `POST /companies/:companyId/join-requests/:requestId/approve`
 - `POST /companies/:companyId/join-requests/:requestId/reject`
-- `POST /join-requests/:requestId/claim-api-key` (approved agent requests only)
-- `GET /companies/:companyId/members` (returns both human and agent principals)
+- `POST /join-requests/:requestId/claim-api-key` (solo solicitudes de agente aprobadas)
+- `GET /companies/:companyId/members` (devuelve principales humanos y agentes)
 - `PATCH /companies/:companyId/members/:memberId/permissions`
 - `POST /admin/users/:userId/promote-instance-admin`
 - `POST /admin/users/:userId/demote-instance-admin`
-- `PUT /admin/users/:userId/company-access` (set accessible companies for a user)
+- `PUT /admin/users/:userId/company-access` (definir las empresas accesibles para un usuario)
 - `GET /admin/users/:userId/company-access`
 
-## Local mode UX policy
+## Política UX de modo local
 
-- no login prompt or account setup required
-- local implicit board user is auto-provisioned for audit attribution
-- local operator can still use instance settings and company settings as effective instance admin
-- invite, join approval, and permission-management UI is available in local mode
-- agent onboarding is expected in local mode, including creating invite links and approving join requests
-- public/untrusted network ingress is out of scope for V1 local mode
+- sin prompt de login ni configuración de cuenta requerida
+- el usuario del tablero implícito local se auto-provisiona para atribución de auditoría
+- el operador local aún puede usar ajustes de instancia y ajustes de empresa como admin efectivo de instancia
+- la UI de invitación, aprobación de unión y gestión de permisos está disponible en modo local
+- la incorporación de agentes se espera en modo local, incluyendo crear enlaces de invitación y aprobar solicitudes de unión
+- el ingreso de red pública/no confiable está fuera de alcance para el modo local V1
 
-## Cloud agents in this model
+## Agentes en la nube en este modelo
 
-- cloud agents continue authenticating through `agent_api_keys`
-- same-company boundary checks remain mandatory
-- agent ability to assign human tasks is permission-gated, not implicit
+- los agentes en la nube siguen autenticándose a través de `agent_api_keys`
+- las verificaciones de límite de misma-empresa siguen siendo obligatorias
+- la capacidad del agente de asignar tareas humanas tiene control de permisos, no es implícita
 
-## Instance settings surface
+## Superficie de ajustes de instancia
 
-This plan introduces instance-level concerns (for example bootstrap state, instance admins, invite defaults, and token policy). There is no dedicated UI surface today.
+Este plan introduce preocupaciones a nivel de instancia (por ejemplo estado de bootstrap, admins de instancia, defaults de invitación y política de tokens). No hay hoy una superficie de UI dedicada.
 
-V1 approach:
+Enfoque V1:
 
-- add a minimal `Instance Settings` page for instance admins
-- expose key instance settings in API + CLI (`paperclipai configure` / `paperclipai onboard`)
-- show read-only instance status indicators in the main UI until full settings UX exists
+- agregar una página mínima de `Instance Settings` para admins de instancia
+- exponer ajustes clave de instancia en API + CLI (`paperclipai configure` / `paperclipai onboard`)
+- mostrar indicadores de estado de instancia de solo lectura en la UI principal hasta que exista la UX completa de ajustes
 
-## Implementation phases
+## Fases de implementación
 
-## Phase 1: Mode and guardrails
+## Fase 1: Modo y guardas
 
-- add explicit deployment mode config (`local_trusted | cloud_hosted`)
-- enforce startup safety checks and health visibility
-- implement actor resolution for local implicit board
-- map local implicit board actor to instance-admin authorization context
-- add bootstrap status signal in health/config surface (`ready | bootstrap_pending`)
-- add minimal instance settings API/CLI surface and read-only UI indicators
+- agregar configuración de modo de despliegue explícito (`local_trusted | cloud_hosted`)
+- aplicar verificaciones de seguridad de arranque y visibilidad de health
+- implementar resolución de actor para el tablero implícito local
+- mapear el actor del tablero implícito local al contexto de autorización admin-de-instancia
+- agregar señal de estado de bootstrap en la superficie de health/config (`ready | bootstrap_pending`)
+- agregar superficie mínima de API/CLI de ajustes de instancia e indicadores de UI de solo lectura
 
-## Phase 2: Human identity and memberships
+## Fase 2: Identidad humana y membresías
 
-- add schema + migrations for users/memberships/invites
-- wire auth middleware for cloud mode
-- add membership lookup and company access checks
-- implement Better Auth email/password flow (no email verification)
-- implement first-admin bootstrap invite command and onboard integration
-- implement one-time share-link invite acceptance flow with `pending_approval` join requests
+- agregar esquema + migraciones para usuarios/membresías/invitaciones
+- conectar el middleware de auth para modo nube
+- agregar búsqueda de membresía y verificaciones de acceso a empresa
+- implementar el flujo de email/contraseña de Better Auth (sin verificación de email)
+- implementar el comando de invitación de bootstrap del primer admin y la integración de onboarding
+- implementar el flujo de aceptación de invitación de enlace de un solo uso con solicitudes de unión `pending_approval`
 
-## Phase 3: Permissions and assignment scope
+## Fase 3: Permisos y alcance de asignación
 
-- add shared principal grant model and enforcement helpers
-- add chain-of-command scope checks for assignment APIs
-- add tests for forbidden assignment (for example, cannot assign to CEO)
-- add instance-admin promotion/demotion and global company-access management APIs
-- add `joins:approve` permission checks for human and agent join approvals
+- agregar el modelo compartido de grants principales y helpers de aplicación
+- agregar verificaciones de alcance de cadena de mando para APIs de asignación
+- agregar pruebas de asignación prohibida (por ejemplo, no se puede asignar al CEO)
+- agregar APIs de promoción/degradación de admin de instancia y gestión global de acceso a empresa
+- agregar verificaciones de permiso `joins:approve` para aprobaciones de unión humanas y de agentes
 
-## Phase 4: Invite workflow
+## Fase 4: Flujo de invitación
 
-- unified `company_join` invite create/landing/accept/revoke endpoints
-- join request approve/reject endpoints with review metadata (email when applicable, IP)
-- one-time token security and revocation semantics
-- UI for invite management, pending join approvals, and membership permissions
-- inbox alert generation for pending join requests
-- ensure invite and approval UX is enabled in both `cloud_hosted` and `local_trusted`
+- endpoints unificados de crear/aterrizar/aceptar/revocar invitación `company_join`
+- endpoints de aprobar/rechazar solicitudes de unión con metadatos de revisión (email cuando aplique, IP)
+- seguridad de token de un solo uso y semántica de revocación
+- UI para gestión de invitaciones, aprobaciones de unión pendientes y permisos de membresía
+- generación de alertas de bandeja de entrada para solicitudes de unión pendientes
+- asegurar que la UX de invitación y aprobación esté habilitada tanto en `cloud_hosted` como en `local_trusted`
 
-## Phase 5: Human inbox + task assignment updates
+## Fase 5: Bandeja de entrada humana + actualizaciones de asignación de tareas
 
-- extend issue assignee model for human users
-- inbox API and UI for:
-  - task assignments
-  - pending join approval alerts with inline approve/reject actions
-- agent-to-human assignment flow with policy checks
+- extender el modelo de asignado de issues para usuarios humanos
+- API y UI de bandeja de entrada para:
+  - asignaciones de tareas
+  - alertas de aprobación de unión pendientes con acciones inline de aprobar/rechazar
+- flujo de asignación de agente a humano con verificaciones de política
 
-## Phase 6: Agent self-join and token claim
+## Fase 6: Auto-unión de agente y reclamo de token
 
-- add agent join path on unified invite landing page
-- capture agent join requests and admin approval flow
-- create one-time API-key claim flow after approval (display once)
+- agregar la ruta de unión de agente en la página de aterrizaje de invitación unificada
+- capturar solicitudes de unión de agentes y flujo de aprobación del admin
+- crear el flujo de reclamo de API key de un solo uso después de la aprobación (mostrar una vez)
 
-## Acceptance criteria
+## Criterios de aceptación
 
-1. `local_trusted` starts with no login and shows board UI immediately.
-2. `local_trusted` does not expose optional human login UX in V1.
-3. `local_trusted` local implicit actor can manage instance settings, invite links, join approvals, and permission grants.
-4. `cloud_hosted` cannot start without auth configured.
-5. No request in `cloud_hosted` can mutate data without authenticated actor.
-6. If no initial admin exists, app shows bootstrap instructions with CLI command.
-7. `pnpm paperclipai onboard` outputs a CEO onboarding invite URL when bootstrap is pending.
-8. One `company_join` link supports both human and agent onboarding via join-type selection on the invite landing page.
-9. Invite delivery in V1 is copy-link only (no built-in email delivery).
-10. Share-link acceptance creates a pending join request; it does not grant immediate access.
-11. Pending join requests appear as inbox alerts with inline approve/reject actions.
-12. Admin review view includes join metadata before decision (human email when applicable, source IP, and agent metadata for agent requests).
-13. Only approved join requests unlock access:
+1. `local_trusted` arranca sin login y muestra la UI del tablero de inmediato.
+2. `local_trusted` no expone UX opcional de login humano en V1.
+3. El actor implícito local de `local_trusted` puede gestionar ajustes de instancia, enlaces de invitación, aprobaciones de unión y grants de permisos.
+4. `cloud_hosted` no puede arrancar sin auth configurado.
+5. Ninguna solicitud en `cloud_hosted` puede mutar datos sin un actor autenticado.
+6. Si no existe un admin inicial, la app muestra instrucciones de bootstrap con el comando CLI.
+7. `pnpm paperclipai onboard` emite una URL de invitación de incorporación de CEO cuando el bootstrap está pendiente.
+8. Un enlace `company_join` soporta la incorporación humana y de agente vía selección de tipo de unión en la página de aterrizaje de la invitación.
+9. La entrega de invitaciones en V1 es solo copiar-enlace (sin entrega de email integrada).
+10. La aceptación del enlace para compartir crea una solicitud de unión pendiente; no otorga acceso inmediato.
+11. Las solicitudes de unión pendientes aparecen como alertas de bandeja de entrada con acciones inline de aprobar/rechazar.
+12. La vista de revisión del admin incluye metadatos de unión antes de la decisión (email humano cuando aplique, IP de origen y metadatos de agente para solicitudes de agente).
+13. Solo las solicitudes de unión aprobadas desbloquean acceso:
 
-- human: active company membership + permission grants
-- agent: agent creation + API-key claim eligibility
+- humano: membresía activa de empresa + grants de permisos
+- agente: creación de agente + elegibilidad de reclamo de API key
 
-14. Agent enrollment follows the same link -> pending approval -> approve flow.
-15. Approved agents can claim a long-lived API key exactly once, with plaintext display-once semantics.
-16. Agent API keys are indefinite by default in V1 and revocable/regenerable by admins.
-17. Public/untrusted ingress for `local_trusted` is not supported in V1 (loopback-only local server).
-18. One user can hold memberships in multiple companies.
-19. Instance admins can promote another user to instance admin.
-20. Instance admins can manage which companies each user can access.
-21. Permissions can be granted/revoked per member principal (human or agent) through one shared grant system.
-22. Assignment scope prevents out-of-hierarchy or protected-role assignments.
-23. Agents can assign tasks to humans only when allowed.
-24. Humans can view assigned tasks in inbox and act on them per permissions.
-25. All new mutations are company-scoped and logged in `activity_log`.
+14. La inscripción de agentes sigue el mismo flujo enlace -> aprobación pendiente -> aprobar.
+15. Los agentes aprobados pueden reclamar una API key de vida larga exactamente una vez, con semántica de mostrar-en-texto-plano-una-vez.
+16. Las API keys de agentes son indefinidas por defecto en V1 y revocables/regenerables por admins.
+17. El ingreso público/no confiable para `local_trusted` no está soportado en V1 (servidor local solo-loopback).
+18. Un usuario puede tener membresías en múltiples empresas.
+19. Los admins de instancia pueden promover a otro usuario a admin de instancia.
+20. Los admins de instancia pueden gestionar a qué empresas puede acceder cada usuario.
+21. Los permisos pueden otorgarse/revocarse por principal miembro (humano o agente) a través de un sistema de grants compartido.
+22. El alcance de asignación previene asignaciones fuera de jerarquía o de roles protegidos.
+23. Los agentes pueden asignar tareas a humanos solo cuando está permitido.
+24. Los humanos pueden ver tareas asignadas en la bandeja de entrada y actuar sobre ellas según permisos.
+25. Todas las nuevas mutaciones tienen alcance de empresa y se registran en `activity_log`.
 
-## V1 decisions (locked)
+## Decisiones V1 (bloqueadas)
 
-1. `local_trusted` will not support login UX in V1; implicit local board actor only.
-2. Permissions use a normalized shared table: `principal_permission_grants` with scoped grants.
-3. Invite delivery is copy-link only in V1 (no built-in email sending).
-4. Bootstrap invite creation should require local shell access only (CLI path only, no HTTP bootstrap endpoint).
-5. Approval review shows source IP only; no GeoIP/country lookup in V1.
-6. Agent API-key lifetime is indefinite by default in V1, with explicit revoke/regenerate controls.
-7. Local mode keeps full admin/settings/invite capabilities through the implicit local instance-admin actor.
-8. Public/untrusted ingress for local mode is out of scope for V1; no `--dangerous-agent-ingress` in V1.
+1. `local_trusted` no soportará UX de login en V1; solo actor del tablero implícito local.
+2. Los permisos usan una tabla compartida normalizada: `principal_permission_grants` con grants con alcance.
+3. La entrega de invitaciones es solo copiar-enlace en V1 (sin envío de email integrado).
+4. La creación de invitación de bootstrap debería requerir solo acceso shell local (solo ruta CLI, sin endpoint HTTP de bootstrap).
+5. La revisión de aprobación muestra solo la IP de origen; sin búsqueda GeoIP/país en V1.
+6. La vida de la API key de agente es indefinida por defecto en V1, con controles explícitos de revocación/regeneración.
+7. El modo local mantiene capacidades completas de admin/ajustes/invitación a través del actor implícito local admin-de-instancia.
+8. El ingreso público/no confiable para el modo local está fuera de alcance para V1; sin `--dangerous-agent-ingress` en V1.

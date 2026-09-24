@@ -1,17 +1,19 @@
 /**
- * PluginDevWatcher — watches local-path plugin directories for file changes
- * and triggers worker restarts so plugin authors get a fast rebuild-and-reload
- * cycle without manually restarting the server.
+ * PluginDevWatcher — observa los directorios de plugins de ruta local en
+ * busca de cambios de archivos y dispara reinicios de workers para que los
+ * autores de plugins tengan un ciclo rápido de recompilar-y-recargar sin
+ * reiniciar el servidor manualmente.
  *
- * Only plugins installed from a local path (i.e. those with a non-null
- * `packagePath` in the DB) are watched. File changes in the plugin's package
- * directory trigger a debounced worker restart via the lifecycle manager.
+ * Solo se observan los plugins instalados desde una ruta local (es decir,
+ * los que tienen un `packagePath` no nulo en la BD). Los cambios de
+ * archivos en el directorio del paquete del plugin disparan un reinicio
+ * de worker con debounce vía el manejador de ciclo de vida.
  *
- * Uses chokidar rather than raw fs.watch so we get a production-grade watcher
- * backend across platforms and avoid exhausting file descriptors as quickly in
- * large dev workspaces.
+ * Usa chokidar en lugar de fs.watch en crudo para tener un backend de
+ * observación de nivel producción entre plataformas y evitar agotar los
+ * descriptores de archivo tan rápido en espacios de trabajo de dev grandes.
  *
- * @see PLUGIN_SPEC.md §27.2 — Local Development Workflow
+ * @see PLUGIN_SPEC.md §27.2 — Flujo de desarrollo local
  */
 import chokidar, { type FSWatcher } from "chokidar";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
@@ -21,15 +23,15 @@ import type { PluginLifecycleManager } from "./plugin-lifecycle.js";
 
 const log = logger.child({ service: "plugin-dev-watcher" });
 
-/** Debounce interval for file changes (ms). */
+/** Intervalo de debounce para cambios de archivos (ms). */
 const DEBOUNCE_MS = 500;
 
 export interface PluginDevWatcher {
-  /** Start watching a local-path plugin directory. */
+  /** Empieza a observar el directorio de un plugin de ruta local. */
   watch(pluginId: string, packagePath: string): void;
-  /** Stop watching a specific plugin. */
+  /** Deja de observar un plugin específico. */
   unwatch(pluginId: string): void;
-  /** Stop all watchers and clean up. */
+  /** Detiene todos los watchers y libera recursos. */
   close(): void;
 }
 
@@ -153,8 +155,8 @@ export function resolvePluginWatchTargets(
 }
 
 /**
- * Create a PluginDevWatcher that monitors local plugin directories and
- * restarts workers on file changes.
+ * Crea un PluginDevWatcher que monitorea directorios de plugins locales y
+ * reinicia los workers ante cambios de archivos.
  */
 export function createPluginDevWatcher(
   lifecycle: PluginLifecycleManager,
@@ -166,14 +168,14 @@ export function createPluginDevWatcher(
   const fileExists = fsDeps?.existsSync ?? existsSync;
 
   function watchPlugin(pluginId: string, packagePath: string): void {
-    // Don't double-watch
+    // No observar dos veces
     if (watchers.has(pluginId)) return;
 
     const absPath = path.resolve(packagePath);
     if (!fileExists(absPath)) {
       log.warn(
         { pluginId, packagePath: absPath },
-        "plugin-dev-watcher: package path does not exist, skipping watch",
+        "plugin-dev-watcher: la ruta del paquete no existe, omitiendo observación",
       );
       return;
     }
@@ -183,7 +185,7 @@ export function createPluginDevWatcher(
       if (watcherTargets.length === 0) {
         log.warn(
           { pluginId, packagePath: absPath },
-          "plugin-dev-watcher: no valid watch targets found, skipping watch",
+          "plugin-dev-watcher: no se encontraron objetivos válidos de observación, omitiendo",
         );
         return;
       }
@@ -216,7 +218,7 @@ export function createPluginDevWatcher(
             debounceTimers.delete(pluginId);
             log.info(
               { pluginId, changedFile: relativePath || path.basename(changedPath) },
-              "plugin-dev-watcher: file change detected, restarting worker",
+              "plugin-dev-watcher: cambio de archivo detectado, reiniciando worker",
             );
 
             lifecycle.restartWorker(pluginId).catch((err) => {
@@ -225,7 +227,7 @@ export function createPluginDevWatcher(
                   pluginId,
                   err: err instanceof Error ? err.message : String(err),
                 },
-                "plugin-dev-watcher: failed to restart worker after file change",
+                "plugin-dev-watcher: no se pudo reiniciar el worker tras el cambio de archivo",
               );
             });
           }, DEBOUNCE_MS),
@@ -239,7 +241,7 @@ export function createPluginDevWatcher(
             packagePath: absPath,
             err: err instanceof Error ? err.message : String(err),
           },
-          "plugin-dev-watcher: watcher error, stopping watch for this plugin",
+          "plugin-dev-watcher: error del observador, deteniendo la observación de este plugin",
         );
         unwatchPlugin(pluginId);
       });
@@ -254,7 +256,7 @@ export function createPluginDevWatcher(
             kind: target.kind,
           })),
         },
-        "plugin-dev-watcher: watching local plugin for changes",
+        "plugin-dev-watcher: observando el plugin local en busca de cambios",
       );
     } catch (err) {
       log.warn(
@@ -263,7 +265,7 @@ export function createPluginDevWatcher(
           packagePath: absPath,
           err: err instanceof Error ? err.message : String(err),
         },
-        "plugin-dev-watcher: failed to start file watcher",
+        "plugin-dev-watcher: no se pudo iniciar el observador de archivos",
       );
     }
   }
@@ -305,7 +307,7 @@ export function createPluginDevWatcher(
           pluginId,
           err: err instanceof Error ? err.message : String(err),
         },
-        "plugin-dev-watcher: failed to resolve plugin package path",
+        "plugin-dev-watcher: no se pudo resolver la ruta del paquete del plugin",
       );
     }
   }

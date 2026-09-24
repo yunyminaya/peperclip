@@ -1,160 +1,160 @@
-# CEO Agent Creation and Hiring Governance Plan (V1.1)
+# Plan de gobernanza de creación y contratación de agentes CEO (V1.1)
 
-Status: Proposed  
-Date: 2026-02-19  
-Owner: Product + Server + UI + Skills
+Estado: Propuesto  
+Fecha: 2026-02-19  
+Responsable: Producto + Servidor + UI + Habilidades
 
-## 1. Goal
+## 1. Objetivo
 
-Enable a CEO agent to create new agents directly, with lightweight but explicit governance:
+Permitir que un agente CEO cree nuevos agentes directamente, con gobernanza ligera pero explícita:
 
-- Company-level toggle: new hires require board approval (default ON).
-- Agent-level permission: `can_create_agents` (default ON for CEO, OFF for everyone else).
-- Clear hire workflow with draft/limbo state until approval.
-- Config reflection so hiring agents can inspect available adapter configuration and compare existing agent configs (including self).
-- Approval collaboration flow with comments, revision requests, and audit trail.
+- Interruptor a nivel de empresa: las nuevas contrataciones requieren aprobación del tablero (por defecto ON).
+- Permiso a nivel de agente: `can_create_agents` (por defecto ON para CEO, OFF para todos los demás).
+- Flujo de contratación claro con estado borrador/limbo hasta la aprobación.
+- Reflexión de configuración para que los agentes de contratación puedan inspeccionar la configuración disponible del adaptador y comparar configuraciones de agentes existentes (incluido él mismo).
+- Flujo de colaboración de aprobación con comentarios, solicitudes de revisión y registro de auditoría.
 
-## 2. Current State (Repo Reality)
+## 2. Estado actual (realidad del repositorio)
 
-- Agent creation is board-only at `POST /api/companies/:companyId/agents` (`server/src/routes/agents.ts`).
-- Approvals support `pending/approved/rejected/cancelled` and `hire_agent` + `approve_ceo_strategy` (`packages/shared/src/constants.ts`, `server/src/services/approvals.ts`).
-- `hire_agent` approval currently creates the agent only on approval; there is no pre-created limbo agent.
-- There is no agent permissions system today.
-- There is no company setting for "new hires require board approval".
-- Approvals have no comment thread or revision-request state.
-- Inbox and Approvals UIs support approve/reject only; no approval detail route exists in app routes.
-- Agent adapter configuration is free-form JSON; no runtime reflection endpoint exists for machine-readable or text discovery.
+- La creación de agentes es solo-tablero en `POST /api/companies/:companyId/agents` (`server/src/routes/agents.ts`).
+- Las aprobaciones soportan `pending/approved/rejected/cancelled` y `hire_agent` + `approve_ceo_strategy` (`packages/shared/src/constants.ts`, `server/src/services/approvals.ts`).
+- La aprobación `hire_agent` actualmente crea el agente solo al aprobar; no hay un agente limbo pre-creado.
+- No existe hoy un sistema de permisos de agentes.
+- No hay un ajuste de empresa para "las nuevas contrataciones requieren aprobación del tablero".
+- Las aprobaciones no tienen hilo de comentarios ni estado de solicitud de revisión.
+- Las UIs de bandeja de entrada y aprobaciones solo soportan aprobar/rechazar; no existe ruta de detalle de aprobación en las rutas de la app.
+- La configuración del adaptador del agente es JSON libre; no existe un endpoint de reflexión en tiempo de ejecución para descubrimiento legible por máquina o de texto.
 
-## 3. Product Decisions
+## 3. Decisiones de producto
 
-## 3.1 Company setting
+## 3.1 Ajuste de empresa
 
-Add company setting:
+Agregar ajuste de empresa:
 
 - `requireBoardApprovalForNewAgents: boolean`
-- Default: `true`
-- Editable only in company advanced settings (not onboarding/company creation flow UI)
+- Por defecto: `true`
+- Editable solo en ajustes avanzados de la empresa (no en la UI del flujo de incorporación/creación de empresa)
 
-## 3.2 Agent permissions
+## 3.2 Permisos de agente
 
-Introduce lightweight permission model with one explicit permission now:
+Introducir un modelo de permisos ligero con un permiso explícito por ahora:
 
 - `can_create_agents: boolean`
 
-Defaults:
+Por defecto:
 
 - CEO: `true`
-- Everyone else: `false`
+- Todos los demás: `false`
 
-Authority:
+Autoridad:
 
-- Board can edit permissions for any agent.
-- CEO can edit permissions for agents in same company.
+- El tablero puede editar permisos de cualquier agente.
+- El CEO puede editar permisos de agentes de la misma empresa.
 
-No broader RBAC system in this phase.
+Sin un sistema RBAC más amplio en esta fase.
 
-## 3.3 Limbo state for hires
+## 3.3 Estado limbo para contrataciones
 
-Introduce dedicated non-operational status:
+Introducir un estado dedicado no operativo:
 
 - `pending_approval`
 
-Meaning:
+Significado:
 
-- Agent record exists in org tree and can be reviewed.
-- Agent cannot run, receive assignments, create keys, or be resumed to active states until approved.
+- El registro del agente existe en el árbol de la organización y puede revisarse.
+- El agente no puede ejecutar, recibir asignaciones, crear claves ni reanudarse a estados activos hasta ser aprobado.
 
-## 4. Data Model Changes
+## 4. Cambios del modelo de datos
 
 ## 4.1 `companies`
 
-Add column:
+Agregar columna:
 
-- `require_board_approval_for_new_agents` boolean not null default `true`
+- `require_board_approval_for_new_agents` boolean not null por defecto `true`
 
-Sync required:
+Sincronización requerida:
 
 - `packages/db/src/schema/companies.ts`
 - `packages/shared/src/types/company.ts`
 - `packages/shared/src/validators/company.ts`
-- UI company API type usage and company advanced settings form
+- Uso de tipos de la API de empresa en UI y formulario de ajustes avanzados de la empresa
 
 ## 4.2 `agents`
 
-Add columns:
+Agregar columnas:
 
-- `permissions` jsonb not null default `{}`
-- status value expansion to include `pending_approval`
+- `permissions` jsonb not null por defecto `{}`
+- expansión de valores de estado para incluir `pending_approval`
 
-Sync required:
+Sincronización requerida:
 
 - `packages/db/src/schema/agents.ts`
 - `packages/shared/src/constants.ts` (`AGENT_STATUSES`)
 - `packages/shared/src/types/agent.ts`
 - `packages/shared/src/validators/agent.ts`
-- status badges, filters, and lifecycle controls in UI
+- insignias de estado, filtros y controles de ciclo de vida en UI
 
 ## 4.3 `approvals`
 
-Keep approval as central governance record; extend workflow support:
+Mantener la aprobación como registro de gobernanza central; extender soporte de flujo de trabajo:
 
-- add status `revision_requested`
-- ensure payload for hire approvals contains:
+- agregar estado `revision_requested`
+- asegurar que el payload de aprobaciones de contratación contenga:
   - `agentId`
   - `requestedByAgentId`
   - `requestedConfigurationSnapshot`
 
-## 4.4 New `approval_comments` table
+## 4.4 Nueva tabla `approval_comments`
 
-Add discussion thread for approvals:
+Agregar hilo de discusión para aprobaciones:
 
-- `id`, `company_id`, `approval_id`, `author_agent_id`, `author_user_id`, `body`, timestamps
+- `id`, `company_id`, `approval_id`, `author_agent_id`, `author_user_id`, `body`, marcas de tiempo
 
-Purpose:
+Propósito:
 
-- review comments
-- revision requests
-- rationale for approve/reject
-- permanent audit trail
+- comentarios de revisión
+- solicitudes de revisión
+- justificación de aprobar/rechazar
+- registro de auditoría permanente
 
-## 5. API and AuthZ Plan
+## 5. Plan de API y AuthZ
 
-## 5.1 Permission helpers
+## 5.1 Helpers de permisos
 
-Add server-side authz helpers:
+Agregar helpers de authz del lado del servidor:
 
 - `assertCanCreateAgents(req, companyId)`
 - `assertCanManageAgentPermissions(req, companyId)`
 
-Rules:
+Reglas:
 
-- Board always passes.
-- Agent passes `can_create_agents` check if self permission true and same company.
-- Permission management by CEO or board.
+- El tablero siempre pasa.
+- El agente pasa la verificación de `can_create_agents` si su propio permiso es true y misma empresa.
+- Gestión de permisos por CEO o el tablero.
 
-## 5.2 Hire creation flow
+## 5.2 Flujo de creación de contratación
 
-Add route:
+Agregar ruta:
 
 - `POST /api/companies/:companyId/agent-hires`
 
-Behavior:
+Comportamiento:
 
-- Requires `can_create_agents` (or board).
-- Creates agent row first.
-- If company setting requires approval:
-  - create agent with `status=pending_approval`
-  - create `approvals(type=hire_agent,status=pending,payload.agentId=...)`
-  - return both agent + approval
-- If setting disabled:
-  - create agent as `idle`
-  - no approval record required
+- Requiere `can_create_agents` (o el tablero).
+- Crea la fila del agente primero.
+- Si el ajuste de la empresa requiere aprobación:
+  - crear el agente con `status=pending_approval`
+  - crear `approvals(type=hire_agent,status=pending,payload.agentId=...)`
+  - devolver agente + aprobación
+- Si el ajuste está deshabilitado:
+  - crear el agente como `idle`
+  - no se requiere registro de aprobación
 
-Board may continue using direct create route, but this route becomes canonical for CEO/agent-led hiring.
+El tablero puede seguir usando la ruta de creación directa, pero esta ruta se vuelve canónica para contratación liderada por CEO/agente.
 
-## 5.3 Approval workflow endpoints
+## 5.3 Endpoints del flujo de aprobación
 
-Add/extend:
+Agregar/extender:
 
 - `GET /api/approvals/:id`
 - `POST /api/approvals/:id/request-revision`
@@ -162,228 +162,228 @@ Add/extend:
 - `GET /api/approvals/:id/comments`
 - `POST /api/approvals/:id/comments`
 
-Update existing approve/reject semantics:
+Actualizar la semántica existente de aprobar/rechazar:
 
-- approve of hire transitions linked agent `pending_approval -> idle`
-- reject keeps linked agent in non-active state (`pending_approval` or `terminated`/purged later)
+- aprobar una contratación cambia el agente enlazado `pending_approval -> idle`
+- rechazar mantiene el agente enlazado en estado no activo (`pending_approval` o `terminated`/eliminado más tarde)
 
-## 5.4 Agent permission management endpoints
+## 5.4 Endpoints de gestión de permisos de agente
 
-Add:
+Agregar:
 
 - `PATCH /api/agents/:id/permissions`
 
-Supports initial key only:
+Soporta solo la clave inicial:
 
 - `{ "canCreateAgents": boolean }`
 
-## 5.5 Read config endpoints (protected)
+## 5.5 Endpoints de lectura de configuración (protegidos)
 
-Add permission-gated config-read endpoints:
+Agregar endpoints de lectura de configuración con control de permisos:
 
 - `GET /api/companies/:companyId/agent-configurations`
 - `GET /api/agents/:id/configuration`
 
-Access:
+Acceso:
 
-- board
+- tablero
 - CEO
-- any agent with `can_create_agents`
+- cualquier agente con `can_create_agents`
 
-Security:
+Seguridad:
 
-- redact obvious secret values from adapter config (`env`, API keys, tokens, JWT-looking values)
-- include redaction marker in response
+- redactar valores secretos obvios de la configuración del adaptador (`env`, API keys, tokens, valores con apariencia de JWT)
+- incluir marcador de redacción en la respuesta
 
-## 5.6 Reflection endpoints for adapter configuration
+## 5.6 Endpoints de reflexión para configuración de adaptadores
 
-Add plain-text reflection routes:
+Agregar rutas de reflexión de texto plano:
 
 - `GET /llms/agent-configuration.txt`
 - `GET /llms/agent-configuration/:adapterType.txt`
 
-Index file includes:
+El archivo índice incluye:
 
-- installed adapter list for this Paperclip instance
-- per-adapter doc URLs
-- brief "how to hire" API sequence links
+- lista de adaptadores instalados para esta instancia de Paperclip
+- URLs de documentación por adaptador
+- enlaces breves de secuencia API "cómo contratar"
 
-Per-adapter file includes:
+El archivo por adaptador incluye:
 
-- required/optional config keys
-- defaults
-- field descriptions
-- safety notes
-- example payloads
+- claves de configuración requeridas/opcionales
+- valores por defecto
+- descripciones de campos
+- notas de seguridad
+- payloads de ejemplo
 
-Auth:
+Autenticación:
 
-- same gate as config-read endpoints (board/CEO/`can_create_agents`).
+- misma puerta que los endpoints de lectura de configuración (tablero/CEO/`can_create_agents`).
 
-## 6. Adapter Protocol Extension
+## 6. Extensión del protocolo de adaptador
 
-Extend `ServerAdapterModule` contract to expose config docs:
+Extender el contrato `ServerAdapterModule` para exponer documentos de configuración:
 
-- `agentConfigurationDoc` (string) or `getAgentConfigurationDoc()`
+- `agentConfigurationDoc` (string) o `getAgentConfigurationDoc()`
 
-Implement in:
+Implementar en:
 
 - `packages/adapters/claude-local`
 - `packages/adapters/codex-local`
 - `server/src/adapters/registry.ts`
 
-This is required so reflection is generated from installed adapters, not hardcoded.
+Esto es necesario para que la reflexión se genere desde los adaptadores instalados, no hardcodeada.
 
-## 7. UI Plan
+## 7. Plan de UI
 
-## 7.1 Company advanced settings
+## 7.1 Ajustes avanzados de empresa
 
-In Companies UI, add advanced settings panel/modal with:
+En la UI de empresas, agregar panel/modal de ajustes avanzados con:
 
-- toggle: "Require board approval for new agent hires" (default on)
+- interruptor: "Requerir aprobación del tablero para nuevas contrataciones de agentes" (por defecto activado)
 
-Not shown in onboarding flow.
+No se muestra en el flujo de incorporación.
 
-## 7.2 Agent permissions UI
+## 7.2 UI de permisos de agente
 
-In Agent Detail (board/CEO context):
+En el detalle del agente (contexto tablero/CEO):
 
-- permissions section
-- toggle for "Can create new agents"
+- sección de permisos
+- interruptor para "Puede crear nuevos agentes"
 
-## 7.3 Hire UX
+## 7.3 UX de contratación
 
-Add "Hire Agent" flow (for CEO/authorized agents):
+Agregar flujo "Contratar agente" (para CEO/agentes autorizados):
 
-- choose role/name/title/reportsTo
-- compose initial prompt/capabilities
-- inspect adapter reflection docs
-- inspect existing related agent configurations
-- submit hire
+- elegir rol/nombre/título/reportsTo
+- redactar prompt inicial/capacidades
+- inspeccionar documentos de reflexión del adaptador
+- inspeccionar configuraciones de agentes relacionados existentes
+- enviar la contratación
 
-State messaging:
+Mensajería de estado:
 
-- if approval required: show "Pending board approval"
-- if not required: show active-ready state
+- si se requiere aprobación: mostrar "Pendiente de aprobación del tablero"
+- si no se requiere: mostrar estado activo-listo
 
-## 7.4 Approvals UX
+## 7.4 UX de aprobaciones
 
-Add approval detail page and expand inbox integration:
+Agregar página de detalle de aprobación y expandir la integración de la bandeja de entrada:
 
 - `/approvals/:approvalId`
-- threaded comments
-- revision request action
-- approve/reject with decision note
-- activity timeline (created, revisions, decisions)
+- comentarios en hilo
+- acción de solicitud de revisión
+- aprobar/rechazar con nota de decisión
+- línea de tiempo de actividad (creada, revisiones, decisiones)
 
-## 7.5 Disapproved agent cleanup
+## 7.5 Limpieza de agente rechazado
 
-Provide board-only destructive action in approval detail:
+Proveer acción destructiva solo-tablero en el detalle de aprobación:
 
-- "Delete disapproved agent"
-- explicit confirmation dialog
-- preserves approval + comment history (audit)
+- "Eliminar agente rechazado"
+- diálogo de confirmación explícito
+- preserva la aprobación + historial de comentarios (auditoría)
 
-## 8. New Skill: `paperclip-create-agent`
+## 8. Nueva habilidad: `paperclip-create-agent`
 
-Create new skill directory:
+Crear nuevo directorio de habilidad:
 
 - `skills/paperclip-create-agent/SKILL.md`
 - `skills/paperclip-create-agent/references/api-reference.md`
 
-Skill responsibilities:
+Responsabilidades de la habilidad:
 
-- Discover available adapter configuration via `/llms/agent-configuration*.txt`
-- Read existing agent configurations (including self and related roles)
-- Propose best-fit config for current environment
-- Draft high-quality initial prompt for new agent
-- Set manager/reporting line
-- Execute hire API flow
-- Handle revision loop with board comments
+- Descubrir la configuración disponible del adaptador vía `/llms/agent-configuration*.txt`
+- Leer configuraciones de agentes existentes (incluyendo la propia y roles relacionados)
+- Proponer la configuración de mejor ajuste para el entorno actual
+- Redactar un prompt inicial de alta calidad para el nuevo agente
+- Definir la línea de gerente/reporte
+- Ejecutar el flujo de contratación de la API
+- Manejar el loop de revisión con comentarios del tablero
 
-Also update `skills/paperclip/SKILL.md` to reference this skill for hiring workflows.
+También actualizar `skills/paperclip/SKILL.md` para referenciar esta habilidad en los flujos de contratación.
 
-## 9. Enforcement and Invariants
+## 9. Aplicación e invariantes
 
-New/updated invariants:
+Invariantes nuevos/actualizados:
 
-- `pending_approval` agents cannot:
-  - be invoked/woken
-  - be assigned issues
-  - create or use API keys
-  - transition to active lifecycle states except through hire approval
-- approval transitions:
+- Los agentes `pending_approval` no pueden:
+  - ser invocados/despertados
+  - tener issues asignados
+  - crear o usar API keys
+  - transicionar a estados activos del ciclo de vida excepto a través de la aprobación de contratación
+- transiciones de aprobación:
   - `pending -> revision_requested | approved | rejected | cancelled`
   - `revision_requested -> pending | rejected | cancelled`
-- every mutation writes `activity_log` records.
+- cada mutación escribe registros de `activity_log`.
 
-## 10. Implementation Phases
+## 10. Fases de implementación
 
-## Phase 1: Contracts and migration
+## Fase 1: Contratos y migración
 
-- DB schema updates (`companies`, `agents`, approvals status expansion, `approval_comments`)
-- shared constants/types/validators updates
-- migration generation and typecheck
+- Actualizaciones de esquema de DB (`companies`, `agents`, expansión de estados de aprobaciones, `approval_comments`)
+- actualizaciones de constantes/tipos/validadores compartidos
+- generación de migración y typecheck
 
-## Phase 2: Server authz + hire flow
+## Fase 2: Authz del servidor + flujo de contratación
 
-- permission resolver and authz guards
-- `agent-hires` route
-- limbo status enforcement in heartbeat/issue/key flows
-- approval revision/comment endpoints
+- resolvedor de permisos y guardas de authz
+- ruta `agent-hires`
+- aplicación del estado limbo en flujos de latido/issue/claves
+- endpoints de revisión/comentarios de aprobación
 
-## Phase 3: Reflection and config-read APIs
+## Fase 3: Reflexión y APIs de lectura de configuración
 
-- adapter protocol docs support
-- `/llms/agent-configuration*.txt` routes
-- protected config-read endpoints with redaction
+- soporte de documentos del protocolo de adaptador
+- rutas `/llms/agent-configuration*.txt`
+- endpoints de lectura de configuración protegidos con redacción
 
-## Phase 4: UI and skilling
+## Fase 4: UI y habilidades
 
-- company advanced setting UI
-- permission controls
-- approval detail + comments/revision flow in inbox/approvals
-- disapproved agent delete flow
-- `paperclip-create-agent` skill + docs updates
+- UI de ajuste avanzado de empresa
+- controles de permisos
+- detalle de aprobación + flujo de comentarios/revisión en bandeja de entrada/aprobaciones
+- flujo de eliminación de agente rechazado
+- habilidad `paperclip-create-agent` + actualizaciones de docs
 
-## 11. Test Plan
+## 11. Plan de pruebas
 
-Server tests:
+Pruebas del servidor:
 
-- permission gate tests for hire/config-read/permission-update endpoints
-- hire creation behavior with company setting on/off
-- approval transitions including revision cycle
-- pending_approval enforcement across wakeup/invoke/assignment/keys
-- config redaction tests
+- pruebas de puerta de permisos para endpoints de contratación/lectura de configuración/actualización de permisos
+- comportamiento de creación de contratación con el ajuste de empresa activado/desactivado
+- transiciones de aprobación incluyendo el ciclo de revisión
+- aplicación de `pending_approval` en wakeup/invoke/asignación/claves
+- pruebas de redacción de configuración
 
-UI tests:
+Pruebas de UI:
 
-- advanced setting toggle persistence
-- approval detail comment/revision interactions
-- hire flow states (pending vs immediate)
+- persistencia del interruptor de ajuste avanzado
+- interacciones de comentarios/revisión del detalle de aprobación
+- estados del flujo de contratación (pendiente vs inmediato)
 
-Repo verification before merge:
+Verificación del repositorio antes del merge:
 
 - `pnpm -r typecheck`
 - `pnpm test:run`
 - `pnpm build`
 
-## 12. Risks and Mitigations
+## 12. Riesgos y mitigaciones
 
-- Risk: leaking secrets through agent config reads.
-  - Mitigation: strict redaction pass + allowlist/denylist tests.
-- Risk: status explosion complexity.
-  - Mitigation: single added status (`pending_approval`) with explicit transition guards.
-- Risk: approval flow regressions.
-  - Mitigation: centralize transition logic in approval service and back it with tests.
+- Riesgo: filtrar secretos a través de lecturas de configuración de agentes.
+  - Mitigación: pasada estricta de redacción + pruebas de lista de permitidos/denegados.
+- Riesgo: complejidad por explosión de estados.
+  - Mitigación: un solo estado agregado (`pending_approval`) con guardas de transición explícitas.
+- Riesgo: regresiones del flujo de aprobación.
+  - Mitigación: centralizar la lógica de transición en el servicio de aprobación y respaldarla con pruebas.
 
-## 13. Open Decisions (Default Recommendation)
+## 13. Decisiones abiertas (recomendación por defecto)
 
-1. Should board direct-create bypass approval setting?
-Recommendation: yes, board is explicit governance override.
+1. ¿Debería la creación directa del tablero evitar el ajuste de aprobación?
+Recomendación: sí, el tablero es una anulación explícita de gobernanza.
 
-2. Should non-authorized agents still see basic agent metadata?
-Recommendation: yes (name/role/status), but configuration fields stay restricted.
+2. ¿Deberían los agentes no autorizados aún ver metadatos básicos del agente?
+Recomendación: sí (nombre/rol/estado), pero los campos de configuración quedan restringidos.
 
-3. On rejection, should limbo agent remain `pending_approval` or move to `terminated`?
-Recommendation: move to `terminated` on final reject; keep optional hard delete action for cleanup.
+3. Al rechazar, ¿debería el agente limbo permanecer `pending_approval` o moverse a `terminated`?
+Recomendación: moverse a `terminated` en el rechazo final; mantener la acción opcional de eliminación dura para limpieza.

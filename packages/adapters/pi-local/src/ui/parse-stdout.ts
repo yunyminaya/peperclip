@@ -36,7 +36,7 @@ function extractTextContent(content: string | Array<{ type: string; text?: strin
   return { text, thinking };
 }
 
-// Track pending tool calls for proper toolUseId matching
+// Rastrear las llamadas de herramienta pendientes para el emparejamiento correcto de toolUseId
 let pendingToolCalls = new Map<string, { toolName: string; args: unknown }>();
 
 export function resetParserState(): void {
@@ -46,7 +46,7 @@ export function resetParserState(): void {
 export function parsePiStdoutLine(line: string, ts: string): TranscriptEntry[] {
   const parsed = asRecord(safeJsonParse(line));
   if (!parsed) {
-    // Non-JSON line, treat as raw stdout
+    // Línea no JSON, tratar como stdout sin procesar
     const trimmed = line.trim();
     if (!trimmed) return [];
     return [{ kind: "stdout", ts, text: trimmed }];
@@ -54,12 +54,12 @@ export function parsePiStdoutLine(line: string, ts: string): TranscriptEntry[] {
 
   const type = asString(parsed.type);
 
-  // RPC protocol messages - filter these out (internal implementation detail)
+  // Mensajes del protocolo RPC: filtrarlos (detalle interno de implementación)
   if (type === "response" || type === "extension_ui_request" || type === "extension_ui_response" || type === "extension_error") {
     return [];
   }
 
-  // Agent lifecycle
+  // Ciclo de vida del agente
   if (type === "agent_start") {
     return [{ kind: "system", ts, text: "🚀 Pi agent started" }];
   }
@@ -67,7 +67,7 @@ export function parsePiStdoutLine(line: string, ts: string): TranscriptEntry[] {
   if (type === "agent_end") {
     const entries: TranscriptEntry[] = [];
     
-    // Extract final message from messages array if available
+    // Extraer el mensaje final del arreglo messages si está disponible
     const messages = parsed.messages as Array<Record<string, unknown>> | undefined;
     if (messages && messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
@@ -82,7 +82,7 @@ export function parsePiStdoutLine(line: string, ts: string): TranscriptEntry[] {
           entries.push({ kind: "assistant", ts, text });
         }
         
-        // Extract usage
+        // Extraer el uso
         const usage = asRecord(lastMessage.usage);
         if (usage) {
           const inputTokens = (usage.inputTokens ?? usage.input ?? 0) as number;
@@ -95,7 +95,7 @@ export function parsePiStdoutLine(line: string, ts: string): TranscriptEntry[] {
             entries.push({
               kind: "result",
               ts,
-              text: "Run completed",
+              text: "Ejecución completada",
               inputTokens,
               outputTokens,
               cachedTokens,
@@ -116,9 +116,9 @@ export function parsePiStdoutLine(line: string, ts: string): TranscriptEntry[] {
     return entries;
   }
 
-  // Turn lifecycle
+  // Ciclo de vida del turno
   if (type === "turn_start") {
-    return []; // Skip noisy lifecycle events
+    return []; // Omitir eventos ruidosos del ciclo de vida
   }
 
   if (type === "turn_end") {
@@ -139,14 +139,14 @@ export function parsePiStdoutLine(line: string, ts: string): TranscriptEntry[] {
       }
     }
     
-    // Process tool results - match with pending tool calls
+    // Procesar resultados de herramientas: emparejar con las llamadas de herramienta pendientes
     if (toolResults) {
       for (const tr of toolResults) {
         const toolCallId = asString(tr.toolCallId, `tool-${Date.now()}`);
         const content = tr.content;
         const isError = tr.isError === true;
         
-        // Extract text from Pi's content array format
+        // Extraer el texto del formato de arreglo content de Pi
         let contentStr: string;
         if (typeof content === "string") {
           contentStr = content;
@@ -157,7 +157,7 @@ export function parsePiStdoutLine(line: string, ts: string): TranscriptEntry[] {
           contentStr = JSON.stringify(content);
         }
         
-        // Get tool name from pending calls if available
+        // Obtener el nombre de la herramienta de las llamadas pendientes si está disponible
         const pendingCall = pendingToolCalls.get(toolCallId);
         const toolName = asString(tr.toolName, pendingCall?.toolName || "tool");
         
@@ -170,7 +170,7 @@ export function parsePiStdoutLine(line: string, ts: string): TranscriptEntry[] {
           isError,
         });
         
-        // Clean up pending call
+        // Limpiar la llamada pendiente
         pendingToolCalls.delete(toolCallId);
       }
     }
@@ -178,7 +178,7 @@ export function parsePiStdoutLine(line: string, ts: string): TranscriptEntry[] {
     return entries;
   }
 
-  // Message streaming
+  // Transmisión de mensajes
   if (type === "message_start") {
     return [];
   }
@@ -188,7 +188,7 @@ export function parsePiStdoutLine(line: string, ts: string): TranscriptEntry[] {
     if (assistantEvent) {
       const msgType = asString(assistantEvent.type);
       
-      // Handle thinking deltas
+      // Manejar los deltas de thinking
       if (msgType === "thinking_delta") {
         const delta = asString(assistantEvent.delta);
         if (delta) {
@@ -196,7 +196,7 @@ export function parsePiStdoutLine(line: string, ts: string): TranscriptEntry[] {
         }
       }
       
-      // Handle text deltas
+      // Manejar los deltas de texto
       if (msgType === "text_delta") {
         const delta = asString(assistantEvent.delta);
         if (delta) {
@@ -274,7 +274,7 @@ export function parsePiStdoutLine(line: string, ts: string): TranscriptEntry[] {
     const result = parsed.result;
     const isError = parsed.isError === true;
     
-    // Extract text from Pi's content array format
+    // Extraer el texto del formato de arreglo content de Pi
     let contentStr: string;
     if (typeof result === "string") {
       contentStr = result;
@@ -293,7 +293,7 @@ export function parsePiStdoutLine(line: string, ts: string): TranscriptEntry[] {
       contentStr = String(result);
     }
     
-    // Clean up pending call
+    // Limpiar la llamada pendiente
     pendingToolCalls.delete(toolCallId);
     
     return [{

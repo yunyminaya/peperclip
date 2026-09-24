@@ -1,27 +1,30 @@
 /**
- * PluginJobCoordinator — bridges the plugin lifecycle manager with the
- * job scheduler and job store.
+ * PluginJobCoordinator — conecta el manejador de ciclo de vida de plugins
+ * con el programador de trabajos y el almacén de trabajos.
  *
- * This service listens to lifecycle events and performs the corresponding
- * scheduler and job store operations:
+ * Este servicio escucha eventos del ciclo de vida y realiza las
+ * operaciones correspondientes del programador y del almacén de trabajos:
  *
- * - **plugin.loaded** → sync job declarations from manifest, then register
- *   the plugin with the scheduler (computes `nextRunAt` for active jobs).
+ * - **plugin.loaded** → sincroniza las declaraciones de trabajos del
+ *   manifiesto, luego registra el plugin en el programador (calcula
+ *   `nextRunAt` para los trabajos activos).
  *
- * - **plugin.disabled / plugin.unloaded** → unregister the plugin from the
- *   scheduler (cancels in-flight runs, clears tracking state).
+ * - **plugin.disabled / plugin.unloaded** → da de baja el plugin del
+ *   programador (cancela ejecuciones en curso, limpia el estado de
+ *   seguimiento).
  *
- * ## Why a separate coordinator?
+ * ## ¿Por qué un coordinador separado?
  *
- * The lifecycle manager, scheduler, and job store are independent services
- * with clean single-responsibility boundaries. The coordinator provides
- * the "glue" between them without adding coupling. This pattern is used
- * throughout Paperclip (e.g. heartbeat service coordinates timers + runs).
+ * El manejador de ciclo de vida, el programador y el almacén de trabajos son
+ * servicios independientes con límites limpios de responsabilidad única. El
+ * coordinador provee el "pegamento" entre ellos sin agregar acoplamiento.
+ * Este patrón se usa en todo Paperclip (p. ej. el servicio de heartbeat
+ * coordina temporizadores + runs).
  *
- * @see PLUGIN_SPEC.md §17 — Scheduled Jobs
- * @see ./plugin-job-scheduler.ts — Scheduler service
- * @see ./plugin-job-store.ts — Persistence layer
- * @see ./plugin-lifecycle.ts — Plugin state machine
+ * @see PLUGIN_SPEC.md §17 — Trabajos programados
+ * @see ./plugin-job-scheduler.ts — Servicio de programador
+ * @see ./plugin-job-store.ts — Capa de persistencia
+ * @see ./plugin-lifecycle.ts — Máquina de estados de plugins
  */
 
 import type { PluginLifecycleManager } from "./plugin-lifecycle.js";
@@ -36,45 +39,45 @@ import { logger } from "../middleware/logger.js";
 // ---------------------------------------------------------------------------
 
 /**
- * Options for creating a PluginJobCoordinator.
+ * Opciones para crear un PluginJobCoordinator.
  */
 export interface PluginJobCoordinatorOptions {
-  /** Drizzle database instance. */
+  /** Instancia de base de datos Drizzle. */
   db: Db;
-  /** The plugin lifecycle manager to listen to. */
+  /** El manejador de ciclo de vida de plugins a escuchar. */
   lifecycle: PluginLifecycleManager;
-  /** The job scheduler to register/unregister plugins with. */
+  /** El programador de trabajos para registrar/dar de baja plugins. */
   scheduler: PluginJobScheduler;
-  /** The job store for syncing declarations. */
+  /** El almacén de trabajos para sincronizar declaraciones. */
   jobStore: PluginJobStore;
 }
 
 /**
- * The public interface of the job coordinator.
+ * La interfaz pública del coordinador de trabajos.
  */
 export interface PluginJobCoordinator {
   /**
-   * Start listening to lifecycle events.
+   * Empieza a escuchar eventos del ciclo de vida.
    *
-   * This wires up the `plugin.loaded`, `plugin.disabled`, and
-   * `plugin.unloaded` event handlers.
+   * Esto conecta los manejadores de eventos `plugin.loaded`,
+   * `plugin.disabled` y `plugin.unloaded`.
    */
   start(): void;
 
   /**
-   * Stop listening to lifecycle events.
+   * Deja de escuchar eventos del ciclo de vida.
    *
-   * Removes all event subscriptions added by `start()`.
+   * Elimina todas las suscripciones de eventos agregadas por `start()`.
    */
   stop(): void;
 }
 
 // ---------------------------------------------------------------------------
-// Implementation
+// Implementación
 // ---------------------------------------------------------------------------
 
 /**
- * Create a PluginJobCoordinator.
+ * Crea un PluginJobCoordinator.
  *
  * @example
  * ```ts
@@ -85,10 +88,10 @@ export interface PluginJobCoordinator {
  *   jobStore,
  * });
  *
- * // Start listening to lifecycle events
+ * // Empieza a escuchar eventos del ciclo de vida
  * coordinator.start();
  *
- * // On server shutdown
+ * // Al apagar el servidor
  * coordinator.stop();
  * ```
  */
@@ -100,40 +103,40 @@ export function createPluginJobCoordinator(
   const registry = pluginRegistryService(db);
 
   // -----------------------------------------------------------------------
-  // Event handlers
+  // Manejadores de eventos
   // -----------------------------------------------------------------------
 
   /**
-   * When a plugin is loaded (transitions to `ready`):
-   * 1. Look up the manifest from the registry
-   * 2. Sync job declarations from the manifest into the DB
-   * 3. Register the plugin with the scheduler (computes nextRunAt)
+   * Cuando se carga un plugin (transiciona a `ready`):
+   * 1. Busca el manifiesto en el registro
+   * 2. Sincroniza las declaraciones de trabajos del manifiesto a la BD
+   * 3. Registra el plugin en el programador (calcula nextRunAt)
    */
   async function onPluginLoaded(payload: { pluginId: string; pluginKey: string }): Promise<void> {
     const { pluginId, pluginKey } = payload;
-    log.info({ pluginId, pluginKey }, "plugin loaded — syncing jobs and registering with scheduler");
+    log.info({ pluginId, pluginKey }, "plugin cargado — sincronizando trabajos y registrando en el programador");
 
     try {
-      // Get the manifest from the registry
+      // Obtiene el manifiesto del registro
       const plugin = await registry.getById(pluginId);
       if (!plugin?.manifestJson) {
-        log.warn({ pluginId, pluginKey }, "plugin loaded but no manifest found — skipping job sync");
+        log.warn({ pluginId, pluginKey }, "plugin cargado pero no se encontró manifiesto — omitiendo sincronización de trabajos");
         return;
       }
 
-      // Sync job declarations from the manifest
+      // Sincroniza las declaraciones de trabajos del manifiesto
       const manifest = plugin.manifestJson;
       const jobDeclarations = manifest.jobs ?? [];
 
       if (jobDeclarations.length > 0) {
         log.info(
           { pluginId, pluginKey, jobCount: jobDeclarations.length },
-          "syncing job declarations from manifest",
+          "sincronizando declaraciones de trabajos desde el manifiesto",
         );
         await jobStore.syncJobDeclarations(pluginId, jobDeclarations);
       }
 
-      // Register with the scheduler (computes nextRunAt for active jobs)
+      // Registra en el programador (calcula nextRunAt para trabajos activos)
       await scheduler.registerPlugin(pluginId);
     } catch (err) {
       log.error(
@@ -142,14 +145,14 @@ export function createPluginJobCoordinator(
           pluginKey,
           err: err instanceof Error ? err.message : String(err),
         },
-        "failed to sync jobs or register plugin with scheduler",
+        "no se pudieron sincronizar los trabajos ni registrar el plugin en el programador",
       );
     }
   }
 
   /**
-   * When a plugin is disabled (transitions to `error` with "disabled by
-   * operator" or genuine error): unregister from the scheduler.
+   * Cuando se deshabilita un plugin (transiciona a `error` con "deshabilitado
+   * por el operador" o error genuino): da de baja del programador.
    */
   async function onPluginDisabled(payload: {
     pluginId: string;
@@ -159,7 +162,7 @@ export function createPluginJobCoordinator(
     const { pluginId, pluginKey, reason } = payload;
     log.info(
       { pluginId, pluginKey, reason },
-      "plugin disabled — unregistering from scheduler",
+      "plugin deshabilitado — dando de baja del programador",
     );
 
     try {
@@ -171,13 +174,13 @@ export function createPluginJobCoordinator(
           pluginKey,
           err: err instanceof Error ? err.message : String(err),
         },
-        "failed to unregister plugin from scheduler",
+        "no se pudo dar de baja el plugin del programador",
       );
     }
   }
 
   /**
-   * When a plugin is unloaded (uninstalled): unregister from the scheduler.
+   * Cuando se descarga un plugin (desinstalado): da de baja del programador.
    */
   async function onPluginUnloaded(payload: {
     pluginId: string;
@@ -187,15 +190,16 @@ export function createPluginJobCoordinator(
     const { pluginId, pluginKey, removeData } = payload;
     log.info(
       { pluginId, pluginKey, removeData },
-      "plugin unloaded — unregistering from scheduler",
+      "plugin descargado — dando de baja del programador",
     );
 
     try {
       await scheduler.unregisterPlugin(pluginId);
 
-      // If data is being purged, also delete all job definitions and runs
+      // Si se están purgando los datos, también elimina todas las
+      // definiciones de trabajos y ejecuciones
       if (removeData) {
-        log.info({ pluginId, pluginKey }, "purging job data for uninstalled plugin");
+        log.info({ pluginId, pluginKey }, "purgando datos de trabajos del plugin desinstalado");
         await jobStore.deleteAllJobs(pluginId);
       }
     } catch (err) {
@@ -205,21 +209,21 @@ export function createPluginJobCoordinator(
           pluginKey,
           err: err instanceof Error ? err.message : String(err),
         },
-        "failed to unregister plugin from scheduler during unload",
+        "no se pudo dar de baja el plugin del programador durante la descarga",
       );
     }
   }
 
   // -----------------------------------------------------------------------
-  // State
+  // Estado
   // -----------------------------------------------------------------------
 
   let attached = false;
 
-  // We need stable references for on/off since the lifecycle manager
-  // uses them for matching. We wrap the async handlers in sync wrappers
-  // that fire-and-forget (swallowing unhandled rejections via the try/catch
-  // inside each handler).
+  // Necesitamos referencias estables para on/off ya que el manejador de ciclo
+  // de vida las usa para coincidir. Envolvemos los manejadores async en
+  // envoltorios sync que son fire-and-forget (absorbiendo rechazos no
+  // manejados vía el try/catch dentro de cada manejador).
   const boundOnLoaded = (payload: { pluginId: string; pluginKey: string }) => {
     void onPluginLoaded(payload);
   };
@@ -231,7 +235,7 @@ export function createPluginJobCoordinator(
   };
 
   // -----------------------------------------------------------------------
-  // Public API
+  // API pública
   // -----------------------------------------------------------------------
 
   return {
@@ -243,7 +247,7 @@ export function createPluginJobCoordinator(
       lifecycle.on("plugin.disabled", boundOnDisabled);
       lifecycle.on("plugin.unloaded", boundOnUnloaded);
 
-      log.info("plugin job coordinator started — listening to lifecycle events");
+      log.info("coordinador de trabajos de plugins iniciado — escuchando eventos del ciclo de vida");
     },
 
     stop(): void {
@@ -254,7 +258,7 @@ export function createPluginJobCoordinator(
       lifecycle.off("plugin.disabled", boundOnDisabled);
       lifecycle.off("plugin.unloaded", boundOnUnloaded);
 
-      log.info("plugin job coordinator stopped");
+      log.info("coordinador de trabajos de plugins detenido");
     },
   };
 }

@@ -23,11 +23,11 @@ import { registerClientAuthCommands } from "./commands/client/auth.js";
 
 const program = new Command();
 const DATA_DIR_OPTION_HELP =
-  "Paperclip data directory root (isolates state from ~/.paperclip)";
+  "Directorio raíz de datos de Paperclip (aísla el estado de ~/.paperclip)";
 
 program
   .name("paperclipai")
-  .description("Paperclip CLI — setup, diagnose, and configure your instance")
+  .description("Paperclip CLI — configura, diagnostica y ajusta tu instancia")
   .version("0.2.7");
 
 program.hook("preAction", (_thisCommand, actionCommand) => {
@@ -42,92 +42,92 @@ program.hook("preAction", (_thisCommand, actionCommand) => {
 
 program
   .command("onboard")
-  .description("Interactive first-run setup wizard")
-  .option("-c, --config <path>", "Path to config file")
+  .description("Asistente interactivo de configuración inicial")
+  .option("-c, --config <path>", "Ruta al archivo de configuración")
   .option("-d, --data-dir <path>", DATA_DIR_OPTION_HELP)
-  .option("-y, --yes", "Accept defaults (quickstart + start immediately)", false)
-  .option("--run", "Start Paperclip immediately after saving config", false)
+  .option("-y, --yes", "Aceptar valores predeterminados (inicio rápido + iniciar de inmediato)", false)
+  .option("--run", "Iniciar Paperclip inmediatamente después de guardar la configuración", false)
   .action(onboard);
 
 program
   .command("doctor")
-  .description("Run diagnostic checks on your Paperclip setup")
-  .option("-c, --config <path>", "Path to config file")
+  .description("Ejecutar comprobaciones de diagnóstico en tu instalación de Paperclip")
+  .option("-c, --config <path>", "Ruta al archivo de configuración")
   .option("-d, --data-dir <path>", DATA_DIR_OPTION_HELP)
-  .option("--repair", "Attempt to repair issues automatically")
+  .option("--repair", "Intentar reparar los problemas automáticamente")
   .alias("--fix")
-  .option("-y, --yes", "Skip repair confirmation prompts")
+  .option("-y, --yes", "Omitir las confirmaciones de reparación")
   .action(async (opts) => {
     await doctor(opts);
   });
 
 program
   .command("env")
-  .description("Print environment variables for deployment")
-  .option("-c, --config <path>", "Path to config file")
+  .description("Mostrar variables de entorno para el despliegue")
+  .option("-c, --config <path>", "Ruta al archivo de configuración")
   .option("-d, --data-dir <path>", DATA_DIR_OPTION_HELP)
   .action(envCommand);
 
 program
   .command("configure")
-  .description("Update configuration sections")
-  .option("-c, --config <path>", "Path to config file")
+  .description("Actualizar secciones de configuración")
+  .option("-c, --config <path>", "Ruta al archivo de configuración")
   .option("-d, --data-dir <path>", DATA_DIR_OPTION_HELP)
-  .option("-s, --section <section>", "Section to configure (llm, database, logging, server, storage, secrets)")
+  .option("-s, --section <section>", "Sección a configurar (llm, database, logging, server, storage, secrets)")
   .action(configure);
 
 program
   .command("db:backup")
-  .description("Create a one-off database backup using current config")
-  .option("-c, --config <path>", "Path to config file")
+  .description("Crear una copia de seguridad única de la base de datos con la configuración actual")
+  .option("-c, --config <path>", "Ruta al archivo de configuración")
   .option("-d, --data-dir <path>", DATA_DIR_OPTION_HELP)
-  .option("--dir <path>", "Backup output directory (overrides config)")
-  .option("--retention-days <days>", "Retention window used for pruning", (value) => Number(value))
-  .option("--filename-prefix <prefix>", "Backup filename prefix", "paperclip")
-  .option("--json", "Print backup metadata as JSON")
+  .option("--dir <path>", "Directorio de salida de la copia (anula la configuración)")
+  .option("--retention-days <days>", "Ventana de retención usada para la purga", (value) => Number(value))
+  .option("--filename-prefix <prefix>", "Prefijo del nombre de archivo de la copia", "paperclip")
+  .option("--json", "Mostrar los metadatos de la copia como JSON")
   .action(async (opts) => {
     await dbBackupCommand(opts);
   });
 
 program
   .command("allowed-hostname")
-  .description("Allow a hostname for authenticated/private mode access")
-  .argument("<host>", "Hostname to allow (for example dotta-macbook-pro)")
-  .option("-c, --config <path>", "Path to config file")
+  .description("Permitir un hostname para el acceso en modo autenticado/privado")
+  .argument("<host>", "Hostname a permitir (por ejemplo dotta-macbook-pro)")
+  .option("-c, --config <path>", "Ruta al archivo de configuración")
   .option("-d, --data-dir <path>", DATA_DIR_OPTION_HELP)
   .action(addAllowedHostname);
 
 program
   .command("run")
-  .description("Bootstrap local setup (onboard + doctor) and run Paperclip")
-  .option("-c, --config <path>", "Path to config file")
+  .description("Preparar la instalación local (onboard + doctor) y ejecutar Paperclip")
+  .option("-c, --config <path>", "Ruta al archivo de configuración")
   .option("-d, --data-dir <path>", DATA_DIR_OPTION_HELP)
-  .option("-i, --instance <id>", "Local instance id (default: default)")
-  .option("--repair", "Attempt automatic repairs during doctor", true)
-  .option("--no-repair", "Disable automatic repairs during doctor")
+  .option("-i, --instance <id>", "ID de la instancia local (predeterminado: default)")
+  .option("--repair", "Intentar reparaciones automáticas durante el diagnóstico", true)
+  .option("--no-repair", "Desactivar las reparaciones automáticas durante el diagnóstico")
   .action(runCommand);
 
-const heartbeat = program.command("heartbeat").description("Heartbeat utilities");
+const heartbeat = program.command("heartbeat").description("Utilidades de latido");
 
 heartbeat
   .command("run")
-  .description("Run one agent heartbeat and stream live logs")
-  .requiredOption("-a, --agent-id <agentId>", "Agent ID to invoke")
-  .option("-c, --config <path>", "Path to config file")
+  .description("Ejecutar un latido de agente y transmitir los registros en vivo")
+  .requiredOption("-a, --agent-id <agentId>", "ID del agente a invocar")
+  .option("-c, --config <path>", "Ruta al archivo de configuración")
   .option("-d, --data-dir <path>", DATA_DIR_OPTION_HELP)
-  .option("--context <path>", "Path to CLI context file")
-  .option("--profile <name>", "CLI context profile name")
-  .option("--api-base <url>", "Base URL for the Paperclip server API")
-  .option("--api-key <token>", "Bearer token for agent-authenticated calls")
+  .option("--context <path>", "Ruta al archivo de contexto del CLI")
+  .option("--profile <name>", "Nombre del perfil de contexto del CLI")
+  .option("--api-base <url>", "URL base de la API del servidor Paperclip")
+  .option("--api-key <token>", "Token bearer para llamadas autenticadas como agente")
   .option(
     "--source <source>",
-    "Invocation source (timer | assignment | on_demand | automation)",
+    "Origen de la invocación (timer | assignment | on_demand | automation)",
     "on_demand",
   )
-  .option("--trigger <trigger>", "Trigger detail (manual | ping | callback | system)", "manual")
-  .option("--timeout-ms <ms>", "Max time to wait before giving up", "0")
-  .option("--json", "Output raw JSON where applicable")
-  .option("--debug", "Show raw adapter stdout/stderr JSON chunks")
+  .option("--trigger <trigger>", "Detalle del disparador (manual | ping | callback | system)", "manual")
+  .option("--timeout-ms <ms>", "Tiempo máximo de espera antes de rendirse", "0")
+  .option("--json", "Mostrar JSON sin procesar cuando aplique")
+  .option("--debug", "Mostrar fragmentos JSON sin procesar de stdout/stderr del adaptador")
   .action(heartbeatRun);
 
 registerContextCommands(program);
@@ -140,16 +140,16 @@ registerDashboardCommands(program);
 registerWorktreeCommands(program);
 registerPluginCommands(program);
 
-const auth = program.command("auth").description("Authentication and bootstrap utilities");
+const auth = program.command("auth").description("Utilidades de autenticación e inicialización");
 
 auth
   .command("bootstrap-ceo")
-  .description("Create a one-time bootstrap invite URL for first instance admin")
-  .option("-c, --config <path>", "Path to config file")
+  .description("Crear una URL de invitación única para el primer administrador de la instancia")
+  .option("-c, --config <path>", "Ruta al archivo de configuración")
   .option("-d, --data-dir <path>", DATA_DIR_OPTION_HELP)
-  .option("--force", "Create new invite even if admin already exists", false)
-  .option("--expires-hours <hours>", "Invite expiration window in hours", (value) => Number(value))
-  .option("--base-url <url>", "Public base URL used to print invite link")
+  .option("--force", "Crear una invitación nueva aunque ya exista un administrador", false)
+  .option("--expires-hours <hours>", "Ventana de vencimiento de la invitación en horas", (value) => Number(value))
+  .option("--base-url <url>", "URL base pública usada para mostrar el enlace de invitación")
   .action(bootstrapCeoInvite);
 
 registerClientAuthCommands(auth);

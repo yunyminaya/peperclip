@@ -163,7 +163,7 @@ export async function runDatabaseBackup(opts: RunDatabaseBackupOptions): Promise
       emit(STATEMENT_BREAKPOINT);
     };
 
-    emit("-- Paperclip database backup");
+    emit("-- Respaldo de la base de datos de Paperclip");
     emit(`-- Created: ${new Date().toISOString()}`);
     emit("");
     emitStatement("BEGIN;");
@@ -184,7 +184,7 @@ export async function runDatabaseBackup(opts: RunDatabaseBackupOptions): Promise
     const tables = allTables;
     const includedTableNames = new Set(tables.map(({ schema_name, tablename }) => tableKey(schema_name, tablename)));
 
-    // Get all enums
+    // Obtener todos los enums
     const enums = await sql<{ typname: string; labels: string[] }[]>`
       SELECT t.typname, array_agg(e.enumlabel ORDER BY e.enumsortorder) AS labels
       FROM pg_type t
@@ -253,7 +253,7 @@ export async function runDatabaseBackup(opts: RunDatabaseBackupOptions): Promise
       emit("");
     }
 
-    // Get full CREATE TABLE DDL via column info
+    // Obtener el DDL completo de CREATE TABLE a partir de la información de columnas
     for (const { schema_name, tablename } of tables) {
       const qualifiedTableName = quoteQualifiedName(schema_name, tablename);
       const columns = await sql<{
@@ -302,7 +302,7 @@ export async function runDatabaseBackup(opts: RunDatabaseBackupOptions): Promise
         colDefs.push(def);
       }
 
-      // Primary key
+      // Clave primaria
       const pk = await sql<{ constraint_name: string; column_names: string[] }[]>`
         SELECT c.conname AS constraint_name,
                array_agg(a.attname ORDER BY array_position(c.conkey, a.attnum)) AS column_names
@@ -336,7 +336,7 @@ export async function runDatabaseBackup(opts: RunDatabaseBackupOptions): Promise
       emit("");
     }
 
-    // Foreign keys (after all tables created)
+    // Claves foráneas (después de crear todas las tablas)
     const allForeignKeys = await sql<{
       constraint_name: string;
       source_schema: string;
@@ -389,7 +389,7 @@ export async function runDatabaseBackup(opts: RunDatabaseBackupOptions): Promise
       emit("");
     }
 
-    // Unique constraints
+    // Restricciones únicas
     const allUniqueConstraints = await sql<{
       constraint_name: string;
       schema_name: string;
@@ -422,7 +422,7 @@ export async function runDatabaseBackup(opts: RunDatabaseBackupOptions): Promise
       emit("");
     }
 
-    // Indexes (non-primary, non-unique-constraint)
+    // Índices (no primarios, sin restricción única)
     const allIndexes = await sql<{ schema_name: string; tablename: string; indexdef: string }[]>`
       SELECT schemaname AS schema_name, tablename, indexdef
       FROM pg_indexes
@@ -447,13 +447,13 @@ export async function runDatabaseBackup(opts: RunDatabaseBackupOptions): Promise
       emit("");
     }
 
-    // Dump data for each table
+    // Volcar los datos de cada tabla
     for (const { schema_name, tablename } of tables) {
       const qualifiedTableName = quoteQualifiedName(schema_name, tablename);
       const count = await sql.unsafe<{ n: number }[]>(`SELECT count(*)::int AS n FROM ${qualifiedTableName}`);
       if (excludedTableNames.has(tablename) || (count[0]?.n ?? 0) === 0) continue;
 
-      // Get column info for this table
+      // Obtener la información de columnas de esta tabla
       const cols = await sql<{ column_name: string; data_type: string }[]>`
         SELECT column_name, data_type
         FROM information_schema.columns
@@ -482,7 +482,7 @@ export async function runDatabaseBackup(opts: RunDatabaseBackupOptions): Promise
       emit("");
     }
 
-    // Sequence values
+    // Valores de las secuencias
     if (sequences.length > 0) {
       emit("-- Sequence values");
       for (const seq of sequences) {
@@ -503,7 +503,7 @@ export async function runDatabaseBackup(opts: RunDatabaseBackupOptions): Promise
     emitStatement("COMMIT;");
     emit("");
 
-    // Write the backup file
+    // Escribir el archivo de respaldo
     mkdirSync(opts.backupDir, { recursive: true });
     const backupFile = resolve(opts.backupDir, `${filenamePrefix}-${timestamp()}.sql`);
     await writeFile(backupFile, lines.join("\n"), "utf8");
@@ -544,7 +544,7 @@ export async function runDatabaseRestore(opts: RunDatabaseRestoreOptions): Promi
         .find((line) => line.length > 0 && !line.startsWith("--"))
       : null;
     throw new Error(
-      `Failed to restore ${basename(opts.backupFile)}: ${sanitizeRestoreErrorMessage(error)}${statementPreview ? ` [statement: ${statementPreview.slice(0, 120)}]` : ""}`,
+      `No se pudo restaurar ${basename(opts.backupFile)}: ${sanitizeRestoreErrorMessage(error)}${statementPreview ? ` [sentencia: ${statementPreview.slice(0, 120)}]` : ""}`,
     );
   } finally {
     await sql.end();
@@ -553,6 +553,6 @@ export async function runDatabaseRestore(opts: RunDatabaseRestoreOptions): Promi
 
 export function formatDatabaseBackupResult(result: RunDatabaseBackupResult): string {
   const size = formatBackupSize(result.sizeBytes);
-  const pruned = result.prunedCount > 0 ? `; pruned ${result.prunedCount} old backup(s)` : "";
+  const pruned = result.prunedCount > 0 ? `; ${result.prunedCount} respaldo(s) antiguo(s) eliminado(s)` : "";
   return `${result.backupFile} (${size}${pruned})`;
 }

@@ -1,229 +1,229 @@
-# ClipHub — The Company Registry
+# ClipHub — El registro de empresas
 
-**Download a company.**
+**Descarga una empresa.**
 
-ClipHub is the public registry where people share, discover, and download Paperclip company configurations. A company template is a portable artifact containing an entire org — agents, reporting structure, adapter configs, role definitions, seed tasks — ready to spin up with one command.
-
----
-
-## What It Is
-
-ClipHub is to Paperclip what a package registry is to a programming language. Paperclip already supports exportable org configs (see [SPEC.md](./SPEC.md) §2). ClipHub is the public directory where those exports live.
-
-A user builds a working company in Paperclip — a dev shop, a marketing agency, a research lab, a content studio — exports the template, and publishes it to ClipHub. Anyone can browse, search, download, and spin up that company on their own Paperclip instance.
-
-The tagline: **you can literally download a company.**
+ClipHub es el registro público donde las personas comparten, descubren y descargan configuraciones de empresas de Paperclip. Una plantilla de empresa es un artefacto portable que contiene una org entera — agentes, estructura de reporte, configuraciones de adaptadores, definiciones de roles, tareas semilla — lista para arrancar con un comando.
 
 ---
 
-## What Gets Published
+## Qué es
 
-A ClipHub package is a **company template export** — the portable artifact format defined in the Paperclip spec. It contains:
+ClipHub es para Paperclip lo que un registro de paquetes es para un lenguaje de programación. Paperclip ya soporta configuraciones de org exportables (consulta [SPEC.md](./SPEC.md) §2). ClipHub es el directorio público donde viven esas exportaciones.
 
-| Component | Description |
+Un usuario construye una empresa funcional en Paperclip — una tienda de dev, una agencia de marketing, un laboratorio de investigación, un estudio de contenido — exporta la plantilla y la publica en ClipHub. Cualquiera puede explorar, buscar, descargar y arrancar esa empresa en su propia instancia de Paperclip.
+
+El tagline: **literalmente puedes descargar una empresa.**
+
+---
+
+## Qué se publica
+
+Un paquete de ClipHub es una **exportación de plantilla de empresa** — el formato de artefacto portable definido en la especificación de Paperclip. Contiene:
+
+| Componente | Descripción |
 |---|---|
-| **Company metadata** | Name, description, intended use case, category |
-| **Org chart** | Full reporting hierarchy — who reports to whom |
-| **Agent definitions** | Every agent: name, role, title, capabilities description |
-| **Adapter configs** | Per-agent adapter type and configuration (SOUL.md, HEARTBEAT.md, CLAUDE.md, process commands, webhook URLs — whatever the adapter needs) |
-| **Seed tasks** | Optional starter tasks and initiatives to bootstrap the company's first run |
-| **Budget defaults** | Suggested token/cost budgets per agent and per company |
+| **Metadatos de empresa** | Nombre, descripción, caso de uso previsto, categoría |
+| **Organigrama** | Jerarquía de reporte completa — quién reporta a quién |
+| **Definiciones de agentes** | Cada agente: nombre, rol, título, descripción de capacidades |
+| **Configuraciones de adaptadores** | Tipo de adaptador y configuración por agente (SOUL.md, HEARTBEAT.md, CLAUDE.md, comandos de proceso, URLs de webhook — lo que el adaptador necesite) |
+| **Tareas semilla** | Tareas e iniciativas iniciales opcionales para arrancar la primera ejecución de la empresa |
+| **Valores de presupuesto por defecto** | Presupuestos sugeridos de token/costo por agente y por empresa |
 
-Templates are **structure, not state.** No in-progress tasks, no historical cost data, no runtime artifacts. Just the blueprint.
+Las plantillas son **estructura, no estado.** Sin tareas en curso, sin datos históricos de costo, sin artefactos de runtime. Solo el blueprint.
 
-### Sub-packages
+### Subpaquetes
 
-Not every use case needs a whole company. ClipHub also supports publishing individual components:
+No todo caso de uso necesita una empresa entera. ClipHub también soporta publicar componentes individuales:
 
-- **Agent templates** — a single agent config (e.g. "Senior TypeScript Engineer", "SEO Content Writer", "DevOps Agent")
-- **Team templates** — a subtree of the org chart (e.g. "Marketing Team: CMO + 3 reports", "Engineering Pod: Tech Lead + 4 Engineers")
-- **Adapter configs** — reusable adapter configurations independent of any specific agent role
+- **Plantillas de agente** — una sola configuración de agente (p. ej., "Senior TypeScript Engineer", "SEO Content Writer", "DevOps Agent")
+- **Plantillas de equipo** — un subárbol del organigrama (p. ej., "Equipo de marketing: CMO + 3 reportes", "Pod de ingeniería: Tech Lead + 4 Engineers")
+- **Configuraciones de adaptador** — configuraciones de adaptador reutilizables independientes de cualquier rol de agente específico
 
-These can be mixed into existing companies. Download an agent, slot it into your org, assign a manager, go.
+Estos pueden mezclarse en empresas existentes. Descarga un agente, colócalo en tu org, asígnale un manager, listo.
 
 ---
 
-## Core Features
+## Funciones centrales
 
-### Browse & Discover
+### Explorar y descubrir
 
-The homepage surfaces companies across several dimensions:
+La homepage muestra empresas en varias dimensiones:
 
-- **Featured** — editorially curated, high-quality templates
-- **Popular** — ranked by downloads, stars, and forks
-- **Recent** — latest published or updated
-- **Categories** — browseable by use case (see Categories below)
+- **Destacadas** — plantillas de alta calidad curadas editorialmente
+- **Populares** — rankeadas por descargas, estrellas y forks
+- **Recientes** — últimas publicadas o actualizadas
+- **Categorías** — explorables por caso de uso (consulta Categorías abajo)
 
-Each listing shows: name, short description, org size (agent count), category, adapter types used, star count, download count, and a mini org chart preview.
+Cada listado muestra: nombre, descripción corta, tamaño de org (conteo de agentes), categoría, tipos de adaptador usados, conteo de estrellas, conteo de descargas y una mini vista previa del organigrama.
 
-### Search
+### Búsqueda
 
-Search is **semantic, not keyword-only.** Powered by vector embeddings so you can search by intent:
+La búsqueda es **semántica, no solo por palabras clave.** Impulsada por embeddings vectoriales para que puedas buscar por intención:
 
-- "marketing agency that runs facebook ads" → finds relevant company templates even if those exact words aren't in the title
-- "small dev team for building APIs" → finds lean engineering orgs
-- "content pipeline with writers and editors" → finds content studio templates
+- "marketing agency that runs facebook ads" → encuentra plantillas de empresa relevantes aunque esas palabras exactas no estén en el título
+- "small dev team for building APIs" → encuentra orgs de ingeniería ligeras
+- "content pipeline with writers and editors" → encuentra estudios de contenido
 
-Also supports filtering by: category, agent count range, adapter types, star count, recency.
+También soporta filtrar por: categoría, rango de conteo de agentes, tipos de adaptador, conteo de estrellas, recencia.
 
-### Company Detail Page
+### Página de detalle de empresa
 
-Clicking into a company template shows:
+Al hacer clic en una plantilla de empresa se muestra:
 
-- **Full description** — what this company does, how it operates, what to expect
-- **Interactive org chart** — visual tree of every agent with role, title, and capabilities
-- **Agent list** — expandable details for each agent (adapter type, config summary, role description)
-- **Seed tasks** — the starter initiatives and tasks included
-- **Budget overview** — suggested cost structure
-- **Install command** — one-line CLI command to download and create
-- **Version history** — changelog, semver, previous versions available
-- **Community** — stars, comments, forks count
+- **Descripción completa** — qué hace esta empresa, cómo opera, qué esperar
+- **Organigrama interactivo** — árbol visual de cada agente con rol, título y capacidades
+- **Lista de agentes** — detalles expandibles para cada agente (tipo de adaptador, resumen de configuración, descripción de rol)
+- **Tareas semilla** — las iniciativas y tareas iniciales incluidas
+- **Resumen de presupuesto** — estructura de costo sugerida
+- **Comando de instalación** — comando CLI de una línea para descargar y crear
+- **Historial de versiones** — changelog, semver, versiones anteriores disponibles
+- **Comunidad** — estrellas, comentarios, conteo de forks
 
-### Install & Fork
+### Instalar y hacer fork
 
-Two ways to use a template:
+Dos formas de usar una plantilla:
 
-**Install (fresh start):**
+**Instalar (empezar de cero):**
 ```
 paperclip install cliphub:<publisher>/<company-slug>
 ```
-Downloads the template and creates a new company in your local Paperclip instance. You add your own API keys, set budgets, customize agents, and hit go.
+Descarga la plantilla y crea una nueva empresa en tu instancia local de Paperclip. Agregas tus propias API keys, defines presupuestos, personalizas agentes y lo pones en marcha.
 
-**Fork:**
-Forking creates a copy of the template under your own ClipHub account. You can modify it, republish it as your own variant, and the fork lineage is tracked. This enables evolutionary improvement — someone publishes a marketing agency, you fork it, add a social media team, republish.
+**Hacer fork:**
+Hacer fork crea una copia de la plantilla bajo tu propia cuenta de ClipHub. Puedes modificarla, republicarla como tu propia variante, y el linaje del fork se rastrea. Esto permite mejora evolutiva — alguien publica una agencia de marketing, tú haces fork, agregas un equipo de redes sociales, republicas.
 
-### Stars & Comments
+### Estrellas y comentarios
 
-- **Stars** — bookmark and signal quality. Star count is a primary ranking signal.
-- **Comments** — threaded discussion on each listing. Ask questions, share results, suggest improvements.
+- **Estrellas** — marca y señala calidad. El conteo de estrellas es una señal de ranking principal.
+- **Comentarios** — discusión hilada en cada listado. Haz preguntas, comparte resultados, sugiere mejoras.
 
-### Download Counts & Signals
+### Conteos de descarga y señales
 
-Every install is counted. The registry tracks:
+Cada instalación se cuenta. El registro rastrea:
 
-- Total downloads (all time)
-- Downloads per version
-- Fork count
-- Star count
+- Descargas totales (todo el tiempo)
+- Descargas por versión
+- Conteo de forks
+- Conteo de estrellas
 
-These signals feed into search ranking and discovery.
+Estas señales alimentan el ranking de búsqueda y el descubrimiento.
 
 ---
 
-## Publishing
+## Publicar
 
-### Who Can Publish
+### Quién puede publicar
 
-Anyone with a GitHub account can publish to ClipHub. Authentication is via GitHub OAuth.
+Cualquiera con una cuenta de GitHub puede publicar en ClipHub. La autenticación es vía GitHub OAuth.
 
-### How to Publish
+### Cómo publicar
 
-From within Paperclip, export your company as a template, then publish:
+Desde Paperclip, exporta tu empresa como plantilla, luego publica:
 
 ```
 paperclip export --template my-company
 paperclip publish cliphub my-company
 ```
 
-Or use the web UI to upload a template export directly.
+O usa la UI web para subir una exportación de plantilla directamente.
 
-### What You Provide
+### Qué provees
 
-When publishing, you specify:
+Al publicar, especificas:
 
-| Field | Required | Description |
+| Campo | Requerido | Descripción |
 |---|---|---|
-| `slug` | yes | URL-safe identifier (e.g. `lean-dev-shop`) |
-| `name` | yes | Display name |
-| `description` | yes | What this company does and who it's for |
-| `category` | yes | Primary category (see below) |
-| `tags` | no | Additional tags for discovery |
-| `version` | yes | Semver (e.g. `1.0.0`) |
-| `changelog` | no | What changed in this version |
-| `readme` | no | Extended documentation (markdown) |
-| `license` | no | Usage terms |
+| `slug` | sí | Identificador seguro para URL (p. ej., `lean-dev-shop`) |
+| `name` | sí | Nombre visible |
+| `description` | sí | Qué hace esta empresa y para quién es |
+| `category` | sí | Categoría principal (ver abajo) |
+| `tags` | no | Tags adicionales para descubrimiento |
+| `version` | sí | Semver (p. ej., `1.0.0`) |
+| `changelog` | no | Qué cambió en esta versión |
+| `readme` | no | Documentación extendida (markdown) |
+| `license` | no | Términos de uso |
 
-### Versioning
+### Versionado
 
-Templates use semantic versioning. Each publish creates an immutable version. Users can install any version or default to `latest`. Version history and changelogs are visible on the detail page.
+Las plantillas usan versionado semántico. Cada publicación crea una versión inmutable. Los usuarios pueden instalar cualquier versión o usar `latest` por defecto. El historial de versiones y los changelogs son visibles en la página de detalle.
 
-### The `sync` Command
+### El comando `sync`
 
-For power users who maintain multiple templates:
+Para usuarios avanzados que mantienen múltiples plantillas:
 
 ```
 paperclip cliphub sync
 ```
 
-Scans your local exported templates and publishes any that are new or updated. Useful for maintaining a portfolio of company templates from a single repo.
+Escanea tus plantillas exportadas locales y publica las que sean nuevas o estén actualizadas. Útil para mantener un portafolio de plantillas de empresa desde un solo repo.
 
 ---
 
-## Categories
+## Categorías
 
-Company templates are organized by use case:
+Las plantillas de empresa se organizan por caso de uso:
 
-| Category | Examples |
+| Categoría | Ejemplos |
 |---|---|
-| **Software Development** | Full-stack dev shop, API development team, mobile app studio |
-| **Marketing & Growth** | Performance marketing agency, content marketing team, SEO shop |
-| **Content & Media** | Content studio, podcast production, newsletter operation |
-| **Research & Analysis** | Market research firm, competitive intelligence, data analysis team |
-| **Operations** | Customer support org, internal ops team, QA/testing shop |
-| **Sales** | Outbound sales team, lead generation, account management |
-| **Finance & Legal** | Bookkeeping service, compliance monitoring, financial analysis |
-| **Creative** | Design agency, copywriting studio, brand development |
-| **General Purpose** | Starter templates, minimal orgs, single-agent setups |
+| **Desarrollo de software** | Tienda de dev full-stack, equipo de desarrollo de APIs, estudio de apps móviles |
+| **Marketing y crecimiento** | Agencia de marketing de performance, equipo de marketing de contenido, tienda de SEO |
+| **Contenido y medios** | Estudio de contenido, producción de podcast, operación de newsletter |
+| **Investigación y análisis** | Firma de investigación de mercado, inteligencia competitiva, análisis de datos |
+| **Operaciones** | Org de soporte al cliente, equipo de ops interno, tienda de QA/testing |
+| **Ventas** | Equipo de ventas outbound, generación de leads, gestión de cuentas |
+| **Finanzas y legal** | Servicio de contabilidad, monitoreo de cumplimiento, análisis financiero |
+| **Creativo** | Agencia de diseño, estudio de copywriting, desarrollo de marca |
+| **Propósito general** | Plantillas iniciales, orgs mínimas, configuraciones de un solo agente |
 
-Categories are not exclusive — a template can have one primary category plus tags for cross-cutting concerns.
+Las categorías no son exclusivas — una plantilla puede tener una categoría principal más tags para preocupaciones transversales.
 
 ---
 
-## Moderation & Trust
+## Moderación y confianza
 
-### Verified Publishers
+### Publicadores verificados
 
-Publishers who meet certain thresholds (account age, published templates with good signals) earn a verified badge. Verified templates rank higher in search.
+Los publicadores que cumplen ciertos umbrales (antigüedad de cuenta, plantillas publicadas con buenas señales) ganan una insignia de verificado. Las plantillas verificadas rankean más alto en búsqueda.
 
-### Security Review
+### Revisión de seguridad
 
-Company templates contain adapter configurations, which may include executable commands (process adapter) or webhook URLs (HTTP adapter). The moderation system:
+Las plantillas de empresa contienen configuraciones de adaptador, que pueden incluir comandos ejecutables (adaptador de proceso) o URLs de webhook (adaptador HTTP). El sistema de moderación:
 
-1. **Automated scanning** — checks adapter configs for suspicious patterns (arbitrary code execution, exfiltration URLs, credential harvesting)
-2. **Community reporting** — any signed-in user can flag a template. Auto-hidden after multiple reports pending review.
-3. **Manual review** — moderators can approve, reject, or request changes
+1. **Escaneo automatizado** — revisa configuraciones de adaptador en busca de patrones sospechosos (ejecución arbitraria de código, URLs de exfiltración, cosecha de credenciales)
+2. **Reporte comunitario** — cualquier usuario con sesión iniciada puede marcar una plantilla. Auto-oculta después de múltiples reportes pendiente de revisión.
+3. **Revisión manual** — los moderadores pueden aprobar, rechazar o solicitar cambios
 
-### Account Gating
+### Puerta de cuenta
 
-New accounts have a waiting period before they can publish. This prevents drive-by spam.
+Las cuentas nuevas tienen un período de espera antes de poder publicar. Esto evita spam oportunista.
 
 ---
 
-## Architecture
+## Arquitectura
 
-ClipHub is a **separate service** from Paperclip itself. Paperclip is self-hosted; ClipHub is a hosted registry that Paperclip instances talk to.
+ClipHub es un **servicio separado** de Paperclip mismo. Paperclip es autoalojado; ClipHub es un registro alojado con el que hablan las instancias de Paperclip.
 
-### Integration Points
+### Puntos de integración
 
-| Layer | Role |
+| Capa | Rol |
 |---|---|
-| **ClipHub Web** | Browse, search, discover, comment, star — the website |
-| **ClipHub API** | Registry API for publishing, downloading, searching programmatically |
-| **Paperclip CLI** | `paperclipai install`, `paperclipai publish`, `paperclipai cliphub sync` — built into Paperclip |
-| **Paperclip UI** | "Browse ClipHub" panel in the Paperclip web UI for discovering templates without leaving the app |
+| **ClipHub Web** | Explorar, buscar, descubrir, comentar, dar estrellas — el sitio web |
+| **ClipHub API** | API de registro para publicar, descargar, buscar programáticamente |
+| **Paperclip CLI** | `paperclipai install`, `paperclipai publish`, `paperclipai cliphub sync` — integrados en Paperclip |
+| **Paperclip UI** | Panel "Explorar ClipHub" en la UI web de Paperclip para descubrir plantillas sin salir de la app |
 
-### Tech Stack
+### Stack tecnológico
 
-| Layer | Technology |
+| Capa | Tecnología |
 |---|---|
-| Frontend | React + Vite (consistent with Paperclip) |
-| Backend | TypeScript + Hono (consistent with Paperclip) |
-| Database | PostgreSQL |
-| Search | Vector embeddings for semantic search |
-| Auth | GitHub OAuth |
-| Storage | Template zips stored in object storage (S3 or equivalent) |
+| Frontend | React + Vite (consistente con Paperclip) |
+| Backend | TypeScript + Hono (consistente con Paperclip) |
+| Base de datos | PostgreSQL |
+| Búsqueda | Embeddings vectoriales para búsqueda semántica |
+| Autenticación | GitHub OAuth |
+| Almacenamiento | Zips de plantillas almacenados en almacenamiento de objetos (S3 o equivalente) |
 
-### Data Model (Sketch)
+### Modelo de datos (bosquejo)
 
 ```
 Publisher
@@ -253,84 +253,84 @@ Report
 
 ---
 
-## User Flows
+## Flujos de usuario
 
-### "I want to start a company"
+### "Quiero iniciar una empresa"
 
-1. Open ClipHub, browse by category or search "dev shop for building SaaS"
-2. Find a template that fits — "Lean SaaS Dev Shop (CEO + CTO + 3 Engineers)"
-3. Read the description, inspect the org chart, check the comments
-4. Run `paperclipai install cliphub:acme/lean-saas-shop`
-5. Paperclip creates the company locally with all agents pre-configured
-6. Set your API keys, adjust budgets, add your initial tasks
-7. Hit go
+1. Abre ClipHub, explora por categoría o busca "dev shop for building SaaS"
+2. Encuentra una plantilla que encaje — "Lean SaaS Dev Shop (CEO + CTO + 3 Engineers)"
+3. Lee la descripción, inspecciona el organigrama, revisa los comentarios
+4. Ejecuta `paperclipai install cliphub:acme/lean-saas-shop`
+5. Paperclip crea la empresa en local con todos los agentes preconfigurados
+6. Define tus API keys, ajusta presupuestos, agrega tus tareas iniciales
+7. Ponlo en marcha
 
-### "I built something great and want to share it"
+### "Construí algo genial y quiero compartirlo"
 
-1. Build and iterate on a company in Paperclip until it works well
-2. Export: `paperclipai export --template my-agency`
-3. Publish: `paperclipai publish cliphub my-agency`
-4. Fill in description, category, tags on the web UI
-5. Template is live — others can find and install it
+1. Construye e itera en una empresa en Paperclip hasta que funcione bien
+2. Exporta: `paperclipai export --template my-agency`
+3. Publica: `paperclipai publish cliphub my-agency`
+4. Completa descripción, categoría, tags en la UI web
+5. La plantilla está en vivo — otros pueden encontrarla e instalarla
 
-### "I want to improve someone else's company"
+### "Quiero mejorar la empresa de alguien más"
 
-1. Find a template on ClipHub that's close to what you need
-2. Fork it to your account
-3. Install your fork locally, modify the org (add agents, change configs, restructure teams)
-4. Export and re-publish as your own variant
-5. Fork lineage visible on both the original and your version
+1. Encuentra una plantilla en ClipHub cercana a lo que necesitas
+2. Haz fork a tu cuenta
+3. Instala tu fork en local, modifica la org (agrega agentes, cambia configuraciones, reestructura equipos)
+4. Exporta y republica como tu propia variante
+5. Linaje de fork visible tanto en la original como en tu versión
 
-### "I just need one great agent, not a whole company"
+### "Solo necesito un gran agente, no una empresa entera"
 
-1. Search ClipHub for agent templates: "senior python engineer"
-2. Find a well-starred agent config
-3. Install just that agent: `paperclipai install cliphub:acme/senior-python-eng --agent`
-4. Assign it to a manager in your existing company
-5. Done
-
----
-
-## Relationship to Paperclip
-
-ClipHub is **not required** to use Paperclip. You can build companies entirely from scratch without ever touching ClipHub. But ClipHub dramatically lowers the barrier to entry:
-
-- **New users** get a working company in minutes instead of hours
-- **Experienced users** share proven configurations with the community
-- **The ecosystem** compounds — every good template makes the next company easier to build
-
-ClipHub is to Paperclip what a package registry is to a language runtime: optional, but transformative.
+1. Busca plantillas de agente en ClipHub: "senior python engineer"
+2. Encuentra una configuración de agente bien estrellada
+3. Instala solo ese agente: `paperclipai install cliphub:acme/senior-python-eng --agent`
+4. Asígnalo a un manager en tu empresa existente
+5. Listo
 
 ---
 
-## V1 Scope
+## Relación con Paperclip
 
-### Must Have
+ClipHub **no es requerido** para usar Paperclip. Puedes construir empresas enteramente desde cero sin tocar nunca ClipHub. Pero ClipHub baja dramáticamente la barrera de entrada:
 
-- [ ] Template publishing (upload via CLI or web)
-- [ ] Template browsing (list, filter by category)
-- [ ] Template detail page (description, org chart, agent list, install command)
-- [ ] Semantic search (vector embeddings)
-- [ ] `paperclipai install cliphub:<publisher>/<slug>` CLI command
-- [ ] GitHub OAuth authentication
-- [ ] Stars
-- [ ] Download counts
-- [ ] Versioning (semver, version history)
-- [ ] Basic moderation (community reporting, auto-hide)
+- **Usuarios nuevos** obtienen una empresa funcional en minutos en lugar de horas
+- **Usuarios experimentados** comparten configuraciones probadas con la comunidad
+- **El ecosistema** se compone — cada buena plantilla hace la siguiente empresa más fácil de construir
+
+ClipHub es para Paperclip lo que un registro de paquetes es para un runtime de lenguaje: opcional, pero transformador.
+
+---
+
+## Alcance V1
+
+### Debe tener
+
+- [ ] Publicación de plantillas (subida vía CLI o web)
+- [ ] Exploración de plantillas (lista, filtro por categoría)
+- [ ] Página de detalle de plantilla (descripción, organigrama, lista de agentes, comando de instalación)
+- [ ] Búsqueda semántica (embeddings vectoriales)
+- [ ] Comando CLI `paperclipai install cliphub:<publisher>/<slug>`
+- [ ] Autenticación GitHub OAuth
+- [ ] Estrellas
+- [ ] Conteos de descarga
+- [ ] Versionado (semver, historial de versiones)
+- [ ] Moderación básica (reporte comunitario, auto-ocultado)
 
 ### V2
 
-- [ ] Comments / threaded discussion
-- [ ] Forking with lineage tracking
-- [ ] Agent and team sub-packages
-- [ ] Verified publisher badges
-- [ ] Automated security scanning of adapter configs
-- [ ] "Browse ClipHub" panel in Paperclip web UI
-- [ ] `paperclipai cliphub sync` for bulk publishing
-- [ ] Publisher profiles and portfolios
+- [ ] Comentarios / discusión hilada
+- [ ] Forking con seguimiento de linaje
+- [ ] Subpaquetes de agente y equipo
+- [ ] Insignias de publicador verificado
+- [ ] Escaneo automatizado de seguridad de configuraciones de adaptador
+- [ ] Panel "Explorar ClipHub" en la UI web de Paperclip
+- [ ] `paperclipai cliphub sync` para publicación masiva
+- [ ] Perfiles y portafolios de publicador
 
-### Not in Scope
+### Fuera de alcance
 
-- Paid / premium templates (everything is free and public, at least initially)
-- Private registries (may be a future enterprise feature)
-- Running companies on ClipHub (it's a registry, not a runtime — consistent with Paperclip's own philosophy)
+- Plantillas pagadas / premium (todo es gratis y público, al menos inicialmente)
+- Registros privados (puede ser una futura función empresarial)
+- Ejecutar empresas en ClipHub (es un registro, no un runtime — consistente con la propia filosofía de Paperclip)

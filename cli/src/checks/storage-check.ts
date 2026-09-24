@@ -13,17 +13,17 @@ export function storageCheck(config: PaperclipConfig, configPath?: string): Chec
     try {
       fs.accessSync(baseDir, fs.constants.W_OK);
       return {
-        name: "Storage",
+        name: "Almacenamiento",
         status: "pass",
-        message: `Local disk storage is writable: ${baseDir}`,
+        message: `El almacenamiento en disco local tiene permiso de escritura: ${baseDir}`,
       };
     } catch {
       return {
-        name: "Storage",
+        name: "Almacenamiento",
         status: "fail",
-        message: `Local storage directory is not writable: ${baseDir}`,
+        message: `El directorio de almacenamiento local no tiene permiso de escritura: ${baseDir}`,
         canRepair: false,
-        repairHint: "Check file permissions for storage.localDisk.baseDir",
+        repairHint: "Revisa los permisos de archivo de storage.localDisk.baseDir",
       };
     }
   }
@@ -32,20 +32,19 @@ export function storageCheck(config: PaperclipConfig, configPath?: string): Chec
   const region = config.storage.s3.region.trim();
   if (!bucket || !region) {
     return {
-      name: "Storage",
+      name: "Almacenamiento",
       status: "fail",
-      message: "S3 storage requires non-empty bucket and region",
+      message: "El almacenamiento S3 requiere bucket y región no vacíos",
       canRepair: false,
-      repairHint: "Run `paperclipai configure --section storage`",
+      repairHint: "Ejecuta `paperclipai configure --section storage`",
     };
   }
 
   return {
-    name: "Storage",
+    name: "Almacenamiento",
     status: "warn",
-    message: `S3 storage configured (bucket=${bucket}, region=${region}). Reachability check is skipped in doctor.`,
+    message: `Almacenamiento S3 configurado (bucket=${bucket}, region=${region}). La comprobación de accesibilidad se omite en doctor.`,
     canRepair: false,
-    repairHint: "Verify credentials and endpoint in deployment environment",
+    repairHint: "Verifica las credenciales y el endpoint en el entorno de despliegue",
   };
 }
-

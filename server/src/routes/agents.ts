@@ -398,7 +398,7 @@ export function agentRoutes(db: Db) {
       next.model = DEFAULT_GEMINI_LOCAL_MODEL;
       return ensureGatewayDeviceKey(adapterType, next);
     }
-    // OpenCode requires explicit model selection — no default
+    // OpenCode requiere selección explícita de modelo — sin valor predeterminado
     if (adapterType === "cursor" && !asNonEmptyString(next.model)) {
       next.model = DEFAULT_CURSOR_LOCAL_MODEL;
     }
@@ -681,7 +681,7 @@ export function agentRoutes(db: Db) {
 
       const adapter = findServerAdapter(type);
       if (!adapter) {
-        res.status(404).json({ error: `Unknown adapter type: ${type}` });
+        res.status(404).json({ error: `Tipo de adaptador desconocido: ${type}` });
         return;
       }
 
@@ -711,7 +711,7 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const agent = await svc.getById(id);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     await assertCanReadConfigurations(req, agent.companyId);
@@ -754,7 +754,7 @@ export function agentRoutes(db: Db) {
       const id = req.params.id as string;
       const agent = await svc.getById(id);
       if (!agent) {
-        res.status(404).json({ error: "Agent not found" });
+        res.status(404).json({ error: "Agente no encontrado" });
         return;
       }
       await assertCanUpdateAgent(req, agent);
@@ -790,7 +790,7 @@ export function agentRoutes(db: Db) {
         },
       });
       if (!updated) {
-        res.status(404).json({ error: "Agent not found" });
+        res.status(404).json({ error: "Agente no encontrado" });
         return;
       }
 
@@ -958,12 +958,12 @@ export function agentRoutes(db: Db) {
 
   router.get("/agents/me", async (req, res) => {
     if (req.actor.type !== "agent" || !req.actor.agentId) {
-      res.status(401).json({ error: "Agent authentication required" });
+      res.status(401).json({ error: "Se requiere autenticación de agente" });
       return;
     }
     const agent = await svc.getById(req.actor.agentId);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     res.json(await buildAgentDetail(agent));
@@ -971,7 +971,7 @@ export function agentRoutes(db: Db) {
 
   router.get("/agents/me/inbox-lite", async (req, res) => {
     if (req.actor.type !== "agent" || !req.actor.agentId || !req.actor.companyId) {
-      res.status(401).json({ error: "Agent authentication required" });
+      res.status(401).json({ error: "Se requiere autenticación de agente" });
       return;
     }
 
@@ -1001,7 +1001,7 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const agent = await svc.getById(id);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     assertCompanyAccess(req, agent.companyId);
@@ -1019,7 +1019,7 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const agent = await svc.getById(id);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     await assertCanReadConfigurations(req, agent.companyId);
@@ -1030,7 +1030,7 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const agent = await svc.getById(id);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     await assertCanReadConfigurations(req, agent.companyId);
@@ -1043,13 +1043,13 @@ export function agentRoutes(db: Db) {
     const revisionId = req.params.revisionId as string;
     const agent = await svc.getById(id);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     await assertCanReadConfigurations(req, agent.companyId);
     const revision = await svc.getConfigRevision(id, revisionId);
     if (!revision) {
-      res.status(404).json({ error: "Revision not found" });
+      res.status(404).json({ error: "Revisión no encontrada" });
       return;
     }
     res.json(redactConfigRevision(revision));
@@ -1060,7 +1060,7 @@ export function agentRoutes(db: Db) {
     const revisionId = req.params.revisionId as string;
     const existing = await svc.getById(id);
     if (!existing) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     await assertCanUpdateAgent(req, existing);
@@ -1071,7 +1071,7 @@ export function agentRoutes(db: Db) {
       userId: actor.actorType === "user" ? actor.actorId : null,
     });
     if (!updated) {
-      res.status(404).json({ error: "Revision not found" });
+      res.status(404).json({ error: "Revisión no encontrada" });
       return;
     }
 
@@ -1095,7 +1095,7 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const agent = await svc.getById(id);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     assertCompanyAccess(req, agent.companyId);
@@ -1109,7 +1109,7 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const agent = await svc.getById(id);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     assertCompanyAccess(req, agent.companyId);
@@ -1128,7 +1128,7 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const agent = await svc.getById(id);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     assertCompanyAccess(req, agent.companyId);
@@ -1193,7 +1193,7 @@ export function agentRoutes(db: Db) {
       .where(eq(companies.id, companyId))
       .then((rows) => rows[0] ?? null);
     if (!company) {
-      res.status(404).json({ error: "Company not found" });
+      res.status(404).json({ error: "Empresa no encontrada" });
       return;
     }
 
@@ -1395,7 +1395,7 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const existing = await svc.getById(id);
     if (!existing) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     assertCompanyAccess(req, existing.companyId);
@@ -1403,18 +1403,18 @@ export function agentRoutes(db: Db) {
     if (req.actor.type === "agent") {
       const actorAgent = req.actor.agentId ? await svc.getById(req.actor.agentId) : null;
       if (!actorAgent || actorAgent.companyId !== existing.companyId) {
-        res.status(403).json({ error: "Forbidden" });
+        res.status(403).json({ error: "Prohibido" });
         return;
       }
       if (actorAgent.role !== "ceo") {
-        res.status(403).json({ error: "Only CEO can manage permissions" });
+        res.status(403).json({ error: "Solo el CEO puede gestionar permisos" });
         return;
       }
     }
 
     const agent = await svc.updatePermissions(id, req.body);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
 
@@ -1453,7 +1453,7 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const existing = await svc.getById(id);
     if (!existing) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
 
@@ -1465,7 +1465,7 @@ export function agentRoutes(db: Db) {
     const adapterConfigKey = explicitKey ?? defaultKey;
     if (!adapterConfigKey) {
       res.status(422).json({
-        error: `No default instructions path key for adapter type '${existing.adapterType}'. Provide adapterConfigKey.`,
+        error: `No hay clave de ruta de instrucciones predeterminada para el tipo de adaptador '${existing.adapterType}'. Proporciona adapterConfigKey.`,
       });
       return;
     }
@@ -1496,7 +1496,7 @@ export function agentRoutes(db: Db) {
       },
     );
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
 
@@ -1531,7 +1531,7 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const existing = await svc.getById(id);
     if (!existing) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     await assertCanReadAgent(req, existing);
@@ -1542,7 +1542,7 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const existing = await svc.getById(id);
     if (!existing) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     await assertCanManageInstructionsPath(req, existing);
@@ -1590,14 +1590,14 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const existing = await svc.getById(id);
     if (!existing) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     await assertCanReadAgent(req, existing);
 
     const relativePath = typeof req.query.path === "string" ? req.query.path : "";
     if (!relativePath.trim()) {
-      res.status(422).json({ error: "Query parameter 'path' is required" });
+      res.status(422).json({ error: "Se requiere el parámetro de consulta 'path'" });
       return;
     }
 
@@ -1608,7 +1608,7 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const existing = await svc.getById(id);
     if (!existing) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     await assertCanManageInstructionsPath(req, existing);
@@ -1657,14 +1657,14 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const existing = await svc.getById(id);
     if (!existing) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     await assertCanManageInstructionsPath(req, existing);
 
     const relativePath = typeof req.query.path === "string" ? req.query.path : "";
     if (!relativePath.trim()) {
-      res.status(422).json({ error: "Query parameter 'path' is required" });
+      res.status(422).json({ error: "Se requiere el parámetro de consulta 'path'" });
       return;
     }
 
@@ -1691,13 +1691,13 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const existing = await svc.getById(id);
     if (!existing) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     await assertCanUpdateAgent(req, existing);
 
     if (Object.prototype.hasOwnProperty.call(req.body, "permissions")) {
-      res.status(422).json({ error: "Use /api/agents/:id/permissions for permission changes" });
+      res.status(422).json({ error: "Usa /api/agents/:id/permissions para los cambios de permisos" });
       return;
     }
 
@@ -1707,7 +1707,7 @@ export function agentRoutes(db: Db) {
     if (Object.prototype.hasOwnProperty.call(patchData, "adapterConfig")) {
       const adapterConfig = asRecord(patchData.adapterConfig);
       if (!adapterConfig) {
-        res.status(422).json({ error: "adapterConfig must be an object" });
+        res.status(422).json({ error: "adapterConfig debe ser un objeto" });
         return;
       }
       const changingInstructionsPath = Object.keys(adapterConfig).some((key) =>
@@ -1779,7 +1779,7 @@ export function agentRoutes(db: Db) {
       },
     });
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
 
@@ -1803,7 +1803,7 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const agent = await svc.pause(id);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
 
@@ -1826,7 +1826,7 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const agent = await svc.resume(id);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
 
@@ -1847,7 +1847,7 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const agent = await svc.terminate(id);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
 
@@ -1870,7 +1870,7 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const agent = await svc.remove(id);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
 
@@ -1919,7 +1919,7 @@ export function agentRoutes(db: Db) {
     const keyId = req.params.keyId as string;
     const revoked = await svc.revokeKey(keyId);
     if (!revoked) {
-      res.status(404).json({ error: "Key not found" });
+      res.status(404).json({ error: "Clave no encontrada" });
       return;
     }
     res.json({ ok: true });
@@ -1929,13 +1929,13 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const agent = await svc.getById(id);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     assertCompanyAccess(req, agent.companyId);
 
     if (req.actor.type === "agent" && req.actor.agentId !== id) {
-      res.status(403).json({ error: "Agent can only invoke itself" });
+      res.status(403).json({ error: "El agente solo puede invocarse a sí mismo" });
       return;
     }
 
@@ -1979,13 +1979,13 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const agent = await svc.getById(id);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     assertCompanyAccess(req, agent.companyId);
 
     if (req.actor.type === "agent" && req.actor.agentId !== id) {
-      res.status(403).json({ error: "Agent can only invoke itself" });
+      res.status(403).json({ error: "El agente solo puede invocarse a sí mismo" });
       return;
     }
 
@@ -2029,12 +2029,12 @@ export function agentRoutes(db: Db) {
     const id = req.params.id as string;
     const agent = await svc.getById(id);
     if (!agent) {
-      res.status(404).json({ error: "Agent not found" });
+      res.status(404).json({ error: "Agente no encontrado" });
       return;
     }
     assertCompanyAccess(req, agent.companyId);
     if (agent.adapterType !== "claude_local") {
-      res.status(400).json({ error: "Login is only supported for claude_local agents" });
+      res.status(400).json({ error: "El inicio de sesión solo es compatible con agentes claude_local" });
       return;
     }
 
@@ -2125,7 +2125,7 @@ export function agentRoutes(db: Db) {
     const runId = req.params.runId as string;
     const run = await heartbeat.getRun(runId);
     if (!run) {
-      res.status(404).json({ error: "Heartbeat run not found" });
+      res.status(404).json({ error: "Ejecución de latido no encontrada" });
       return;
     }
     assertCompanyAccess(req, run.companyId);
@@ -2156,7 +2156,7 @@ export function agentRoutes(db: Db) {
     const runId = req.params.runId as string;
     const run = await heartbeat.getRun(runId);
     if (!run) {
-      res.status(404).json({ error: "Heartbeat run not found" });
+      res.status(404).json({ error: "Ejecución de latido no encontrada" });
       return;
     }
     assertCompanyAccess(req, run.companyId);
@@ -2178,7 +2178,7 @@ export function agentRoutes(db: Db) {
     const runId = req.params.runId as string;
     const run = await heartbeat.getRun(runId);
     if (!run) {
-      res.status(404).json({ error: "Heartbeat run not found" });
+      res.status(404).json({ error: "Ejecución de latido no encontrada" });
       return;
     }
     assertCompanyAccess(req, run.companyId);
@@ -2197,7 +2197,7 @@ export function agentRoutes(db: Db) {
     const runId = req.params.runId as string;
     const run = await heartbeat.getRun(runId);
     if (!run) {
-      res.status(404).json({ error: "Heartbeat run not found" });
+      res.status(404).json({ error: "Ejecución de latido no encontrada" });
       return;
     }
     assertCompanyAccess(req, run.companyId);
@@ -2233,7 +2233,7 @@ export function agentRoutes(db: Db) {
     const isIdentifier = /^[A-Z]+-\d+$/i.test(rawId);
     const issue = isIdentifier ? await issueSvc.getByIdentifier(rawId) : await issueSvc.getById(rawId);
     if (!issue) {
-      res.status(404).json({ error: "Issue not found" });
+      res.status(404).json({ error: "Issue no encontrado" });
       return;
     }
     assertCompanyAccess(req, issue.companyId);
@@ -2271,7 +2271,7 @@ export function agentRoutes(db: Db) {
     const isIdentifier = /^[A-Z]+-\d+$/i.test(rawId);
     const issue = isIdentifier ? await issueSvc.getByIdentifier(rawId) : await issueSvc.getById(rawId);
     if (!issue) {
-      res.status(404).json({ error: "Issue not found" });
+      res.status(404).json({ error: "Issue no encontrado" });
       return;
     }
     assertCompanyAccess(req, issue.companyId);

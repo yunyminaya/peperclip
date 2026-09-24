@@ -1,10 +1,11 @@
 /**
- * `definePlugin` — the top-level helper for authoring a Paperclip plugin.
+ * `definePlugin`: el helper de nivel superior para crear un plugin de Paperclip.
  *
- * Plugin authors call `definePlugin()` and export the result as the default
- * export from their worker entrypoint. The host imports the worker module,
- * calls `setup()` with a `PluginContext`, and from that point the plugin
- * responds to events, jobs, webhooks, and UI requests through the context.
+ * Los autores de plugins llaman a `definePlugin()` y exportan el resultado como
+ * el export por defecto desde su punto de entrada del worker. El host importa el
+ * módulo del worker, llama a `setup()` con un `PluginContext`, y desde ese punto
+ * el plugin responde a eventos, tareas, webhooks y solicitudes de interfaz a
+ * través del contexto.
  *
  * @see PLUGIN_SPEC.md §14.1 — Example SDK Shape
  *
@@ -15,9 +16,9 @@
  *
  * export default definePlugin({
  *   async setup(ctx) {
- *     ctx.logger.info("Linear sync plugin starting");
+ *     ctx.logger.info("Plugin de sincronización Linear iniciándose");
  *
- *     // Subscribe to events
+ *     // Suscribirse a eventos
  *     ctx.events.on("issue.created", async (event) => {
  *       const config = await ctx.config.get();
  *       await ctx.http.fetch(`https://api.linear.app/...`, {
@@ -27,13 +28,13 @@
  *       });
  *     });
  *
- *     // Register a job handler
+ *     // Registrar un manejador de tarea
  *     ctx.jobs.register("full-sync", async (job) => {
- *       ctx.logger.info("Running full-sync job", { runId: job.runId });
- *       // ... sync logic
+ *       ctx.logger.info("Ejecutando tarea full-sync", { runId: job.runId });
+ *       // ... lógica de sincronización
  *     });
  *
- *     // Register data for the UI
+ *     // Registrar datos para la interfaz
  *     ctx.data.register("sync-health", async ({ companyId }) => {
  *       const state = await ctx.state.get({
  *         scopeKind: "company",
@@ -50,185 +51,188 @@
 import type { PluginContext } from "./types.js";
 
 // ---------------------------------------------------------------------------
-// Health check result
+// Resultado de la verificación de salud
 // ---------------------------------------------------------------------------
 
 /**
- * Optional plugin-reported diagnostics returned from the `health()` RPC method.
+ * Diagnósticos opcionales reportados por el plugin devueltos desde el método RPC `health()`.
  *
  * @see PLUGIN_SPEC.md §13.2 — `health`
  */
 export interface PluginHealthDiagnostics {
-  /** Machine-readable status: `"ok"` | `"degraded"` | `"error"`. */
+  /** Estado legible por máquina: `"ok"` | `"degraded"` | `"error"`. */
   status: "ok" | "degraded" | "error";
-  /** Human-readable description of the current health state. */
+  /** Descripción legible del estado de salud actual. */
   message?: string;
-  /** Plugin-reported key-value diagnostics (e.g. connection status, queue depth). */
+  /** Diagnósticos clave-valor reportados por el plugin (p. ej. estado de conexión, profundidad de cola). */
   details?: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
-// Config validation result
+// Resultado de validación de configuración
 // ---------------------------------------------------------------------------
 
 /**
- * Result returned from the `validateConfig()` RPC method.
+ * Resultado devuelto desde el método RPC `validateConfig()`.
  *
  * @see PLUGIN_SPEC.md §13.3 — `validateConfig`
  */
 export interface PluginConfigValidationResult {
-  /** Whether the config is valid. */
+  /** Indica si la configuración es válida. */
   ok: boolean;
-  /** Non-fatal warnings about the config. */
+  /** Advertencias no fatales sobre la configuración. */
   warnings?: string[];
-  /** Validation errors (populated when `ok` is `false`). */
+  /** Errores de validación (poblados cuando `ok` es `false`). */
   errors?: string[];
 }
 
 // ---------------------------------------------------------------------------
-// Webhook handler input
+// Entrada del manejador de webhook
 // ---------------------------------------------------------------------------
 
 /**
- * Input received by the plugin worker's `handleWebhook` handler.
+ * Entrada recibida por el manejador `handleWebhook` del worker del plugin.
  *
  * @see PLUGIN_SPEC.md §13.7 — `handleWebhook`
  */
 export interface PluginWebhookInput {
-  /** Endpoint key matching the manifest declaration. */
+  /** Clave de endpoint que coincide con la declaración del manifiesto. */
   endpointKey: string;
-  /** Inbound request headers. */
+  /** Encabezados de la solicitud entrante. */
   headers: Record<string, string | string[]>;
-  /** Raw request body as a UTF-8 string. */
+  /** Cuerpo sin procesar de la solicitud como cadena UTF-8. */
   rawBody: string;
-  /** Parsed JSON body (if applicable and parseable). */
+  /** Cuerpo JSON analizado (si aplica y es analizable). */
   parsedBody?: unknown;
-  /** Unique request identifier for idempotency checks. */
+  /** Identificador único de solicitud para verificaciones de idempotencia. */
   requestId: string;
 }
 
 // ---------------------------------------------------------------------------
-// Plugin definition
+// Definición del plugin
 // ---------------------------------------------------------------------------
 
 /**
- * The plugin definition shape passed to `definePlugin()`.
+ * La forma de definición del plugin pasada a `definePlugin()`.
  *
- * The only required field is `setup`, which receives the `PluginContext` and
- * is where the plugin registers its handlers (events, jobs, data, actions,
- * tools, etc.).
+ * El único campo requerido es `setup`, que recibe el `PluginContext` y es
+ * donde el plugin registra sus manejadores (eventos, tareas, datos, acciones,
+ * herramientas, etc.).
  *
- * All other lifecycle hooks are optional. If a hook is not implemented the
- * host applies default behaviour (e.g. restarting the worker on config change
- * instead of calling `onConfigChanged`).
+ * Todos los demás hooks de ciclo de vida son opcionales. Si un hook no está
+ * implementado, el host aplica el comportamiento por defecto (p. ej. reiniciar
+ * el worker al cambiar la configuración en lugar de llamar a `onConfigChanged`).
  *
- * @see PLUGIN_SPEC.md §13 — Host-Worker Protocol
+ * @see PLUGIN_SPEC.md §13 — Protocolo host-worker
  */
 export interface PluginDefinition {
   /**
-   * Called once when the plugin worker starts up, after `initialize` completes.
+   * Llamado una vez cuando el worker del plugin se inicia, después de que `initialize` completa.
    *
-   * This is where the plugin registers all its handlers: event subscriptions,
-   * job handlers, data/action handlers, and tool registrations. Registration
-   * must be synchronous after `setup` resolves — do not register handlers
-   * inside async callbacks that may resolve after `setup` returns.
+   * Aquí es donde el plugin registra todos sus manejadores: suscripciones de
+   * eventos, manejadores de tareas, manejadores de datos/acciones y registros
+   * de herramientas. El registro debe ser síncrono después de que `setup` se
+   * resuelva; no registrar manejadores dentro de callbacks asíncronos que
+   * puedan resolverse después de que `setup` retorne.
    *
-   * @param ctx - The full plugin context provided by the host
+   * @param ctx - El contexto completo del plugin proporcionado por el host
    */
   setup(ctx: PluginContext): Promise<void>;
 
   /**
-   * Called when the host wants to know if the plugin is healthy.
+   * Llamado cuando el host quiere saber si el plugin está saludable.
    *
-   * The host polls this on a regular interval and surfaces the result in the
-   * plugin health dashboard. If not implemented, the host infers health from
-   * worker process liveness.
+   * El host lo sondea a intervalos regulares y muestra el resultado en el
+   * panel de salud del plugin. Si no está implementado, el host infiere la
+   * salud a partir de la vida del proceso del worker.
    *
    * @see PLUGIN_SPEC.md §13.2 — `health`
    */
   onHealth?(): Promise<PluginHealthDiagnostics>;
 
   /**
-   * Called when the operator updates the plugin's instance configuration at
-   * runtime, without restarting the worker.
+   * Llamado cuando el operador actualiza la configuración de instancia del
+   * plugin en tiempo de ejecución, sin reiniciar el worker.
    *
-   * If not implemented, the host restarts the worker to apply the new config.
+   * Si no está implementado, el host reinicia el worker para aplicar la nueva
+   * configuración.
    *
-   * @param newConfig - The newly resolved configuration
+   * @param newConfig - La configuración recién resuelta
    * @see PLUGIN_SPEC.md §13.4 — `configChanged`
    */
   onConfigChanged?(newConfig: Record<string, unknown>): Promise<void>;
 
   /**
-   * Called when the host is about to shut down the plugin worker.
+   * Llamado cuando el host está por apagar el worker del plugin.
    *
-   * The worker has at most 10 seconds (configurable via plugin config) to
-   * finish in-flight work and resolve this promise. After the deadline the
-   * host sends SIGTERM, then SIGKILL.
+   * El worker tiene como máximo 10 segundos (configurable vía la configuración
+   * del plugin) para terminar el trabajo en curso y resolver esta promesa.
+   * Después del plazo, el host envía SIGTERM y luego SIGKILL.
    *
    * @see PLUGIN_SPEC.md §12.5 — Graceful Shutdown Policy
    */
   onShutdown?(): Promise<void>;
 
   /**
-   * Called to validate the current plugin configuration.
+   * Llamado para validar la configuración actual del plugin.
    *
-   * The host calls this:
-   * - after the plugin starts (to surface config errors immediately)
-   * - after the operator saves a new config (to validate before persisting)
-   * - via the "Test Connection" button in the settings UI
+   * El host lo llama:
+   * - después de que el plugin inicia (para mostrar errores de configuración de inmediato)
+   * - después de que el operador guarda una nueva configuración (para validar antes de persistir)
+   * - vía el botón "Test Connection" en la interfaz de ajustes
    *
-   * @param config - The configuration to validate
+   * @param config - La configuración a validar
    * @see PLUGIN_SPEC.md §13.3 — `validateConfig`
    */
   onValidateConfig?(config: Record<string, unknown>): Promise<PluginConfigValidationResult>;
 
   /**
-   * Called to handle an inbound webhook delivery.
+   * Llamado para manejar una entrega de webhook entrante.
    *
-   * The host routes `POST /api/plugins/:pluginId/webhooks/:endpointKey` to
-   * this handler. The plugin is responsible for signature verification using
-   * a resolved secret ref.
+   * El host enruta `POST /api/plugins/:pluginId/webhooks/:endpointKey` a
+   * este manejador. El plugin es responsable de la verificación de firma usando
+   * una referencia a secreto resuelta.
    *
-   * If not implemented but webhooks are declared in the manifest, the host
-   * returns HTTP 501 for webhook deliveries.
+   * Si no está implementado pero se declaran webhooks en el manifiesto, el host
+   * devuelve HTTP 501 para las entregas de webhook.
    *
-   * @param input - Webhook delivery metadata and payload
+   * @param input - Metadatos y carga útil de la entrega del webhook
    * @see PLUGIN_SPEC.md §13.7 — `handleWebhook`
    */
   onWebhook?(input: PluginWebhookInput): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
-// PaperclipPlugin — the sealed object returned by definePlugin()
+// PaperclipPlugin: el objeto sellado devuelto por definePlugin()
 // ---------------------------------------------------------------------------
 
 /**
- * The sealed plugin object returned by `definePlugin()`.
+ * El objeto de plugin sellado devuelto por `definePlugin()`.
  *
- * Plugin authors export this as the default export from their worker
- * entrypoint. The host imports it and calls the lifecycle methods.
+ * Los autores de plugins exportan esto como el export por defecto desde su
+ * punto de entrada del worker. El host lo importa y llama a los métodos
+ * de ciclo de vida.
  *
- * @see PLUGIN_SPEC.md §14 — SDK Surface
+ * @see PLUGIN_SPEC.md §14 — Superficie SDK
  */
 export interface PaperclipPlugin {
-  /** The original plugin definition passed to `definePlugin()`. */
+  /** La definición original del plugin pasada a `definePlugin()`. */
   readonly definition: PluginDefinition;
 }
 
 // ---------------------------------------------------------------------------
-// definePlugin — top-level factory
+// definePlugin: fábrica de nivel superior
 // ---------------------------------------------------------------------------
 
 /**
- * Define a Paperclip plugin.
+ * Define un plugin de Paperclip.
  *
- * Call this function in your worker entrypoint and export the result as the
- * default export. The host will import the module and call lifecycle methods
- * on the returned object.
+ * Llama a esta función en tu punto de entrada del worker y exporta el resultado
+ * como el export por defecto. El host importará el módulo y llamará a los
+ * métodos de ciclo de vida en el objeto devuelto.
  *
- * @param definition - Plugin lifecycle handlers
- * @returns A sealed `PaperclipPlugin` object for the host to consume
+ * @param definition - Manejadores de ciclo de vida del plugin
+ * @returns Un objeto `PaperclipPlugin` sellado para que el host lo consuma
  *
  * @example
  * ```ts
@@ -236,9 +240,9 @@ export interface PaperclipPlugin {
  *
  * export default definePlugin({
  *   async setup(ctx) {
- *     ctx.logger.info("Plugin started");
+ *     ctx.logger.info("Plugin iniciado");
  *     ctx.events.on("issue.created", async (event) => {
- *       // handle event
+ *       // manejar evento
  *     });
  *   },
  *

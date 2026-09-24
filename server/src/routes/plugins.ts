@@ -1,20 +1,20 @@
 /**
- * @fileoverview Plugin management REST API routes
+ * @fileoverview Rutas REST de API para gestión de plugins
  *
- * This module provides Express routes for managing the complete plugin lifecycle:
- * - Listing and filtering plugins by status
- * - Installing plugins from npm or local paths
- * - Uninstalling plugins (soft delete or hard purge)
- * - Enabling/disabling plugins
- * - Running health diagnostics
- * - Upgrading plugins
- * - Retrieving UI slot contributions for frontend rendering
- * - Discovering and executing plugin-contributed agent tools
+ * Este módulo provee rutas de Express para gestionar el ciclo de vida completo de los plugins:
+ * - Listar y filtrar plugins por estado
+ * - Instalar plugins desde npm o rutas locales
+ * - Desinstalar plugins (eliminación suave o purga total)
+ * - Habilitar/deshabilitar plugins
+ * - Ejecutar diagnósticos de salud
+ * - Actualizar plugins
+ * - Obtener contribuciones de slots de UI para renderizado del frontend
+ * - Descubrir y ejecutar herramientas de agente aportadas por plugins
  *
- * All routes require board-level authentication (assertBoard middleware).
+ * Todas las rutas requieren autenticación a nivel de board (middleware assertBoard).
  *
  * @module server/routes/plugins
- * @see doc/plugins/PLUGIN_SPEC.md for the full plugin specification
+ * @see doc/plugins/PLUGIN_SPEC.md para la especificación completa de plugins
  */
 
 import { existsSync } from "node:fs";
@@ -50,14 +50,14 @@ import { JsonRpcCallError, PLUGIN_RPC_ERROR_CODES } from "@paperclipai/plugin-sd
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { validateInstanceConfig } from "../services/plugin-config-validator.js";
 
-/** UI slot declaration extracted from plugin manifest */
+/** Declaración de slot de UI extraída del manifiesto del plugin */
 type PluginUiSlotDeclaration = NonNullable<NonNullable<PaperclipPluginManifestV1["ui"]>["slots"]>[number];
-/** Launcher declaration extracted from plugin manifest */
+/** Declaración de launcher extraída del manifiesto del plugin */
 type PluginLauncherDeclaration = NonNullable<PaperclipPluginManifestV1["launchers"]>[number];
 
 /**
- * Normalized UI contribution for frontend slot host consumption.
- * Only includes plugins in 'ready' state with non-empty slot declarations.
+ * Contribución de UI normalizada para consumo del host de slots del frontend.
+ * Solo incluye plugins en estado 'ready' con declaraciones de slots no vacías.
  */
 type PluginUiContribution = {
   pluginId: string;
@@ -66,8 +66,8 @@ type PluginUiContribution = {
   version: string;
   updatedAt: string;
   /**
-   * Relative path within the plugin's UI directory to the entry module
-   * (e.g. `"index.js"`). The frontend constructs the full import URL as
+   * Ruta relativa dentro del directorio de UI del plugin al módulo de entrada
+   * (p. ej. `"index.js"`). El frontend construye la URL completa de importación como
    * `/_plugins/${pluginId}/ui/${uiEntryFile}`.
    */
   uiEntryFile: string;
@@ -75,13 +75,13 @@ type PluginUiContribution = {
   launchers: PluginLauncherDeclaration[];
 };
 
-/** Request body for POST /api/plugins/install */
+/** Cuerpo de solicitud para POST /api/plugins/install */
 interface PluginInstallRequest {
-  /** npm package name (e.g., @paperclip/plugin-linear) or local path */
+  /** Nombre del paquete npm (p. ej. @paperclip/plugin-linear) o ruta local */
   packageName: string;
-  /** Target version for npm packages (optional, defaults to latest) */
+  /** Versión objetivo para paquetes npm (opcional, por defecto latest) */
   version?: string;
-  /** True if packageName is a local filesystem path */
+  /** True si packageName es una ruta del sistema de archivos local */
   isLocalPath?: boolean;
 }
 
@@ -94,7 +94,7 @@ interface AvailablePluginExample {
   tag: "example";
 }
 
-/** Response body for GET /api/plugins/:pluginId/health */
+/** Cuerpo de respuesta para GET /api/plugins/:pluginId/health */
 interface PluginHealthCheckResult {
   pluginId: string;
   status: string;
@@ -107,7 +107,7 @@ interface PluginHealthCheckResult {
   lastError?: string;
 }
 
-/** UUID v4 regex used for plugin ID route resolution. */
+/** Regex UUID v4 usada para la resolución de rutas de ID de plugin. */
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -150,17 +150,17 @@ function listBundledPluginExamples(): AvailablePluginExample[] {
 }
 
 /**
- * Resolve a plugin by either database ID or plugin key.
+ * Resuelve un plugin por ID de base de datos o por clave de plugin.
  *
- * Lookup order:
- * - UUID-like IDs: getById first, then getByKey.
- * - Scoped package keys (e.g. "@scope/name"): getByKey only, never getById.
- * - Other non-UUID IDs: try getById first (test/memory registries may allow this),
- *   then fallback to getByKey. Any UUID parse error from getById is ignored.
+ * Orden de búsqueda:
+ * - IDs tipo UUID: getById primero, luego getByKey.
+ * - Claves de paquete con scope (p. ej. "@scope/name"): solo getByKey, nunca getById.
+ * - Otros IDs no UUID: intenta getById primero (los registros de test/memoria pueden permitirlo),
+ *   luego recurre a getByKey. Cualquier error de parseo de UUID de getById se ignora.
  *
- * @param registry - The plugin registry service instance
- * @param pluginId - Either a database UUID or plugin key (manifest id)
- * @returns Plugin record or null if not found
+ * @param registry - La instancia del servicio de registro de plugins
+ * @param pluginId - Un UUID de base de datos o la clave de plugin (id del manifiesto)
+ * @returns Registro del plugin o null si no se encuentra
  */
 async function resolvePlugin(
   registry: ReturnType<typeof pluginRegistryService>,
@@ -169,8 +169,8 @@ async function resolvePlugin(
   const isUuid = UUID_REGEX.test(pluginId);
   const isScopedPackageKey = pluginId.startsWith("@") || pluginId.includes("/");
 
-  // Scoped package IDs are valid plugin keys but invalid UUIDs.
-  // Skip getById() entirely to avoid Postgres uuid parse errors.
+  // Los IDs de paquete con scope son claves de plugin válidas pero UUIDs inválidos.
+  // Omite getById() por completo para evitar errores de parseo de uuid de Postgres.
   if (isScopedPackageKey && !isUuid) {
     return registry.getByKey(pluginId);
   }
@@ -183,7 +183,7 @@ async function resolvePlugin(
       typeof error === "object" && error !== null && "code" in error
         ? (error as { code?: unknown }).code
         : undefined;
-    // Ignore invalid UUID cast errors and continue with key lookup.
+    // Ignora los errores de conversión de UUID inválido y continúa con la búsqueda por clave.
     if (maybeCode !== "22P02") {
       throw error;
     }
@@ -193,111 +193,111 @@ async function resolvePlugin(
 }
 
 /**
- * Optional dependencies for plugin job scheduling routes.
+ * Dependencias opcionales para las rutas de programación de trabajos de plugins.
  *
- * When provided, job-related routes (list jobs, list runs, trigger job) are
- * mounted. When omitted, the routes return 501 Not Implemented.
+ * Cuando se proveen, las rutas relacionadas con trabajos (listar trabajos, listar ejecuciones, disparar trabajo) son
+ * montadas. Cuando se omiten, las rutas devuelven 501 Not Implemented.
  */
 export interface PluginRouteJobDeps {
-  /** The job scheduler instance. */
+  /** La instancia del programador de trabajos. */
   scheduler: PluginJobScheduler;
-  /** The job persistence store. */
+  /** El almacén de persistencia de trabajos. */
   jobStore: PluginJobStore;
 }
 
 /**
- * Optional dependencies for plugin webhook routes.
+ * Dependencias opcionales para las rutas de webhooks de plugins.
  *
- * When provided, the webhook ingestion route is enabled. When omitted,
- * webhook POST requests return 501 Not Implemented.
+ * Cuando se proveen, la ruta de ingestión de webhooks está habilitada. Cuando se omiten,
+ * las solicitudes POST de webhook devuelven 501 Not Implemented.
  */
 export interface PluginRouteWebhookDeps {
-  /** The worker manager for dispatching handleWebhook RPC calls. */
+  /** El gestor de workers para despachar llamadas RPC handleWebhook. */
   workerManager: PluginWorkerManager;
 }
 
 /**
- * Optional dependencies for plugin tool routes.
+ * Dependencias opcionales para las rutas de herramientas de plugins.
  *
- * When provided, tool discovery and execution routes are enabled.
- * When omitted, the tool routes return 501 Not Implemented.
+ * Cuando se proveen, las rutas de descubrimiento y ejecución de herramientas están habilitadas.
+ * Cuando se omiten, las rutas de herramientas devuelven 501 Not Implemented.
  */
 export interface PluginRouteToolDeps {
-  /** The tool dispatcher for listing and executing plugin tools. */
+  /** El despachador de herramientas para listar y ejecutar herramientas de plugins. */
   toolDispatcher: PluginToolDispatcher;
 }
 
 /**
- * Optional dependencies for plugin UI bridge routes.
+ * Dependencias opcionales para las rutas puente de UI de plugins.
  *
- * When provided, the getData and performAction bridge proxy routes are enabled,
- * allowing plugin UI components to communicate with their worker backend via
- * `usePluginData()` and `usePluginAction()` hooks.
+ * Cuando se proveen, las rutas proxy puente getData y performAction están habilitadas,
+ * permitiendo que los componentes de UI de plugins se comuniquen con su backend de worker vía
+ * los hooks `usePluginData()` y `usePluginAction()`.
  *
  * @see PLUGIN_SPEC.md §13.8 — `getData`
  * @see PLUGIN_SPEC.md §13.9 — `performAction`
  * @see PLUGIN_SPEC.md §19.7 — Error Propagation Through The Bridge
  */
 export interface PluginRouteBridgeDeps {
-  /** The worker manager for dispatching getData/performAction RPC calls. */
+  /** El gestor de workers para despachar llamadas RPC getData/performAction. */
   workerManager: PluginWorkerManager;
-  /** Optional stream bus for SSE push from worker to UI. */
+  /** Bus de streams opcional para push SSE del worker a la UI. */
   streamBus?: PluginStreamBus;
 }
 
-/** Request body for POST /api/plugins/tools/execute */
+/** Cuerpo de solicitud para POST /api/plugins/tools/execute */
 interface PluginToolExecuteRequest {
-  /** Fully namespaced tool name (e.g., "acme.linear:search-issues"). */
+  /** Nombre de herramienta totalmente calificado (p. ej. "acme.linear:search-issues"). */
   tool: string;
-  /** Parameters matching the tool's declared JSON Schema. */
+  /** Parámetros que coinciden con el JSON Schema declarado de la herramienta. */
   parameters?: unknown;
-  /** Agent run context. */
+  /** Contexto de ejecución del agente. */
   runContext: ToolRunContext;
 }
 
 /**
- * Create Express router for plugin management API.
+ * Crea un router de Express para la API de gestión de plugins.
  *
- * Routes provided:
+ * Rutas provistas:
  *
- * | Method | Path | Description |
+ * | Método | Ruta | Descripción |
  * |--------|------|-------------|
- * | GET | /plugins | List all plugins (optional ?status= filter) |
- * | GET | /plugins/ui-contributions | Get UI slots from ready plugins |
- * | GET | /plugins/:pluginId | Get single plugin by ID or key |
- * | POST | /plugins/install | Install from npm or local path |
- * | DELETE | /plugins/:pluginId | Uninstall (optional ?purge=true) |
- * | POST | /plugins/:pluginId/enable | Enable a plugin |
- * | POST | /plugins/:pluginId/disable | Disable a plugin |
- * | GET | /plugins/:pluginId/health | Run health diagnostics |
- * | POST | /plugins/:pluginId/upgrade | Upgrade to newer version |
- * | GET | /plugins/:pluginId/jobs | List jobs for a plugin |
- * | GET | /plugins/:pluginId/jobs/:jobId/runs | List runs for a job |
- * | POST | /plugins/:pluginId/jobs/:jobId/trigger | Manually trigger a job |
- * | POST | /plugins/:pluginId/webhooks/:endpointKey | Receive inbound webhook |
- * | GET | /plugins/tools | List all available plugin tools |
- * | GET | /plugins/tools?pluginId=... | List tools for a specific plugin |
- * | POST | /plugins/tools/execute | Execute a plugin tool |
- * | GET | /plugins/:pluginId/config | Get current plugin config |
- * | POST | /plugins/:pluginId/config | Save (upsert) plugin config |
- * | POST | /plugins/:pluginId/config/test | Test config via validateConfig RPC |
- * | POST | /plugins/:pluginId/bridge/data | Proxy getData to plugin worker |
- * | POST | /plugins/:pluginId/bridge/action | Proxy performAction to plugin worker |
- * | POST | /plugins/:pluginId/data/:key | Proxy getData to plugin worker (key in URL) |
- * | POST | /plugins/:pluginId/actions/:key | Proxy performAction to plugin worker (key in URL) |
- * | GET | /plugins/:pluginId/bridge/stream/:channel | SSE stream from worker to UI |
- * | GET | /plugins/:pluginId/dashboard | Aggregated health dashboard data |
+ * | GET | /plugins | Lista todos los plugins (filtro opcional ?status=) |
+ * | GET | /plugins/ui-contributions | Obtiene slots de UI de plugins listos |
+ * | GET | /plugins/:pluginId | Obtiene un plugin por ID o clave |
+ * | POST | /plugins/install | Instala desde npm o ruta local |
+ * | DELETE | /plugins/:pluginId | Desinstala (opcional ?purge=true) |
+ * | POST | /plugins/:pluginId/enable | Habilita un plugin |
+ * | POST | /plugins/:pluginId/disable | Deshabilita un plugin |
+ * | GET | /plugins/:pluginId/health | Ejecuta diagnósticos de salud |
+ * | POST | /plugins/:pluginId/upgrade | Actualiza a una versión más nueva |
+ * | GET | /plugins/:pluginId/jobs | Lista trabajos de un plugin |
+ * | GET | /plugins/:pluginId/jobs/:jobId/runs | Lista ejecuciones de un trabajo |
+ * | POST | /plugins/:pluginId/jobs/:jobId/trigger | Dispara manualmente un trabajo |
+ * | POST | /plugins/:pluginId/webhooks/:endpointKey | Recibe webhook entrante |
+ * | GET | /plugins/tools | Lista todas las herramientas de plugins disponibles |
+ * | GET | /plugins/tools?pluginId=... | Lista herramientas de un plugin específico |
+ * | POST | /plugins/tools/execute | Ejecuta una herramienta de plugin |
+ * | GET | /plugins/:pluginId/config | Obtiene la configuración actual del plugin |
+ * | POST | /plugins/:pluginId/config | Guarda (upsert) la configuración del plugin |
+ * | POST | /plugins/:pluginId/config/test | Prueba la configuración vía RPC validateConfig |
+ * | POST | /plugins/:pluginId/bridge/data | Proxy getData al worker del plugin |
+ * | POST | /plugins/:pluginId/bridge/action | Proxy performAction al worker del plugin |
+ * | POST | /plugins/:pluginId/data/:key | Proxy getData al worker del plugin (clave en URL) |
+ * | POST | /plugins/:pluginId/actions/:key | Proxy performAction al worker del plugin (clave en URL) |
+ * | GET | /plugins/:pluginId/bridge/stream/:channel | Stream SSE del worker a la UI |
+ * | GET | /plugins/:pluginId/dashboard | Datos agregados del panel de salud de plugins |
  *
- * **Route Ordering Note:** Static routes (like /ui-contributions, /tools) must be
- * registered before parameterized routes (like /:pluginId) to prevent Express from
- * matching them as a plugin ID.
+ * **Nota de orden de rutas:** Las rutas estáticas (como /ui-contributions, /tools) deben
+ * registrarse antes que las rutas parametrizadas (como /:pluginId) para evitar que Express
+ * las interprete como un ID de plugin.
  *
- * @param db - Database connection instance
- * @param jobDeps - Optional job scheduling dependencies
- * @param webhookDeps - Optional webhook ingestion dependencies
- * @param toolDeps - Optional tool dispatcher dependencies
- * @param bridgeDeps - Optional bridge proxy dependencies for getData/performAction
- * @returns Express router with plugin routes mounted
+ * @param db - Instancia de conexión a la base de datos
+ * @param jobDeps - Dependencias opcionales de programación de trabajos
+ * @param webhookDeps - Dependencias opcionales de ingestión de webhooks
+ * @param toolDeps - Dependencias opcionales del despachador de herramientas
+ * @param bridgeDeps - Dependencias opcionales de proxy puente para getData/performAction
+ * @returns Router de Express con las rutas de plugins montadas
  */
 export function pluginRoutes(
   db: Db,
@@ -360,15 +360,15 @@ export function pluginRoutes(
   /**
    * GET /api/plugins
    *
-   * List all installed plugins, optionally filtered by lifecycle status.
+   * Lista todos los plugins instalados, opcionalmente filtrados por estado de ciclo de vida.
    *
-   * Query params:
-   * - `status` (optional): Filter by lifecycle status. Must be one of the
-   *   values in `PLUGIN_STATUSES` (`installed`, `ready`, `error`,
-   *   `upgrade_pending`, `uninstalled`). Returns HTTP 400 if the value is
-   *   not a recognised status string.
+   * Parámetros de consulta:
+   * - `status` (opcional): Filtra por estado de ciclo de vida. Debe ser uno de los
+   *   valores en `PLUGIN_STATUSES` (`installed`, `ready`, `error`,
+   *   `upgrade_pending`, `uninstalled`). Devuelve HTTP 400 si el valor no es
+   *   una cadena de estado reconocida.
    *
-   * Response: `PluginRecord[]`
+   * Respuesta: `PluginRecord[]`
    */
   router.get("/plugins", async (req, res) => {
     assertBoard(req);
@@ -376,7 +376,7 @@ export function pluginRoutes(
     if (rawStatus !== undefined) {
       if (typeof rawStatus !== "string" || !(PLUGIN_STATUSES as readonly string[]).includes(rawStatus)) {
         res.status(400).json({
-          error: `Invalid status '${String(rawStatus)}'. Must be one of: ${PLUGIN_STATUSES.join(", ")}`,
+        error: `Estado no válido '${String(rawStatus)}'. Debe ser uno de: ${PLUGIN_STATUSES.join(", ")}`,
         });
         return;
       }
@@ -391,28 +391,28 @@ export function pluginRoutes(
   /**
    * GET /api/plugins/examples
    *
-   * Return first-party example plugins bundled in this repo, if present.
-   * These can be installed through the normal local-path install flow.
+   * Devuelve plugins de ejemplo propios incluidos en este repo, si existen.
+   * Estos se pueden instalar mediante el flujo normal de instalación de ruta local.
    */
   router.get("/plugins/examples", async (req, res) => {
     assertBoard(req);
     res.json(listBundledPluginExamples());
   });
 
-  // IMPORTANT: Static routes must come before parameterized routes
-  // to avoid Express matching "ui-contributions" as a :pluginId
+  // IMPORTANTE: Las rutas estáticas deben ir antes que las rutas parametrizadas
+  // para evitar que Express interprete "ui-contributions" como un :pluginId
 
   /**
    * GET /api/plugins/ui-contributions
    *
-   * Return UI contributions from all plugins in 'ready' state.
-   * Used by the frontend to discover plugin UI slots and launcher metadata.
+   * Devuelve contribuciones de UI de todos los plugins en estado 'ready'.
+   * Usado por el frontend para descubrir slots de UI de plugins y metadatos de launchers.
    *
-   * The response is normalized for the frontend slot host:
-   * - Only includes plugins with at least one declared UI slot or launcher
-   * - Excludes plugins with null/missing manifestJson (defensive)
-   * - Slots are extracted from manifest.ui.slots
-   * - Launchers are aggregated from legacy manifest.launchers and manifest.ui.launchers
+   * La respuesta está normalizada para el host de slots del frontend:
+   * - Solo incluye plugins con al menos un slot de UI o launcher declarado
+   * - Excluye plugins con manifestJson nulo/faltante (defensivo)
+   * - Los slots se extraen de manifest.ui.slots
+   * - Los launchers se agregan de manifest.launchers heredado y manifest.ui.launchers
    *
    * Example response:
    * ```json
@@ -437,7 +437,7 @@ export function pluginRoutes(
    * ]
    * ```
    *
-   * Response: PluginUiContribution[]
+   * Respuesta: PluginUiContribution[]
    */
   router.get("/plugins/ui-contributions", async (req, res) => {
     assertBoard(req);
@@ -445,7 +445,7 @@ export function pluginRoutes(
 
     const contributions: PluginUiContribution[] = plugins
       .map((plugin) => {
-        // Safety check: manifestJson should always exist for ready plugins, but guard against null
+        // Verificación de seguridad: manifestJson siempre debería existir para plugins listos, pero protege contra null
         const manifest = plugin.manifestJson;
         if (!manifest) return null;
 
@@ -468,25 +468,25 @@ export function pluginRoutes(
   });
 
   // ===========================================================================
-  // Tool discovery and execution routes
+  // Rutas de descubrimiento y ejecución de herramientas
   // ===========================================================================
 
   /**
    * GET /api/plugins/tools
    *
-   * List all available plugin-contributed tools in an agent-friendly format.
+   * Lista todas las herramientas aportadas por plugins disponibles en un formato apto para agentes.
    *
-   * Query params:
-   * - `pluginId` (optional): Filter to tools from a specific plugin
+   * Parámetros de consulta:
+   * - `pluginId` (opcional): Filtra las herramientas de un plugin específico
    *
-   * Response: `AgentToolDescriptor[]`
-   * Errors: 501 if tool dispatcher is not configured
+   * Respuesta: `AgentToolDescriptor[]`
+   * Errores: 501 si el despachador de herramientas no está configurado
    */
   router.get("/plugins/tools", async (req, res) => {
     assertBoard(req);
 
     if (!toolDeps) {
-      res.status(501).json({ error: "Plugin tool dispatch is not enabled" });
+      res.status(501).json({ error: "El despacho de herramientas de plugins no está habilitado" });
       return;
     }
 
@@ -501,61 +501,61 @@ export function pluginRoutes(
    *
    * Execute a plugin-contributed tool by its namespaced name.
    *
-   * This is the primary endpoint used by the agent service to invoke
-   * plugin tools during an agent run.
+   * Este es el endpoint principal que usa el servicio de agentes para invocar
+   * herramientas de plugins durante una ejecución de agente.
    *
-   * Request body:
-   * - `tool`: Fully namespaced tool name (e.g., "acme.linear:search-issues")
-   * - `parameters`: Parameters matching the tool's declared JSON Schema
-   * - `runContext`: Agent run context with agentId, runId, companyId, projectId
+   * Cuerpo de solicitud:
+   * - `tool`: Nombre de herramienta totalmente calificado (p. ej. "acme.linear:search-issues")
+   * - `parameters`: Parámetros que coinciden con el JSON Schema declarado de la herramienta
+   * - `runContext`: Contexto de ejecución del agente con agentId, runId, companyId, projectId
    *
-   * Response: `ToolExecutionResult`
-   * Errors:
-   * - 400 if request validation fails
-   * - 404 if tool is not found
-   * - 501 if tool dispatcher is not configured
-   * - 502 if the plugin worker is unavailable or the RPC call fails
+   * Respuesta: `ToolExecutionResult`
+   * Errores:
+   * - 400 si falla la validación de la solicitud
+   * - 404 si la herramienta no se encuentra
+   * - 501 si el despachador de herramientas no está configurado
+   * - 502 si el worker del plugin no está disponible o la llamada RPC falla
    */
   router.post("/plugins/tools/execute", async (req, res) => {
     assertBoard(req);
 
     if (!toolDeps) {
-      res.status(501).json({ error: "Plugin tool dispatch is not enabled" });
+      res.status(501).json({ error: "El despacho de herramientas de plugins no está habilitado" });
       return;
     }
 
     const body = (req.body as PluginToolExecuteRequest | undefined);
     if (!body) {
-      res.status(400).json({ error: "Request body is required" });
+        res.status(400).json({ error: "Se requiere el cuerpo de la solicitud" });
       return;
     }
 
     const { tool, parameters, runContext } = body;
 
-    // Validate required fields
+    // Valida los campos requeridos
     if (!tool || typeof tool !== "string") {
-      res.status(400).json({ error: '"tool" is required and must be a string' });
+        res.status(400).json({ error: '"tool" es requerido y debe ser una cadena' });
       return;
     }
 
     if (!runContext || typeof runContext !== "object") {
-      res.status(400).json({ error: '"runContext" is required and must be an object' });
+        res.status(400).json({ error: '"runContext" es requerido y debe ser un objeto' });
       return;
     }
 
     if (!runContext.agentId || !runContext.runId || !runContext.companyId || !runContext.projectId) {
       res.status(400).json({
-        error: '"runContext" must include agentId, runId, companyId, and projectId',
+        error: '"runContext" debe incluir agentId, runId, companyId y projectId',
       });
       return;
     }
 
     assertCompanyAccess(req, runContext.companyId);
 
-    // Verify the tool exists
+    // Verifica que la herramienta existe
     const registeredTool = toolDeps.toolDispatcher.getTool(tool);
     if (!registeredTool) {
-      res.status(404).json({ error: `Tool "${tool}" not found` });
+        res.status(404).json({ error: `Herramienta "${tool}" no encontrada` });
       return;
     }
 
@@ -569,7 +569,7 @@ export function pluginRoutes(
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
 
-      // Distinguish between "worker not running" (502) and other errors (500)
+      // Distingue entre "worker no en ejecución" (502) y otros errores (500)
       if (message.includes("not running") || message.includes("worker")) {
         res.status(502).json({ error: message });
       } else {
@@ -581,55 +581,55 @@ export function pluginRoutes(
   /**
    * POST /api/plugins/install
    *
-   * Install a plugin from npm or a local filesystem path.
+   * Instala un plugin desde npm o una ruta del sistema de archivos local.
    *
-   * Request body:
-   * - packageName: npm package name or local path (required)
-   * - version: Target version for npm packages (optional)
-   * - isLocalPath: Set true if packageName is a local path
+   * Cuerpo de solicitud:
+   * - packageName: nombre del paquete npm o ruta local (requerido)
+   * - version: versión objetivo para paquetes npm (opcional)
+   * - isLocalPath: establece true si packageName es una ruta local
    *
-   * The installer:
-   * 1. Downloads from npm or loads from local path
-   * 2. Validates the manifest (schema + capability consistency)
-   * 3. Registers in the database
-   * 4. Transitions to `ready` state if no new capability approval is needed
+   * El instalador:
+   * 1. Descarga desde npm o carga desde la ruta local
+   * 2. Valida el manifiesto (esquema + consistencia de capacidades)
+   * 3. Registra en la base de datos
+   * 4. Transiciona al estado `ready` si no se necesita aprobación de nueva capacidad
    *
-   * Response: `PluginRecord`
+   * Respuesta: `PluginRecord`
    *
-   * Errors:
-   * - `400` — validation failure or install error (package not found, bad manifest, etc.)
-   * - `500` — installation succeeded but manifest is missing (indicates a loader bug)
+   * Errores:
+   * - `400` — fallo de validación o error de instalación (paquete no encontrado, manifiesto inválido, etc.)
+   * - `500` — la instalación tuvo éxito pero falta el manifiesto (indica un bug del cargador)
    */
   router.post("/plugins/install", async (req, res) => {
     assertBoard(req);
     const { packageName, version, isLocalPath } = req.body as PluginInstallRequest;
 
-    // Input validation
+    // Validación de entrada
     if (!packageName || typeof packageName !== "string") {
-      res.status(400).json({ error: "packageName is required and must be a string" });
+      res.status(400).json({ error: "packageName es requerido y debe ser una cadena" });
       return;
     }
 
     if (version !== undefined && typeof version !== "string") {
-      res.status(400).json({ error: "version must be a string if provided" });
+        res.status(400).json({ error: "version debe ser una cadena si se provee" });
       return;
     }
 
     if (isLocalPath !== undefined && typeof isLocalPath !== "boolean") {
-      res.status(400).json({ error: "isLocalPath must be a boolean if provided" });
+        res.status(400).json({ error: "isLocalPath debe ser un booleano si se provee" });
       return;
     }
 
-    // Validate package name format
+    // Valida el formato del nombre del paquete
     const trimmedPackage = packageName.trim();
     if (trimmedPackage.length === 0) {
-      res.status(400).json({ error: "packageName cannot be empty" });
+      res.status(400).json({ error: "packageName no puede estar vacío" });
       return;
     }
 
-    // Basic security check for package name (prevent injection)
+    // Verificación básica de seguridad para el nombre del paquete (previene inyección)
     if (!isLocalPath && /[<>:"|?*]/.test(trimmedPackage)) {
-      res.status(400).json({ error: "packageName contains invalid characters" });
+      res.status(400).json({ error: "packageName contiene caracteres no válidos" });
       return;
     }
 
@@ -641,11 +641,11 @@ export function pluginRoutes(
       const discovered = await loader.installPlugin(installOptions);
 
       if (!discovered.manifest) {
-        res.status(500).json({ error: "Plugin installed but manifest is missing" });
+        res.status(500).json({ error: "Plugin instalado pero falta el manifiesto" });
         return;
       }
 
-      // Transition to ready state
+      // Transiciona al estado ready
       const existingPlugin = await registry.getByKey(discovered.manifest.id);
       if (existingPlugin) {
         await lifecycle.load(existingPlugin.id);
@@ -660,8 +660,8 @@ export function pluginRoutes(
         publishGlobalLiveEvent({ type: "plugin.ui.updated", payload: { pluginId: existingPlugin.id, action: "installed" } });
         res.json(updated);
       } else {
-        // This shouldn't happen since installPlugin already registers in the DB
-        res.status(500).json({ error: "Plugin installed but not found in registry" });
+        // Esto no debería pasar ya que installPlugin ya registra en la BD
+        res.status(500).json({ error: "Plugin instalado pero no se encuentra en el registro" });
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -670,34 +670,34 @@ export function pluginRoutes(
   });
 
   // ===========================================================================
-  // UI Bridge proxy routes (getData / performAction)
+  // Rutas proxy puente de UI (getData / performAction)
   // ===========================================================================
 
-  /** Request body for POST /api/plugins/:pluginId/bridge/data */
+  /** Cuerpo de solicitud para POST /api/plugins/:pluginId/bridge/data */
   interface PluginBridgeDataRequest {
-    /** Plugin-defined data key (e.g. `"sync-health"`). */
+    /** Clave de datos definida por el plugin (p. ej. `"sync-health"`). */
     key: string;
-    /** Optional company scope for authorizing company-context bridge calls. */
+    /** Scope de empresa opcional para autorizar llamadas puente con contexto de empresa. */
     companyId?: string;
-    /** Optional context and query parameters from the UI. */
+    /** Contexto y parámetros de consulta opcionales desde la UI. */
     params?: Record<string, unknown>;
-    /** Optional host launcher/render metadata for the worker bridge call. */
+    /** Metadatos opcionales de launcher/renderizado del host para la llamada puente del worker. */
     renderEnvironment?: PluginLauncherRenderContextSnapshot | null;
   }
 
-  /** Request body for POST /api/plugins/:pluginId/bridge/action */
+  /** Cuerpo de solicitud para POST /api/plugins/:pluginId/bridge/action */
   interface PluginBridgeActionRequest {
-    /** Plugin-defined action key (e.g. `"resync"`). */
+    /** Clave de acción definida por el plugin (p. ej. `"resync"`). */
     key: string;
-    /** Optional company scope for authorizing company-context bridge calls. */
+    /** Scope de empresa opcional para autorizar llamadas puente con contexto de empresa. */
     companyId?: string;
-    /** Optional parameters from the UI. */
+    /** Parámetros opcionales desde la UI. */
     params?: Record<string, unknown>;
-    /** Optional host launcher/render metadata for the worker bridge call. */
+    /** Metadatos opcionales de launcher/renderizado del host para la llamada puente del worker. */
     renderEnvironment?: PluginLauncherRenderContextSnapshot | null;
   }
 
-  /** Response envelope for bridge errors. */
+  /** Envoltorio de respuesta para errores puente. */
   interface PluginBridgeErrorResponse {
     code: PluginBridgeErrorCode;
     message: string;
@@ -705,10 +705,10 @@ export function pluginRoutes(
   }
 
   /**
-   * Map a worker RPC error to a bridge-level error code.
+   * Mapea un error RPC del worker a un código de error a nivel puente.
    *
-   * JsonRpcCallError carries numeric codes from the plugin RPC error code space.
-   * This helper maps them to the string error codes defined in PluginBridgeErrorCode.
+   * JsonRpcCallError lleva códigos numéricos del espacio de códigos de error RPC de plugins.
+   * Este ayudante los mapea a los códigos de error de cadena definidos en PluginBridgeErrorCode.
    *
    * @see PLUGIN_SPEC.md §19.7 — Error Propagation Through The Bridge
    */
@@ -750,7 +750,7 @@ export function pluginRoutes(
 
     const message = err instanceof Error ? err.message : String(err);
 
-    // Worker not running — surface as WORKER_UNAVAILABLE
+    // Worker no en ejecución — expone como WORKER_UNAVAILABLE
     if (message.includes("not running") || message.includes("not registered")) {
       return {
         code: "WORKER_UNAVAILABLE",
@@ -767,27 +767,27 @@ export function pluginRoutes(
   /**
    * POST /api/plugins/:pluginId/bridge/data
    *
-   * Proxy a `getData` call from the plugin UI to the plugin worker.
+   * Hace proxy de una llamada `getData` desde la UI del plugin al worker del plugin.
    *
-   * This is the server-side half of the `usePluginData(key, params)` bridge hook.
-   * The frontend sends a POST with the data key and optional params; the host
-   * forwards the call to the worker via the `getData` RPC method and returns
-   * the result.
+   * Esta es la mitad del lado del servidor del hook puente `usePluginData(key, params)`.
+   * El frontend envía un POST con la clave de datos y parámetros opcionales; el host
+   * reenvía la llamada al worker vía el método RPC `getData` y devuelve
+   * el resultado.
    *
-   * Request body:
-   * - `key`: Plugin-defined data key (e.g. `"sync-health"`)
-   * - `params`: Optional query parameters forwarded to the worker handler
+   * Cuerpo de solicitud:
+   * - `key`: Clave de datos definida por el plugin (p. ej. `"sync-health"`)
+   * - `params`: Parámetros de consulta opcionales reenviados al manejador del worker
    *
-   * Response: The raw result from the worker's `getData` handler
+   * Respuesta: El resultado crudo del manejador `getData` del worker
    *
-   * Error response body follows the `PluginBridgeError` shape:
+   * El cuerpo de respuesta de error sigue la forma `PluginBridgeError`:
    * `{ code: PluginBridgeErrorCode, message: string, details?: unknown }`
    *
-   * Errors:
-   * - 400 if request validation fails
-   * - 404 if plugin not found
-   * - 501 if bridge deps are not configured
-   * - 502 if the worker is unavailable or returns an error
+   * Errores:
+   * - 400 si falla la validación de la solicitud
+   * - 404 si el plugin no se encuentra
+   * - 501 si las deps puente no están configuradas
+   * - 502 si el worker no está disponible o devuelve un error
    *
    * @see PLUGIN_SPEC.md §13.8 — `getData`
    * @see PLUGIN_SPEC.md §19.7 — Error Propagation Through The Bridge
@@ -796,20 +796,20 @@ export function pluginRoutes(
     assertBoard(req);
 
     if (!bridgeDeps) {
-      res.status(501).json({ error: "Plugin bridge is not enabled" });
+      res.status(501).json({ error: "El puente de plugins no está habilitado" });
       return;
     }
 
     const { pluginId } = req.params;
 
-    // Resolve plugin
+    // Resuelve el plugin
     const plugin = await resolvePlugin(registry, pluginId);
     if (!plugin) {
-      res.status(404).json({ error: "Plugin not found" });
+      res.status(404).json({ error: "Plugin no encontrado" });
       return;
     }
 
-    // Validate plugin is in ready state
+    // Valida que el plugin esté en estado ready
     if (plugin.status !== "ready") {
       const bridgeError: PluginBridgeErrorResponse = {
         code: "WORKER_UNAVAILABLE",
@@ -819,10 +819,10 @@ export function pluginRoutes(
       return;
     }
 
-    // Validate request body
+    // Valida el cuerpo de la solicitud
     const body = req.body as PluginBridgeDataRequest | undefined;
     if (!body || !body.key || typeof body.key !== "string") {
-      res.status(400).json({ error: '"key" is required and must be a string' });
+        res.status(400).json({ error: '"key" es requerido y debe ser una cadena' });
       return;
     }
 
@@ -850,27 +850,27 @@ export function pluginRoutes(
   /**
    * POST /api/plugins/:pluginId/bridge/action
    *
-   * Proxy a `performAction` call from the plugin UI to the plugin worker.
+   * Hace proxy de una llamada `performAction` desde la UI del plugin al worker del plugin.
    *
-   * This is the server-side half of the `usePluginAction(key)` bridge hook.
-   * The frontend sends a POST with the action key and optional params; the host
-   * forwards the call to the worker via the `performAction` RPC method and
-   * returns the result.
+   * Esta es la mitad del lado del servidor del hook puente `usePluginAction(key)`.
+   * El frontend envía un POST con la clave de acción y parámetros opcionales; el host
+   * reenvía la llamada al worker vía el método RPC `performAction` y
+   * devuelve el resultado.
    *
-   * Request body:
-   * - `key`: Plugin-defined action key (e.g. `"resync"`)
-   * - `params`: Optional parameters forwarded to the worker handler
+   * Cuerpo de solicitud:
+   * - `key`: Clave de acción definida por el plugin (p. ej. `"resync"`)
+   * - `params`: Parámetros opcionales reenviados al manejador del worker
    *
-   * Response: The raw result from the worker's `performAction` handler
+   * Respuesta: El resultado crudo del manejador `performAction` del worker
    *
-   * Error response body follows the `PluginBridgeError` shape:
+   * El cuerpo de respuesta de error sigue la forma `PluginBridgeError`:
    * `{ code: PluginBridgeErrorCode, message: string, details?: unknown }`
    *
-   * Errors:
-   * - 400 if request validation fails
-   * - 404 if plugin not found
-   * - 501 if bridge deps are not configured
-   * - 502 if the worker is unavailable or returns an error
+   * Errores:
+   * - 400 si falla la validación de la solicitud
+   * - 404 si el plugin no se encuentra
+   * - 501 si las deps puente no están configuradas
+   * - 502 si el worker no está disponible o devuelve un error
    *
    * @see PLUGIN_SPEC.md §13.9 — `performAction`
    * @see PLUGIN_SPEC.md §19.7 — Error Propagation Through The Bridge
@@ -879,20 +879,20 @@ export function pluginRoutes(
     assertBoard(req);
 
     if (!bridgeDeps) {
-      res.status(501).json({ error: "Plugin bridge is not enabled" });
+      res.status(501).json({ error: "El puente de plugins no está habilitado" });
       return;
     }
 
     const { pluginId } = req.params;
 
-    // Resolve plugin
+    // Resuelve el plugin
     const plugin = await resolvePlugin(registry, pluginId);
     if (!plugin) {
       res.status(404).json({ error: "Plugin not found" });
       return;
     }
 
-    // Validate plugin is in ready state
+    // Valida que el plugin esté en estado ready
     if (plugin.status !== "ready") {
       const bridgeError: PluginBridgeErrorResponse = {
         code: "WORKER_UNAVAILABLE",
@@ -902,10 +902,10 @@ export function pluginRoutes(
       return;
     }
 
-    // Validate request body
+    // Valida el cuerpo de la solicitud
     const body = req.body as PluginBridgeActionRequest | undefined;
     if (!body || !body.key || typeof body.key !== "string") {
-      res.status(400).json({ error: '"key" is required and must be a string' });
+        res.status(400).json({ error: '"key" es requerido y debe ser una cadena' });
       return;
     }
 
@@ -931,30 +931,30 @@ export function pluginRoutes(
   });
 
   // ===========================================================================
-  // URL-keyed bridge routes (key as path parameter)
+  // Rutas puente con clave en URL (clave como parámetro de ruta)
   // ===========================================================================
 
   /**
    * POST /api/plugins/:pluginId/data/:key
    *
-   * Proxy a `getData` call from the plugin UI to the plugin worker, with the
-   * data key specified as a URL path parameter instead of in the request body.
+   * Hace proxy de una llamada `getData` desde la UI del plugin al worker del plugin, con la
+   * clave de datos especificada como parámetro de ruta URL en lugar de en el cuerpo de la solicitud.
    *
-   * This is a REST-friendly alternative to `POST /plugins/:pluginId/bridge/data`.
-   * The frontend bridge hooks use this endpoint for cleaner URLs.
+   * Esta es una alternativa REST-amigable a `POST /plugins/:pluginId/bridge/data`.
+   * Los hooks puente del frontend usan este endpoint para URLs más limpias.
    *
-   * Request body (optional):
-   * - `params`: Optional query parameters forwarded to the worker handler
+   * Cuerpo de solicitud (opcional):
+   * - `params`: Parámetros de consulta opcionales reenviados al manejador del worker
    *
-   * Response: The raw result from the worker's `getData` handler wrapped as `{ data: T }`
+   * Respuesta: El resultado crudo del manejador `getData` del worker envuelto como `{ data: T }`
    *
-   * Error response body follows the `PluginBridgeError` shape:
+   * El cuerpo de respuesta de error sigue la forma `PluginBridgeError`:
    * `{ code: PluginBridgeErrorCode, message: string, details?: unknown }`
    *
-   * Errors:
-   * - 404 if plugin not found
-   * - 501 if bridge deps are not configured
-   * - 502 if the worker is unavailable or returns an error
+   * Errores:
+   * - 404 si el plugin no se encuentra
+   * - 501 si las deps puente no están configuradas
+   * - 502 si el worker no está disponible o devuelve un error
    *
    * @see PLUGIN_SPEC.md §13.8 — `getData`
    * @see PLUGIN_SPEC.md §19.7 — Error Propagation Through The Bridge
@@ -963,20 +963,20 @@ export function pluginRoutes(
     assertBoard(req);
 
     if (!bridgeDeps) {
-      res.status(501).json({ error: "Plugin bridge is not enabled" });
+      res.status(501).json({ error: "El puente de plugins no está habilitado" });
       return;
     }
 
     const { pluginId, key } = req.params;
 
-    // Resolve plugin
+    // Resuelve el plugin
     const plugin = await resolvePlugin(registry, pluginId);
     if (!plugin) {
       res.status(404).json({ error: "Plugin not found" });
       return;
     }
 
-    // Validate plugin is in ready state
+    // Valida que el plugin esté en estado ready
     if (plugin.status !== "ready") {
       const bridgeError: PluginBridgeErrorResponse = {
         code: "WORKER_UNAVAILABLE",
@@ -1016,24 +1016,24 @@ export function pluginRoutes(
   /**
    * POST /api/plugins/:pluginId/actions/:key
    *
-   * Proxy a `performAction` call from the plugin UI to the plugin worker, with
-   * the action key specified as a URL path parameter instead of in the request body.
+   * Hace proxy de una llamada `performAction` desde la UI del plugin al worker del plugin, con la
+   * clave de acción especificada como parámetro de ruta URL en lugar de en el cuerpo de la solicitud.
    *
-   * This is a REST-friendly alternative to `POST /plugins/:pluginId/bridge/action`.
-   * The frontend bridge hooks use this endpoint for cleaner URLs.
+   * Esta es una alternativa REST-amigable a `POST /plugins/:pluginId/bridge/action`.
+   * Los hooks puente del frontend usan este endpoint para URLs más limpias.
    *
-   * Request body (optional):
-   * - `params`: Optional parameters forwarded to the worker handler
+   * Cuerpo de solicitud (opcional):
+   * - `params`: Parámetros opcionales reenviados al manejador del worker
    *
-   * Response: The raw result from the worker's `performAction` handler wrapped as `{ data: T }`
+   * Respuesta: El resultado crudo del manejador `performAction` del worker envuelto como `{ data: T }`
    *
-   * Error response body follows the `PluginBridgeError` shape:
+   * El cuerpo de respuesta de error sigue la forma `PluginBridgeError`:
    * `{ code: PluginBridgeErrorCode, message: string, details?: unknown }`
    *
-   * Errors:
-   * - 404 if plugin not found
-   * - 501 if bridge deps are not configured
-   * - 502 if the worker is unavailable or returns an error
+   * Errores:
+   * - 404 si el plugin no se encuentra
+   * - 501 si las deps puente no están configuradas
+   * - 502 si el worker no está disponible o devuelve un error
    *
    * @see PLUGIN_SPEC.md §13.9 — `performAction`
    * @see PLUGIN_SPEC.md §19.7 — Error Propagation Through The Bridge
@@ -1042,20 +1042,20 @@ export function pluginRoutes(
     assertBoard(req);
 
     if (!bridgeDeps) {
-      res.status(501).json({ error: "Plugin bridge is not enabled" });
+      res.status(501).json({ error: "El puente de plugins no está habilitado" });
       return;
     }
 
     const { pluginId, key } = req.params;
 
-    // Resolve plugin
+    // Resuelve el plugin
     const plugin = await resolvePlugin(registry, pluginId);
     if (!plugin) {
       res.status(404).json({ error: "Plugin not found" });
       return;
     }
 
-    // Validate plugin is in ready state
+    // Valida que el plugin esté en estado ready
     if (plugin.status !== "ready") {
       const bridgeError: PluginBridgeErrorResponse = {
         code: "WORKER_UNAVAILABLE",
@@ -1093,37 +1093,37 @@ export function pluginRoutes(
   });
 
   // ===========================================================================
-  // SSE stream bridge route
+  // Ruta puente de stream SSE
   // ===========================================================================
 
   /**
    * GET /api/plugins/:pluginId/bridge/stream/:channel
    *
-   * Server-Sent Events endpoint for real-time streaming from plugin worker to UI.
+   * Endpoint Server-Sent Events para streaming en tiempo real del worker del plugin a la UI.
    *
-   * The worker pushes events via `ctx.streams.emit(channel, event)` which arrive
-   * as JSON-RPC notifications to the host, get published on the PluginStreamBus,
-   * and are fanned out to all connected SSE clients matching (pluginId, channel,
+   * El worker empuja eventos vía `ctx.streams.emit(channel, event)` que llegan
+   * como notificaciones JSON-RPC al host, se publican en el PluginStreamBus,
+   * y se distribuyen a todos los clientes SSE conectados que coincidan con (pluginId, channel,
    * companyId).
    *
-   * Query parameters:
-   * - `companyId` (required): Scope events to a specific company
+   * Parámetros de consulta:
+   * - `companyId` (requerido): Limita los eventos a una empresa específica
    *
-   * SSE event types:
-   * - `message`: A data event from the worker (default)
-   * - `open`: The worker opened the stream channel
-   * - `close`: The worker closed the stream channel — client should disconnect
+   * Tipos de eventos SSE:
+   * - `message`: Un evento de datos del worker (por defecto)
+   * - `open`: El worker abrió el canal de stream
+   * - `close`: El worker cerró el canal de stream — el cliente debe desconectarse
    *
-   * Errors:
-   * - 400 if companyId is missing
-   * - 404 if plugin not found
-   * - 501 if bridge deps or stream bus are not configured
+   * Errores:
+   * - 400 si falta companyId
+   * - 404 si el plugin no se encuentra
+   * - 501 si las deps puente o el bus de streams no están configurados
    */
   router.get("/plugins/:pluginId/bridge/stream/:channel", async (req, res) => {
     assertBoard(req);
 
     if (!bridgeDeps?.streamBus) {
-      res.status(501).json({ error: "Plugin stream bridge is not enabled" });
+      res.status(501).json({ error: "El puente de streams de plugins no está habilitado" });
       return;
     }
 
@@ -1131,7 +1131,7 @@ export function pluginRoutes(
     const companyId = req.query.companyId as string | undefined;
 
     if (!companyId) {
-      res.status(400).json({ error: '"companyId" query parameter is required' });
+        res.status(400).json({ error: 'Se requiere el parámetro de consulta "companyId"' });
       return;
     }
 
@@ -1143,7 +1143,7 @@ export function pluginRoutes(
 
     assertCompanyAccess(req, companyId);
 
-    // Set SSE headers
+    // Establece los encabezados SSE
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
@@ -1152,7 +1152,7 @@ export function pluginRoutes(
     });
     res.flushHeaders();
 
-    // Send initial comment to establish the connection
+    // Envía un comentario inicial para establecer la conexión
     res.write(":ok\n\n");
 
     let unsubscribed = false;
@@ -1175,7 +1175,7 @@ export function pluginRoutes(
           }
           res.write(`data: ${JSON.stringify(event)}\n\n`);
         } catch {
-          // Connection closed or write error — stop delivering
+          // Conexión cerrada o error de escritura — deja de entregar
           safeUnsubscribe();
         }
       },
@@ -1188,14 +1188,14 @@ export function pluginRoutes(
   /**
    * GET /api/plugins/:pluginId
    *
-   * Get detailed information about a single plugin.
+   * Obtiene información detallada de un solo plugin.
    *
-   * The :pluginId parameter accepts either:
-   * - Database UUID (e.g., "abc123-def456")
-   * - Plugin key (e.g., "acme.linear")
+   * El parámetro :pluginId acepta:
+   * - UUID de base de datos (p. ej. "abc123-def456")
+   * - Clave de plugin (p. ej. "acme.linear")
    *
-   * Response: PluginRecord
-   * Errors: 404 if plugin not found
+   * Respuesta: PluginRecord
+   * Errores: 404 si el plugin no se encuentra
    */
   router.get("/plugins/:pluginId", async (req, res) => {
     assertBoard(req);
@@ -1206,7 +1206,7 @@ export function pluginRoutes(
       return;
     }
 
-    // Enrich with worker capabilities when available
+    // Enriquece con capacidades del worker cuando están disponibles
     const worker = bridgeDeps?.workerManager.getWorker(plugin.id);
     const supportsConfigTest = worker
       ? worker.supportedMethods.includes("validateConfig")
@@ -1218,14 +1218,14 @@ export function pluginRoutes(
   /**
    * DELETE /api/plugins/:pluginId
    *
-   * Uninstall a plugin.
+   * Desinstala un plugin.
    *
-   * Query params:
-   * - purge: If "true", permanently delete all plugin data (hard delete)
-   *          Otherwise, soft-delete with 30-day data retention
+   * Parámetros de consulta:
+   * - purge: Si es "true", elimina permanentemente todos los datos del plugin (eliminación total)
+   *          De lo contrario, eliminación suave con retención de datos de 30 días
    *
-   * Response: PluginRecord (the deleted record)
-   * Errors: 404 if plugin not found, 400 for lifecycle errors
+   * Respuesta: PluginRecord (el registro eliminado)
+   * Errores: 404 si el plugin no se encuentra, 400 para errores de ciclo de vida
    */
   router.delete("/plugins/:pluginId", async (req, res) => {
     assertBoard(req);
@@ -1256,12 +1256,12 @@ export function pluginRoutes(
   /**
    * POST /api/plugins/:pluginId/enable
    *
-   * Enable a plugin that is currently disabled or in error state.
+   * Habilita un plugin que está actualmente deshabilitado o en estado de error.
    *
-   * Transitions the plugin to 'ready' state after loading and validation.
+   * Transiciona el plugin al estado 'ready' después de la carga y validación.
    *
-   * Response: PluginRecord
-   * Errors: 404 if plugin not found, 400 for lifecycle errors
+   * Respuesta: PluginRecord
+   * Errores: 404 si el plugin no se encuentra, 400 para errores de ciclo de vida
    */
   router.post("/plugins/:pluginId/enable", async (req, res) => {
     assertBoard(req);
@@ -1291,15 +1291,15 @@ export function pluginRoutes(
   /**
    * POST /api/plugins/:pluginId/disable
    *
-   * Disable a running plugin.
+   * Deshabilita un plugin en ejecución.
    *
-   * Request body (optional):
-   * - reason: Human-readable reason for disabling
+   * Cuerpo de solicitud (opcional):
+   * - reason: Motivo legible por humanos para deshabilitar
    *
-   * The plugin transitions to 'installed' state and stops processing events.
+   * El plugin transiciona al estado 'installed' y deja de procesar eventos.
    *
-   * Response: PluginRecord
-   * Errors: 404 if plugin not found, 400 for lifecycle errors
+   * Respuesta: PluginRecord
+   * Errores: 404 si el plugin no se encuentra, 400 para errores de ciclo de vida
    */
   router.post("/plugins/:pluginId/disable", async (req, res) => {
     assertBoard(req);
@@ -1331,16 +1331,16 @@ export function pluginRoutes(
   /**
    * GET /api/plugins/:pluginId/health
    *
-   * Run health diagnostics on a plugin.
+   * Ejecuta diagnósticos de salud en un plugin.
    *
-   * Performs the following checks:
-   * 1. Registry: Plugin is registered in the database
-   * 2. Manifest: Manifest is valid and parseable
-   * 3. Status: Plugin is in 'ready' state
-   * 4. Error state: Plugin has no unhandled errors
+   * Realiza las siguientes verificaciones:
+   * 1. Registro: El plugin está registrado en la base de datos
+   * 2. Manifiesto: El manifiesto es válido y analizable
+   * 3. Estado: El plugin está en estado 'ready'
+   * 4. Estado de error: El plugin no tiene errores sin manejar
    *
-   * Response: PluginHealthCheckResult
-   * Errors: 404 if plugin not found
+   * Respuesta: PluginHealthCheckResult
+   * Errores: 404 si el plugin no se encuentra
    */
   router.get("/plugins/:pluginId/health", async (req, res) => {
     assertBoard(req);
@@ -1354,14 +1354,14 @@ export function pluginRoutes(
 
     const checks: PluginHealthCheckResult["checks"] = [];
 
-    // Check 1: Plugin is registered
+    // Verificación 1: El plugin está registrado
     checks.push({
       name: "registry",
       passed: true,
       message: "Plugin found in registry",
     });
 
-    // Check 2: Manifest is valid
+    // Verificación 2: El manifiesto es válido
     const hasValidManifest = Boolean(plugin.manifestJson?.id);
     checks.push({
       name: "manifest",
@@ -1369,15 +1369,15 @@ export function pluginRoutes(
       message: hasValidManifest ? "Manifest is valid" : "Manifest is invalid or missing",
     });
 
-    // Check 3: Plugin status
+    // Verificación 3: Estado del plugin
     const isHealthy = plugin.status === "ready";
     checks.push({
       name: "status",
       passed: isHealthy,
-      message: `Current status: ${plugin.status}`,
+      message: `Estado actual: ${plugin.status}`,
     });
 
-    // Check 4: No last error
+    // Verificación 4: Sin último error
     const hasNoError = !plugin.lastError;
     if (!hasNoError) {
       checks.push({
@@ -1401,14 +1401,14 @@ export function pluginRoutes(
   /**
    * GET /api/plugins/:pluginId/logs
    *
-   * Query recent log entries for a plugin.
+   * Consulta entradas recientes de log de un plugin.
    *
-   * Query params:
-   * - limit: Maximum number of entries (default 25, max 500)
-   * - level: Filter by log level (info, warn, error, debug)
-   * - since: ISO timestamp to filter logs newer than this time
+   * Parámetros de consulta:
+   * - limit: Número máximo de entradas (por defecto 25, máximo 500)
+   * - level: Filtra por nivel de log (info, warn, error, debug)
+   * - since: Marca de tiempo ISO para filtrar logs más nuevos que este momento
    *
-   * Response: Array of log entries, newest first.
+   * Respuesta: Arreglo de entradas de log, las más nuevas primero.
    */
   router.get("/plugins/:pluginId/logs", async (req, res) => {
     assertBoard(req);
@@ -1448,17 +1448,17 @@ export function pluginRoutes(
   /**
    * POST /api/plugins/:pluginId/upgrade
    *
-   * Upgrade a plugin to a newer version.
+   * Actualiza un plugin a una versión más nueva.
    *
-   * Request body (optional):
-   * - version: Target version (defaults to latest)
+   * Cuerpo de solicitud (opcional):
+   * - version: Versión objetivo (por defecto latest)
    *
-   * If the upgrade adds new capabilities, the plugin transitions to
-   * 'upgrade_pending' state for board approval. Otherwise, it goes
-   * directly to 'ready'.
+   * Si la actualización agrega nuevas capacidades, el plugin transiciona al
+   * estado 'upgrade_pending' para aprobación del board. De lo contrario, pasa
+   * directamente a 'ready'.
    *
-   * Response: PluginRecord
-   * Errors: 404 if plugin not found, 400 for lifecycle errors
+   * Respuesta: PluginRecord
+   * Errores: 404 si el plugin no se encuentra, 400 para errores de ciclo de vida
    */
   router.post("/plugins/:pluginId/upgrade", async (req, res) => {
     assertBoard(req);
@@ -1473,11 +1473,11 @@ export function pluginRoutes(
     }
 
     try {
-      // Upgrade the plugin - this would typically:
-      // 1. Download the new version
-      // 2. Compare capabilities
-      // 3. If new capabilities, mark as upgrade_pending
-      // 4. Otherwise, transition to ready
+      // Actualiza el plugin - esto típicamente:
+      // 1. Descarga la nueva versión
+      // 2. Compara capacidades
+      // 3. Si hay nuevas capacidades, marca como upgrade_pending
+      // 4. De lo contrario, transiciona a ready
       const result = await lifecycle.upgrade(plugin.id, version);
       await logPluginMutationActivity(req, "plugin.upgraded", plugin.id, {
         pluginId: plugin.id,
@@ -1495,19 +1495,19 @@ export function pluginRoutes(
   });
 
   // ===========================================================================
-  // Plugin configuration routes
+  // Rutas de configuración de plugins
   // ===========================================================================
 
   /**
    * GET /api/plugins/:pluginId/config
    *
-   * Retrieve the current instance configuration for a plugin.
+   * Obtiene la configuración de instancia actual de un plugin.
    *
-   * Returns the `PluginConfig` record if one exists, or `null` if the plugin
-   * has not yet been configured.
+   * Devuelve el registro `PluginConfig` si existe, o `null` si el plugin
+   * aún no se ha configurado.
    *
-   * Response: `PluginConfig | null`
-   * Errors: 404 if plugin not found
+   * Respuesta: `PluginConfig | null`
+   * Errores: 404 si el plugin no se encuentra
    */
   router.get("/plugins/:pluginId/config", async (req, res) => {
     assertBoard(req);
@@ -1526,18 +1526,18 @@ export function pluginRoutes(
   /**
    * POST /api/plugins/:pluginId/config
    *
-   * Save (create or replace) the instance configuration for a plugin.
+   * Guarda (crea o reemplaza) la configuración de instancia de un plugin.
    *
-   * The caller provides the full `configJson` object. The server persists it
-   * via `registry.upsertConfig()`.
+   * El llamador provee el objeto completo `configJson`. El servidor lo persiste
+   * vía `registry.upsertConfig()`.
    *
-   * Request body:
-   * - `configJson`: Configuration values matching the plugin's `instanceConfigSchema`
+   * Cuerpo de solicitud:
+   * - `configJson`: Valores de configuración que coinciden con el `instanceConfigSchema` del plugin
    *
-   * Response: `PluginConfig`
-   * Errors:
-   * - 400 if request validation fails
-   * - 404 if plugin not found
+   * Respuesta: `PluginConfig`
+   * Errores:
+   * - 400 si falla la validación de la solicitud
+   * - 404 si el plugin no se encuentra
    */
   router.post("/plugins/:pluginId/config", async (req, res) => {
     assertBoard(req);
@@ -1551,13 +1551,13 @@ export function pluginRoutes(
 
     const body = req.body as { configJson?: Record<string, unknown> } | undefined;
     if (!body?.configJson || typeof body.configJson !== "object") {
-      res.status(400).json({ error: '"configJson" is required and must be an object' });
+        res.status(400).json({ error: '"configJson" es requerido y debe ser un objeto' });
       return;
     }
 
-    // Strip devUiUrl unless the caller is an instance admin. devUiUrl activates
-    // a dev-proxy in the static file route that could be abused for SSRF if any
-    // board-level user were allowed to set it.
+    // Elimina devUiUrl a menos que el llamador sea un admin de instancia. devUiUrl activa
+    // un dev-proxy en la ruta de archivos estáticos que podría abusarse para SSRF si
+    // cualquier usuario a nivel de board pudiera establecerlo.
     if (
       "devUiUrl" in body.configJson &&
       !(req.actor.type === "board" && req.actor.isInstanceAdmin)
@@ -1565,14 +1565,14 @@ export function pluginRoutes(
       delete body.configJson.devUiUrl;
     }
 
-    // Validate configJson against the plugin's instanceConfigSchema (if declared).
-    // This ensures CLI/API callers get the same validation the UI performs client-side.
+    // Valida configJson contra el instanceConfigSchema del plugin (si está declarado).
+    // Esto asegura que los llamadores CLI/API obtengan la misma validación que la UI hace del lado del cliente.
     const schema = plugin.manifestJson?.instanceConfigSchema;
     if (schema && Object.keys(schema).length > 0) {
       const validation = validateInstanceConfig(body.configJson, schema);
       if (!validation.valid) {
         res.status(400).json({
-          error: "Configuration does not match the plugin's instanceConfigSchema",
+          error: "La configuración no coincide con el instanceConfigSchema del plugin",
           fieldErrors: validation.errors,
         });
         return;
@@ -1589,10 +1589,10 @@ export function pluginRoutes(
         configKeyCount: Object.keys(body.configJson).length,
       });
 
-      // Notify the running worker about the config change (PLUGIN_SPEC §25.4.4).
-      // If the worker implements onConfigChanged, send the new config via RPC.
-      // If it doesn't (METHOD_NOT_IMPLEMENTED), restart the worker so it picks
-      // up the new config on re-initialize. If no worker is running, skip.
+      // Notifica al worker en ejecución sobre el cambio de configuración (PLUGIN_SPEC §25.4.4).
+      // Si el worker implementa onConfigChanged, envía la nueva configuración vía RPC.
+      // Si no lo hace (METHOD_NOT_IMPLEMENTED), reinicia el worker para que tome
+      // la nueva configuración al reinicializar. Si no hay worker en ejecución, omite.
       if (bridgeDeps?.workerManager.isRunning(plugin.id)) {
         try {
           await bridgeDeps.workerManager.call(
@@ -1605,15 +1605,15 @@ export function pluginRoutes(
             rpcErr instanceof JsonRpcCallError &&
             rpcErr.code === PLUGIN_RPC_ERROR_CODES.METHOD_NOT_IMPLEMENTED
           ) {
-            // Worker doesn't handle live config — restart it.
+            // El worker no maneja configuración en vivo — reinícialo.
             try {
               await lifecycle.restartWorker(plugin.id);
             } catch {
-              // Restart failure is non-fatal for the config save response.
+              // El fallo de reinicio no es fatal para la respuesta de guardado de configuración.
             }
           }
-          // Other RPC errors (timeout, unavailable) are non-fatal — config is
-          // already persisted and will take effect on next worker restart.
+          // Otros errores RPC (timeout, no disponible) no son fatales — la configuración
+          // ya está persistida y surtirá efecto en el próximo reinicio del worker.
         }
       }
 
@@ -1627,28 +1627,28 @@ export function pluginRoutes(
   /**
    * POST /api/plugins/:pluginId/config/test
    *
-   * Test a plugin configuration without persisting it by calling the plugin
-   * worker's `validateConfig` RPC method.
+   * Prueba una configuración de plugin sin persistirla llamando al método RPC
+   * `validateConfig` del worker del plugin.
    *
-   * Only works when the plugin's worker implements `onValidateConfig`.
-   * If the worker does not implement the method, returns
-   * `{ valid: false, supported: false, message: "..." }` with HTTP 200.
+   * Solo funciona cuando el worker del plugin implementa `onValidateConfig`.
+   * Si el worker no implementa el método, devuelve
+   * `{ valid: false, supported: false, message: "..." }` con HTTP 200.
    *
-   * Request body:
-   * - `configJson`: Configuration values to validate
+   * Cuerpo de solicitud:
+   * - `configJson`: Valores de configuración a validar
    *
-   * Response: `{ valid: boolean; message?: string; supported?: boolean }`
-   * Errors:
-   * - 400 if request validation fails
-   * - 404 if plugin not found
-   * - 501 if bridge deps (worker manager) are not configured
-   * - 502 if the worker is unavailable
+   * Respuesta: `{ valid: boolean; message?: string; supported?: boolean }`
+   * Errores:
+   * - 400 si falla la validación de la solicitud
+   * - 404 si el plugin no se encuentra
+   * - 501 si las deps puente (gestor de workers) no están configuradas
+   * - 502 si el worker no está disponible
    */
   router.post("/plugins/:pluginId/config/test", async (req, res) => {
     assertBoard(req);
 
     if (!bridgeDeps) {
-      res.status(501).json({ error: "Plugin bridge is not enabled" });
+      res.status(501).json({ error: "El puente de plugins no está habilitado" });
       return;
     }
 
@@ -1662,24 +1662,24 @@ export function pluginRoutes(
 
     if (plugin.status !== "ready") {
       res.status(400).json({
-        error: `Plugin is not ready (current status: ${plugin.status})`,
+        error: `El plugin no está listo (estado actual: ${plugin.status})`,
       });
       return;
     }
 
     const body = req.body as { configJson?: Record<string, unknown> } | undefined;
     if (!body?.configJson || typeof body.configJson !== "object") {
-      res.status(400).json({ error: '"configJson" is required and must be an object' });
+        res.status(400).json({ error: '"configJson" es requerido y debe ser un objeto' });
       return;
     }
 
-    // Fast schema-level rejection before hitting the worker RPC.
+    // Rechazo rápido a nivel de esquema antes de llegar al RPC del worker.
     const schema = plugin.manifestJson?.instanceConfigSchema;
     if (schema && Object.keys(schema).length > 0) {
       const validation = validateInstanceConfig(body.configJson, schema);
       if (!validation.valid) {
         res.status(400).json({
-          error: "Configuration does not match the plugin's instanceConfigSchema",
+          error: "La configuración no coincide con el instanceConfigSchema del plugin",
           fieldErrors: validation.errors,
         });
         return;
@@ -1693,8 +1693,8 @@ export function pluginRoutes(
         { config: body.configJson },
       );
 
-      // The worker returns PluginConfigValidationResult { ok, warnings?, errors? }
-      // Map to the frontend-expected shape { valid, message? }
+      // El worker devuelve PluginConfigValidationResult { ok, warnings?, errors? }
+      // Mapea a la forma esperada por el frontend { valid, message? }
       if (result.ok) {
         const warningText = result.warnings?.length
           ? `Warnings: ${result.warnings.join("; ")}`
@@ -1707,7 +1707,7 @@ export function pluginRoutes(
         res.json({ valid: false, message: errorText });
       }
     } catch (err) {
-      // If the worker does not implement validateConfig, return a structured response
+      // Si el worker no implementa validateConfig, devuelve una respuesta estructurada
       if (
         err instanceof JsonRpcCallError &&
         err.code === PLUGIN_RPC_ERROR_CODES.METHOD_NOT_IMPLEMENTED
@@ -1720,31 +1720,31 @@ export function pluginRoutes(
         return;
       }
 
-      // Worker unavailable or other RPC errors
+      // Worker no disponible u otros errores RPC
       const bridgeError = mapRpcErrorToBridgeError(err);
       res.status(502).json(bridgeError);
     }
   });
 
   // ===========================================================================
-  // Job scheduling routes
+  // Rutas de programación de trabajos
   // ===========================================================================
 
   /**
    * GET /api/plugins/:pluginId/jobs
    *
-   * List all scheduled jobs for a plugin.
+   * Lista todos los trabajos programados de un plugin.
    *
-   * Query params:
-   * - `status` (optional): Filter by job status (`active`, `paused`, `failed`)
+   * Parámetros de consulta:
+   * - `status` (opcional): Filtra por estado del trabajo (`active`, `paused`, `failed`)
    *
-   * Response: PluginJobRecord[]
-   * Errors: 404 if plugin not found
+   * Respuesta: PluginJobRecord[]
+   * Errores: 404 si el plugin no se encuentra
    */
   router.get("/plugins/:pluginId/jobs", async (req, res) => {
     assertBoard(req);
     if (!jobDeps) {
-      res.status(501).json({ error: "Job scheduling is not enabled" });
+      res.status(501).json({ error: "La programación de trabajos no está habilitada" });
       return;
     }
 
@@ -1759,7 +1759,7 @@ export function pluginRoutes(
     const validStatuses = ["active", "paused", "failed"];
     if (rawStatus !== undefined && !validStatuses.includes(rawStatus)) {
       res.status(400).json({
-        error: `Invalid status '${rawStatus}'. Must be one of: ${validStatuses.join(", ")}`,
+        error: `Estado no válido '${rawStatus}'. Debe ser uno de: ${validStatuses.join(", ")}`,
       });
       return;
     }
@@ -1779,18 +1779,18 @@ export function pluginRoutes(
   /**
    * GET /api/plugins/:pluginId/jobs/:jobId/runs
    *
-   * List execution history for a specific job.
+   * Lista el historial de ejecución de un trabajo específico.
    *
-   * Query params:
-   * - `limit` (optional): Maximum number of runs to return (default: 50)
+   * Parámetros de consulta:
+   * - `limit` (opcional): Número máximo de ejecuciones a devolver (por defecto: 50)
    *
-   * Response: PluginJobRunRecord[]
-   * Errors: 404 if plugin not found
+   * Respuesta: PluginJobRunRecord[]
+   * Errores: 404 si el plugin no se encuentra
    */
   router.get("/plugins/:pluginId/jobs/:jobId/runs", async (req, res) => {
     assertBoard(req);
     if (!jobDeps) {
-      res.status(501).json({ error: "Job scheduling is not enabled" });
+      res.status(501).json({ error: "La programación de trabajos no está habilitada" });
       return;
     }
 
@@ -1803,13 +1803,13 @@ export function pluginRoutes(
 
     const job = await jobDeps.jobStore.getJobByIdForPlugin(plugin.id, jobId);
     if (!job) {
-      res.status(404).json({ error: "Job not found" });
+        res.status(404).json({ error: "Trabajo no encontrado" });
       return;
     }
 
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 25;
     if (isNaN(limit) || limit < 1 || limit > 500) {
-      res.status(400).json({ error: "limit must be a number between 1 and 500" });
+        res.status(400).json({ error: "limit debe ser un número entre 1 y 500" });
       return;
     }
 
@@ -1825,20 +1825,20 @@ export function pluginRoutes(
   /**
    * POST /api/plugins/:pluginId/jobs/:jobId/trigger
    *
-   * Manually trigger a job execution outside its cron schedule.
+   * Dispara manualmente la ejecución de un trabajo fuera de su horario cron.
    *
-   * Creates a run with `trigger: "manual"` and dispatches immediately.
-   * The response returns before the job completes (non-blocking).
+   * Crea una ejecución con `trigger: "manual"` y despacha inmediatamente.
+   * La respuesta vuelve antes de que el trabajo complete (no bloqueante).
    *
-   * Response: `{ runId: string, jobId: string }`
-   * Errors:
-   * - 404 if plugin not found
-   * - 400 if job not found, not active, already running, or worker unavailable
+   * Respuesta: `{ runId: string, jobId: string }`
+   * Errores:
+   * - 404 si el plugin no se encuentra
+   * - 400 si el trabajo no se encuentra, no está activo, ya está en ejecución o el worker no está disponible
    */
   router.post("/plugins/:pluginId/jobs/:jobId/trigger", async (req, res) => {
     assertBoard(req);
     if (!jobDeps) {
-      res.status(501).json({ error: "Job scheduling is not enabled" });
+      res.status(501).json({ error: "La programación de trabajos no está habilitada" });
       return;
     }
 
@@ -1851,7 +1851,7 @@ export function pluginRoutes(
 
     const job = await jobDeps.jobStore.getJobByIdForPlugin(plugin.id, jobId);
     if (!job) {
-      res.status(404).json({ error: "Job not found" });
+        res.status(404).json({ error: "Trabajo no encontrado" });
       return;
     }
 
@@ -1865,84 +1865,84 @@ export function pluginRoutes(
   });
 
   // ===========================================================================
-  // Webhook ingestion route
+  // Ruta de ingestión de webhooks
   // ===========================================================================
 
   /**
    * POST /api/plugins/:pluginId/webhooks/:endpointKey
    *
-   * Receive an inbound webhook delivery for a plugin.
+   * Recibe una entrega de webhook entrante para un plugin.
    *
-   * This route is called by external systems (e.g. GitHub, Linear, Stripe) to
-   * deliver webhook payloads to a plugin. The host validates that:
-   * 1. The plugin exists and is in 'ready' state
-   * 2. The plugin declares the `webhooks.receive` capability
-   * 3. The `endpointKey` matches a declared webhook in the manifest
+   * Esta ruta la llaman sistemas externos (p. ej. GitHub, Linear, Stripe) para
+   * entregar payloads de webhook a un plugin. El host valida que:
+   * 1. El plugin existe y está en estado 'ready'
+   * 2. El plugin declara la capacidad `webhooks.receive`
+   * 3. El `endpointKey` coincide con un webhook declarado en el manifiesto
    *
-   * The delivery is recorded in the `plugin_webhook_deliveries` table and
-   * dispatched to the worker via the `handleWebhook` RPC method.
+   * La entrega se registra en la tabla `plugin_webhook_deliveries` y se
+   * despacha al worker vía el método RPC `handleWebhook`.
    *
-   * **Note:** This route does NOT require board authentication — webhook
-   * endpoints must be publicly accessible for external callers. Signature
-   * verification is the plugin's responsibility.
+   * **Nota:** Esta ruta NO requiere autenticación de board — los endpoints
+   * de webhook deben ser públicamente accesibles para llamadores externos. La verificación
+   * de firma es responsabilidad del plugin.
    *
-   * Response: `{ deliveryId: string, status: string }`
-   * Errors:
-   * - 404 if plugin not found or endpointKey not declared
-   * - 400 if plugin is not in ready state or lacks webhooks.receive capability
-   * - 502 if the worker is unavailable or the RPC call fails
+   * Respuesta: `{ deliveryId: string, status: string }`
+   * Errores:
+   * - 404 si el plugin no se encuentra o endpointKey no está declarado
+   * - 400 si el plugin no está en estado ready o carece de la capacidad webhooks.receive
+   * - 502 si el worker no está disponible o la llamada RPC falla
    */
   router.post("/plugins/:pluginId/webhooks/:endpointKey", async (req, res) => {
     if (!webhookDeps) {
-      res.status(501).json({ error: "Webhook ingestion is not enabled" });
+      res.status(501).json({ error: "La ingestión de webhooks no está habilitada" });
       return;
     }
 
     const { pluginId, endpointKey } = req.params;
 
-    // Step 1: Resolve the plugin
+    // Paso 1: Resuelve el plugin
     const plugin = await resolvePlugin(registry, pluginId);
     if (!plugin) {
       res.status(404).json({ error: "Plugin not found" });
       return;
     }
 
-    // Step 2: Validate the plugin is in 'ready' state
+    // Paso 2: Valida que el plugin esté en estado 'ready'
     if (plugin.status !== "ready") {
       res.status(400).json({
-        error: `Plugin is not ready (current status: ${plugin.status})`,
+        error: `El plugin no está listo (estado actual: ${plugin.status})`,
       });
       return;
     }
 
-    // Step 3: Validate the plugin has webhooks.receive capability
+    // Paso 3: Valida que el plugin tiene la capacidad webhooks.receive
     const manifest = plugin.manifestJson;
     if (!manifest) {
-      res.status(400).json({ error: "Plugin manifest is missing" });
+      res.status(400).json({ error: "Falta el manifiesto del plugin" });
       return;
     }
 
     const capabilities = manifest.capabilities ?? [];
     if (!capabilities.includes("webhooks.receive")) {
       res.status(400).json({
-        error: "Plugin does not have the webhooks.receive capability",
+          error: "El plugin no tiene la capacidad webhooks.receive",
       });
       return;
     }
 
-    // Step 4: Validate the endpointKey exists in the manifest's webhook declarations
+    // Paso 4: Valida que el endpointKey existe en las declaraciones de webhook del manifiesto
     const declaredWebhooks = manifest.webhooks ?? [];
     const webhookDecl = declaredWebhooks.find(
       (w) => w.endpointKey === endpointKey,
     );
     if (!webhookDecl) {
       res.status(404).json({
-        error: `Webhook endpoint '${endpointKey}' is not declared by this plugin`,
+        error: `El endpoint de webhook '${endpointKey}' no está declarado por este plugin`,
       });
       return;
     }
 
-    // Step 5: Extract request data
+    // Paso 5: Extrae los datos de la solicitud
     const requestId = randomUUID();
     const rawHeaders: Record<string, string> = {};
     for (const [key, value] of Object.entries(req.headers)) {
@@ -1953,15 +1953,15 @@ export function pluginRoutes(
       }
     }
 
-    // Use the raw buffer stashed by the express.json() `verify` callback.
-    // This preserves the exact bytes the provider signed, whereas
-    // JSON.stringify(req.body) would re-serialize and break HMAC verification.
+    // Usa el buffer crudo guardado por el callback `verify` de express.json().
+    // Esto preserva los bytes exactos que el proveedor firmó, mientras que
+    // JSON.stringify(req.body) reserializaría y rompería la verificación HMAC.
     const stashedRaw = (req as unknown as { rawBody?: Buffer }).rawBody;
     const rawBody = stashedRaw ? stashedRaw.toString("utf-8") : "";
     const parsedBody = req.body as unknown;
     const payload = (req.body as Record<string, unknown> | undefined) ?? {};
 
-    // Step 6: Record the delivery in the database
+    // Paso 6: Registra la entrega en la base de datos
     const startedAt = new Date();
     const [delivery] = await db
       .insert(pluginWebhookDeliveries)
@@ -1975,7 +1975,7 @@ export function pluginRoutes(
       })
       .returning({ id: pluginWebhookDeliveries.id });
 
-    // Step 7: Dispatch to the worker via handleWebhook RPC
+    // Paso 7: Despacha al worker vía RPC handleWebhook
     try {
       await webhookDeps.workerManager.call(plugin.id, "handleWebhook", {
         endpointKey,
@@ -1985,7 +1985,7 @@ export function pluginRoutes(
         requestId,
       });
 
-      // Step 8: Update delivery record to success
+      // Paso 8: Actualiza el registro de entrega a éxito
       const finishedAt = new Date();
       const durationMs = finishedAt.getTime() - startedAt.getTime();
       await db
@@ -2002,7 +2002,7 @@ export function pluginRoutes(
         status: "success",
       });
     } catch (err) {
-      // Step 8 (error): Update delivery record to failed
+      // Paso 8 (error): Actualiza el registro de entrega a fallido
       const finishedAt = new Date();
       const durationMs = finishedAt.getTime() - startedAt.getTime();
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -2026,20 +2026,20 @@ export function pluginRoutes(
   });
 
   // ===========================================================================
-  // Plugin health dashboard — aggregated diagnostics for the settings page
+  // Panel de salud de plugins — diagnósticos agregados para la página de ajustes
   // ===========================================================================
 
   /**
    * GET /api/plugins/:pluginId/dashboard
    *
-   * Aggregated health dashboard data for a plugin's settings page.
+   * Datos agregados del panel de salud para la página de ajustes de un plugin.
    *
-   * Returns worker diagnostics (status, uptime, crash history), recent job
-   * runs, recent webhook deliveries, and the current health check result —
-   * all in a single response to avoid multiple round-trips.
+   * Devuelve diagnósticos del worker (estado, uptime, historial de caídas), ejecuciones
+   * recientes de trabajos, entregas recientes de webhooks y el resultado actual de la verificación de salud —
+   * todo en una sola respuesta para evitar múltiples idas y vueltas.
    *
-   * Response: PluginDashboardData
-   * Errors: 404 if plugin not found
+   * Respuesta: PluginDashboardData
+   * Errores: 404 si el plugin no se encuentra
    */
   router.get("/plugins/:pluginId/dashboard", async (req, res) => {
     assertBoard(req);
@@ -2051,7 +2051,7 @@ export function pluginRoutes(
       return;
     }
 
-    // --- Worker diagnostics ---
+    // --- Diagnósticos del worker ---
     let worker: {
       status: string;
       pid: number | null;
@@ -2063,7 +2063,7 @@ export function pluginRoutes(
       nextRestartAt: number | null;
     } | null = null;
 
-    // Try bridgeDeps first (primary source for worker manager), fallback to webhookDeps
+    // Intenta bridgeDeps primero (fuente primaria del gestor de workers), recurre a webhookDeps
     const wm = bridgeDeps?.workerManager ?? webhookDeps?.workerManager ?? null;
     if (wm) {
       const handle = wm.getWorker(plugin.id);
@@ -2082,7 +2082,7 @@ export function pluginRoutes(
       }
     }
 
-    // --- Recent job runs (last 10, newest first) ---
+    // --- Ejecuciones recientes de trabajos (últimas 10, las más nuevas primero) ---
     let recentJobRuns: Array<{
       id: string;
       jobId: string;
@@ -2099,7 +2099,7 @@ export function pluginRoutes(
     if (jobDeps) {
       try {
         const runs = await jobDeps.jobStore.listRunsByPlugin(plugin.id, undefined, 10);
-        // Also fetch job definitions so we can include jobKey
+        // También obtiene las definiciones de trabajos para incluir jobKey
         const jobs = await jobDeps.jobStore.listJobs(plugin.id);
         const jobKeyMap = new Map(jobs.map((j) => [j.id, j.jobKey]));
 
@@ -2118,11 +2118,11 @@ export function pluginRoutes(
             createdAt: new Date(r.createdAt).toISOString(),
           }));
       } catch {
-        // Job data unavailable — leave empty
+        // Datos de trabajo no disponibles — deja vacío
       }
     }
 
-    // --- Recent webhook deliveries (last 10, newest first) ---
+    // --- Entregas recientes de webhooks (últimas 10, las más nuevas primero) ---
     let recentWebhookDeliveries: Array<{
       id: string;
       webhookKey: string;
@@ -2162,10 +2162,10 @@ export function pluginRoutes(
         createdAt: d.createdAt.toISOString(),
       }));
     } catch {
-      // Webhook data unavailable — leave empty
+      // Datos de webhook no disponibles — deja vacío
     }
 
-    // --- Health check (same logic as GET /health) ---
+    // --- Verificación de salud (misma lógica que GET /health) ---
     const checks: PluginHealthCheckResult["checks"] = [];
 
     checks.push({
@@ -2185,7 +2185,7 @@ export function pluginRoutes(
     checks.push({
       name: "status",
       passed: isHealthy,
-      message: `Current status: ${plugin.status}`,
+      message: `Estado actual: ${plugin.status}`,
     });
 
     const hasNoError = !plugin.lastError;

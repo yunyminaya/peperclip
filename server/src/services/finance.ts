@@ -21,9 +21,9 @@ async function assertBelongsToCompany(
     .where(eq(table.id, id))
     .then((rows) => rows[0] ?? null);
 
-  if (!row) throw notFound(`${label} not found`);
+  if (!row) throw notFound(`${label} no encontrado`);
   if ((row as unknown as { companyId: string }).companyId !== companyId) {
-    throw unprocessable(`${label} does not belong to company`);
+    throw unprocessable(`${label} no pertenece a la empresa`);
   }
 }
 
@@ -41,12 +41,12 @@ export function financeService(db: Db) {
 
   return {
     createEvent: async (companyId: string, data: Omit<typeof financeEvents.$inferInsert, "companyId">) => {
-      if (data.agentId) await assertBelongsToCompany(db, agents, data.agentId, companyId, "Agent");
+      if (data.agentId) await assertBelongsToCompany(db, agents, data.agentId, companyId, "Agente");
       if (data.issueId) await assertBelongsToCompany(db, issues, data.issueId, companyId, "Issue");
-      if (data.projectId) await assertBelongsToCompany(db, projects, data.projectId, companyId, "Project");
-      if (data.goalId) await assertBelongsToCompany(db, goals, data.goalId, companyId, "Goal");
-      if (data.heartbeatRunId) await assertBelongsToCompany(db, heartbeatRuns, data.heartbeatRunId, companyId, "Heartbeat run");
-      if (data.costEventId) await assertBelongsToCompany(db, costEvents, data.costEventId, companyId, "Cost event");
+      if (data.projectId) await assertBelongsToCompany(db, projects, data.projectId, companyId, "Proyecto");
+      if (data.goalId) await assertBelongsToCompany(db, goals, data.goalId, companyId, "Objetivo");
+      if (data.heartbeatRunId) await assertBelongsToCompany(db, heartbeatRuns, data.heartbeatRunId, companyId, "Ejecución de latido");
+      if (data.costEventId) await assertBelongsToCompany(db, costEvents, data.costEventId, companyId, "Evento de costo");
 
       const event = await db
         .insert(financeEvents)

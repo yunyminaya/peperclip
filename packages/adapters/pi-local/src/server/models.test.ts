@@ -19,7 +19,7 @@ describe("pi models", () => {
   it("rejects when model is missing", async () => {
     await expect(
       ensurePiModelConfiguredAndAvailable({ model: "" }),
-    ).rejects.toThrow("Pi requires `adapterConfig.model`");
+    ).rejects.toThrow("Pi requiere `adapterConfig.model`");
   });
 
   it("rejects when discovery cannot run for configured model", async () => {

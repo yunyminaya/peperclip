@@ -1,132 +1,132 @@
-# Releasing Paperclip
+# Versionar Paperclip
 
-Maintainer runbook for shipping Paperclip across npm, GitHub, and the website-facing changelog surface.
+Manual del mantenedor para lanzar Paperclip en npm, GitHub y la superficie de changelog visible en el sitio web.
 
-The release model is now commit-driven:
+El modelo de versión ahora es dirigido por commits:
 
-1. Every push to `master` publishes a canary automatically.
-2. Stable releases are manually promoted from a chosen tested commit or canary tag.
-3. Stable release notes live in `releases/vYYYY.MDD.P.md`.
-4. Only stable releases get GitHub Releases.
+1. Cada push a `master` publica un canary automáticamente.
+2. Las versiones estables se promueven manualmente desde un commit elegido probado o tag canary.
+3. Las notas de versión estable viven en `releases/vYYYY.MDD.P.md`.
+4. Solo las versiones estables obtienen GitHub Releases.
 
-## Versioning Model
+## Modelo de versionado
 
-Paperclip uses calendar versions that still fit semver syntax:
+Paperclip usa versiones de calendario que aún encajan en sintaxis semver:
 
-- stable: `YYYY.MDD.P`
+- estable: `YYYY.MDD.P`
 - canary: `YYYY.MDD.P-canary.N`
 
-Examples:
+Ejemplos:
 
-- first stable on March 18, 2026: `2026.318.0`
-- second stable on March 18, 2026: `2026.318.1`
-- fourth canary for the `2026.318.1` line: `2026.318.1-canary.3`
+- primera estable el 18 de marzo de 2026: `2026.318.0`
+- segunda estable el 18 de marzo de 2026: `2026.318.1`
+- cuarto canary para la línea `2026.318.1`: `2026.318.1-canary.3`
 
-Important constraints:
+Restricciones importantes:
 
-- the middle numeric slot is `MDD`, where `M` is the UTC month and `DD` is the zero-padded UTC day
-- use `2026.303.0` for March 3, not `2026.33.0`
-- do not use leading zeroes such as `2026.0318.0`
-- do not use four numeric segments such as `2026.3.18.1`
-- the semver-safe canary form is `2026.318.0-canary.1`
+- el segmento numérico del medio es `MDD`, donde `M` es el mes UTC y `DD` es el día UTC con cero a la izquierda
+- usa `2026.303.0` para el 3 de marzo, no `2026.33.0`
+- no uses ceros a la izquierda como `2026.0318.0`
+- no uses cuatro segmentos numéricos como `2026.3.18.1`
+- la forma canary segura para semver es `2026.318.0-canary.1`
 
-## Release Surfaces
+## Superficies de versión
 
-Every stable release has four separate surfaces:
+Cada versión estable tiene cuatro superficies separadas:
 
-1. **Verification** — the exact git SHA passes typecheck, tests, and build
-2. **npm** — `paperclipai` and public workspace packages are published
-3. **GitHub** — the stable release gets a git tag and GitHub Release
-4. **Website / announcements** — the stable changelog is published externally and announced
+1. **Verificación** — el SHA de git exacto pasa typecheck, pruebas y build
+2. **npm** — `paperclipai` y los paquetes públicos del workspace se publican
+3. **GitHub** — la versión estable obtiene un tag de git y un GitHub Release
+4. **Sitio web / anuncios** — el changelog estable se publica externamente y se anuncia
 
-A stable release is done only when all four surfaces are handled.
+Una versión estable está terminada solo cuando las cuatro superficies están atendidas.
 
-Canaries only cover the first two surfaces plus an internal traceability tag.
+Los canaries solo cubren las primeras dos superficies más un tag de trazabilidad interno.
 
-## Core Invariants
+## Invariantes centrales
 
-- canaries publish from `master`
-- stables publish from an explicitly chosen source ref
-- tags point at the original source commit, not a generated release commit
-- stable notes are always `releases/vYYYY.MDD.P.md`
-- canaries never create GitHub Releases
-- canaries never require changelog generation
+- los canaries se publican desde `master`
+- las estables se publican desde un ref fuente elegido explícitamente
+- los tags apuntan al commit fuente original, no a un commit de versión generado
+- las notas estables siempre son `releases/vYYYY.MDD.P.md`
+- los canaries nunca crean GitHub Releases
+- los canaries nunca requieren generación de changelog
 
 ## TL;DR
 
 ### Canary
 
-Every push to `master` runs the canary path inside [`.github/workflows/release.yml`](../.github/workflows/release.yml).
+Cada push a `master` ejecuta la ruta canary dentro de [`.github/workflows/release.yml`](../.github/workflows/release.yml).
 
-It:
+Hace:
 
-- verifies the pushed commit
-- computes the canary version for the current UTC date
-- publishes under npm dist-tag `canary`
-- creates a git tag `canary/vYYYY.MDD.P-canary.N`
+- verifica el commit pusheado
+- calcula la versión canary para la fecha UTC actual
+- publica bajo el dist-tag de npm `canary`
+- crea un tag de git `canary/vYYYY.MDD.P-canary.N`
 
-Users install canaries with:
+Los usuarios instalan canaries con:
 
 ```bash
 npx paperclipai@canary onboard
-# or
+# o
 npx paperclipai@canary onboard --data-dir "$(mktemp -d /tmp/paperclip-canary.XXXXXX)"
 ```
 
-### Stable
+### Estable
 
-Use [`.github/workflows/release.yml`](../.github/workflows/release.yml) from the Actions tab with the manual `workflow_dispatch` inputs.
+Usa [`.github/workflows/release.yml`](../.github/workflows/release.yml) desde la pestaña Actions con las entradas manuales de `workflow_dispatch`.
 
-[Run the action here](https://github.com/paperclipai/paperclip/actions/workflows/release.yml)
+[Ejecuta la acción aquí](https://github.com/paperclipai/paperclip/actions/workflows/release.yml)
 
-Inputs:
+Entradas:
 
 - `source_ref`
-  - commit SHA, branch, or tag
+  - SHA de commit, rama o tag
 - `stable_date`
-  - optional UTC date override in `YYYY-MM-DD`
-  - enter a date like `2026-03-18`, not a version like `2026.318.0`
+  - override opcional de fecha UTC en `YYYY-MM-DD`
+  - ingresa una fecha como `2026-03-18`, no una versión como `2026.318.0`
 - `dry_run`
-  - preview only when true
+  - solo vista previa cuando es verdadero
 
-Before running stable:
+Antes de ejecutar la estable:
 
-1. pick the canary commit or tag you trust
-2. resolve the target stable version with `./scripts/release.sh stable --date "$(date +%F)" --print-version`
-3. create or update `releases/vYYYY.MDD.P.md` on that source ref
-4. run the stable workflow from that source ref
+1. elige el commit o tag canary en el que confíes
+2. resuelve la versión estable objetivo con `./scripts/release.sh stable --date "$(date +%F)" --print-version`
+3. crea o actualiza `releases/vYYYY.MDD.P.md` en ese ref fuente
+4. ejecuta el workflow estable desde ese ref fuente
 
-Example:
+Ejemplo:
 
 - `source_ref`: `master`
 - `stable_date`: `2026-03-18`
-- resulting stable version: `2026.318.0`
+- versión estable resultante: `2026.318.0`
 
-The workflow:
+El workflow:
 
-- re-verifies the exact source ref
-- computes the next stable patch slot for the chosen UTC date
-- publishes `YYYY.MDD.P` under npm dist-tag `latest`
-- creates git tag `vYYYY.MDD.P`
-- creates or updates the GitHub Release from `releases/vYYYY.MDD.P.md`
+- re-verifica el ref fuente exacto
+- calcula el siguiente segmento de parche estable para la fecha UTC elegida
+- publica `YYYY.MDD.P` bajo el dist-tag de npm `latest`
+- crea el tag de git `vYYYY.MDD.P`
+- crea o actualiza el GitHub Release desde `releases/vYYYY.MDD.P.md`
 
-## Local Commands
+## Comandos locales
 
-### Preview a canary locally
+### Vista previa de un canary en local
 
 ```bash
 ./scripts/release.sh canary --dry-run
 ```
 
-### Preview a stable locally
+### Vista previa de una estable en local
 
 ```bash
 ./scripts/release.sh stable --dry-run
 ```
 
-### Publish a stable locally
+### Publicar una estable en local
 
-This is mainly for emergency/manual use. The normal path is the GitHub workflow.
+Esto es principalmente para uso de emergencia/manual. La ruta normal es el workflow de GitHub.
 
 ```bash
 ./scripts/release.sh stable
@@ -134,114 +134,114 @@ git push public-gh refs/tags/vYYYY.MDD.P
 PUBLISH_REMOTE=public-gh ./scripts/create-github-release.sh YYYY.MDD.P
 ```
 
-## Stable Changelog Workflow
+## Flujo de trabajo del changelog estable
 
-Stable changelog files live at:
+Los archivos de changelog estable viven en:
 
 - `releases/vYYYY.MDD.P.md`
 
-Canaries do not get changelog files.
+Los canaries no obtienen archivos de changelog.
 
-Recommended local generation flow:
+Flujo de generación local recomendado:
 
 ```bash
 VERSION="$(./scripts/release.sh stable --date 2026-03-18 --print-version)"
 claude --print --output-format stream-json --verbose --dangerously-skip-permissions --model claude-opus-4-6 "Use the release-changelog skill to draft or update releases/v${VERSION}.md for Paperclip. Read doc/RELEASING.md and .agents/skills/release-changelog/SKILL.md, then generate the stable changelog for v${VERSION} from commits since the last stable tag. Do not create a canary changelog."
 ```
 
-The repo intentionally does not run this through GitHub Actions because:
+El repo intencionalmente no ejecuta esto a través de GitHub Actions porque:
 
-- canaries are too frequent
-- stable notes are the only public narrative surface that needs LLM help
-- maintainer LLM tokens should not live in Actions
+- los canaries son demasiado frecuentes
+- las notas estables son la única superficie narrativa pública que necesita ayuda de LLM
+- los tokens de LLM del mantenedor no deben vivir en Actions
 
-## Smoke Testing
+## Pruebas de humo
 
-For a canary:
+Para un canary:
 
 ```bash
 PAPERCLIPAI_VERSION=canary ./scripts/docker-onboard-smoke.sh
 ```
 
-For the current stable:
+Para la estable actual:
 
 ```bash
 PAPERCLIPAI_VERSION=latest ./scripts/docker-onboard-smoke.sh
 ```
 
-Useful isolated variants:
+Variantes aisladas útiles:
 
 ```bash
 HOST_PORT=3232 DATA_DIR=./data/release-smoke-canary PAPERCLIPAI_VERSION=canary ./scripts/docker-onboard-smoke.sh
 HOST_PORT=3233 DATA_DIR=./data/release-smoke-stable PAPERCLIPAI_VERSION=latest ./scripts/docker-onboard-smoke.sh
 ```
 
-Automated browser smoke is also available:
+El humo automatizado de navegador también está disponible:
 
 ```bash
 gh workflow run release-smoke.yml -f paperclip_version=canary
 gh workflow run release-smoke.yml -f paperclip_version=latest
 ```
 
-Minimum checks:
+Chequeos mínimos:
 
-- `npx paperclipai@canary onboard` installs
-- onboarding completes without crashes
-- authenticated login works with the smoke credentials
-- the browser lands in onboarding on a fresh instance
-- company creation succeeds
-- the first CEO agent is created
-- the first CEO heartbeat run is triggered
+- `npx paperclipai@canary onboard` instala
+- la incorporación se completa sin fallas
+- el login autenticado funciona con las credenciales de humo
+- el navegador aterriza en incorporación en una instancia nueva
+- la creación de empresa tiene éxito
+- se crea el primer agente CEO
+- se dispara la primera ejecución de latido del CEO
 
-## Rollback
+## Reversión
 
-Rollback does not unpublish versions.
+La reversión no despublica versiones.
 
-It only moves the `latest` dist-tag back to a previous stable:
+Solo mueve el dist-tag `latest` de vuelta a una estable anterior:
 
 ```bash
 ./scripts/rollback-latest.sh 2026.318.0 --dry-run
 ./scripts/rollback-latest.sh 2026.318.0
 ```
 
-Then fix forward with a new stable patch slot or release date.
+Luego corrige hacia adelante con un nuevo segmento de parche estable o fecha de versión.
 
-## Failure Playbooks
+## Manuales de falla
 
-### If the canary publishes but smoke testing fails
+### Si el canary publica pero las pruebas de humo fallan
 
-Do not run stable.
+No ejecutes la estable.
 
-Instead:
+En su lugar:
 
-1. fix the issue on `master`
-2. merge the fix
-3. wait for the next automatic canary
-4. rerun smoke testing
+1. corrige el issue en `master`
+2. haz merge de la corrección
+3. espera el siguiente canary automático
+4. re-ejecuta las pruebas de humo
 
-### If stable npm publish succeeds but tag push or GitHub release creation fails
+### Si la publicación npm estable tiene éxito pero el push del tag o la creación del GitHub release falla
 
-This is a partial release. npm is already live.
+Esto es una versión parcial. npm ya está en vivo.
 
-Do this immediately:
+Haz esto inmediatamente:
 
-1. push the missing tag
-2. rerun `PUBLISH_REMOTE=public-gh ./scripts/create-github-release.sh YYYY.MDD.P`
-3. verify the GitHub Release notes point at `releases/vYYYY.MDD.P.md`
+1. pushea el tag faltante
+2. re-ejecuta `PUBLISH_REMOTE=public-gh ./scripts/create-github-release.sh YYYY.MDD.P`
+3. verifica que las notas del GitHub Release apunten a `releases/vYYYY.MDD.P.md`
 
-Do not republish the same version.
+No republices la misma versión.
 
-### If `latest` is broken after stable publish
+### Si `latest` está roto después de la publicación estable
 
-Roll back the dist-tag:
+Revierte el dist-tag:
 
 ```bash
 ./scripts/rollback-latest.sh YYYY.MDD.P
 ```
 
-Then fix forward with a new stable release.
+Luego corrige hacia adelante con una nueva versión estable.
 
-## Related Files
+## Archivos relacionados
 
 - [`scripts/release.sh`](../scripts/release.sh)
 - [`scripts/release-package-map.mjs`](../scripts/release-package-map.mjs)

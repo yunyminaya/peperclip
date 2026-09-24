@@ -2,14 +2,14 @@
 /**
  * generate-npm-package-json.mjs
  *
- * Reads the dev package.json (which has workspace:* refs) and produces
- * a publishable package.json in cli/ with:
- *   - workspace:* dependencies removed
- *   - all external dependencies from workspace packages inlined
- *   - proper metadata for npm
+ * Lee el package.json de desarrollo (que tiene referencias workspace:*) y produce
+ * un package.json publicable en cli/ con:
+ *   - dependencias workspace:* eliminadas
+ *   - todas las dependencias externas de los paquetes del workspace integradas
+ *   - metadatos adecuados para npm
  *
- * Reads from cli/package.dev.json if it exists (build already ran),
- * otherwise from cli/package.json.
+ * Lee de cli/package.dev.json si existe (la compilación ya se ejecutó),
+ * de lo contrario desde cli/package.json.
  */
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -23,8 +23,8 @@ function readPkg(relativePath) {
   return JSON.parse(readFileSync(resolve(repoRoot, relativePath, "package.json"), "utf8"));
 }
 
-// Read all workspace packages that are BUNDLED into the CLI.
-// Note: "server" is excluded — it's published separately as a dependency.
+// Lee todos los paquetes del workspace que se EMPAQUETAN en la CLI.
+// Nota: "server" está excluido — se publica por separado como dependencia.
 const workspacePaths = [
   "cli",
   "packages/db",
@@ -36,13 +36,13 @@ const workspacePaths = [
   "packages/adapters/openclaw-gateway",
 ];
 
-// Workspace packages that are NOT bundled and must stay as npm dependencies.
-// These get published separately and resolved at runtime.
+// Paquetes del workspace que NO se empaquetan y deben seguir como dependencias de npm.
+// Estos se publican por separado y se resuelven en tiempo de ejecución.
 const externalWorkspacePackages = new Set([
   "@paperclipai/server",
 ]);
 
-// Collect all external dependencies from all workspace packages
+// Recopila todas las dependencias externas de todos los paquetes del workspace
 const allDeps = {};
 const allOptionalDeps = {};
 
@@ -53,14 +53,14 @@ for (const pkgPath of workspacePaths) {
 
   for (const [name, version] of Object.entries(deps)) {
     if (name.startsWith("@paperclipai/") && !externalWorkspacePackages.has(name)) continue;
-    // For external workspace packages, read their version directly
+    // Para paquetes externos del workspace, lee su versión directamente
     if (externalWorkspacePackages.has(name)) {
       const pkgDirMap = { "@paperclipai/server": "server" };
       const wsPkg = readPkg(pkgDirMap[name]);
       allDeps[name] = wsPkg.version;
       continue;
     }
-    // Keep the more specific (pinned) version if conflict
+    // Conserva la versión más específica (fijada) en caso de conflicto
     if (!allDeps[name] || !version.startsWith("^")) {
       allDeps[name] = version;
     }
@@ -71,19 +71,19 @@ for (const pkgPath of workspacePaths) {
   }
 }
 
-// Sort alphabetically
+// Ordena alfabéticamente
 const sortedDeps = Object.fromEntries(Object.entries(allDeps).sort(([a], [b]) => a.localeCompare(b)));
 const sortedOptDeps = Object.fromEntries(
   Object.entries(allOptionalDeps).sort(([a], [b]) => a.localeCompare(b)),
 );
 
-// Read the CLI package metadata — prefer the dev backup if it exists
+// Lee los metadatos del paquete de la CLI — prefiere el respaldo de desarrollo si existe
 const devPkgPath = resolve(repoRoot, "cli/package.dev.json");
 const cliPkg = existsSync(devPkgPath)
   ? JSON.parse(readFileSync(devPkgPath, "utf8"))
   : readPkg("cli");
 
-// Build the publishable package.json
+// Compila el package.json publicable
 const publishPkg = {
   name: cliPkg.name,
   version: cliPkg.version,
@@ -108,5 +108,5 @@ const output = JSON.stringify(publishPkg, null, 2) + "\n";
 const outPath = resolve(repoRoot, "cli/package.json");
 writeFileSync(outPath, output);
 
-console.log(`  ✓  Generated publishable package.json (${Object.keys(sortedDeps).length} deps)`);
-console.log(`     Version: ${cliPkg.version}`);
+console.log(`  ✓  package.json publicable generado (${Object.keys(sortedDeps).length} deps)`);
+console.log(`     Versión: ${cliPkg.version}`);

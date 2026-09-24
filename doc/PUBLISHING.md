@@ -1,148 +1,148 @@
-# Publishing to npm
+# Publicar en npm
 
-Low-level reference for how Paperclip packages are prepared and published to npm.
+Referencia de bajo nivel sobre cómo se preparan y publican los paquetes de Paperclip en npm.
 
-For the maintainer workflow, use [doc/RELEASING.md](RELEASING.md). This document focuses on packaging internals.
+Para el flujo de trabajo del mantenedor, usa [doc/RELEASING.md](RELEASING.md). Este documento se enfoca en los internos del empaquetado.
 
-## Current Release Entry Points
+## Puntos de entrada de versión actuales
 
-Use these scripts:
+Usa estos scripts:
 
-- [`scripts/release.sh`](../scripts/release.sh) for canary and stable publish flows
-- [`scripts/create-github-release.sh`](../scripts/create-github-release.sh) after pushing a stable tag
-- [`scripts/rollback-latest.sh`](../scripts/rollback-latest.sh) to repoint `latest`
-- [`scripts/build-npm.sh`](../scripts/build-npm.sh) for the CLI packaging build
+- [`scripts/release.sh`](../scripts/release.sh) para flujos de publicación canary y stable
+- [`scripts/create-github-release.sh`](../scripts/create-github-release.sh) después de pushear un tag estable
+- [`scripts/rollback-latest.sh`](../scripts/rollback-latest.sh) para reapuntalar `latest`
+- [`scripts/build-npm.sh`](../scripts/build-npm.sh) para el build de empaquetado del CLI
 
-Paperclip no longer uses release branches or Changesets for publishing.
+Paperclip ya no usa ramas de versión ni Changesets para publicar.
 
-## Why the CLI needs special packaging
+## Por qué el CLI necesita empaquetado especial
 
-The CLI package, `paperclipai`, imports code from workspace packages such as:
+El paquete CLI, `paperclipai`, importa código de paquetes del workspace como:
 
 - `@paperclipai/server`
 - `@paperclipai/db`
 - `@paperclipai/shared`
-- adapter packages under `packages/adapters/`
+- paquetes de adaptadores bajo `packages/adapters/`
 
-Those workspace references are valid in development but not in a publishable npm package. The release flow rewrites versions temporarily, then builds a publishable CLI bundle.
+Esas referencias del workspace son válidas en desarrollo pero no en un paquete npm publicable. El flujo de versión reescribe versiones temporalmente, luego construye un bundle CLI publicable.
 
 ## `build-npm.sh`
 
-Run:
+Ejecuta:
 
 ```bash
 ./scripts/build-npm.sh
 ```
 
-This script:
+Este script:
 
-1. runs the forbidden token check unless `--skip-checks` is supplied
-2. runs `pnpm -r typecheck`
-3. bundles the CLI entrypoint with esbuild into `cli/dist/index.js`
-4. verifies the bundled entrypoint with `node --check`
-5. rewrites `cli/package.json` into a publishable npm manifest and stores the dev copy as `cli/package.dev.json`
-6. copies the repo `README.md` into `cli/README.md` for npm metadata
+1. ejecuta el chequeo de tokens prohibidos a menos que se pase `--skip-checks`
+2. ejecuta `pnpm -r typecheck`
+3. empaqueta el entrypoint del CLI con esbuild en `cli/dist/index.js`
+4. verifica el entrypoint empaquetado con `node --check`
+5. reescribe `cli/package.json` en un manifiesto npm publicable y guarda la copia de dev como `cli/package.dev.json`
+6. copia el `README.md` del repo en `cli/README.md` para metadatos de npm
 
-After the release script exits, the dev manifest and temporary files are restored automatically.
+Después de que el script de versión termina, el manifiesto de dev y los archivos temporales se restauran automáticamente.
 
-## Package discovery and versioning
+## Descubrimiento de paquetes y versionado
 
-Public packages are discovered from:
+Los paquetes públicos se descubren desde:
 
 - `packages/`
 - `server/`
 - `ui/`
 - `cli/`
 
-The version rewrite step now uses [`scripts/release-package-map.mjs`](../scripts/release-package-map.mjs), which:
+El paso de reescritura de versión ahora usa [`scripts/release-package-map.mjs`](../scripts/release-package-map.mjs), que:
 
-- finds all public packages
-- sorts them topologically by internal dependencies
-- rewrites each package version to the target release version
-- rewrites internal `workspace:*` dependency references to the exact target version
-- updates the CLI's displayed version string
+- encuentra todos los paquetes públicos
+- los ordena topológicamente por dependencias internas
+- reescribe la versión de cada paquete a la versión de versión objetivo
+- reescribe las referencias internas de dependencias `workspace:*` a la versión objetivo exacta
+- actualiza la cadena de versión mostrada del CLI
 
-Those rewrites are temporary. The working tree is restored after publish or dry-run.
+Esas reescrituras son temporales. El working tree se restaura después de publicar o del dry-run.
 
-## `@paperclipai/ui` packaging
+## Empaquetado de `@paperclipai/ui`
 
-The UI package publishes prebuilt static assets, not the source workspace.
+El paquete UI publica assets estáticos preconstruidos, no el workspace fuente.
 
-The `ui` package uses [`scripts/generate-ui-package-json.mjs`](../scripts/generate-ui-package-json.mjs) during `prepack` to swap in a lean publish manifest that:
+El paquete `ui` usa [`scripts/generate-ui-package-json.mjs`](../scripts/generate-ui-package-json.mjs) durante `prepack` para cambiar a un manifiesto de publicación ligero que:
 
-- keeps the release-managed `name` and `version`
-- publishes only `dist/`
-- omits the source-only dependency graph from downstream installs
+- mantiene el `name` y la `version` gestionados por la versión
+- publica solo `dist/`
+- omite el grafo de dependencias solo de fuente de las instalaciones downstream
 
-After packing or publishing, `postpack` restores the development manifest automatically.
+Después de empaquetar o publicar, `postpack` restaura automáticamente el manifiesto de desarrollo.
 
-## Version formats
+## Formatos de versión
 
-Paperclip uses calendar versions:
+Paperclip usa versiones de calendario:
 
-- stable: `YYYY.MDD.P`
+- estable: `YYYY.MDD.P`
 - canary: `YYYY.MDD.P-canary.N`
 
-Examples:
+Ejemplos:
 
-- stable: `2026.318.0`
+- estable: `2026.318.0`
 - canary: `2026.318.1-canary.2`
 
-## Publish model
+## Modelo de publicación
 
 ### Canary
 
-Canaries publish under the npm dist-tag `canary`.
+Los canaries se publican bajo el dist-tag de npm `canary`.
 
-Example:
+Ejemplo:
 
 - `paperclipai@2026.318.1-canary.2`
 
-This keeps the default install path unchanged while allowing explicit installs with:
+Esto mantiene sin cambios la ruta de instalación por defecto mientras permite instalaciones explícitas con:
 
 ```bash
 npx paperclipai@canary onboard
 ```
 
-### Stable
+### Estable
 
-Stable publishes use the npm dist-tag `latest`.
+Las publicaciones estables usan el dist-tag de npm `latest`.
 
-Example:
+Ejemplo:
 
 - `paperclipai@2026.318.0`
 
-Stable publishes do not create a release commit. Instead:
+Las publicaciones estables no crean un commit de versión. En su lugar:
 
-- package versions are rewritten temporarily
-- packages are published from the chosen source commit
-- git tag `vYYYY.MDD.P` points at that original commit
+- las versiones de paquetes se reescriben temporalmente
+- los paquetes se publican desde el commit fuente elegido
+- el tag de git `vYYYY.MDD.P` apunta a ese commit original
 
-## Trusted publishing
+## Publicación confiable (trusted publishing)
 
-The intended CI model is npm trusted publishing through GitHub OIDC.
+El modelo de CI previsto es publicación confiable de npm a través de GitHub OIDC.
 
-That means:
+Eso significa:
 
-- no long-lived `NPM_TOKEN` in repository secrets
-- GitHub Actions obtains short-lived publish credentials
-- trusted publisher rules are configured per workflow file
+- sin `NPM_TOKEN` de larga duración en secretos del repositorio
+- GitHub Actions obtiene credenciales de publicación de corta duración
+- las reglas de publicador confiable se configuran por archivo de workflow
 
-See [doc/RELEASE-AUTOMATION-SETUP.md](RELEASE-AUTOMATION-SETUP.md) for the GitHub/npm setup steps.
+Consulta [doc/RELEASE-AUTOMATION-SETUP.md](RELEASE-AUTOMATION-SETUP.md) para los pasos de configuración de GitHub/npm.
 
-## Rollback model
+## Modelo de reversión
 
-Rollback does not unpublish anything.
+La reversión no despublica nada.
 
-It repoints the `latest` dist-tag to a prior stable version:
+Reapunta el dist-tag `latest` a una versión estable anterior:
 
 ```bash
 ./scripts/rollback-latest.sh 2026.318.0
 ```
 
-This is the fastest way to restore the default install path if a stable release is bad.
+Esta es la forma más rápida de restaurar la ruta de instalación por defecto si una versión estable es mala.
 
-## Related Files
+## Archivos relacionados
 
 - [`scripts/build-npm.sh`](../scripts/build-npm.sh)
 - [`scripts/generate-npm-package-json.mjs`](../scripts/generate-npm-package-json.mjs)

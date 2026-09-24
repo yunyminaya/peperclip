@@ -1,151 +1,150 @@
-# Issue Documents Plan
+# Plan de documentos de issue
 
-Status: Draft  
-Owner: Backend + UI + Agent Protocol  
-Date: 2026-03-13  
-Primary issue: `PAP-448`
+Estado: Borrador  
+Responsable: Backend + UI + Protocolo de agente  
+Fecha: 2026-03-13  
+Issue principal: `PAP-448`
 
-## Summary
+## Resumen
 
-Add first-class **documents** to Paperclip as editable, revisioned, company-scoped text artifacts that can be linked to issues.
+Agregar **documentos** de primera clase a Paperclip como artefactos de texto editables, con revisiones y alcance de empresa, que puedan vincularse a issues.
 
-The first required convention is a document with key `plan`.
+La primera convención requerida es un documento con la clave `plan`.
 
-This solves the immediate workflow problem in `PAP-448`:
+Esto resuelve el problema inmediato del flujo de trabajo en `PAP-448`:
 
-- plans should stop living inside issue descriptions as `<plan>` blocks
-- agents and board users should be able to create/update issue documents directly
-- `GET /api/issues/:id` should include the full `plan` document and expose the other available documents
-- issue detail should render documents under the description
+- los planes deben dejar de estar dentro de las descripciones de los issues como bloques `<plan>`
+- los agentes y los usuarios del panel deben poder crear y actualizar documentos de issues directamente
+- `GET /api/issues/:id` debe incluir el documento `plan` completo y exponer los demás documentos disponibles
+- el detalle del issue debe mostrar los documentos debajo de la descripción
 
-This should be built as the **text-document slice** of the broader artifact system, not as a replacement for attachments/assets.
+Esto debe construirse como la **parte de documentos de texto** del sistema de artefactos más amplio, no como un reemplazo de adjuntos/assets.
 
-## Recommended Product Shape
+## Forma de producto recomendada
 
-### Documents vs attachments vs artifacts
+### Documentos vs adjuntos vs artefactos
 
-- **Documents**: editable text content with stable keys and revision history.
-- **Attachments**: uploaded/generated opaque files backed by storage (`assets` + `issue_attachments`).
-- **Artifacts**: later umbrella/read-model that can unify documents, attachments, previews, and workspace files.
+- **Documentos**: contenido de texto editable con claves estables e historial de revisiones.
+- **Adjuntos**: archivos opacos subidos o generados, respaldados por almacenamiento (`assets` + `issue_attachments`).
+- **Artefactos**: paraguas/read-model posterior que puede unificar documentos, adjuntos, vistas previas y archivos del workspace.
 
-Recommendation:
+Recomendación:
 
-- implement **issue documents now**
-- keep existing attachments as-is
-- defer full artifact unification until there is a second real consumer beyond issue documents + attachments
+- implementar **documentos de issue ahora**
+- mantener los adjuntos existentes tal cual
+- posponer la unificación completa de artefactos hasta que haya un segundo consumidor real además de documentos de issue + adjuntos
 
-This keeps `PAP-448` focused while still fitting the larger artifact direction.
+Esto mantiene `PAP-448` enfocado y a la vez encaja en la dirección más amplia de artefactos.
 
-## Goals
+## Objetivos
 
-1. Give issues first-class keyed documents, starting with `plan`.
-2. Make documents editable by board users and same-company agents with issue access.
-3. Preserve change history with append-only revisions.
-4. Make the `plan` document automatically available in the normal issue fetch used by agents/heartbeats.
-5. Replace the current `<plan>`-in-description convention in skills/docs.
-6. Keep the design compatible with a future artifact/deliverables layer.
+1. Dar a los issues documentos con clave de primera clase, empezando por `plan`.
+2. Hacer que los documentos sean editables por usuarios del panel y por agentes de la misma empresa con acceso al issue.
+3. Preservar el historial de cambios con revisiones de solo agregado.
+4. Hacer que el documento `plan` esté disponible automáticamente en la obtención normal de issues usada por agentes/latidos.
+5. Reemplazar la convención actual de `<plan>` en la descripción en habilidades/documentos.
+6. Mantener el diseño compatible con una futura capa de artefactos/entregables.
 
-## Non-Goals
+## No objetivos
 
-- full collaborative doc editing
-- binary-file version history
-- browser IDE or workspace editor
-- full artifact-system implementation in the same change
-- generalized polymorphic relations for every entity type on day one
+- edición colaborativa completa de documentos
+- historial de versiones de archivos binarios
+- IDE en el navegador o editor del workspace
+- implementación completa del sistema de artefactos en el mismo cambio
+- relaciones polimórficas generalizadas para cada tipo de entidad desde el día uno
 
-## Product Decisions
+## Decisiones de producto
 
-### 1. Keyed issue documents
+### 1. Documentos de issue con clave
 
-Each issue can have multiple documents. Each document relation has a stable key:
+Cada issue puede tener múltiples documentos. Cada relación de documento tiene una clave estable:
 
 - `plan`
 - `design`
 - `notes`
 - `report`
-- custom keys later
+- claves personalizadas más adelante
 
-Key rules:
+Reglas de claves:
 
-- unique per issue, case-insensitive
-- normalized to lowercase slug form
-- machine-oriented and stable
-- title is separate and user-facing
+- única por issue, sin distinción de mayúsculas y minúsculas
+- normalizada a forma de slug en minúsculas
+- orientada a máquinas y estable
+- el título es separado y visible al usuario
 
-The `plan` key is conventional and reserved by Paperclip workflow/docs.
+La clave `plan` es convencional y está reservada por el flujo de trabajo y la documentación de Paperclip.
 
-### 2. Text-first v1
+### 2. V1 con texto primero
 
-V1 documents should be text-first, not arbitrary blobs.
+Los documentos V1 deberían ser texto primero, no blobs arbitrarios.
 
-Recommended supported formats:
+Formatos admitidos recomendados:
 
 - `markdown`
 - `plain_text`
 - `json`
 - `html`
 
-Recommendation:
+Recomendación:
 
-- optimize UI for `markdown`
-- allow raw editing for the others
-- keep PDFs/images/CSVs/etc as attachments/artifacts, not editable documents
+- optimizar la UI para `markdown`
+- permitir edición cruda para los demás
+- mantener PDF/imágenes/CSV/etc. como adjuntos/artefactos, no como documentos editables
 
-### 3. Revision model
+### 3. Modelo de revisiones
 
-Every document update creates a new immutable revision.
+Cada actualización de un documento crea una nueva revisión inmutable.
 
-The current document row stores the latest snapshot for fast reads.
+La fila actual del documento almacena la instantánea más reciente para lecturas rápidas.
 
-### 4. Concurrency model
+### 4. Modelo de concurrencia
 
-Do not use silent last-write-wins.
+No usar last-write-wins silencioso.
 
-Updates should include `baseRevisionId`:
+Las actualizaciones deben incluir `baseRevisionId`:
 
-- create: no base revision required
-- update: `baseRevisionId` must match current latest revision
-- mismatch: return `409 Conflict`
+- crear: no se requiere revisión base
+- actualizar: `baseRevisionId` debe coincidir con la revisión más reciente actual
+- discrepancia: devolver `409 Conflict`
 
-This is important because both board users and agents may edit the same document.
+Esto es importante porque tanto los usuarios del panel como los agentes pueden editar el mismo documento.
 
-### 5. Issue fetch behavior
+### 5. Comportamiento de obtención de issues
 
-`GET /api/issues/:id` should include:
+`GET /api/issues/:id` debe incluir:
 
-- full `planDocument` when a `plan` document exists
-- `documentSummaries` for all linked documents
+- `planDocument` completo cuando exista un documento `plan`
+- `documentSummaries` para todos los documentos vinculados
 
-It should not inline every document body by default.
+No debe incluir en línea cada cuerpo de documento por defecto.
 
-This keeps issue fetches useful for agents without making every issue payload unbounded.
+Esto mantiene las obtenciones de issues útiles para los agentes sin hacer que cada payload de issue sea ilimitado.
 
-### 6. Legacy `<plan>` compatibility
+### 6. Compatibilidad con `<plan>` heredado
 
-If an issue has no `plan` document but its description contains a legacy `<plan>` block:
+Si un issue no tiene un documento `plan` pero su descripción contiene un bloque `<plan>` heredado:
 
-- expose that as a legacy read-only fallback in API/UI
-- mark it as legacy/synthetic
-- prefer a real `plan` document when both exist
+- exponerlo como un fallback heredado de solo lectura en API/UI
+- marcarlo como heredado/sintético
+- preferir un documento `plan` real cuando existan ambos
 
-Recommendation:
+Recomendación:
 
-- do not auto-rewrite old issue descriptions in the first rollout
-- provide an explicit import/migrate path later
+- no reescribir automáticamente las descripciones de issues antiguas en el primer despliegue
+- proveer una ruta explícita de importación/migración más adelante
+## Modelo de datos propuesto
 
-## Proposed Data Model
+Recomendación: hacer que los documentos sean de primera clase, pero mantener el vínculo con el issue explícito mediante una tabla de unión.
 
-Recommendation: make documents first-class, but keep issue linkage explicit via a join table.
+Esto preserva las claves foráneas hoy y da una ruta limpia a futuras tablas `project_documents` o `company_documents` más adelante.
 
-This preserves foreign keys today and gives a clean path to future `project_documents` or `company_documents` tables later.
-
-## Tables
+## Tablas
 
 ### `documents`
 
-Canonical text document record.
+Registro canónico de documento de texto.
 
-Suggested columns:
+Columnas sugeridas:
 
 - `id`
 - `company_id`
@@ -163,9 +162,9 @@ Suggested columns:
 
 ### `document_revisions`
 
-Append-only history.
+Historial de solo agregado.
 
-Suggested columns:
+Columnas sugeridas:
 
 - `id`
 - `company_id`
@@ -177,15 +176,15 @@ Suggested columns:
 - `created_by_user_id`
 - `created_at`
 
-Constraints:
+Restricciones:
 
 - unique `(document_id, revision_number)`
 
 ### `issue_documents`
 
-Issue relation + workflow key.
+Relación de issue + clave de flujo de trabajo.
 
-Suggested columns:
+Columnas sugeridas:
 
 - `id`
 - `company_id`
@@ -195,35 +194,35 @@ Suggested columns:
 - `created_at`
 - `updated_at`
 
-Constraints:
+Restricciones:
 
 - unique `(company_id, issue_id, key)`
-- unique `(document_id)` to keep one issue relation per document in v1
+- unique `(document_id)` para mantener una relación de issue por documento en la V1
 
-## Why not use `assets` for this?
+## ¿Por qué no usar `assets` para esto?
 
-Because `assets` solves blob storage, not:
+Porque `assets` resuelve almacenamiento de blobs, no:
 
-- stable keyed semantics like `plan`
-- inline text editing
-- revision history
-- optimistic concurrency
-- cheap inclusion in `GET /issues/:id`
+- semántica con clave estable como `plan`
+- edición de texto en línea
+- historial de revisiones
+- concurrencia optimista
+- inclusión barata en `GET /issues/:id`
 
-Documents and attachments should remain separate primitives, then meet later in a deliverables/artifact read-model.
+Los documentos y los adjuntos deben seguir siendo primitivas separadas, y luego encontrarse en un read-model de entregables/artefactos.
 
-## Shared Types and API Contract
+## Tipos compartidos y contrato de API
 
-## New shared types
+## Nuevos tipos compartidos
 
-Add:
+Agregar:
 
 - `DocumentFormat`
 - `IssueDocument`
 - `IssueDocumentSummary`
 - `DocumentRevision`
 
-Recommended `IssueDocument` shape:
+Forma recomendada de `IssueDocument`:
 
 ```ts
 type DocumentFormat = "markdown" | "plain_text" | "json" | "html";
@@ -247,7 +246,7 @@ interface IssueDocument {
 }
 ```
 
-Recommended `IssueDocumentSummary` shape:
+Forma recomendada de `IssueDocumentSummary`:
 
 ```ts
 interface IssueDocumentSummary {
@@ -261,9 +260,9 @@ interface IssueDocumentSummary {
 }
 ```
 
-## Issue type enrichment
+## Enriquecimiento del tipo Issue
 
-Extend `Issue` with:
+Extender `Issue` con:
 
 ```ts
 interface Issue {
@@ -278,19 +277,19 @@ interface Issue {
 }
 ```
 
-This directly satisfies the `PAP-448` requirement for heartbeat/API issue fetches.
+Esto satisface directamente el requisito de `PAP-448` para las obtenciones de issues de latido/API.
 
-## API endpoints
+## Endpoints de API
 
-Recommended endpoints:
+Endpoints recomendados:
 
 - `GET /api/issues/:issueId/documents`
 - `GET /api/issues/:issueId/documents/:key`
 - `PUT /api/issues/:issueId/documents/:key`
 - `GET /api/issues/:issueId/documents/:key/revisions`
-- `DELETE /api/issues/:issueId/documents/:key` optionally board-only in v1
+- `DELETE /api/issues/:issueId/documents/:key` opcionalmente solo para el panel en la V1
 
-Recommended `PUT` body:
+Cuerpo `PUT` recomendado:
 
 ```ts
 {
@@ -302,106 +301,105 @@ Recommended `PUT` body:
 }
 ```
 
-Behavior:
+Comportamiento:
 
-- missing document + no `baseRevisionId`: create
-- existing document + matching `baseRevisionId`: update
-- existing document + stale `baseRevisionId`: `409`
+- documento faltante + sin `baseRevisionId`: crear
+- documento existente + `baseRevisionId` coincidente: actualizar
+- documento existente + `baseRevisionId` obsoleto: `409`
 
-## Authorization and invariants
+## Autorización e invariantes
 
-- all document records are company-scoped
-- issue relation must belong to same company
-- board access follows existing issue access rules
-- agent access follows existing same-company issue access rules
-- every mutation writes activity log entries
+- todos los registros de documentos tienen alcance de empresa
+- la relación de issue debe pertenecer a la misma empresa
+- el acceso del panel sigue las reglas existentes de acceso a issues
+- el acceso de agentes sigue las reglas existentes de acceso a issues de la misma empresa
+- cada mutación escribe entradas en el registro de actividad
 
-Recommended delete rule for v1:
+Regla de eliminación recomendada para la V1:
 
-- board can delete documents
-- agents can create/update, but not delete
+- el panel puede eliminar documentos
+- los agentes pueden crear/actualizar, pero no eliminar
 
-That keeps automated systems from removing canonical docs too easily.
+Esto evita que los sistemas automatizados eliminen documentos canónicos con demasiada facilidad.
+## Plan de UI
 
-## UI Plan
+## Detalle de issue
 
-## Issue detail
+Agregar una nueva sección **Documentos** directamente debajo de la descripción del issue.
 
-Add a new **Documents** section directly under the issue description.
+Comportamiento recomendado:
 
-Recommended behavior:
+- mostrar `plan` primero cuando esté presente
+- mostrar los demás documentos debajo
+- mostrar un encabezado estilo gist:
+  - clave
+  - título
+  - metadatos de última actualización
+  - número de revisión
+- admitir edición en línea
+- admitir crear un nuevo documento por clave
+- admitir un cajón u hoja de historial de revisiones
 
-- show `plan` first when present
-- show other documents below it
-- render a gist-like header:
-  - key
-  - title
-  - last updated metadata
-  - revision number
-- support inline edit
-- support create new document by key
-- support revision history drawer or sheet
+Orden de presentación recomendado:
 
-Recommended presentation order:
+1. Descripción
+2. Documentos
+3. Adjuntos
+4. Comentarios / actividad / sub-issues
 
-1. Description
-2. Documents
-3. Attachments
-4. Comments / activity / sub-issues
+Esto coincide con la solicitud de que los documentos vivan debajo de la descripción y a la vez mantener los adjuntos disponibles.
 
-This matches the request that documents live under the description while still leaving attachments available.
+## UX de edición
 
-## Editing UX
+Recomendación:
 
-Recommendation:
+- usar vista previa de markdown + alternador de edición cruda para documentos markdown
+- usar editor de textarea crudo para documentos no markdown en la V1
+- mostrar conflictos de guardado explícitos en `409`
+- mostrar un estado vacío claro: "No hay documentos todavía"
 
-- use markdown preview + raw edit toggle for markdown docs
-- use raw textarea editor for non-markdown docs in v1
-- show explicit save conflicts on `409`
-- show a clear empty state: "No documents yet"
+## Renderizado de plan heredado
 
-## Legacy plan rendering
+Si no hay un documento `plan` almacenado pero existe un `<plan>` heredado:
 
-If there is no stored `plan` document but legacy `<plan>` exists:
+- mostrarlo en la sección Documentos
+- marcarlo como "Plan heredado de la descripción"
+- ofrecer crear/importar en una pasada posterior
 
-- show it in the Documents section
-- mark it `Legacy plan from description`
-- offer create/import in a later pass
+## Protocolo de agente y habilidades
 
-## Agent Protocol and Skills
+Actualizar el flujo de trabajo del agente de Paperclip para que la planificación ya no edite la descripción del issue.
 
-Update the Paperclip agent workflow so planning no longer edits the issue description.
+Cambios requeridos:
 
-Required changes:
+- actualizar `skills/paperclip/SKILL.md`
+- reemplazar las instrucciones de `<plan>` con instrucciones de creación/actualización de documentos
+- documentar los nuevos endpoints en `docs/api/issues.md`
+- actualizar cualquier documento interno de planificación que aún enseñe bloques `<plan>` en línea
 
-- update `skills/paperclip/SKILL.md`
-- replace the `<plan>` instructions with document creation/update instructions
-- document the new endpoints in `docs/api/issues.md`
-- update any internal planning docs that still teach inline `<plan>` blocks
+Nueva regla:
 
-New rule:
+- cuando se pida hacer un plan para un issue, crear o actualizar el documento del issue con la clave `plan`
+- dejar un comentario de que el documento de plan se creó o actualizó
+- no marcar el issue como terminado
 
-- when asked to make a plan for an issue, create or update the issue document with key `plan`
-- leave a comment that the plan document was created/updated
-- do not mark the issue done
+## Relación con el plan de artefactos
 
-## Relationship to the Artifact Plan
+Este trabajo debe alimentar explícitamente la dirección más amplia de artefactos/entregables.
 
-This work should explicitly feed the broader artifact/deliverables direction.
+Recomendación:
 
-Recommendation:
+- mantener los documentos como su propia primitiva en este cambio
+- agregar `document` a cualquier futuro `ArtifactKind`
+- luego construir un read-model de entregables que agregue:
+  - documentos de issue
+  - adjuntos de issue
+  - URLs de vista previa
+  - referencias a archivos del workspace
 
-- keep documents as their own primitive in this change
-- add `document` to any future `ArtifactKind`
-- later build a deliverables read-model that aggregates:
-  - issue documents
-  - issue attachments
-  - preview URLs
-  - workspace-file references
+La propuesta de artefactos actualmente no tiene un tipo `document` explícito. Debería tenerlo.
 
-The artifact proposal currently has no explicit `document` kind. It should.
-
-Recommended future shape:
+Forma futura recomendada:
 
 ```ts
 type ArtifactKind =
@@ -412,11 +410,11 @@ type ArtifactKind =
   | "report_link";
 ```
 
-## Implementation Phases
+## Fases de implementación
 
-## Phase 1: Shared contract and schema
+## Fase 1: Contrato compartido y esquema
 
-Files:
+Archivos:
 
 - `packages/db/src/schema/documents.ts`
 - `packages/db/src/schema/document_revisions.ts`
@@ -424,109 +422,109 @@ Files:
 - `packages/db/src/schema/index.ts`
 - `packages/db/src/migrations/*`
 - `packages/shared/src/types/issue.ts`
-- `packages/shared/src/validators/issue.ts` or new document validator file
+- `packages/shared/src/validators/issue.ts` o un nuevo archivo de validador de documentos
 - `packages/shared/src/index.ts`
 
-Acceptance:
+Aceptación:
 
-- schema enforces one key per issue
-- revisions are append-only
-- shared types expose plan/document fields on issue fetch
+- el esquema impone una clave por issue
+- las revisiones son de solo anexado (append-only)
+- los tipos compartidos exponen los campos de plan/documento en la obtención de issues
 
-## Phase 2: Server services and routes
+## Fase 2: Servicios y rutas del servidor
 
-Files:
+Archivos:
 
-- `server/src/services/issues.ts` or `server/src/services/documents.ts`
+- `server/src/services/issues.ts` o `server/src/services/documents.ts`
 - `server/src/routes/issues.ts`
-- `server/src/services/activity.ts` callsites
+- puntos de llamada de `server/src/services/activity.ts`
 
-Behavior:
+Comportamiento:
 
-- list/get/upsert/delete documents
-- revision listing
-- `GET /issues/:id` returns `planDocument` + `documentSummaries`
-- company boundary checks match issue routes
+- listar, obtener, upsert y eliminar documentos
+- listado de revisiones
+- `GET /issues/:id` devuelve `planDocument` + `documentSummaries`
+- las verificaciones de límites de empresa coinciden con las rutas de issues
 
-Acceptance:
+Aceptación:
 
-- agents and board can fetch/update same-company issue documents
-- stale edits return `409`
-- activity timeline shows document changes
+- los agentes y el panel pueden obtener y actualizar documentos de issues de la misma empresa
+- las ediciones obsoletas devuelven `409`
+- la línea de tiempo de actividad muestra los cambios de documentos
 
-## Phase 3: UI issue documents surface
+## Fase 3: Superficie de documentos de issue en la UI
 
-Files:
+Archivos:
 
 - `ui/src/api/issues.ts`
 - `ui/src/lib/queryKeys.ts`
 - `ui/src/pages/IssueDetail.tsx`
-- new reusable document UI component if needed
+- nuevo componente de UI de documento reutilizable si es necesario
 
-Behavior:
+Comportamiento:
 
-- render plan + documents under description
-- create/update by key
-- open revision history
-- show conflicts/errors clearly
+- mostrar plan + documentos debajo de la descripción
+- crear/actualizar por clave
+- abrir el historial de revisiones
+- mostrar conflictos y errores con claridad
 
-Acceptance:
+Aceptación:
 
-- board can create a `plan` doc from issue detail
-- updated plan appears immediately
-- issue detail no longer depends on description-embedded `<plan>`
+- el panel puede crear un documento `plan` desde el detalle del issue
+- el plan actualizado aparece de inmediato
+- el detalle del issue ya no depende del `<plan>` incrustado en la descripción
 
-## Phase 4: Skills/docs migration
+## Fase 4: Migración de habilidades y documentación
 
-Files:
+Archivos:
 
 - `skills/paperclip/SKILL.md`
 - `docs/api/issues.md`
 - `doc/SPEC-implementation.md`
-- relevant plan/docs that mention `<plan>`
+- planes/documentos relevantes que mencionen `<plan>`
 
-Acceptance:
+Aceptación:
 
-- planning guidance references issue documents, not inline issue description tags
-- API docs describe the new document endpoints and issue payload additions
+- la guía de planificación referencia documentos de issue, no etiquetas en línea en la descripción del issue
+- la documentación de la API describe los nuevos endpoints de documentos y las adiciones al payload de issues
 
-## Phase 5: Legacy compatibility and follow-up
+## Fase 5: Compatibilidad heredada y seguimiento
 
-Behavior:
+Comportamiento:
 
-- read legacy `<plan>` blocks as fallback
-- optionally add explicit import/migration command later
+- leer bloques `<plan>` heredados como fallback
+- opcionalmente agregar un comando explícito de importación/migración más adelante
 
-Follow-up, not required for first merge:
+Seguimiento, no requerido para el primer merge:
 
-- deliverables/artifact read-model
-- project/company documents
-- comment-linked documents
-- diff view between revisions
+- read-model de entregables/artefactos
+- documentos de proyecto/empresa
+- documentos vinculados a comentarios
+- vista de diff entre revisiones
 
-## Test Plan
+## Plan de pruebas
 
-### Server
+### Servidor
 
-- document create/read/update/delete lifecycle
-- revision numbering
-- `baseRevisionId` conflict handling
-- company boundary enforcement
-- agent vs board authorization
-- issue fetch includes `planDocument` and document summaries
-- legacy `<plan>` fallback behavior
-- activity log mutation coverage
+- ciclo de vida de crear/leer/actualizar/eliminar documentos
+- numeración de revisiones
+- manejo de conflictos de `baseRevisionId`
+- aplicación de límites de empresa
+- autorización de agente vs panel
+- la obtención de issues incluye `planDocument` y resúmenes de documentos
+- comportamiento de fallback de `<plan>` heredado
+- cobertura de mutaciones en el registro de actividad
 
 ### UI
 
-- issue detail shows plan document
-- create/update flows invalidate queries correctly
-- conflict and validation errors are surfaced
-- legacy plan fallback renders correctly
+- el detalle del issue muestra el documento de plan
+- los flujos de creación/actualización invalidan las consultas correctamente
+- los errores de conflicto y validación se exponen
+- el fallback de plan heredado se muestra correctamente
 
-### Verification
+### Verificación
 
-Run before implementation is declared complete:
+Ejecutar antes de declarar completa la implementación:
 
 ```sh
 pnpm -r typecheck
@@ -534,36 +532,36 @@ pnpm test:run
 pnpm build
 ```
 
-## Open Questions
+## Preguntas abiertas
 
-1. Should v1 documents be markdown-only, with `json/html/plain_text` deferred?
-   Recommendation: allow all four in API, optimize UI for markdown only.
+1. ¿Deben los documentos de la V1 ser solo markdown, con `json/html/plain_text` pospuestos?
+   Recomendación: permitir los cuatro en la API, optimizar la UI solo para markdown.
 
-2. Should agents be allowed to create arbitrary keys, or only conventional keys?
-   Recommendation: allow arbitrary keys with normalized validation; reserve `plan` as special behavior only.
+2. ¿Se debe permitir a los agentes crear claves arbitrarias, o solo claves convencionales?
+   Recomendación: permitir claves arbitrarias con validación normalizada; reservar `plan` solo como comportamiento especial.
 
-3. Should delete exist in v1?
-   Recommendation: yes, but board-only.
+3. ¿Debe existir la eliminación en la V1?
+   Recomendación: sí, pero solo para el panel.
 
-4. Should legacy `<plan>` blocks ever be auto-migrated?
-   Recommendation: no automatic mutation in the first rollout.
+4. ¿Deben los bloques `<plan>` heredados migrarse automáticamente alguna vez?
+   Recomendación: sin mutación automática en el primer despliegue.
 
-5. Should documents appear inside a future Deliverables section or remain a top-level Issue section?
-   Recommendation: keep a dedicated Documents section now; later also expose them in Deliverables if an aggregated artifact view is added.
+5. ¿Deben los documentos aparecer dentro de una futura sección Entregables o seguir siendo una sección de Issue de nivel superior?
+   Recomendación: mantener ahora una sección Documentos dedicada; más adelante también exponerlos en Entregables si se agrega una vista de artefactos agregada.
 
-## Final Recommendation
+## Recomendación final
 
-Ship **issue documents** as a focused, text-first primitive now.
+Lanzar **documentos de issue** ahora como una primitiva enfocada y text-first.
 
-Do not try to solve full artifact unification in the same implementation.
+No intentar resolver la unificación completa de artefactos en la misma implementación.
 
-Use:
+Usar:
 
-- first-class document tables
-- issue-level keyed linkage
-- append-only revisions
-- `planDocument` embedded in normal issue fetches
-- legacy `<plan>` fallback
-- skill/docs migration away from description-embedded plans
+- tablas de documentos de primera clase
+- vínculo con clave a nivel de issue
+- revisiones de solo anexado (append-only)
+- `planDocument` incrustado en las obtenciones normales de issues
+- fallback de `<plan>` heredado
+- migración de habilidades/documentación para alejarse de los planes incrustados en la descripción
 
-This addresses the real planning workflow problem immediately and leaves the artifact system room to grow cleanly afterward.
+Esto aborda el problema real del flujo de trabajo de planificación de inmediato y deja al sistema de artefactos espacio para crecer limpiamente después.

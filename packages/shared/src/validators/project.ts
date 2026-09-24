@@ -56,7 +56,7 @@ function validateProjectWorkspace(value: Record<string, unknown>, ctx: z.Refinem
     if (!hasRemoteRef && !hasRepo) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Remote-managed workspace requires remoteWorkspaceRef or repoUrl.",
+        message: "El workspace administrado remotamente requiere remoteWorkspaceRef o repoUrl.",
         path: ["remoteWorkspaceRef"],
       });
     }
@@ -66,7 +66,7 @@ function validateProjectWorkspace(value: Record<string, unknown>, ctx: z.Refinem
   if (!hasCwd && !hasRepo) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Workspace requires at least one of cwd or repoUrl.",
+      message: "El workspace requiere al menos uno de cwd o repoUrl.",
       path: ["cwd"],
     });
   }
@@ -87,7 +87,7 @@ export const updateProjectWorkspaceSchema = z.object({
 export type UpdateProjectWorkspace = z.infer<typeof updateProjectWorkspaceSchema>;
 
 const projectFields = {
-  /** @deprecated Use goalIds instead */
+  /** @deprecated Usa goalIds en su lugar */
   goalId: z.string().uuid().optional().nullable(),
   goalIds: z.array(z.string().uuid()).optional(),
   name: z.string().min(1),

@@ -52,7 +52,7 @@ export async function envCommand(opts: { config?: string }): Promise<void> {
       p.log.message(pc.yellow(`Could not parse config: ${configReadError}`));
     }
   } else {
-    p.log.message(pc.dim(`Config file missing: ${configPath}`));
+    p.log.message(pc.dim(`Archivo de config no encontrado: ${configPath}`));
   }
 
   const rows = collectDeploymentEnvRows(config, configPath);
@@ -67,13 +67,13 @@ export async function envCommand(opts: { config?: string }): Promise<void> {
 
     p.log.message(pc.bold(title));
     for (const entry of entries) {
-      const status = entry.source === "missing" ? pc.red("missing") : entry.source === "default" ? pc.yellow("default") : pc.green("set");
+      const status = entry.source === "missing" ? pc.red("falta") : entry.source === "default" ? pc.yellow("defecto") : pc.green("definida");
       const sourceNote = {
-        env: "environment",
+        env: "entorno",
         config: "config",
-        file: "file",
-        default: "default",
-        missing: "missing",
+        file: "archivo",
+        default: "defecto",
+        missing: "falta",
       }[entry.source];
       p.log.message(
         `${pc.cyan(entry.key)} ${status.padEnd(7)} ${pc.dim(`[${sourceNote}] ${entry.note}`)}${entry.source === "missing" ? "" : ` ${pc.dim("=>")} ${pc.white(quoteShellValue(entry.value))}`}`,
@@ -81,32 +81,32 @@ export async function envCommand(opts: { config?: string }): Promise<void> {
     }
   };
 
-  formatSection("Required environment variables", requiredRows);
-  formatSection("Optional environment variables", optionalRows);
+  formatSection("Variables de entorno requeridas", requiredRows);
+  formatSection("Variables de entorno opcionales", optionalRows);
 
   const exportRows = rows.map((row) => (row.source === "missing" ? { ...row, value: "<set-this-value>" } : row));
   const uniqueRows = uniqueByKey(exportRows);
   const exportBlock = uniqueRows.map((row) => `export ${row.key}=${quoteShellValue(row.value)}`).join("\n");
 
   if (configReadError) {
-    p.log.error(`Could not load config cleanly: ${configReadError}`);
+    p.log.error(`No se pudo cargar la config correctamente: ${configReadError}`);
   }
 
   p.note(
-    exportBlock || "No values detected. Set required variables manually.",
-    "Deployment export block",
+    exportBlock || "No se detectaron valores. Define las variables requeridas manualmente.",
+    "Bloque de exportación para despliegue",
   );
 
   if (missingRequired.length > 0) {
     p.log.message(
       pc.yellow(
-        `Missing required values: ${missingRequired.map((row) => row.key).join(", ")}. Set these before deployment.`,
+        `Faltan valores requeridos: ${missingRequired.map((row) => row.key).join(", ")}. Defínelos antes del despliegue.`,
       ),
     );
   } else {
-    p.log.message(pc.green("All required deployment variables are present."));
+    p.log.message(pc.green("Todas las variables de despliegue requeridas están presentes."));
   }
-  p.outro("Done");
+  p.outro("Listo");
 }
 
 function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: string): EnvVarRow[] {
@@ -191,10 +191,10 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
       required: true,
       note:
         jwtSource === "missing"
-          ? "Generate during onboard or set manually (required for local adapter authentication)"
+          ? "Se genera durante el onboard o se define manualmente (requerido para la autenticación del adaptador local)"
           : jwtSource === "env"
-            ? "Set in process environment"
-            : `Set in ${agentJwtEnvFile}`,
+            ? "Definida en el entorno del proceso"
+            : `Definida en ${agentJwtEnvFile}`,
     },
     {
       key: "DATABASE_URL",
@@ -203,8 +203,8 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
       required: true,
       note:
         databaseMode === "postgres"
-          ? "Configured for postgres mode (required)"
-          : "Required for live deployment with managed PostgreSQL",
+          ? "Configurada para modo postgres (requerida)"
+          : "Requerida para despliegue en vivo con PostgreSQL gestionado",
     },
     {
       key: "PORT",
@@ -213,14 +213,14 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
         (config?.server?.port !== undefined ? String(config.server.port) : "3100"),
       source: process.env.PORT ? "env" : config?.server?.port !== undefined ? "config" : "default",
       required: false,
-      note: "HTTP listen port",
+      note: "Puerto de escucha HTTP",
     },
     {
       key: "PAPERCLIP_PUBLIC_URL",
       value: publicUrl,
       source: publicUrlSource,
       required: false,
-      note: "Canonical public URL for auth/callback/invite origin wiring",
+      note: "URL pública canónica para el origen de auth/callback/invitaciones",
     },
     {
       key: "BETTER_AUTH_TRUSTED_ORIGINS",
@@ -231,42 +231,42 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
           ? "default"
           : "missing",
       required: false,
-      note: "Comma-separated auth origin allowlist (auto-derived from PAPERCLIP_PUBLIC_URL when possible)",
+      note: "Lista de orígenes de auth separados por comas (se deriva automáticamente de PAPERCLIP_PUBLIC_URL cuando es posible)",
     },
     {
       key: "PAPERCLIP_AGENT_JWT_TTL_SECONDS",
       value: process.env.PAPERCLIP_AGENT_JWT_TTL_SECONDS ?? DEFAULT_AGENT_JWT_TTL_SECONDS,
       source: process.env.PAPERCLIP_AGENT_JWT_TTL_SECONDS ? "env" : "default",
       required: false,
-      note: "JWT lifetime in seconds",
+      note: "Duración del JWT en segundos",
     },
     {
       key: "PAPERCLIP_AGENT_JWT_ISSUER",
       value: process.env.PAPERCLIP_AGENT_JWT_ISSUER ?? DEFAULT_AGENT_JWT_ISSUER,
       source: process.env.PAPERCLIP_AGENT_JWT_ISSUER ? "env" : "default",
       required: false,
-      note: "JWT issuer",
+      note: "Emisor del JWT",
     },
     {
       key: "PAPERCLIP_AGENT_JWT_AUDIENCE",
       value: process.env.PAPERCLIP_AGENT_JWT_AUDIENCE ?? DEFAULT_AGENT_JWT_AUDIENCE,
       source: process.env.PAPERCLIP_AGENT_JWT_AUDIENCE ? "env" : "default",
       required: false,
-      note: "JWT audience",
+      note: "Audiencia del JWT",
     },
     {
       key: "HEARTBEAT_SCHEDULER_INTERVAL_MS",
       value: heartbeatInterval,
       source: process.env.HEARTBEAT_SCHEDULER_INTERVAL_MS ? "env" : "default",
       required: false,
-      note: "Heartbeat worker interval in ms",
+      note: "Intervalo del worker de latido en ms",
     },
     {
       key: "HEARTBEAT_SCHEDULER_ENABLED",
       value: heartbeatEnabled,
       source: process.env.HEARTBEAT_SCHEDULER_ENABLED ? "env" : "default",
       required: false,
-      note: "Set to `false` to disable timer scheduling",
+      note: "Define `false` para desactivar la programación por temporizador",
     },
     {
       key: "PAPERCLIP_SECRETS_PROVIDER",
@@ -277,7 +277,7 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
           ? "config"
           : "default",
       required: false,
-      note: "Default provider for new secrets",
+      note: "Proveedor por defecto para nuevos secretos",
     },
     {
       key: "PAPERCLIP_SECRETS_STRICT_MODE",
@@ -288,7 +288,7 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
           ? "config"
           : "default",
       required: false,
-      note: "Require secret refs for sensitive env keys",
+      note: "Requerir referencias de secretos para claves de entorno sensibles",
     },
     {
       key: "PAPERCLIP_SECRETS_MASTER_KEY_FILE",
@@ -299,7 +299,7 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
           ? "config"
           : "default",
       required: false,
-      note: "Path to local encrypted secrets key file",
+      note: "Ruta al archivo de clave local de secretos cifrados",
     },
     {
       key: "PAPERCLIP_STORAGE_PROVIDER",
@@ -310,7 +310,7 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
           ? "config"
           : "default",
       required: false,
-      note: "Storage provider (local_disk or s3)",
+      note: "Proveedor de almacenamiento (local_disk o s3)",
     },
     {
       key: "PAPERCLIP_STORAGE_LOCAL_DIR",
@@ -321,7 +321,7 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
           ? "config"
           : "default",
       required: false,
-      note: "Local storage base directory for local_disk provider",
+      note: "Directorio base de almacenamiento local para el proveedor local_disk",
     },
     {
       key: "PAPERCLIP_STORAGE_S3_BUCKET",
@@ -332,7 +332,7 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
           ? "config"
           : "default",
       required: false,
-      note: "S3 bucket name for s3 provider",
+      note: "Nombre del bucket S3 para el proveedor s3",
     },
     {
       key: "PAPERCLIP_STORAGE_S3_REGION",
@@ -343,7 +343,7 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
           ? "config"
           : "default",
       required: false,
-      note: "S3 region for s3 provider",
+      note: "Región S3 para el proveedor s3",
     },
     {
       key: "PAPERCLIP_STORAGE_S3_ENDPOINT",
@@ -354,7 +354,7 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
           ? "config"
           : "default",
       required: false,
-      note: "Optional custom endpoint for S3-compatible providers",
+      note: "Endpoint personalizado opcional para proveedores compatibles con S3",
     },
     {
       key: "PAPERCLIP_STORAGE_S3_PREFIX",
@@ -365,7 +365,7 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
           ? "config"
           : "default",
       required: false,
-      note: "Optional object key prefix",
+      note: "Prefijo de clave de objeto opcional",
     },
     {
       key: "PAPERCLIP_STORAGE_S3_FORCE_PATH_STYLE",
@@ -376,7 +376,7 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
           ? "config"
           : "default",
       required: false,
-      note: "Set true for path-style access on compatible providers",
+      note: "Define true para acceso path-style en proveedores compatibles",
     },
   ];
 
@@ -387,7 +387,7 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
       value: process.env.PAPERCLIP_CONFIG ?? configPath,
       source: process.env.PAPERCLIP_CONFIG ? "env" : "default",
       required: false,
-      note: "Optional path override for config file",
+      note: "Ruta opcional para sobrescribir el archivo de config",
     });
   }
 

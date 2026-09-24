@@ -45,11 +45,11 @@ import {
 } from "../components/PackageFileTree";
 
 /**
- * Extract the set of agent/project/task slugs that are "checked" based on
- * which file paths are in the checked set.
- *   agents/{slug}/AGENT.md   → agents slug
- *   projects/{slug}/PROJECT.md → projects slug
- *   tasks/{slug}/TASK.md     → tasks slug
+ * Extrae el conjunto de slugs de agentes/proyectos/tareas "marcados" según
+ * qué rutas de archivo están en el conjunto marcado.
+ *   agents/{slug}/AGENT.md   → slug de agentes
+ *   projects/{slug}/PROJECT.md → slug de proyectos
+ *   tasks/{slug}/TASK.md     → slug de tareas
  */
 function checkedSlugs(checkedFiles: Set<string>): {
   agents: Set<string>;
@@ -72,17 +72,17 @@ function checkedSlugs(checkedFiles: Set<string>): {
 }
 
 /**
- * Filter .paperclip.yaml content so it only includes entries whose
- * corresponding files are checked. Works by line-level YAML parsing
- * since the file has a known, simple structure produced by our own
- * renderYamlBlock.
+ * Filtra el contenido de .paperclip.yaml para incluir solo entradas cuyos
+ * archivos correspondientes están marcados. Funciona con análisis YAML línea
+ * por línea ya que el archivo tiene una estructura conocida y simple producida
+ * por nuestro propio renderYamlBlock.
  */
 function filterPaperclipYaml(yaml: string, checkedFiles: Set<string>): string {
   const slugs = checkedSlugs(checkedFiles);
   const lines = yaml.split("\n");
   const out: string[] = [];
 
-  // Sections whose entries are slug-keyed and should be filtered
+  // Secciones cuyas entradas tienen clave slug y deben filtrarse
   const filterableSections = new Set(["agents", "projects", "tasks", "routines"]);
   const sidebarSections = new Set(["agents", "projects"]);
 
@@ -92,7 +92,7 @@ function filterPaperclipYaml(yaml: string, checkedFiles: Set<string>): string {
   let currentSidebarList: string | null = null;
   let currentSidebarHeaderLine: string | null = null;
   let currentSidebarBuffer: string[] = [];
-  // Collect entries per section so we can omit empty section headers
+  // Recopilar entradas por sección para omitir encabezados de sección vacíos
   let sectionHeaderLine: string | null = null;
   let sectionBuffer: string[] = [];
 
@@ -116,10 +116,10 @@ function filterPaperclipYaml(yaml: string, checkedFiles: Set<string>): string {
   }
 
   for (const line of lines) {
-    // Detect top-level key (no indentation)
+    // Detectar clave de nivel superior (sin sangría)
     const topMatch = line.match(/^([a-zA-Z_][\w-]*):\s*(.*)$/);
     if (topMatch && !line.startsWith(" ")) {
-      // Flush previous section
+      // Vaciar la sección anterior
       flushSection();
       currentEntry = null;
       includeEntry = true;
@@ -167,7 +167,7 @@ function filterPaperclipYaml(yaml: string, checkedFiles: Set<string>): string {
       }
     }
 
-    // Inside a filterable section
+    // Dentro de una sección filtrable
     if (currentSection && filterableSections.has(currentSection)) {
       // 2-space indented key = entry slug (slugs may start with digits/hyphens)
       const entryMatch = line.match(/^  ([\w][\w-]*):\s*(.*)$/);
@@ -180,22 +180,22 @@ function filterPaperclipYaml(yaml: string, checkedFiles: Set<string>): string {
         continue;
       }
 
-      // Deeper indented line belongs to current entry
+      // La línea con más sangría pertenece a la entrada actual
       if (currentEntry !== null) {
         if (includeEntry) sectionBuffer.push(line);
         continue;
       }
 
-      // Shouldn't happen in well-formed output, but pass through
+      // No debería ocurrir en una salida bien formada, pero pasar de todos modos
       sectionBuffer.push(line);
       continue;
     }
 
-    // Outside filterable sections — pass through
+    // Fuera de secciones filtrables — pasar
     out.push(line);
   }
 
-  // Flush last section
+  // Vaciar la última sección
   flushSection();
 
   let filtered = out.join("\n");
@@ -268,9 +268,9 @@ function sortByChecked(nodes: FileTreeNode[], checkedFiles: Set<string>): FileTr
 const TASKS_PAGE_SIZE = 10;
 
 /**
- * Paginate children of `tasks/` directories: show up to `limit` entries,
- * but always include children that are checked or match the search query.
- * Returns the paginated tree and the total count of task children.
+ * Pagina los hijos de directorios `tasks/`: muestra hasta `limit` entradas,
+ * pero siempre incluye hijos marcados o que coincidan con la búsqueda.
+ * Devuelve el árbol paginado y el conteo total de hijos de tareas.
  */
 function paginateTaskNodes(
   nodes: FileTreeNode[],
@@ -282,11 +282,11 @@ function paginateTaskNodes(
   let visibleTaskChildren = 0;
 
   const result = nodes.map((node) => {
-    // Only paginate direct children of "tasks" directories
+    // Paginar solo hijos directos de directorios "tasks"
     if (node.kind === "dir" && node.name === "tasks") {
       totalTaskChildren = node.children.length;
 
-      // Partition children: pinned (checked or search-matched) vs rest
+      // Particionar hijos: fijados (marcados o coincidentes con la búsqueda) vs resto
       const pinned: FileTreeNode[] = [];
       const rest: FileTreeNode[] = [];
       const lower = searchQuery.toLowerCase();
@@ -306,7 +306,7 @@ function paginateTaskNodes(
         }
       }
 
-      // Show pinned + up to `limit` from rest
+      // Mostrar fijados + hasta `limit` del resto
       const remaining = Math.max(0, limit - pinned.length);
       const visible = [...pinned, ...rest.slice(0, remaining)];
       visibleTaskChildren = visible.length;
@@ -391,12 +391,12 @@ function FrontmatterCard({
 
 const ROLE_LABELS: Record<string, string> = {
   ceo: "CEO", cto: "CTO", cmo: "CMO", cfo: "CFO", coo: "COO",
-  vp: "VP", manager: "Manager", engineer: "Engineer", agent: "Agent",
+  vp: "VP", manager: "Gerente", engineer: "Ingeniero", agent: "Agente",
 };
 
 /**
- * Regenerate README.md content based on the currently checked files.
- * Only counts/lists entities whose files are in the checked set.
+ * Regenera el contenido de README.md según los archivos marcados actualmente.
+ * Solo cuenta/lista entidades cuyos archivos están en el conjunto marcado.
  */
 function generateReadmeFromSelection(
   manifest: CompanyPortabilityManifest,
@@ -410,7 +410,7 @@ function generateReadmeFromSelection(
   const projects = manifest.projects.filter((p) => slugs.projects.has(p.slug));
   const tasks = manifest.issues.filter((t) => slugs.tasks.has(t.slug));
   const skills = manifest.skills.filter((s) => {
-    // Skill files live under skills/{key}/...
+    // Los archivos de habilidades viven en skills/{key}/...
     return [...checkedFiles].some((f) => f.startsWith(`skills/${s.key}/`) || f.startsWith(`skills/`) && f.includes(`/${s.slug}/`));
   });
 
@@ -421,25 +421,25 @@ function generateReadmeFromSelection(
     lines.push(`> ${companyDescription}`);
     lines.push("");
   }
-  // Org chart image (generated during export as images/org-chart.png)
+  // Imagen del organigrama (generada durante la exportación como images/org-chart.png)
   if (agents.length > 0) {
     lines.push("![Org Chart](images/org-chart.png)");
     lines.push("");
   }
 
-  lines.push("## What's Inside");
+  lines.push("## Qué contiene");
   lines.push("");
-  lines.push("This is an [Agent Company](https://paperclip.ing) package.");
+  lines.push("Este es un paquete de [Empresa de agentes](https://paperclip.ing).");
   lines.push("");
 
   const counts: Array<[string, number]> = [];
-  if (agents.length > 0) counts.push(["Agents", agents.length]);
-  if (projects.length > 0) counts.push(["Projects", projects.length]);
-  if (skills.length > 0) counts.push(["Skills", skills.length]);
-  if (tasks.length > 0) counts.push(["Tasks", tasks.length]);
+  if (agents.length > 0) counts.push(["Agentes", agents.length]);
+  if (projects.length > 0) counts.push(["Proyectos", projects.length]);
+  if (skills.length > 0) counts.push(["Habilidades", skills.length]);
+  if (tasks.length > 0) counts.push(["Tareas", tasks.length]);
 
   if (counts.length > 0) {
-    lines.push("| Content | Count |");
+    lines.push("| Contenido | Cantidad |");
     lines.push("|---------|-------|");
     for (const [label, count] of counts) {
       lines.push(`| ${label} | ${count} |`);
@@ -448,9 +448,9 @@ function generateReadmeFromSelection(
   }
 
   if (agents.length > 0) {
-    lines.push("### Agents");
+    lines.push("### Agentes");
     lines.push("");
-    lines.push("| Agent | Role | Reports To |");
+    lines.push("| Agente | Rol | Reporta a |");
     lines.push("|-------|------|------------|");
     for (const agent of agents) {
       const roleLabel = ROLE_LABELS[agent.role] ?? agent.role;
@@ -461,7 +461,7 @@ function generateReadmeFromSelection(
   }
 
   if (projects.length > 0) {
-    lines.push("### Projects");
+    lines.push("### Proyectos");
     lines.push("");
     for (const project of projects) {
       const desc = project.description ? ` \u2014 ${project.description}` : "";
@@ -470,16 +470,16 @@ function generateReadmeFromSelection(
     lines.push("");
   }
 
-  lines.push("## Getting Started");
+  lines.push("## Primeros pasos");
   lines.push("");
   lines.push("```bash");
   lines.push("pnpm paperclipai company import this-github-url-or-folder");
   lines.push("```");
   lines.push("");
-  lines.push("See [Paperclip](https://paperclip.ing) for more information.");
+  lines.push("Consulta [Paperclip](https://paperclip.ing) para más información.");
   lines.push("");
   lines.push("---");
-  lines.push(`Exported from [Paperclip](https://paperclip.ing) on ${new Date().toISOString().split("T")[0]}`);
+  lines.push(`Exportado desde [Paperclip](https://paperclip.ing) el ${new Date().toISOString().split("T")[0]}`);
   lines.push("");
 
   return lines.join("\n");
@@ -500,7 +500,7 @@ function ExportPreviewPane({
 }) {
   if (!selectedFile || content === null) {
     return (
-      <EmptyState icon={Package} message="Select a file to preview its contents." />
+      <EmptyState icon={Package} message="Selecciona un archivo para previsualizar su contenido." />
     );
   }
 
@@ -509,12 +509,12 @@ function ExportPreviewPane({
   const parsed = isMarkdown && textContent ? parseFrontmatter(textContent) : null;
   const imageSrc = isPortableImageFile(selectedFile, content) ? getPortableFileDataUrl(selectedFile, content) : null;
 
-  // Resolve relative image paths within the export package (e.g. images/org-chart.png)
+  // Resolver rutas de imagen relativas dentro del paquete de exportación (p. ej. images/org-chart.png)
   const resolveImageSrc = isMarkdown
     ? (src: string) => {
-        // Skip absolute URLs and data URIs
+        // Omitir URLs absolutas y URIs de datos
         if (/^(?:https?:|data:)/i.test(src)) return null;
-        // Resolve relative to the directory of the current markdown file
+        // Resolver en relación con el directorio del archivo markdown actual
         const dir = selectedFile.includes("/") ? selectedFile.slice(0, selectedFile.lastIndexOf("/") + 1) : "";
         const resolved = dir + src;
         const entry = allFiles[resolved] ?? allFiles[src];
@@ -639,7 +639,7 @@ export function CompanyExport() {
     [sidebarOrder],
   );
 
-  // Navigate-aware file selection: updates state + URL without page reload.
+  // Selección de archivo consciente de la navegación: actualiza estado + URL sin recargar la página.
   // `replace` = true skips history entry (used for initial load); false = pushes (used for clicks).
   const selectFile = useCallback(
     (filePath: string | null, replace = false) => {
@@ -653,13 +653,13 @@ export function CompanyExport() {
     [navigate],
   );
 
-  // Sync selectedFile from URL on browser back/forward
+  // Sincronizar selectedFile desde la URL al ir atrás/adelante en el navegador
   useEffect(() => {
     if (!exportData) return;
     const urlFile = filePathFromLocation(location.pathname);
     if (urlFile && urlFile in exportData.files && urlFile !== selectedFile) {
       setSelectedFile(urlFile);
-      // Expand ancestors so the file is visible in the tree
+      // Expandir ancestros para que el archivo sea visible en el árbol
       setExpandedDirs((prev) => {
         const next = new Set(prev);
         for (const dir of expandAncestors(urlFile)) next.add(dir);
@@ -672,8 +672,8 @@ export function CompanyExport() {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: "Org Chart", href: "/org" },
-      { label: "Export" },
+      { label: "Organigrama", href: "/org" },
+      { label: "Exportación" },
     ]);
   }, [setBreadcrumbs]);
 
@@ -692,21 +692,21 @@ export function CompanyExport() {
           prev,
         ),
       );
-      // Expand top-level dirs (except tasks — collapsed by default)
+      // Expandir directorios de nivel superior (excepto tasks — colapsado por defecto)
       const tree = buildFileTree(result.files);
       const topDirs = new Set<string>();
       for (const node of tree) {
         if (node.kind === "dir" && node.name !== "tasks") topDirs.add(node.path);
       }
 
-      // If URL contains a deep-linked file path, select it and expand ancestors
+      // Si la URL contiene una ruta de archivo con enlace profundo, seleccionarla y expandir ancestros
       const urlFile = initialFileFromUrl.current;
       if (urlFile && urlFile in result.files) {
         setSelectedFile(urlFile);
         const ancestors = expandAncestors(urlFile);
         setExpandedDirs(new Set([...topDirs, ...ancestors]));
       } else {
-        // Default to README.md if present, otherwise fall back to first file
+        // Usar README.md por defecto si existe, de lo contrario usar el primer archivo
         const defaultFile = "README.md" in result.files
           ? "README.md"
           : Object.keys(result.files)[0];
@@ -719,8 +719,8 @@ export function CompanyExport() {
     onError: (err) => {
       pushToast({
         tone: "error",
-        title: "Export failed",
-        body: err instanceof Error ? err.message : "Failed to load export data.",
+        title: "La exportación falló",
+        body: err instanceof Error ? err.message : "No se pudieron cargar los datos de exportación.",
       });
     },
   });
@@ -737,15 +737,15 @@ export function CompanyExport() {
       downloadZip(result, resultCheckedFiles, result.files);
       pushToast({
         tone: "success",
-        title: "Export downloaded",
-        body: `${resultCheckedFiles.size} file${resultCheckedFiles.size === 1 ? "" : "s"} exported as ${result.rootPath}.zip`,
+        title: "Exportación descargada",
+        body: `${resultCheckedFiles.size} archivo${resultCheckedFiles.size === 1 ? "" : "s"} exportado${resultCheckedFiles.size === 1 ? "" : "s"} como ${result.rootPath}.zip`,
       });
     },
     onError: (err) => {
       pushToast({
         tone: "error",
-        title: "Export failed",
-        body: err instanceof Error ? err.message : "Failed to build export package.",
+        title: "La exportación falló",
+        body: err instanceof Error ? err.message : "No se pudo crear el paquete de exportación.",
       });
     },
   });
@@ -775,13 +775,13 @@ export function CompanyExport() {
     };
   }, [tree, treeSearch, checkedFiles, taskLimit]);
 
-  // Recompute .paperclip.yaml and README.md content whenever checked files
-  // change so the preview & download always reflect the current selection.
+  // Recalcular el contenido de .paperclip.yaml y README.md cuando cambien los archivos marcados
+  // para que la vista previa y la descarga siempre reflejen la selección actual.
   const effectiveFiles = useMemo(() => {
     if (!exportData) return {} as Record<string, CompanyPortabilityFileEntry>;
     const filtered = { ...exportData.files };
 
-    // Filter .paperclip.yaml
+    // Filtrar .paperclip.yaml
     const yamlPath = exportData.paperclipExtensionPath;
     if (yamlPath && typeof exportData.files[yamlPath] === "string") {
       filtered[yamlPath] = filterPaperclipYaml(exportData.files[yamlPath], checkedFiles);
@@ -789,7 +789,7 @@ export function CompanyExport() {
 
     // Regenerate README.md based on checked selection
     if (typeof exportData.files["README.md"] === "string") {
-      const companyName = exportData.manifest.company?.name ?? selectedCompany?.name ?? "Company";
+      const companyName = exportData.manifest.company?.name ?? selectedCompany?.name ?? "Empresa";
       const companyDescription = exportData.manifest.company?.description ?? null;
       filtered["README.md"] = generateReadmeFromSelection(
         exportData.manifest,
@@ -911,7 +911,7 @@ export function CompanyExport() {
   }
 
   if (!selectedCompanyId) {
-    return <EmptyState icon={Package} message="Select a company to export." />;
+    return <EmptyState icon={Package} message="Selecciona una empresa para exportar." />;
   }
 
   if (exportPreviewMutation.isPending && !exportData) {
@@ -919,7 +919,7 @@ export function CompanyExport() {
   }
 
   if (!exportData) {
-    return <EmptyState icon={Package} message="Loading export data..." />;
+    return <EmptyState icon={Package} message="Cargando datos de exportación…" />;
   }
 
   const previewContent = selectedFile
@@ -935,14 +935,14 @@ export function CompanyExport() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-4 text-sm">
             <span className="font-medium">
-              {selectedCompany?.name ?? "Company"} export
+              exportación de {selectedCompany?.name ?? "la empresa"}
             </span>
             <span className="text-muted-foreground">
-              {selectedCount} / {totalFiles} file{totalFiles === 1 ? "" : "s"} selected
+              {selectedCount} / {totalFiles} archivo{totalFiles === 1 ? "" : "s"} seleccionado{totalFiles === 1 ? "" : "s"}
             </span>
             {warnings.length > 0 && (
               <span className="text-amber-500">
-                {warnings.length} warning{warnings.length === 1 ? "" : "s"}
+                {warnings.length} advertencia{warnings.length === 1 ? "" : "s"}
               </span>
             )}
           </div>
@@ -953,8 +953,8 @@ export function CompanyExport() {
           >
             <Download className="mr-1.5 h-3.5 w-3.5" />
             {downloadMutation.isPending
-              ? "Building export..."
-              : `Export ${selectedCount} file${selectedCount === 1 ? "" : "s"}`}
+              ? "Creando exportación…"
+              : `Exportar ${selectedCount} archivo${selectedCount === 1 ? "" : "s"}`}
           </Button>
         </div>
       </div>
@@ -972,7 +972,7 @@ export function CompanyExport() {
       <div className="grid h-[calc(100vh-12rem)] gap-0 xl:grid-cols-[19rem_minmax(0,1fr)]">
         <aside className="flex flex-col border-r border-border overflow-hidden">
           <div className="border-b border-border px-4 py-3 shrink-0">
-            <h2 className="text-base font-semibold">Package files</h2>
+            <h2 className="text-base font-semibold">Archivos del paquete</h2>
           </div>
           <div className="border-b border-border px-3 py-2 shrink-0">
             <div className="flex items-center gap-2 rounded-md border border-border px-2 py-1">
@@ -981,7 +981,7 @@ export function CompanyExport() {
                 type="text"
                 value={treeSearch}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                placeholder="Search files..."
+                placeholder="Buscar archivos…"
                 className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
             </div>
@@ -1003,7 +1003,7 @@ export function CompanyExport() {
                   onClick={() => setTaskLimit((prev) => prev + TASKS_PAGE_SIZE)}
                   className="w-full rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent/30 hover:text-foreground transition-colors"
                 >
-                  Show more issues ({visibleTaskChildren} of {totalTaskChildren})
+                  Mostrar más issues ({visibleTaskChildren} de {totalTaskChildren})
                 </button>
               </div>
             )}

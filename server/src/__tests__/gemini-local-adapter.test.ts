@@ -181,7 +181,7 @@ describe("gemini_local cli formatter", () => {
       spy.mockRestore();
     }
 
-    expect(joined).toContain("Gemini init");
+    expect(joined).toContain("Gemini iniciado");
     expect(joined).toContain("assistant: hello");
     expect(joined).toContain("tokens: in=10 out=5 cached=2 cost=$0.000420");
     expect(joined).toContain("error: boom");

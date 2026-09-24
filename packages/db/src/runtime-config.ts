@@ -50,7 +50,7 @@ function resolvePaperclipHomeDir(): string {
 function resolvePaperclipInstanceId(): string {
   const raw = process.env.PAPERCLIP_INSTANCE_ID?.trim() || DEFAULT_INSTANCE_ID;
   if (!INSTANCE_ID_RE.test(raw)) {
-    throw new Error(`Invalid PAPERCLIP_INSTANCE_ID '${raw}'.`);
+    throw new Error(`PAPERCLIP_INSTANCE_ID '${raw}' no válido.`);
   }
   return raw;
 }
@@ -178,13 +178,13 @@ function readConfig(configPath: string): PartialConfig | null {
     parsed = JSON.parse(readFileSync(configPath, "utf8"));
   } catch (err) {
     throw new Error(
-      `Failed to parse config at ${configPath}: ${err instanceof Error ? err.message : String(err)}`,
+      `No se pudo leer la configuración en ${configPath}: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 
   const migrated = migrateLegacyConfig(parsed);
   if (migrated === null || typeof migrated !== "object" || Array.isArray(migrated)) {
-    throw new Error(`Invalid config at ${configPath}: expected a JSON object`);
+    throw new Error(`Configuración no válida en ${configPath}: se esperaba un objeto JSON`);
   }
 
   const database =

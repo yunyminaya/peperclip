@@ -20,30 +20,30 @@ export const agentConfigurationDoc = `# codex_local agent configuration
 
 Adapter: codex_local
 
-Core fields:
-- cwd (string, optional): default absolute working directory fallback for the agent process (created if missing when possible)
-- instructionsFilePath (string, optional): absolute path to a markdown instructions file prepended to stdin prompt at runtime
-- model (string, optional): Codex model id
-- modelReasoningEffort (string, optional): reasoning effort override (minimal|low|medium|high) passed via -c model_reasoning_effort=...
-- promptTemplate (string, optional): run prompt template
-- search (boolean, optional): run codex with --search
-- dangerouslyBypassApprovalsAndSandbox (boolean, optional): run with bypass flag
-- command (string, optional): defaults to "codex"
-- extraArgs (string[], optional): additional CLI args
-- env (object, optional): KEY=VALUE environment variables
-- workspaceStrategy (object, optional): execution workspace strategy; currently supports { type: "git_worktree", baseRef?, branchTemplate?, worktreeParentDir? }
-- workspaceRuntime (object, optional): workspace runtime service intents; local host-managed services are realized before Codex starts and exposed back via context/env
+Campos principales:
+- cwd (string, optional): directorio de trabajo absoluto predeterminado para el proceso del agente (se crea si falta cuando es posible)
+- instructionsFilePath (string, optional): ruta absoluta a un archivo markdown de instrucciones que se antepone al prompt de stdin en tiempo de ejecución
+- model (string, optional): id del modelo de Codex
+- modelReasoningEffort (string, optional): reemplazo del esfuerzo de razonamiento (minimal|low|medium|high) pasado vía -c model_reasoning_effort=...
+- promptTemplate (string, optional): plantilla del prompt de ejecución
+- search (boolean, optional): ejecutar codex con --search
+- dangerouslyBypassApprovalsAndSandbox (boolean, optional): ejecutar con la flag de bypass
+- command (string, optional): predeterminado "codex"
+- extraArgs (string[], optional): argumentos CLI adicionales
+- env (object, optional): variables de entorno KEY=VALUE
+- workspaceStrategy (object, optional): estrategia del workspace de ejecución; actualmente admite { type: "git_worktree", baseRef?, branchTemplate?, worktreeParentDir? }
+- workspaceRuntime (object, optional): intenciones del servicio de runtime del workspace; los servicios locales gestionados por el host se realizan antes de que inicie Codex y se exponen de vuelta vía context/env
 
-Operational fields:
-- timeoutSec (number, optional): run timeout in seconds
-- graceSec (number, optional): SIGTERM grace period in seconds
+Campos operativos:
+- timeoutSec (number, optional): tiempo de espera de ejecución en segundos
+- graceSec (number, optional): período de gracia SIGTERM en segundos
 
-Notes:
-- Prompts are piped via stdin (Codex receives "-" prompt argument).
-- If instructionsFilePath is configured, Paperclip prepends that file's contents to the stdin prompt on every run.
-- Codex exec automatically applies repo-scoped AGENTS.md instructions from the active workspace. Paperclip cannot suppress that discovery in exec mode, so repo AGENTS.md files may still apply even when you only configured an explicit instructionsFilePath.
-- Paperclip injects desired local skills into the effective CODEX_HOME/skills/ directory at execution time so Codex can discover "$paperclip" and related skills without polluting the project working directory. In managed-home mode (the default) this is ~/.paperclip/instances/<id>/companies/<companyId>/codex-home/skills/; when CODEX_HOME is explicitly overridden in adapter config, that override is used instead.
-- Unless explicitly overridden in adapter config, Paperclip runs Codex with a per-company managed CODEX_HOME under the active Paperclip instance and seeds auth/config from the shared Codex home (the CODEX_HOME env var, when set, or ~/.codex).
-- Some model/tool combinations reject certain effort levels (for example minimal with web search enabled).
-- When Paperclip realizes a workspace/runtime for a run, it injects PAPERCLIP_WORKSPACE_* and PAPERCLIP_RUNTIME_* env vars for agent-side tooling.
+Notas:
+- Los prompts se envían por stdin (Codex recibe el argumento de prompt "-").
+- Si instructionsFilePath está configurado, Paperclip antepone el contenido de ese archivo al prompt de stdin en cada ejecución.
+- Codex exec aplica automáticamente las instrucciones AGENTS.md del repositorio del workspace activo. Paperclip no puede suprimir esa detección en modo exec, así que los archivos AGENTS.md del repo pueden aplicarse aun cuando solo configuraste un instructionsFilePath explícito.
+- Paperclip inyecta las habilidades locales deseadas en el directorio CODEX_HOME/skills/ efectivo en tiempo de ejecución para que Codex pueda descubrir "$paperclip" y habilidades relacionadas sin contaminar el directorio de trabajo del proyecto. En modo managed-home (predeterminado) esto es ~/.paperclip/instances/<id>/companies/<companyId>/codex-home/skills/; cuando CODEX_HOME se reemplaza explícitamente en la configuración del adaptador, se usa ese reemplazo.
+- A menos que se reemplace explícitamente en la configuración del adaptador, Paperclip ejecuta Codex con un CODEX_HOME gestionado por empresa bajo la instancia activa de Paperclip e inicializa la autenticación/configuración desde el home compartido de Codex (la variable de entorno CODEX_HOME, cuando está definida, o ~/.codex).
+- Algunas combinaciones de modelo/herramienta rechazan ciertos niveles de esfuerzo (por ejemplo minimal con búsqueda web habilitada).
+- Cuando Paperclip realiza un workspace/runtime para una ejecución, inyecta las variables de entorno PAPERCLIP_WORKSPACE_* y PAPERCLIP_RUNTIME_* para las herramientas del lado del agente.
 `;

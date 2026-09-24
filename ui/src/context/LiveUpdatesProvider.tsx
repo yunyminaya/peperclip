@@ -51,13 +51,13 @@ function resolveActorLabel(
   actorId: string | null,
 ): string {
   if (actorType === "agent" && actorId) {
-    return resolveAgentName(queryClient, companyId, actorId) ?? `Agent ${shortId(actorId)}`;
+    return resolveAgentName(queryClient, companyId, actorId) ?? `Agente ${shortId(actorId)}`;
   }
-  if (actorType === "system") return "System";
+  if (actorType === "system") return "Sistema";
   if (actorType === "user" && actorId) {
-    return "Board";
+    return "Panel";
   }
-  return "Someone";
+  return "Alguien";
 }
 
 interface IssueToastContext {
@@ -250,19 +250,19 @@ const TERMINAL_RUN_STATUSES = new Set(["succeeded", "failed", "timed_out", "canc
 function describeIssueUpdate(details: Record<string, unknown> | null): string | null {
   if (!details) return null;
   const changes: string[] = [];
-  if (typeof details.status === "string") changes.push(`status -> ${details.status.replace(/_/g, " ")}`);
-  if (typeof details.priority === "string") changes.push(`priority -> ${details.priority}`);
+  if (typeof details.status === "string") changes.push(`estado -> ${details.status.replace(/_/g, " ")}`);
+  if (typeof details.priority === "string") changes.push(`prioridad -> ${details.priority}`);
   if (typeof details.assigneeAgentId === "string" || typeof details.assigneeUserId === "string") {
-    changes.push("reassigned");
+    changes.push("reasignado");
   } else if (details.assigneeAgentId === null || details.assigneeUserId === null) {
-    changes.push("unassigned");
+    changes.push("sin asignar");
   }
   if (details.reopened === true) {
     const from = readString(details.reopenedFrom);
-    changes.push(from ? `reopened from ${from.replace(/_/g, " ")}` : "reopened");
+    changes.push(from ? `reabierto desde ${from.replace(/_/g, " ")}` : "reabierto");
   }
-  if (typeof details.title === "string") changes.push("title changed");
-  if (typeof details.description === "string") changes.push("description changed");
+  if (typeof details.title === "string") changes.push("título cambiado");
+  if (typeof details.description === "string") changes.push("descripción cambiada");
   if (changes.length > 0) return changes.join(", ");
   return null;
 }
@@ -293,17 +293,18 @@ function buildActivityToast(
 
   if (action === "issue.created") {
     return {
-      title: `${actor} created ${issue.ref}`,
+      title: `${actor} creó ${issue.ref}`,
       body: issue.title ? truncate(issue.title, 96) : undefined,
       tone: "success",
-      action: { label: `View ${issue.ref}`, href: issue.href },
+      action: { label: `Ver ${issue.ref}`, href: issue.href },
       dedupeKey: `activity:${action}:${entityId}`,
     };
   }
 
   if (action === "issue.updated") {
     if (readString(details?.source) === "comment") {
-      // Comment-driven updates emit a paired comment event; show one combined toast on the comment event.
+      // Las actualizaciones originadas por un comentario emiten un evento de comentario
+      // emparejado; mostrar un único toast combinado en el evento de comentario.
       return null;
     }
     const changeDesc = describeIssueUpdate(details);
@@ -315,10 +316,10 @@ function buildActivityToast(
         ? truncate(issue.title, 96)
         : issue.label;
     return {
-      title: `${actor} updated ${issue.ref}`,
+      title: `${actor} actualizó ${issue.ref}`,
       body: truncate(body, 100),
       tone: "info",
-      action: { label: `View ${issue.ref}`, href: issue.href },
+      action: { label: `Ver ${issue.ref}`, href: issue.href },
       dedupeKey: `activity:${action}:${entityId}`,
     };
   }
@@ -330,14 +331,14 @@ function buildActivityToast(
   const reopenedFrom = readString(details?.reopenedFrom);
   const reopenedLabel = reopened
     ? reopenedFrom
-      ? `reopened from ${reopenedFrom.replace(/_/g, " ")}`
-      : "reopened"
+      ? `reabierto desde ${reopenedFrom.replace(/_/g, " ")}`
+      : "reabierto"
     : null;
   const title = reopened
-    ? `${actor} reopened and commented on ${issue.ref}`
+    ? `${actor} reabrió y comentó en ${issue.ref}`
     : updated
-      ? `${actor} commented and updated ${issue.ref}`
-      : `${actor} commented on ${issue.ref}`;
+      ? `${actor} comentó y actualizó ${issue.ref}`
+      : `${actor} comentó en ${issue.ref}`;
   const body = bodySnippet
     ? reopenedLabel
       ? `${reopenedLabel} - ${bodySnippet.replace(/^#+\s*/m, "").replace(/\n/g, " ")}`
@@ -368,13 +369,13 @@ function buildJoinRequestToast(
   if (action !== "join.requested" && action !== "join.request_replayed") return null;
 
   const requestType = readString(details?.requestType);
-  const label = requestType === "agent" ? "Agent" : "Someone";
+  const label = requestType === "agent" ? "Agente" : "Alguien";
 
   return {
-    title: `${label} wants to join`,
-    body: "A new join request is waiting for approval.",
+    title: `${label} quiere unirse`,
+    body: "Hay una nueva solicitud de unión pendiente de aprobación.",
     tone: "info",
-    action: { label: "View inbox", href: "/inbox/mine" },
+    action: { label: "Ver bandeja de entrada", href: "/inbox/mine" },
     dedupeKey: `join-request:${entityId}`,
   };
 }
@@ -390,11 +391,11 @@ function buildAgentStatusToast(
   if (!agentId || !status || !AGENT_TOAST_STATUSES.has(status)) return null;
 
   const tone = status === "error" ? "error" : "info";
-  const name = nameOf(agentId) ?? `Agent ${shortId(agentId)}`;
+  const name = nameOf(agentId) ?? `Agente ${shortId(agentId)}`;
   const title =
     status === "running"
-      ? `${name} started`
-      : `${name} errored`;
+      ? `${name} inició`
+      : `${name} falló`;
 
   const agents = queryClient.getQueryData<Agent[]>(queryKeys.agents.list(companyId));
   const agent = agents?.find((a) => a.id === agentId);
@@ -404,7 +405,7 @@ function buildAgentStatusToast(
     title,
     body,
     tone,
-    action: { label: "View agent", href: `/agents/${agentId}` },
+    action: { label: "Ver agente", href: `/agents/${agentId}` },
     dedupeKey: `agent-status:${agentId}:${status}`,
   };
 }
@@ -420,20 +421,20 @@ function buildRunStatusToast(
 
   const error = readString(payload.error);
   const triggerDetail = readString(payload.triggerDetail);
-  const name = nameOf(agentId) ?? `Agent ${shortId(agentId)}`;
+  const name = nameOf(agentId) ?? `Agente ${shortId(agentId)}`;
   const tone = status === "succeeded" ? "success" : status === "cancelled" ? "warn" : "error";
   const statusLabel =
-    status === "succeeded" ? "succeeded"
-      : status === "failed" ? "failed"
-        : status === "timed_out" ? "timed out"
-          : "cancelled";
-  const title = `${name} run ${statusLabel}`;
+    status === "succeeded" ? "se completó correctamente"
+      : status === "failed" ? "falló"
+        : status === "timed_out" ? "agotó el tiempo"
+          : "se canceló";
+  const title = `${name}: ejecución ${statusLabel}`;
 
   let body: string | undefined;
   if (error) {
     body = truncate(error, 100);
   } else if (triggerDetail) {
-    body = `Trigger: ${triggerDetail}`;
+    body = `Activador: ${triggerDetail}`;
   }
 
   return {
@@ -441,7 +442,7 @@ function buildRunStatusToast(
     body,
     tone,
     ttlMs: status === "succeeded" ? 5000 : 7000,
-    action: { label: "View run", href: `/agents/${agentId}/runs/${runId}` },
+    action: { label: "Ver ejecución", href: `/agents/${agentId}/runs/${runId}` },
     dedupeKey: `run-status:${runId}:${status}`,
   };
 }
@@ -536,8 +537,9 @@ function invalidateActivityQueries(
     queryClient.invalidateQueries({ queryKey: queryKeys.costs(companyId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.usageByProvider(companyId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.usageWindowSpend(companyId) });
-    // usageQuotaWindows is intentionally excluded: quota windows come from external provider
-    // apis on a 5-minute poll and do not change in response to cost events logged by agents
+    // usageQuotaWindows se excluye intencionalmente: las ventanas de cuota provienen de
+    // APIs de proveedores externos con sondeo cada 5 minutos y no cambian en respuesta
+    // a los eventos de costo registrados por los agentes
     return;
   }
 
@@ -726,7 +728,7 @@ export function LiveUpdatesProvider({ children }: { children: ReactNode }) {
             agentId: null,
           });
         } catch {
-          // Ignore non-JSON payloads.
+          // Ignorar los mensajes que no sean JSON.
         }
       };
 

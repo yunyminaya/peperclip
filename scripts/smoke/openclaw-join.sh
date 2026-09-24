@@ -2,11 +2,11 @@
 set -euo pipefail
 
 if ! command -v curl >/dev/null 2>&1; then
-  echo "curl is required" >&2
+  echo "Se requiere curl" >&2
   exit 1
 fi
 if ! command -v jq >/dev/null 2>&1; then
-  echo "jq is required" >&2
+  echo "Se requiere jq" >&2
   exit 1
 fi
 
@@ -47,13 +47,13 @@ fail_board_auth_required() {
   local operation="$1"
   echo "$RESPONSE_BODY" >&2
   cat >&2 <<EOF
-[openclaw-smoke] ERROR: ${operation} requires board/operator auth.
+[openclaw-smoke] ERROR: ${operation} requiere autenticación de panel/operador.
 
-Provide one of:
+Proporciona uno de:
   PAPERCLIP_AUTH_HEADER=\"Bearer <board-token>\"
   PAPERCLIP_COOKIE=\"<board-session-cookie>\"
 
-Current auth context appears insufficient (HTTP ${RESPONSE_CODE}).
+El contexto de autenticación actual parece insuficiente (HTTP ${RESPONSE_CODE}).
 EOF
   exit 1
 }
@@ -93,7 +93,7 @@ assert_status() {
   local expected="$1"
   if [[ "$RESPONSE_CODE" != "$expected" ]]; then
     echo "$RESPONSE_BODY" >&2
-    fail "expected HTTP $expected, got HTTP $RESPONSE_CODE"
+    fail "se esperaba HTTP $expected, se recibió HTTP $RESPONSE_CODE"
   fi
 }
 
@@ -103,20 +103,20 @@ assert_json_has_string() {
   value="$(jq -r "$jq_expr // empty" <<<"$RESPONSE_BODY")"
   if [[ -z "$value" ]]; then
     echo "$RESPONSE_BODY" >&2
-    fail "expected JSON string at: $jq_expr"
+    fail "se esperaba una cadena JSON en: $jq_expr"
   fi
   echo "$value"
 }
 
 if [[ "$USE_DOCKER_RECEIVER" == "1" && -z "$OPENCLAW_WEBHOOK_URL" ]]; then
   if ! command -v docker >/dev/null 2>&1; then
-    fail "docker is required when USE_DOCKER_RECEIVER=1"
+    fail "se requiere docker cuando USE_DOCKER_RECEIVER=1"
   fi
-  log "building dockerized OpenClaw webhook receiver image"
+  log "compilando imagen del receptor de webhook de OpenClaw en Docker"
   docker build -t "$SMOKE_IMAGE" -f docker/openclaw-smoke/Dockerfile docker/openclaw-smoke >/dev/null
   docker rm -f "$SMOKE_CONTAINER_NAME" >/dev/null 2>&1 || true
 
-  log "starting dockerized OpenClaw webhook receiver"
+  log "iniciando el receptor de webhook de OpenClaw en Docker"
   docker run -d \
     --name "$SMOKE_CONTAINER_NAME" \
     -p "${SMOKE_PORT}:8787" \
@@ -134,32 +134,32 @@ if [[ "$USE_DOCKER_RECEIVER" == "1" && -z "$OPENCLAW_WEBHOOK_URL" ]]; then
   done
   code="$(curl -sS -o /dev/null -w "%{http_code}" "http://127.0.0.1:${SMOKE_PORT}/health" || true)"
   if [[ "$code" != "200" ]]; then
-    fail "webhook receiver failed health check on port ${SMOKE_PORT}"
+    fail "el receptor de webhook falló la verificación de salud en el puerto ${SMOKE_PORT}"
   fi
 fi
 
 if [[ -z "$OPENCLAW_WEBHOOK_URL" ]]; then
-  fail "OPENCLAW_WEBHOOK_URL must be set when USE_DOCKER_RECEIVER=0"
+  fail "OPENCLAW_WEBHOOK_URL debe definirse cuando USE_DOCKER_RECEIVER=0"
 fi
 
-log "checking Paperclip health"
+log "verificando la salud de Paperclip"
 api_request "GET" "/health"
 assert_status "200"
 DEPLOYMENT_MODE="$(jq -r '.deploymentMode // "unknown"' <<<"$RESPONSE_BODY")"
 DEPLOYMENT_EXPOSURE="$(jq -r '.deploymentExposure // "unknown"' <<<"$RESPONSE_BODY")"
-log "deployment mode=${DEPLOYMENT_MODE} exposure=${DEPLOYMENT_EXPOSURE}"
+log "modo de despliegue=${DEPLOYMENT_MODE} exposición=${DEPLOYMENT_EXPOSURE}"
 
 if [[ -z "$COMPANY_ID" ]]; then
-  log "resolving company id"
+  log "resolviendo el id de la empresa"
   api_request "GET" "/companies"
   assert_status "200"
   COMPANY_ID="$(jq -r '.[0].id // empty' <<<"$RESPONSE_BODY")"
   if [[ -z "$COMPANY_ID" ]]; then
-    fail "no companies found; create one before running smoke test"
+    fail "no se encontraron empresas; crea una antes de ejecutar la prueba de humo"
   fi
 fi
 
-log "creating agent-only invite for company ${COMPANY_ID}"
+log "creando invitación solo para agentes para la empresa ${COMPANY_ID}"
 INVITE_PAYLOAD="$(jq -nc '{allowedJoinTypes:"agent"}')"
 api_request "POST" "/companies/${COMPANY_ID}/invites" "$INVITE_PAYLOAD"
 if [[ "$RESPONSE_CODE" == "401" || "$RESPONSE_CODE" == "403" ]]; then
@@ -168,28 +168,28 @@ fi
 assert_status "201"
 INVITE_TOKEN="$(assert_json_has_string '.token')"
 INVITE_ID="$(assert_json_has_string '.id')"
-log "created invite ${INVITE_ID}"
+log "invitación creada ${INVITE_ID}"
 
-log "verifying onboarding JSON and text endpoints"
+log "verificando los endpoints JSON y de texto de incorporación"
 api_request "GET" "/invites/${INVITE_TOKEN}/onboarding"
 assert_status "200"
 ONBOARDING_TEXT_PATH="$(jq -r '.invite.onboardingTextPath // empty' <<<"$RESPONSE_BODY")"
 if [[ -z "$ONBOARDING_TEXT_PATH" ]]; then
-  fail "onboarding manifest missing invite.onboardingTextPath"
+  fail "el manifiesto de incorporación no incluye invite.onboardingTextPath"
 fi
 api_request "GET" "/invites/${INVITE_TOKEN}/onboarding.txt"
 assert_status "200"
 if ! grep -q "Paperclip OpenClaw Gateway Onboarding" <<<"$RESPONSE_BODY"; then
-  fail "onboarding.txt response missing expected header"
+  fail "la respuesta onboarding.txt no incluye la cabecera esperada"
 fi
 
 OPENCLAW_GATEWAY_URL="${OPENCLAW_GATEWAY_URL:-ws://127.0.0.1:18789}"
 OPENCLAW_GATEWAY_TOKEN="${OPENCLAW_GATEWAY_TOKEN:-${OPENCLAW_WEBHOOK_AUTH#Bearer }}"
 if [[ -z "$OPENCLAW_GATEWAY_TOKEN" ]]; then
-  fail "OPENCLAW_GATEWAY_TOKEN (or OPENCLAW_WEBHOOK_AUTH) is required for gateway join"
+  fail "Se requiere OPENCLAW_GATEWAY_TOKEN (o OPENCLAW_WEBHOOK_AUTH) para la unión del gateway"
 fi
 
-log "submitting OpenClaw gateway agent join request"
+log "enviando la solicitud de unión del agente del gateway de OpenClaw"
 JOIN_PAYLOAD="$(jq -nc \
   --arg name "$OPENCLAW_AGENT_NAME" \
   --arg url "$OPENCLAW_GATEWAY_URL" \
@@ -213,10 +213,10 @@ CLAIM_SECRET="$(assert_json_has_string '.claimSecret')"
 CLAIM_API_PATH="$(assert_json_has_string '.claimApiKeyPath')"
 DIAGNOSTICS_JSON="$(jq -c '.diagnostics // []' <<<"$RESPONSE_BODY")"
 if [[ "$DIAGNOSTICS_JSON" != "[]" ]]; then
-  log "join diagnostics: ${DIAGNOSTICS_JSON}"
+  log "diagnósticos de unión: ${DIAGNOSTICS_JSON}"
 fi
 
-log "approving join request ${JOIN_REQUEST_ID}"
+log "aprobando la solicitud de unión ${JOIN_REQUEST_ID}"
 api_request "POST" "/companies/${COMPANY_ID}/join-requests/${JOIN_REQUEST_ID}/approve" "{}"
 if [[ "$RESPONSE_CODE" == "401" || "$RESPONSE_CODE" == "403" ]]; then
   fail_board_auth_required "Join approval"
@@ -224,30 +224,30 @@ fi
 assert_status "200"
 CREATED_AGENT_ID="$(assert_json_has_string '.createdAgentId')"
 
-log "verifying invalid claim secret is rejected"
+log "verificando que el secreto de reclamación inválido sea rechazado"
 api_request "POST" "/join-requests/${JOIN_REQUEST_ID}/claim-api-key" '{"claimSecret":"invalid-smoke-secret-value"}'
 if [[ "$RESPONSE_CODE" == "201" ]]; then
-  fail "invalid claim secret unexpectedly succeeded"
+  fail "el secreto de reclamación inválido inesperadamente funcionó"
 fi
 
-log "claiming API key with one-time claim secret"
+log "reclamando la clave API con el secreto de reclamación de un solo uso"
 CLAIM_PAYLOAD="$(jq -nc --arg secret "$CLAIM_SECRET" '{claimSecret:$secret}')"
 api_request "POST" "$CLAIM_API_PATH" "$CLAIM_PAYLOAD"
 assert_status "201"
 AGENT_API_KEY="$(assert_json_has_string '.token')"
 KEY_ID="$(assert_json_has_string '.keyId')"
 
-log "verifying replay claim is rejected"
+log "verificando que la reclamación repetida sea rechazada"
 api_request "POST" "$CLAIM_API_PATH" "$CLAIM_PAYLOAD"
 if [[ "$RESPONSE_CODE" == "201" ]]; then
-  fail "claim secret replay unexpectedly succeeded"
+  fail "la repetición del secreto de reclamación inesperadamente funcionó"
 fi
 
 if [[ "$USE_DOCKER_RECEIVER" == "1" && "$STARTED_CONTAINER" == "1" ]]; then
   curl -sS -X POST "http://127.0.0.1:${SMOKE_PORT}/reset" >/dev/null
 fi
 
-log "triggering wakeup for newly created OpenClaw agent"
+log "activando wakeup para el agente de OpenClaw recién creado"
 WAKE_PAYLOAD='{"source":"on_demand","triggerDetail":"manual","reason":"openclaw_smoke"}'
 api_request "POST" "/agents/${CREATED_AGENT_ID}/wakeup" "$WAKE_PAYLOAD"
 if [[ "$RESPONSE_CODE" == "401" || "$RESPONSE_CODE" == "403" ]]; then
@@ -256,10 +256,10 @@ fi
 assert_status "202"
 RUN_ID="$(jq -r '.id // empty' <<<"$RESPONSE_BODY")"
 if [[ -z "$RUN_ID" ]]; then
-  log "wakeup response: ${RESPONSE_BODY}"
+  log "respuesta del wakeup: ${RESPONSE_BODY}"
 fi
 
-log "waiting for webhook callback"
+log "esperando el callback del webhook"
 FOUND_EVENT="0"
 LAST_EVENTS='{"count":0,"events":[]}'
 for _ in $(seq 1 "$SMOKE_TIMEOUT_SEC"); do
@@ -278,10 +278,10 @@ done
 
 if [[ "$USE_DOCKER_RECEIVER" == "1" && "$STARTED_CONTAINER" == "1" && "$FOUND_EVENT" != "1" ]]; then
   echo "$LAST_EVENTS" | jq '.' >&2
-  fail "did not observe OpenClaw webhook callback within ${SMOKE_TIMEOUT_SEC}s"
+  fail "no se observó el callback del webhook de OpenClaw dentro de ${SMOKE_TIMEOUT_SEC}s"
 fi
 
-log "success"
+log "éxito"
 log "companyId=${COMPANY_ID}"
 log "inviteId=${INVITE_ID}"
 log "joinRequestId=${JOIN_REQUEST_ID}"

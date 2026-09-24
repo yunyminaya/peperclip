@@ -1,192 +1,192 @@
-# Storage System Implementation Plan (V1)
+# Plan de implementación del sistema de almacenamiento (V1)
 
-Status: Draft  
-Owner: Backend + UI  
-Date: 2026-02-20
+Estado: Borrador  
+Responsable: Backend + UI  
+Fecha: 2026-02-20
 
-## Goal
+## Objetivo
 
-Add a single storage subsystem for Paperclip that supports:
+Agregar un único subsistema de almacenamiento para Paperclip que soporte:
 
-- local disk storage for single-user local deployment
-- S3-compatible object storage for cloud deployment
-- a provider-agnostic interface for issue images and future file attachments
+- almacenamiento en disco local para despliegue local de un solo usuario
+- almacenamiento de objetos compatible con S3 para despliegue en la nube
+- una interfaz agnóstica al proveedor para imágenes de issues y futuros adjuntos de archivos
 
-## V1 Scope
+## Alcance V1
 
-- First consumer: issue attachments/images.
-- Storage adapters: `local_disk` and `s3`.
-- Files are always company-scoped and access-controlled.
-- API serves attachment bytes through authenticated Paperclip endpoints.
+- Primer consumidor: adjuntos/imágenes de issues.
+- Adaptadores de almacenamiento: `local_disk` y `s3`.
+- Los archivos siempre tienen alcance de empresa y control de acceso.
+- La API sirve los bytes del adjunto a través de endpoints autenticados de Paperclip.
 
-## Out of Scope (This Draft)
+## Fuera de alcance (este borrador)
 
-- Public unauthenticated object URLs.
-- CDN/signed URL optimization.
-- Image transformations/thumbnails.
-- Malware scanning pipeline.
+- URLs de objeto públicas sin autenticación.
+- Optimización de CDN/URL firmadas.
+- Transformaciones de imágenes/miniaturas.
+- Pipeline de escaneo de malware.
 
-## Key Decisions
+## Decisiones clave
 
-- Default local path is under instance root: `~/.paperclip/instances/<instanceId>/data/storage`.
-- Object bytes live in storage provider; metadata lives in Postgres.
-- `assets` is generic metadata table; `issue_attachments` links assets to issues/comments.
-- S3 credentials come from runtime environment/default AWS provider chain, not DB rows.
-- All object keys include company prefix to preserve hard tenancy boundaries.
+- La ruta local por defecto está bajo la raíz de la instancia: `~/.paperclip/instances/<instanceId>/data/storage`.
+- Los bytes del objeto viven en el proveedor de almacenamiento; los metadatos viven en Postgres.
+- `assets` es una tabla genérica de metadatos; `issue_attachments` enlaza assets a issues/comentarios.
+- Las credenciales de S3 vienen del entorno de ejecución/cadena de proveedor AWS por defecto, no de filas de DB.
+- Todas las claves de objeto incluyen prefijo de empresa para preservar límites duros de tenencia.
 
-## Phase 1: Shared Config + Provider Contract
+## Fase 1: Configuración compartida + contrato de proveedor
 
-### Checklist (Per File)
+### Lista de verificación (por archivo)
 
-- [ ] `packages/shared/src/constants.ts`: add `STORAGE_PROVIDERS` and `StorageProvider` type.
-- [ ] `packages/shared/src/config-schema.ts`: add `storageConfigSchema` with:
+- [ ] `packages/shared/src/constants.ts`: agregar `STORAGE_PROVIDERS` y el tipo `StorageProvider`.
+- [ ] `packages/shared/src/config-schema.ts`: agregar `storageConfigSchema` con:
   - provider: `local_disk | s3`
   - localDisk.baseDir
   - s3.bucket, s3.region, s3.endpoint?, s3.prefix?, s3.forcePathStyle?
-- [ ] `packages/shared/src/index.ts`: export new storage config/types.
-- [ ] `cli/src/config/schema.ts`: ensure re-export includes new storage schema/types.
-- [ ] `cli/src/commands/configure.ts`: add `storage` section support.
-- [ ] `cli/src/commands/onboard.ts`: initialize default storage config.
-- [ ] `cli/src/prompts/storage.ts`: new prompt flow for local disk vs s3 settings.
-- [ ] `cli/src/prompts/index` (if present) or direct imports: wire new storage prompt.
-- [ ] `server/src/config.ts`: load storage config and resolve home-aware local path.
-- [ ] `server/src/home-paths.ts`: add `resolveDefaultStorageDir()`.
-- [ ] `doc/CLI.md`: document `configure --section storage`.
-- [ ] `doc/DEVELOPING.md`: document default local storage path and overrides.
+- [ ] `packages/shared/src/index.ts`: exportar nueva configuración/tipos de almacenamiento.
+- [ ] `cli/src/config/schema.ts`: asegurar que la re-exportación incluya el nuevo esquema/tipos de almacenamiento.
+- [ ] `cli/src/commands/configure.ts`: agregar soporte de sección `storage`.
+- [ ] `cli/src/commands/onboard.ts`: inicializar la configuración de almacenamiento por defecto.
+- [ ] `cli/src/prompts/storage.ts`: nuevo flujo de prompts para ajustes de disco local vs s3.
+- [ ] `cli/src/prompts/index` (si existe) o imports directos: conectar el nuevo prompt de almacenamiento.
+- [ ] `server/src/config.ts`: cargar la configuración de almacenamiento y resolver la ruta local consciente del home.
+- [ ] `server/src/home-paths.ts`: agregar `resolveDefaultStorageDir()`.
+- [ ] `doc/CLI.md`: documentar `configure --section storage`.
+- [ ] `doc/DEVELOPING.md`: documentar la ruta de almacenamiento local por defecto y las anulaciones.
 
-### Acceptance Criteria
+### Criterios de aceptación
 
-- `paperclipai onboard` writes a valid `storage` config block by default.
-- `paperclipai configure --section storage` can switch between local and s3 modes.
-- Server startup reads storage config without env-only hacks.
+- `paperclipai onboard` escribe un bloque de configuración `storage` válido por defecto.
+- `paperclipai configure --section storage` puede cambiar entre modos local y s3.
+- El arranque del servidor lee la configuración de almacenamiento sin trucos solo-env.
 
-## Phase 2: Server Storage Subsystem + Providers
+## Fase 2: Subsistema de almacenamiento del servidor + proveedores
 
-### Checklist (Per File)
+### Lista de verificación (por archivo)
 
-- [ ] `server/src/storage/types.ts`: define provider + service interfaces.
-- [ ] `server/src/storage/service.ts`: provider-agnostic service (key generation, validation, stream APIs).
-- [ ] `server/src/storage/local-disk-provider.ts`: implement local disk provider with safe path resolution.
-- [ ] `server/src/storage/s3-provider.ts`: implement S3-compatible provider (`@aws-sdk/client-s3`).
-- [ ] `server/src/storage/provider-registry.ts`: provider lookup by configured id.
-- [ ] `server/src/storage/index.ts`: export storage factory helpers.
-- [ ] `server/src/services/index.ts`: export `storageService` factory.
-- [ ] `server/src/app.ts` or route wiring point: inject/use storage service where needed.
-- [ ] `server/package.json`: add AWS SDK dependency if not present.
+- [ ] `server/src/storage/types.ts`: definir interfaces de proveedor + servicio.
+- [ ] `server/src/storage/service.ts`: servicio agnóstico al proveedor (generación de claves, validación, APIs de stream).
+- [ ] `server/src/storage/local-disk-provider.ts`: implementar el proveedor de disco local con resolución segura de rutas.
+- [ ] `server/src/storage/s3-provider.ts`: implementar el proveedor compatible con S3 (`@aws-sdk/client-s3`).
+- [ ] `server/src/storage/provider-registry.ts`: búsqueda de proveedor por id configurado.
+- [ ] `server/src/storage/index.ts`: exportar helpers de fábrica de almacenamiento.
+- [ ] `server/src/services/index.ts`: exportar la fábrica `storageService`.
+- [ ] `server/src/app.ts` o punto de cableado de rutas: inyectar/usar el servicio de almacenamiento donde se necesite.
+- [ ] `server/package.json`: agregar la dependencia AWS SDK si no está presente.
 
-### Acceptance Criteria
+### Criterios de aceptación
 
-- In `local_disk` mode, uploading + reading a file round-trips bytes on disk.
-- In `s3` mode, service can `put/get/delete` against S3-compatible endpoint.
-- Invalid provider config yields clear startup/config errors.
+- En modo `local_disk`, subir + leer un archivo hace round-trip de bytes en disco.
+- En modo `s3`, el servicio puede hacer `put/get/delete` contra un endpoint compatible con S3.
+- Una configuración de proveedor inválida produce errores claros de arranque/configuración.
 
-## Phase 3: Database Metadata Model
+## Fase 3: Modelo de metadatos de base de datos
 
-### Checklist (Per File)
+### Lista de verificación (por archivo)
 
-- [ ] `packages/db/src/schema/assets.ts`: new generic asset metadata table.
-- [ ] `packages/db/src/schema/issue_attachments.ts`: issue-to-asset linking table.
-- [ ] `packages/db/src/schema/index.ts`: export new tables.
-- [ ] `packages/db/src/migrations/*`: generate migration for both tables and indexes.
-- [ ] `packages/shared/src/types/issue.ts` (or new asset types file): add `IssueAttachment` type.
-- [ ] `packages/shared/src/index.ts`: export new types.
+- [ ] `packages/db/src/schema/assets.ts`: nueva tabla genérica de metadatos de assets.
+- [ ] `packages/db/src/schema/issue_attachments.ts`: tabla de enlace de issues a assets.
+- [ ] `packages/db/src/schema/index.ts`: exportar las nuevas tablas.
+- [ ] `packages/db/src/migrations/*`: generar migración para ambas tablas e índices.
+- [ ] `packages/shared/src/types/issue.ts` (o nuevo archivo de tipos de asset): agregar el tipo `IssueAttachment`.
+- [ ] `packages/shared/src/index.ts`: exportar los nuevos tipos.
 
-### Suggested Columns
+### Columnas sugeridas
 
 - `assets`:
   - `id`, `company_id`, `provider`, `object_key`
   - `content_type`, `byte_size`, `sha256`, `original_filename`
-  - `created_by_agent_id`, `created_by_user_id`, timestamps
+  - `created_by_agent_id`, `created_by_user_id`, marcas de tiempo
 - `issue_attachments`:
-  - `id`, `company_id`, `issue_id`, `asset_id`, `issue_comment_id` (nullable), timestamps
+  - `id`, `company_id`, `issue_id`, `asset_id`, `issue_comment_id` (nullable), marcas de tiempo
 
-### Acceptance Criteria
+### Criterios de aceptación
 
-- Migration applies cleanly on empty and existing local dev DB.
-- Metadata rows are company-scoped and indexed for issue lookup.
+- La migración se aplica limpiamente en una DB de dev local vacía y existente.
+- Las filas de metadatos tienen alcance de empresa e índices para búsqueda de issues.
 
-## Phase 4: Issue Attachment API
+## Fase 4: API de adjuntos de issues
 
-### Checklist (Per File)
+### Lista de verificación (por archivo)
 
-- [ ] `packages/shared/src/validators/issue.ts`: add schemas for upload/list/delete attachment operations.
-- [ ] `server/src/services/issues.ts`: add attachment CRUD helpers with company checks.
-- [ ] `server/src/routes/issues.ts`: add endpoints:
+- [ ] `packages/shared/src/validators/issue.ts`: agregar esquemas para operaciones de subir/listar/eliminar adjuntos.
+- [ ] `server/src/services/issues.ts`: agregar helpers CRUD de adjuntos con verificaciones de empresa.
+- [ ] `server/src/routes/issues.ts`: agregar endpoints:
   - `POST /companies/:companyId/issues/:issueId/attachments` (multipart)
   - `GET /issues/:issueId/attachments`
   - `GET /attachments/:attachmentId/content`
   - `DELETE /attachments/:attachmentId`
-- [ ] `server/src/routes/authz.ts`: reuse/enforce company access for attachment endpoints.
-- [ ] `server/src/services/activity-log.ts` usage callsites: log attachment add/remove mutations.
-- [ ] `server/src/app.ts`: ensure multipart parsing middleware is in place for upload route.
+- [ ] `server/src/routes/authz.ts`: reutilizar/aplicar acceso de empresa para endpoints de adjuntos.
+- [ ] llamadas a `server/src/services/activity-log.ts`: registrar mutaciones de agregar/quitar adjuntos.
+- [ ] `server/src/app.ts`: asegurar que el middleware de parseo multipart esté en su lugar para la ruta de subida.
 
-### API Behavior
+### Comportamiento de la API
 
-- Enforce max size and image/content-type allowlist in V1.
-- Return consistent errors: `400/401/403/404/409/422/500`.
-- Stream bytes instead of buffering large payloads in memory.
+- Aplicar tamaño máximo y lista de permitidos de tipos MIME/de contenido en V1.
+- Devolver errores consistentes: `400/401/403/404/409/422/500`.
+- Transmitir bytes en stream en lugar de bufferizar payloads grandes en memoria.
 
-### Acceptance Criteria
+### Criterios de aceptación
 
-- Board and same-company agents can upload and read attachments per issue permissions.
-- Cross-company access is denied even with valid attachment id.
-- Activity log records attachment add/remove actions.
+- El tablero y los agentes de la misma empresa pueden subir y leer adjuntos según los permisos de issues.
+- El acceso entre empresas se deniega incluso con un id de adjunto válido.
+- El registro de actividad registra acciones de agregar/quitar adjuntos.
 
-## Phase 5: UI Issue Attachment Integration
+## Fase 5: Integración de adjuntos de issues en UI
 
-### Checklist (Per File)
+### Lista de verificación (por archivo)
 
-- [ ] `ui/src/api/issues.ts`: add attachment API client methods.
-- [ ] `ui/src/api/client.ts`: support multipart upload helper (no JSON `Content-Type` for `FormData`).
-- [ ] `ui/src/lib/queryKeys.ts`: add issue attachment query keys.
-- [ ] `ui/src/pages/IssueDetail.tsx`: add upload UI + attachment list/query invalidation.
-- [ ] `ui/src/components/CommentThread.tsx`: optional comment image attach or display linked images.
-- [ ] `packages/shared/src/types/index.ts`: ensure attachment types are consumed cleanly in UI.
+- [ ] `ui/src/api/issues.ts`: agregar métodos de cliente de API de adjuntos.
+- [ ] `ui/src/api/client.ts`: soportar helper de subida multipart (sin `Content-Type` JSON para `FormData`).
+- [ ] `ui/src/lib/queryKeys.ts`: agregar claves de query de adjuntos de issues.
+- [ ] `ui/src/pages/IssueDetail.tsx`: agregar UI de subida + invalidación de query de lista de adjuntos.
+- [ ] `ui/src/components/CommentThread.tsx`: adjuntar imagen a comentario opcional o mostrar imágenes enlazadas.
+- [ ] `packages/shared/src/types/index.ts`: asegurar que los tipos de adjunto se consuman limpiamente en UI.
 
-### Acceptance Criteria
+### Criterios de aceptación
 
-- User can upload an image from issue detail and see it listed immediately.
-- Uploaded image can be opened/rendered via authenticated API route.
-- Upload and fetch failures are visible to users (no silent errors).
+- El usuario puede subir una imagen desde el detalle del issue y verla listada de inmediato.
+- La imagen subida puede abrirse/renderizarse vía la ruta de API autenticada.
+- Las fallas de subida y obtención son visibles para los usuarios (sin errores silenciosos).
 
-## Phase 6: CLI Doctor + Operational Hardening
+## Fase 6: CLI Doctor + endurecimiento operativo
 
-### Checklist (Per File)
+### Lista de verificación (por archivo)
 
-- [ ] `cli/src/checks/storage-check.ts`: add storage check (local writable dir, optional S3 reachability check).
-- [ ] `cli/src/checks/index.ts`: export new storage check.
-- [ ] `cli/src/commands/doctor.ts`: include storage check in doctor sequence.
-- [ ] `doc/DATABASE.md` or `doc/DEVELOPING.md`: mention storage backend behavior by deployment mode.
-- [ ] `doc/SPEC-implementation.md`: add storage subsystem and issue-attachment endpoint contract.
+- [ ] `cli/src/checks/storage-check.ts`: agregar verificación de almacenamiento (dir local escribible, verificación opcional de alcanzabilidad de S3).
+- [ ] `cli/src/checks/index.ts`: exportar la nueva verificación de almacenamiento.
+- [ ] `cli/src/commands/doctor.ts`: incluir la verificación de almacenamiento en la secuencia de doctor.
+- [ ] `doc/DATABASE.md` o `doc/DEVELOPING.md`: mencionar el comportamiento del backend de almacenamiento por modo de despliegue.
+- [ ] `doc/SPEC-implementation.md`: agregar el subsistema de almacenamiento y el contrato de endpoints de adjuntos de issues.
 
-### Acceptance Criteria
+### Criterios de aceptación
 
-- `paperclipai doctor` reports actionable storage status.
-- Local single-user install works without extra cloud credentials.
-- Cloud config supports S3-compatible endpoint without code changes.
+- `paperclipai doctor` reporta un estado de almacenamiento accionable.
+- La instalación local de un solo usuario funciona sin credenciales extra en la nube.
+- La configuración en la nube soporta un endpoint compatible con S3 sin cambios de código.
 
-## Test Plan
+## Plan de pruebas
 
-### Server Integration Tests
+### Pruebas de integración del servidor
 
-- [ ] `server/src/__tests__/issue-attachments.auth.test.ts`: company boundary and permission tests.
-- [ ] `server/src/__tests__/issue-attachments.lifecycle.test.ts`: upload/list/read/delete flow.
-- [ ] `server/src/__tests__/storage-local-provider.test.ts`: local provider path safety and round-trip.
-- [ ] `server/src/__tests__/storage-s3-provider.test.ts`: s3 provider contract (mocked client).
-- [ ] `server/src/__tests__/activity-log.attachments.test.ts`: mutation logging assertions.
+- [ ] `server/src/__tests__/issue-attachments.auth.test.ts`: pruebas de límite de empresa y permisos.
+- [ ] `server/src/__tests__/issue-attachments.lifecycle.test.ts`: flujo de subir/listar/leer/eliminar.
+- [ ] `server/src/__tests__/storage-local-provider.test.ts`: seguridad de rutas y round-trip del proveedor local.
+- [ ] `server/src/__tests__/storage-s3-provider.test.ts`: contrato del proveedor s3 (cliente mockeado).
+- [ ] `server/src/__tests__/activity-log.attachments.test.ts`: aserciones de registro de mutaciones.
 
-### CLI Tests
+### Pruebas del CLI
 
-- [ ] `cli/src/__tests__/configure-storage.test.ts`: configure section writes valid config.
-- [ ] `cli/src/__tests__/doctor-storage-check.test.ts`: storage health output and repair behavior.
+- [ ] `cli/src/__tests__/configure-storage.test.ts`: la sección de configuración escribe config válida.
+- [ ] `cli/src/__tests__/doctor-storage-check.test.ts`: salida de salud de almacenamiento y comportamiento de reparación.
 
-### UI Tests (if present in current stack)
+### Pruebas de UI (si están presentes en el stack actual)
 
-- [ ] `ui/src/...`: issue detail upload and error handling tests.
+- [ ] `ui/src/...`: pruebas de subida y manejo de errores del detalle de issue.
 
-## Verification Gate Before Merge
+## Puerta de verificación antes del merge
 
-Run:
+Ejecutar:
 
 ```sh
 pnpm -r typecheck
@@ -194,13 +194,12 @@ pnpm test:run
 pnpm build
 ```
 
-If any command is skipped, document exactly what was skipped and why.
+Si algún comando se omite, documentar exactamente qué se omitió y por qué.
 
-## Implementation Order
+## Orden de implementación
 
-1. Phase 1 and Phase 2 (foundation, no user-visible breakage)
-2. Phase 3 (DB contract)
-3. Phase 4 (API)
-4. Phase 5 (UI consumer)
-5. Phase 6 (doctor/docs hardening)
-
+1. Fase 1 y Fase 2 (base, sin roturas visibles para el usuario)
+2. Fase 3 (contrato de DB)
+3. Fase 4 (API)
+4. Fase 5 (consumidor UI)
+5. Fase 6 (endurecimiento doctor/docs)

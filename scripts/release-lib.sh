@@ -9,7 +9,7 @@ release_info() {
 }
 
 release_warn() {
-  echo "Warning: $*" >&2
+  echo "Advertencia: $*" >&2
 }
 
 release_fail() {
@@ -54,7 +54,7 @@ resolve_release_remote() {
   local remote="${RELEASE_REMOTE:-${PUBLISH_REMOTE:-}}"
 
   if [ -n "$remote" ]; then
-    git_remote_exists "$remote" || release_fail "git remote '$remote' does not exist."
+    git_remote_exists "$remote" || release_fail "el remoto de git '$remote' no existe."
     printf '%s\n' "$remote"
     return
   fi
@@ -74,7 +74,7 @@ resolve_release_remote() {
     return
   fi
 
-  release_fail "no git remote found. Configure RELEASE_REMOTE or PUBLISH_REMOTE."
+  release_fail "no se encontró ningún remoto de git. Configura RELEASE_REMOTE o PUBLISH_REMOTE."
 }
 
 fetch_release_remote() {
@@ -113,7 +113,7 @@ const input = process.argv[2];
 
 const date = input ? new Date(`${input}T00:00:00Z`) : new Date();
 if (Number.isNaN(date.getTime())) {
-  console.error(`invalid date: ${input}`);
+  console.error(`fecha inválida: ${input}`);
   process.exit(1);
 }
 
@@ -145,7 +145,7 @@ const { execSync } = require("node:child_process");
 
 const date = input ? new Date(`${input}T00:00:00Z`) : new Date();
 if (Number.isNaN(date.getTime())) {
-  console.error(`invalid date: ${input}`);
+  console.error(`fecha inválida: ${input}`);
   process.exit(1);
 }
 
@@ -265,7 +265,7 @@ wait_for_npm_package_version() {
 
 require_clean_worktree() {
   if [ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]; then
-    release_fail "working tree is not clean. Commit, stash, or remove changes before releasing."
+    release_fail "el árbol de trabajo no está limpio. Haz commit, stash o elimina los cambios antes de publicar la versión."
   fi
 }
 
@@ -273,7 +273,7 @@ require_on_master_branch() {
   local current_branch
   current_branch="$(git_current_branch)"
   if [ "$current_branch" != "master" ]; then
-    release_fail "this release step must run from branch master, but current branch is ${current_branch:-<detached>}."
+    release_fail "este paso de la versión debe ejecutarse desde la rama master, pero la rama actual es ${current_branch:-<detached>}."
   fi
 }
 
@@ -285,16 +285,16 @@ require_npm_publish_auth() {
   fi
 
   if npm whoami >/dev/null 2>&1; then
-    release_info "  ✓ Logged in to npm as $(npm whoami)"
+    release_info "  ✓ Sesión iniciada en npm como $(npm whoami)"
     return
   fi
 
   if [ "${GITHUB_ACTIONS:-}" = "true" ]; then
-    release_info "  ✓ npm publish auth will be provided by GitHub Actions trusted publishing"
+    release_info "  ✓ la autenticación de publicación en npm la proporcionará la publicación confiable de GitHub Actions"
     return
   fi
 
-  release_fail "npm publish auth is not available. Use 'npm login' locally or run from GitHub Actions with trusted publishing."
+  release_fail "la autenticación de publicación en npm no está disponible. Usa 'npm login' localmente o ejecuta desde GitHub Actions con publicación confiable."
 }
 
 list_public_package_info() {

@@ -1,62 +1,62 @@
-# File Browser Example Plugin
+# Plugin de ejemplo de explorador de archivos
 
-Example Paperclip plugin that demonstrates:
+Plugin de Paperclip de ejemplo que demuestra:
 
-- **projectSidebarItem** — An optional "Files" link under each project in the sidebar that opens the project detail with this plugin’s tab selected. This is controlled by plugin settings and defaults to off.
-- **detailTab** (entityType project) — A project detail tab with a workspace-path selector, a desktop two-column layout (file tree left, editor right), and a mobile one-panel flow with a back button from editor to file tree, including save support.
+- **projectSidebarItem** — Un enlace opcional "Files" bajo cada proyecto en la barra lateral que abre el detalle del proyecto con la pestaña de este plugin seleccionada. Esto se controla con los ajustes del plugin y viene desactivado por defecto.
+- **detailTab** (entityType project) — Una pestaña de detalle del proyecto con un selector de ruta del workspace, un diseño de escritorio de dos columnas (árbol de archivos a la izquierda, editor a la derecha) y un flujo móvil de un solo panel con botón de volver del editor al árbol de archivos, incluyendo soporte de guardado.
 
-This is a repo-local example plugin for development. It should not be assumed to ship in a generic production build unless it is explicitly included.
+Este es un plugin de ejemplo local del repositorio para desarrollo. No debe suponerse que se incluye en una compilación genérica de producción a menos que esté explícitamente incluido.
 
 ## Slots
 
-| Slot                | Type                | Description                                      |
+| Slot                | Tipo                | Descripción                                      |
 |---------------------|---------------------|--------------------------------------------------|
-| Files (sidebar)     | `projectSidebarItem`| Optional link under each project → project detail + tab. |
-| Files (tab)         | `detailTab`         | Responsive tree/editor layout with save support.|
+| Archivos (barra lateral)     | `projectSidebarItem`| Enlace opcional bajo cada proyecto → detalle del proyecto + pestaña. |
+| Archivos (pestaña)         | `detailTab`         | Diseño responsive árbol/editor con soporte de guardado.|
 
-## Settings
+## Ajustes
 
-- `Show Files in Sidebar` — toggles the project sidebar link on or off. Defaults to off.
-- `Comment File Links` — controls whether comment annotations and the comment context-menu action are shown.
+- `Show Files in Sidebar` — activa o desactiva el enlace de la barra lateral del proyecto. Viene desactivado por defecto.
+- `Comment File Links` — controla si se muestran las anotaciones de comentarios y la acción del menú contextual de comentarios.
 
-## Capabilities
+## Capacidades
 
-- `ui.sidebar.register` — project sidebar item
-- `ui.detailTab.register` — project detail tab
-- `projects.read` — resolve project
-- `project.workspaces.read` — list workspaces and read paths for file access
+- `ui.sidebar.register` — elemento de la barra lateral del proyecto
+- `ui.detailTab.register` — pestaña de detalle del proyecto
+- `projects.read` — resolver proyecto
+- `project.workspaces.read` — listar workspaces y leer rutas para el acceso a archivos
 
 ## Worker
 
-- **getData `workspaces`** — `ctx.projects.listWorkspaces(projectId, companyId)` (ordered, primary first).
-- **getData `fileList`** — `{ projectId, workspaceId, directoryPath? }` → list directory entries for the workspace root or a subdirectory (Node `fs`).
-- **getData `fileContent`** — `{ projectId, workspaceId, filePath }` → read file content using workspace-relative paths (Node `fs`).
-- **performAction `writeFile`** — `{ projectId, workspaceId, filePath, content }` → write the current editor buffer back to disk.
+- **getData `workspaces`** — `ctx.projects.listWorkspaces(projectId, companyId)` (ordenados, el principal primero).
+- **getData `fileList`** — `{ projectId, workspaceId, directoryPath? }` → lista las entradas del directorio para la raíz del workspace o un subdirectorio (`fs` de Node).
+- **getData `fileContent`** — `{ projectId, workspaceId, filePath }` → lee el contenido del archivo usando rutas relativas al workspace (`fs` de Node).
+- **performAction `writeFile`** — `{ projectId, workspaceId, filePath, content }` → escribe el búfer actual del editor de vuelta al disco.
 
-## Local Install (Dev)
+## Instalación local (desarrollo)
 
-From the repo root, build the plugin and install it by local path:
+Desde la raíz del repositorio, compila el plugin e instálalo por ruta local:
 
 ```bash
 pnpm --filter @paperclipai/plugin-file-browser-example build
 pnpm paperclipai plugin install ./packages/plugins/examples/plugin-file-browser-example
 ```
 
-To uninstall:
+Para desinstalar:
 
 ```bash
 pnpm paperclipai plugin uninstall paperclip-file-browser-example --force
 ```
 
-**Local development notes:**
+**Notas de desarrollo local:**
 
-- **Build first.** The host resolves the worker from the manifest `entrypoints.worker` (e.g. `./dist/worker.js`). Run `pnpm build` in the plugin directory before installing so the worker file exists.
-- **Dev-only install path.** This local-path install flow assumes this monorepo checkout is present on disk. For deployed installs, publish an npm package instead of depending on `packages/plugins/examples/...` existing on the host.
-- **Reinstall after pulling.** If you installed a plugin by local path before the server stored `package_path`, the plugin may show status **error** (worker not found). Uninstall and install again so the server persists the path and can activate the plugin.
-- Optional: use `paperclip-plugin-dev-server` for UI hot-reload with `devUiUrl` in plugin config.
+- **Compila primero.** El host resuelve el worker desde el manifiesto `entrypoints.worker` (p. ej. `./dist/worker.js`). Ejecuta `pnpm build` en el directorio del plugin antes de instalar para que el archivo del worker exista.
+- **Ruta de instalación solo para desarrollo.** Este flujo de instalación por ruta local supone que esta copia del monorepositorio está presente en el disco. Para instalaciones desplegadas, publica un paquete npm en lugar de depender de que `packages/plugins/examples/...` exista en el host.
+- **Reinstala después de actualizar.** Si instalaste un plugin por ruta local antes de que el servidor almacenara `package_path`, el plugin puede mostrar el estado **error** (worker no encontrado). Desinstala e instala de nuevo para que el servidor conserve la ruta y pueda activar el plugin.
+- Opcional: usa `paperclip-plugin-dev-server` para la recarga en caliente de la UI con `devUiUrl` en la configuración del plugin.
 
-## Structure
+## Estructura
 
-- `src/manifest.ts` — manifest with `projectSidebarItem` and `detailTab` (entityTypes `["project"]`).
-- `src/worker.ts` — data handlers for workspaces, file list, file content.
-- `src/ui/index.tsx` — `FilesLink` (sidebar) and `FilesTab` (workspace path selector + two-panel file tree/editor).
+- `src/manifest.ts` — manifiesto con `projectSidebarItem` y `detailTab` (entityTypes `["project"]`).
+- `src/worker.ts` — manejadores de datos para workspaces, lista de archivos, contenido de archivos.
+- `src/ui/index.tsx` — `FilesLink` (barra lateral) y `FilesTab` (selector de ruta del workspace + árbol de archivos/editor de dos paneles).

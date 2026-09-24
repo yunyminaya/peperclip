@@ -1,26 +1,26 @@
 /**
- * @fileoverview Plugin UI static file serving route
+ * @fileoverview Ruta de servicio de archivos estáticos de UI de plugins
  *
- * Serves plugin UI bundles from the plugin's dist/ui/ directory under the
- * `/_plugins/:pluginId/ui/*` namespace. This is specified in PLUGIN_SPEC.md
+ * Sirve bundles de UI de plugins desde el directorio dist/ui/ del plugin bajo el
+ * namespace `/_plugins/:pluginId/ui/*`. Esto está especificado en PLUGIN_SPEC.md
  * §19.0.3 (Bundle Serving).
  *
- * Plugin UI bundles are pre-built ESM that the host serves as static assets.
- * The host dynamically imports the plugin's UI entry module from this path,
- * resolves the named export declared in `ui.slots[].exportName`, and mounts
- * it into the extension slot.
+ * Los bundles de UI de plugins son ESM preconstruidos que el host sirve como recursos estáticos.
+ * El host importa dinámicamente el módulo de entrada de UI del plugin desde esta ruta,
+ * resuelve la exportación nombrada declarada en `ui.slots[].exportName` y monta
+ * en el slot de extensión.
  *
- * Security:
- * - Path traversal is prevented by resolving the requested path and verifying
- *   it stays within the plugin's UI directory.
- * - Only plugins in 'ready' status have their UI served.
- * - Only plugins that declare `entrypoints.ui` serve UI bundles.
+ * Seguridad:
+ * - Se previene el path traversal resolviendo la ruta solicitada y verificando
+ *   que permanece dentro del directorio de UI del plugin.
+ * - Solo los plugins en estado 'ready' tienen su UI servida.
+ * - Solo los plugins que declaran `entrypoints.ui` sirven bundles de UI.
  *
- * Cache Headers:
- * - Files with content-hash patterns in their name (e.g., `index-a1b2c3d4.js`)
- *   receive `Cache-Control: public, max-age=31536000, immutable`.
- * - Other files receive `Cache-Control: public, max-age=0, must-revalidate`
- *   with ETag-based conditional request support.
+ * Encabezados de caché:
+ * - Los archivos con patrones de hash de contenido en su nombre (p. ej. `index-a1b2c3d4.js`)
+ *   reciben `Cache-Control: public, max-age=31536000, immutable`.
+ * - Otros archivos reciben `Cache-Control: public, max-age=0, must-revalidate`
+ *   con soporte de solicitudes condicionales basadas en ETag.
  *
  * @module server/routes/plugin-ui-static
  * @see doc/plugins/PLUGIN_SPEC.md §19.0.3 — Bundle Serving
@@ -36,37 +36,37 @@ import { pluginRegistryService } from "../services/plugin-registry.js";
 import { logger } from "../middleware/logger.js";
 
 // ---------------------------------------------------------------------------
-// Constants
+// Constantes
 // ---------------------------------------------------------------------------
 
 /**
- * Regex to detect content-hashed filenames.
+ * Regex para detectar nombres de archivo con hash de contenido.
  *
- * Matches patterns like:
+ * Coincide con patrones como:
  * - `index-a1b2c3d4.js`
  * - `styles.abc123def.css`
  * - `chunk-ABCDEF01.mjs`
  *
- * The hash portion must be at least 8 hex characters to avoid false positives.
+ * La porción de hash debe tener al menos 8 caracteres hexadecimales para evitar falsos positivos.
  */
 const CONTENT_HASH_PATTERN = /[.-][a-fA-F0-9]{8,}\.\w+$/;
 
 /**
- * Cache-Control header for content-hashed files.
- * These files are immutable by definition (the hash changes when content changes).
+ * Encabezado Cache-Control para archivos con hash de contenido.
+ * Estos archivos son inmutables por definición (el hash cambia cuando cambia el contenido).
  */
-/** 1 year in seconds — standard for content-hashed immutable resources. */
+/** 1 año en segundos — estándar para recursos inmutables con hash de contenido. */
 const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60; // 31_536_000
 const CACHE_CONTROL_IMMUTABLE = `public, max-age=${ONE_YEAR_SECONDS}, immutable`;
 
 /**
- * Cache-Control header for non-hashed files.
- * These files must be revalidated on each request (ETag-based).
+ * Encabezado Cache-Control para archivos sin hash.
+ * Estos archivos deben revalidarse en cada solicitud (basado en ETag).
  */
 const CACHE_CONTROL_REVALIDATE = "public, max-age=0, must-revalidate";
 
 /**
- * MIME types for common plugin UI bundle file extensions.
+ * Tipos MIME para extensiones comunes de archivos de bundles de UI de plugins.
  */
 const MIME_TYPES: Record<string, string> = {
   ".js": "application/javascript; charset=utf-8",
@@ -90,21 +90,21 @@ const MIME_TYPES: Record<string, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// Helper
+// Ayudante
 // ---------------------------------------------------------------------------
 
 /**
- * Resolve a plugin's UI directory from its package location.
+ * Resuelve el directorio de UI de un plugin desde su ubicación de paquete.
  *
- * The plugin's `packageName` is stored in the DB. We resolve the package path
- * from the local plugin directory (DEFAULT_LOCAL_PLUGIN_DIR) by looking in
- * `node_modules`. If the plugin was installed from a local path, the manifest
- * `entrypoints.ui` path is resolved relative to the package directory.
+ * El `packageName` del plugin se almacena en la BD. Resolvemos la ruta del paquete
+ * desde el directorio local de plugins (DEFAULT_LOCAL_PLUGIN_DIR) buscando en
+ * `node_modules`. Si el plugin se instaló desde una ruta local, la ruta
+ * `entrypoints.ui` del manifiesto se resuelve relativa al directorio del paquete.
  *
- * @param localPluginDir - The plugin installation directory
- * @param packageName - The npm package name
- * @param entrypointsUi - The UI entrypoint path from the manifest (e.g., "./dist/ui/")
- * @returns Absolute path to the UI directory, or null if not found
+ * @param localPluginDir - El directorio de instalación de plugins
+ * @param packageName - El nombre del paquete npm
+ * @param entrypointsUi - La ruta del entrypoint de UI del manifiesto (p. ej. "./dist/ui/")
+ * @returns Ruta absoluta al directorio de UI, o null si no se encuentra
  */
 export function resolvePluginUiDir(
   localPluginDir: string,
@@ -112,7 +112,7 @@ export function resolvePluginUiDir(
   entrypointsUi: string,
   packagePath?: string | null,
 ): string | null {
-  // For local-path installs, prefer the persisted package path.
+  // Para instalaciones de ruta local, prefiere la ruta de paquete persistida.
   if (packagePath) {
     const resolvedPackagePath = path.resolve(packagePath);
     if (fs.existsSync(resolvedPackagePath)) {
@@ -126,23 +126,23 @@ export function resolvePluginUiDir(
     }
   }
 
-  // Resolve the package root within the local plugin directory's node_modules.
-  // npm installs go to <localPluginDir>/node_modules/<packageName>/
+  // Resuelve la raíz del paquete dentro del node_modules del directorio local de plugins.
+  // Las instalaciones npm van a <localPluginDir>/node_modules/<packageName>/
   let packageRoot: string;
   if (packageName.startsWith("@")) {
-    // Scoped package: @scope/name -> node_modules/@scope/name
+    // Paquete con scope: @scope/name -> node_modules/@scope/name
     packageRoot = path.join(localPluginDir, "node_modules", ...packageName.split("/"));
   } else {
     packageRoot = path.join(localPluginDir, "node_modules", packageName);
   }
 
-  // If the standard location doesn't exist, the plugin may have been installed
-  // from a local path. Try to check if the package.json is accessible at the
-  // computed path or if the package is found elsewhere.
+  // Si la ubicación estándar no existe, el plugin puede haberse instalado
+  // desde una ruta local. Intenta verificar si el package.json es accesible en la
+  // ruta calculada o si el paquete se encuentra en otro lugar.
   if (!fs.existsSync(packageRoot)) {
-    // For local-path installs, the packageName may be a directory that doesn't
-    // live inside node_modules. Check if the package exists directly at the
-    // localPluginDir level.
+    // Para instalaciones de ruta local, el packageName puede ser un directorio que no
+    // vive dentro de node_modules. Verifica si el paquete existe directamente en el
+    // nivel de localPluginDir.
     const directPath = path.join(localPluginDir, packageName);
     if (fs.existsSync(directPath)) {
       packageRoot = directPath;
@@ -151,10 +151,10 @@ export function resolvePluginUiDir(
     }
   }
 
-  // Resolve the UI directory relative to the package root
+  // Resuelve el directorio de UI relativo a la raíz del paquete
   const uiDir = path.resolve(packageRoot, entrypointsUi);
 
-  // Verify the resolved UI directory exists and is actually inside the package
+  // Verifica que el directorio de UI resuelto existe y está realmente dentro del paquete
   if (!fs.existsSync(uiDir)) {
     return null;
   }
@@ -163,8 +163,8 @@ export function resolvePluginUiDir(
 }
 
 /**
- * Compute an ETag from file stat (size + mtime).
- * This is a lightweight approach that avoids reading the file content.
+ * Calcula un ETag desde el stat del archivo (tamaño + mtime).
+ * Este es un enfoque liviano que evita leer el contenido del archivo.
  */
 function computeETag(size: number, mtimeMs: number): string {
   const ETAG_VERSION = "v2";
@@ -177,33 +177,33 @@ function computeETag(size: number, mtimeMs: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// Route factory
+// Fábrica de rutas
 // ---------------------------------------------------------------------------
 
 /**
- * Options for the plugin UI static route.
+ * Opciones para la ruta estática de UI de plugins.
  */
 export interface PluginUiStaticRouteOptions {
   /**
-   * The local plugin installation directory.
-   * This is where plugins are installed via `npm install --prefix`.
-   * Defaults to the standard `~/.paperclip/plugins/` location.
+   * El directorio local de instalación de plugins.
+   * Aquí es donde se instalan los plugins vía `npm install --prefix`.
+   * Por defecto la ubicación estándar `~/.paperclip/plugins/`.
    */
   localPluginDir: string;
 }
 
 /**
- * Create an Express router that serves plugin UI static files.
+ * Crea un router de Express que sirve archivos estáticos de UI de plugins.
  *
- * This route handles `GET /_plugins/:pluginId/ui/*` requests by:
- * 1. Looking up the plugin in the registry by ID or key
- * 2. Verifying the plugin is in 'ready' status with UI declared
- * 3. Resolving the file path within the plugin's dist/ui/ directory
- * 4. Serving the file with appropriate cache headers
+ * Esta ruta maneja solicitudes `GET /_plugins/:pluginId/ui/*` mediante:
+ * 1. Buscar el plugin en el registro por ID o clave
+ * 2. Verificar que el plugin está en estado 'ready' con UI declarada
+ * 3. Resolver la ruta del archivo dentro del directorio dist/ui/ del plugin
+ * 4. Servir el archivo con los encabezados de caché apropiados
  *
- * @param db - Database connection for plugin registry lookups
- * @param options - Configuration options
- * @returns Express router
+ * @param db - Conexión a la base de datos para búsquedas en el registro de plugins
+ * @param options - Opciones de configuración
+ * @returns Router de Express
  */
 export function pluginUiStaticRoutes(db: Db, options: PluginUiStaticRouteOptions) {
   const router = Router();
@@ -213,35 +213,35 @@ export function pluginUiStaticRoutes(db: Db, options: PluginUiStaticRouteOptions
   /**
    * GET /_plugins/:pluginId/ui/*
    *
-   * Serve a static file from a plugin's UI bundle directory.
+   * Sirve un archivo estático desde el directorio de bundle de UI de un plugin.
    *
-   * The :pluginId parameter accepts either:
-   * - Database UUID
-   * - Plugin key (e.g., "acme.linear")
+   * El parámetro :pluginId acepta:
+   * - UUID de base de datos
+   * - Clave de plugin (p. ej. "acme.linear")
    *
-   * The wildcard captures the relative file path within the UI directory.
+   * El comodín captura la ruta relativa del archivo dentro del directorio de UI.
    *
-   * Cache strategy:
-   * - Content-hashed filenames → immutable, 1-year max-age
-   * - Other files → must-revalidate with ETag
+   * Estrategia de caché:
+   * - Nombres de archivo con hash de contenido → inmutables, max-age de 1 año
+   * - Otros archivos → must-revalidate con ETag
    */
   router.get("/_plugins/:pluginId/ui/*filePath", async (req, res) => {
     const { pluginId } = req.params;
 
-    // Extract the relative file path from the named wildcard.
-    // In Express 5 with path-to-regexp v8, named wildcards may return
-    // an array of path segments or a single string.
+    // Extrae la ruta relativa del archivo desde el comodín nombrado.
+    // En Express 5 con path-to-regexp v8, los comodines nombrados pueden devolver
+    // un arreglo de segmentos de ruta o una sola cadena.
     const rawParam = req.params.filePath;
     const rawFilePath = Array.isArray(rawParam)
       ? rawParam.join("/")
       : rawParam as string | undefined;
 
     if (!rawFilePath || rawFilePath.length === 0) {
-      res.status(400).json({ error: "File path is required" });
+      res.status(400).json({ error: "Se requiere la ruta del archivo" });
       return;
     }
 
-    // Step 1: Look up the plugin
+    // Paso 1: Busca el plugin
     let plugin = null;
     try {
       plugin = await registry.getById(pluginId);
@@ -259,27 +259,27 @@ export function pluginUiStaticRoutes(db: Db, options: PluginUiStaticRouteOptions
     }
 
     if (!plugin) {
-      res.status(404).json({ error: "Plugin not found" });
+      res.status(404).json({ error: "Plugin no encontrado" });
       return;
     }
 
-    // Step 2: Verify the plugin is ready and has UI declared
+    // Paso 2: Verifica que el plugin está listo y tiene UI declarada
     if (plugin.status !== "ready") {
       res.status(403).json({
-        error: `Plugin UI is not available (status: ${plugin.status})`,
+        error: `La UI del plugin no está disponible (estado: ${plugin.status})`,
       });
       return;
     }
 
     const manifest = plugin.manifestJson;
     if (!manifest?.entrypoints?.ui) {
-      res.status(404).json({ error: "Plugin does not declare a UI bundle" });
+      res.status(404).json({ error: "El plugin no declara un bundle de UI" });
       return;
     }
 
-    // Step 2b: Check for devUiUrl in plugin config — proxy to local dev server
-    // when a plugin author has configured a dev server URL for hot-reload.
-    // See PLUGIN_SPEC.md §27.2 — Local Development Workflow
+    // Paso 2b: Verifica devUiUrl en la configuración del plugin — proxy al servidor de desarrollo local
+    // cuando un autor de plugin ha configurado una URL de servidor de desarrollo para hot-reload.
+    // Ver PLUGIN_SPEC.md §27.2 — Local Development Workflow
     try {
       const configRow = await registry.getConfig(plugin.id);
       const devUiUrl =
@@ -289,25 +289,25 @@ export function pluginUiStaticRoutes(db: Db, options: PluginUiStaticRouteOptions
         (configRow as { configJson: Record<string, unknown> }).configJson?.devUiUrl;
 
       if (typeof devUiUrl === "string" && devUiUrl.length > 0) {
-        // Dev proxy is only available in development mode
+        // El proxy de desarrollo solo está disponible en modo desarrollo
         if (process.env.NODE_ENV === "production") {
           log.warn(
             { pluginId: plugin.id },
             "plugin-ui-static: devUiUrl ignored in production",
           );
-          // Fall through to static file serving below
+          // Recurre al servicio de archivos estáticos de abajo
         } else {
-          // Guard against rawFilePath overriding the base URL via protocol
-          // scheme (e.g. "https://evil.com/x") or protocol-relative paths
-          // (e.g. "//evil.com/x") which cause `new URL(path, base)` to
-          // ignore the base entirely.
-          // Normalize percent-encoding so encoded slashes (%2F) can't bypass
-          // the protocol/path checks below.
+          // Protege contra rawFilePath que anula la URL base vía protocolo
+          // scheme (p. ej. "https://evil.com/x") o rutas relativas al protocolo
+          // (p. ej. "//evil.com/x") que hacen que `new URL(path, base)`
+          // ignore la base por completo.
+          // Normaliza el percent-encoding para que los slashes codificados (%2F) no puedan evadir
+          // las verificaciones de protocolo/ruta de abajo.
           let decodedPath: string;
           try {
             decodedPath = decodeURIComponent(rawFilePath);
           } catch {
-            res.status(400).json({ error: "Invalid file path" });
+            res.status(400).json({ error: "Ruta de archivo no válida" });
             return;
           }
           if (
@@ -315,22 +315,22 @@ export function pluginUiStaticRoutes(db: Db, options: PluginUiStaticRouteOptions
             decodedPath.startsWith("//") ||
             decodedPath.startsWith("\\\\")
           ) {
-            res.status(400).json({ error: "Invalid file path" });
+            res.status(400).json({ error: "Ruta de archivo no válida" });
             return;
           }
 
-          // Proxy the request to the dev server
+          // Haz proxy de la solicitud al servidor de desarrollo
           const targetUrl = new URL(rawFilePath, devUiUrl.endsWith("/") ? devUiUrl : devUiUrl + "/");
 
-          // SSRF protection: only allow http/https and localhost targets for dev proxy
+          // Protección SSRF: solo permite objetivos http/https y localhost para el proxy de desarrollo
           if (targetUrl.protocol !== "http:" && targetUrl.protocol !== "https:") {
-            res.status(400).json({ error: "devUiUrl must use http or https protocol" });
+            res.status(400).json({ error: "devUiUrl debe usar el protocolo http o https" });
             return;
           }
 
-          // Dev proxy is restricted to loopback addresses only.
-          // Validate the *constructed* targetUrl hostname (not the base) to
-          // catch any path-based override that slipped past the checks above.
+          // El proxy de desarrollo está restringido solo a direcciones loopback.
+          // Valida el hostname del targetUrl *construido* (no la base) para
+          // detectar cualquier anulación basada en ruta que haya evadido las verificaciones de arriba.
           const devHost = targetUrl.hostname;
           const isLoopback =
             devHost === "localhost" ||
@@ -342,7 +342,7 @@ export function pluginUiStaticRoutes(db: Db, options: PluginUiStaticRouteOptions
               { pluginId: plugin.id, devUiUrl, host: devHost },
               "plugin-ui-static: devUiUrl must target localhost, rejecting proxy",
             );
-            res.status(400).json({ error: "devUiUrl must target localhost" });
+            res.status(400).json({ error: "devUiUrl debe apuntar a localhost" });
             return;
           }
 
@@ -358,7 +358,7 @@ export function pluginUiStaticRoutes(db: Db, options: PluginUiStaticRouteOptions
               const upstream = await fetch(targetUrl.href, { signal: controller.signal });
               if (!upstream.ok) {
                 res.status(upstream.status).json({
-                  error: `Dev server returned ${upstream.status}`,
+                error: `El servidor de desarrollo devolvió ${upstream.status}`,
                 });
                 return;
               }
@@ -382,15 +382,15 @@ export function pluginUiStaticRoutes(db: Db, options: PluginUiStaticRouteOptions
               },
               "plugin-ui-static: failed to proxy to devUiUrl, falling back to static",
             );
-            // Fall through to static serving below
+            // Recurre al servicio estático de abajo
           }
         }
       }
     } catch {
-      // Config lookup failure is non-fatal — fall through to static serving
+      // El fallo de búsqueda de configuración no es fatal — recurre al servicio estático
     }
 
-    // Step 3: Resolve the plugin's UI directory
+    // Paso 3: Resuelve el directorio de UI del plugin
     const uiDir = resolvePluginUiDir(
       options.localPluginDir,
       plugin.packageName,
@@ -403,60 +403,60 @@ export function pluginUiStaticRoutes(db: Db, options: PluginUiStaticRouteOptions
         { pluginId: plugin.id, pluginKey: plugin.pluginKey, packageName: plugin.packageName },
         "plugin-ui-static: UI directory not found on disk",
       );
-      res.status(404).json({ error: "Plugin UI directory not found" });
+      res.status(404).json({ error: "Directorio de UI del plugin no encontrado" });
       return;
     }
 
-    // Step 4: Resolve the requested file path and prevent traversal (including symlinks)
+    // Paso 4: Resuelve la ruta del archivo solicitada y previene traversal (incluyendo symlinks)
     const resolvedFilePath = path.resolve(uiDir, rawFilePath);
 
-    // Step 5: Check that the file exists and is a regular file
+    // Paso 5: Verifica que el archivo existe y es un archivo regular
     let fileStat: fs.Stats;
     try {
       fileStat = fs.statSync(resolvedFilePath);
     } catch {
-      res.status(404).json({ error: "File not found" });
+      res.status(404).json({ error: "Archivo no encontrado" });
       return;
     }
 
-    // Security: resolve symlinks via realpathSync and verify containment.
-    // This prevents symlink-based traversal that string-based startsWith misses.
+    // Seguridad: resuelve symlinks vía realpathSync y verifica contención.
+    // Esto previene traversal basado en symlinks que startsWith basado en cadenas no detecta.
     let realFilePath: string;
     let realUiDir: string;
     try {
       realFilePath = fs.realpathSync(resolvedFilePath);
       realUiDir = fs.realpathSync(uiDir);
     } catch {
-      res.status(404).json({ error: "File not found" });
+      res.status(404).json({ error: "Archivo no encontrado" });
       return;
     }
 
     const relative = path.relative(realUiDir, realFilePath);
     if (relative.startsWith("..") || path.isAbsolute(relative)) {
-      res.status(403).json({ error: "Access denied" });
+      res.status(403).json({ error: "Acceso denegado" });
       return;
     }
 
     if (!fileStat.isFile()) {
-      res.status(404).json({ error: "File not found" });
+      res.status(404).json({ error: "Archivo no encontrado" });
       return;
     }
 
-    // Step 6: Determine cache strategy based on filename
+    // Paso 6: Determina la estrategia de caché basada en el nombre de archivo
     const basename = path.basename(resolvedFilePath);
     const isContentHashed = CONTENT_HASH_PATTERN.test(basename);
 
-    // Step 7: Set cache headers
+    // Paso 7: Establece los encabezados de caché
     if (isContentHashed) {
       res.set("Cache-Control", CACHE_CONTROL_IMMUTABLE);
     } else {
       res.set("Cache-Control", CACHE_CONTROL_REVALIDATE);
 
-      // Compute and set ETag for conditional request support
+      // Calcula y establece ETag para soporte de solicitudes condicionales
       const etag = computeETag(fileStat.size, fileStat.mtimeMs);
       res.set("ETag", etag);
 
-      // Check If-None-Match for 304 Not Modified
+      // Verifica If-None-Match para 304 Not Modified
       const ifNoneMatch = req.headers["if-none-match"];
       if (ifNoneMatch === etag) {
         res.status(304).end();
@@ -464,29 +464,29 @@ export function pluginUiStaticRoutes(db: Db, options: PluginUiStaticRouteOptions
       }
     }
 
-    // Step 8: Set Content-Type
+    // Paso 8: Establece Content-Type
     const ext = path.extname(resolvedFilePath).toLowerCase();
     const contentType = MIME_TYPES[ext];
     if (contentType) {
       res.set("Content-Type", contentType);
     }
 
-    // Step 9: Set CORS headers (plugin UI may be loaded from different origin in dev)
+    // Paso 9: Establece encabezados CORS (la UI del plugin puede cargarse desde un origen diferente en dev)
     res.set("Access-Control-Allow-Origin", "*");
 
-    // Step 10: Send the file
-    // The plugin source can live in Git worktrees (e.g. ".worktrees/...").
-    // `send` defaults to dotfiles:"ignore", which treats dot-directories as
-    // not found. We already enforce traversal safety above, so allow dot paths.
+    // Paso 10: Envía el archivo
+    // La fuente del plugin puede vivir en Git worktrees (p. ej. ".worktrees/...").
+    // `send` por defecto usa dotfiles:"ignore", que trata los directorios con punto como
+    // no encontrados. Ya aplicamos seguridad de traversal arriba, así que permite rutas con punto.
     res.sendFile(resolvedFilePath, { dotfiles: "allow" }, (err) => {
       if (err) {
         log.error(
           { err, pluginId: plugin.id, filePath: resolvedFilePath },
           "plugin-ui-static: error sending file",
         );
-        // Only send error if headers haven't been sent yet
+        // Solo envía el error si los encabezados aún no se han enviado
         if (!res.headersSent) {
-          res.status(500).json({ error: "Failed to serve file" });
+          res.status(500).json({ error: "No se pudo servir el archivo" });
         }
       }
     });

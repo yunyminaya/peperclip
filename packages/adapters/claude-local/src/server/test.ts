@@ -62,13 +62,13 @@ export async function testEnvironment(
     checks.push({
       code: "claude_cwd_valid",
       level: "info",
-      message: `Working directory is valid: ${cwd}`,
+      message: `El directorio de trabajo es válido: ${cwd}`,
     });
   } catch (err) {
     checks.push({
       code: "claude_cwd_invalid",
       level: "error",
-      message: err instanceof Error ? err.message : "Invalid working directory",
+      message: err instanceof Error ? err.message : "Directorio de trabajo inválido",
       detail: cwd,
     });
   }
@@ -84,13 +84,13 @@ export async function testEnvironment(
     checks.push({
       code: "claude_command_resolvable",
       level: "info",
-      message: `Command is executable: ${command}`,
+      message: `El comando es ejecutable: ${command}`,
     });
   } catch (err) {
     checks.push({
       code: "claude_command_unresolvable",
       level: "error",
-      message: err instanceof Error ? err.message : "Command is not executable",
+      message: err instanceof Error ? err.message : "El comando no es ejecutable",
       detail: command,
     });
   }
@@ -98,20 +98,20 @@ export async function testEnvironment(
   const configApiKey = env.ANTHROPIC_API_KEY;
   const hostApiKey = process.env.ANTHROPIC_API_KEY;
   if (isNonEmpty(configApiKey) || isNonEmpty(hostApiKey)) {
-    const source = isNonEmpty(configApiKey) ? "adapter config env" : "server environment";
+    const source = isNonEmpty(configApiKey) ? "env de la configuración del adaptador" : "entorno del servidor";
     checks.push({
       code: "claude_anthropic_api_key_overrides_subscription",
       level: "warn",
       message:
-        "ANTHROPIC_API_KEY is set. Claude will use API-key auth instead of subscription credentials.",
-      detail: `Detected in ${source}.`,
-      hint: "Unset ANTHROPIC_API_KEY if you want subscription-based Claude login behavior.",
+        "ANTHROPIC_API_KEY está definida. Claude usará autenticación por API key en lugar de las credenciales de suscripción.",
+      detail: `Detectado en ${source}.`,
+      hint: "Quita ANTHROPIC_API_KEY si quieres el comportamiento de inicio de sesión de Claude basado en suscripción.",
     });
   } else {
     checks.push({
       code: "claude_subscription_mode_possible",
       level: "info",
-      message: "ANTHROPIC_API_KEY is not set; subscription-based auth can be used if Claude is logged in.",
+      message: "ANTHROPIC_API_KEY no está definida; se puede usar autenticación basada en suscripción si Claude inició sesión.",
     });
   }
 
@@ -122,9 +122,9 @@ export async function testEnvironment(
       checks.push({
         code: "claude_hello_probe_skipped_custom_command",
         level: "info",
-        message: "Skipped hello probe because command is not `claude`.",
+        message: "Prueba hello omitida porque el comando no es `claude`.",
         detail: command,
-        hint: "Use the `claude` CLI command to run the automatic login and installation probe.",
+        hint: "Usa el comando CLI `claude` para ejecutar la prueba automática de inicio de sesión e instalación.",
       });
     } else {
       const model = asString(config.model, "").trim();
@@ -173,18 +173,18 @@ export async function testEnvironment(
         checks.push({
           code: "claude_hello_probe_timed_out",
           level: "warn",
-          message: "Claude hello probe timed out.",
-          hint: "Retry the probe. If this persists, verify Claude can run `Respond with hello` from this directory manually.",
+          message: "La prueba hello de Claude se agotó.",
+          hint: "Reintenta la prueba. Si persiste, verifica que Claude pueda ejecutar `Respond with hello` desde este directorio manualmente.",
         });
       } else if (loginMeta.requiresLogin) {
         checks.push({
           code: "claude_hello_probe_auth_required",
           level: "warn",
-          message: "Claude CLI is installed, but login is required.",
+          message: "El CLI de Claude está instalado, pero se requiere iniciar sesión.",
           ...(detail ? { detail } : {}),
           hint: loginMeta.loginUrl
-            ? `Run \`claude login\` and complete sign-in at ${loginMeta.loginUrl}, then retry.`
-            : "Run `claude login` in this environment, then retry the probe.",
+            ? `Ejecuta \`claude login\` y completa el inicio de sesión en ${loginMeta.loginUrl}, luego reintenta.`
+            : "Ejecuta `claude login` en este entorno y luego reintenta la prueba.",
         });
       } else if ((probe.exitCode ?? 1) === 0) {
         const summary = parsedStream.summary.trim();
@@ -193,22 +193,22 @@ export async function testEnvironment(
           code: hasHello ? "claude_hello_probe_passed" : "claude_hello_probe_unexpected_output",
           level: hasHello ? "info" : "warn",
           message: hasHello
-            ? "Claude hello probe succeeded."
-            : "Claude probe ran but did not return `hello` as expected.",
+            ? "La prueba hello de Claude tuvo éxito."
+            : "La prueba de Claude se ejecutó pero no devolvió `hello` como se esperaba.",
           ...(summary ? { detail: summary.replace(/\s+/g, " ").trim().slice(0, 240) } : {}),
           ...(hasHello
             ? {}
             : {
-                hint: "Try the probe manually (`claude --print - --output-format stream-json --verbose`) and prompt `Respond with hello`.",
+                hint: "Prueba manualmente (`claude --print - --output-format stream-json --verbose`) con el prompt `Respond with hello`.",
               }),
         });
       } else {
         checks.push({
           code: "claude_hello_probe_failed",
           level: "error",
-          message: "Claude hello probe failed.",
+          message: "La prueba hello de Claude falló.",
           ...(detail ? { detail } : {}),
-          hint: "Run `claude --print - --output-format stream-json --verbose` manually in this directory and prompt `Respond with hello` to debug.",
+          hint: "Ejecuta `claude --print - --output-format stream-json --verbose` manualmente en este directorio con el prompt `Respond with hello` para depurar.",
         });
       }
     }

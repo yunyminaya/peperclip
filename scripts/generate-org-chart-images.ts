@@ -1,20 +1,20 @@
 #!/usr/bin/env npx tsx
 /**
- * Standalone org chart image generator.
+ * Generador standalone de imágenes de organigrama.
  *
- * Renders each of the 5 org chart styles to PNG using Playwright (headless Chromium).
- * This gives us browser-native emoji rendering, full CSS support, and pixel-perfect output.
+ * Renderiza cada uno de los 5 estilos de organigrama a PNG usando Playwright (Chromium headless).
+ * Esto nos da renderizado nativo de emojis del navegador, soporte CSS completo y salida perfecta en píxeles.
  *
- * Usage:
+ * Uso:
  *   npx tsx scripts/generate-org-chart-images.ts
  *
- * Output: tmp/org-chart-images/<style>-<size>.png
+ * Salida: tmp/org-chart-images/<style>-<size>.png
  */
 import { chromium } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
 
-// ── Org data (same as index.html) ──────────────────────────────
+// ── Datos de organización (igual que index.html) ──────────────────────────────
 
 interface OrgNode {
   name: string;
@@ -113,7 +113,7 @@ const ORGS: Record<string, OrgNode> = {
   },
 };
 
-// OG collapsed org
+// Organigrama colapsado OG
 const OG_ORG: OrgNode = {
   name: "CEO",
   role: "Chief Executive",
@@ -124,7 +124,7 @@ const OG_ORG: OrgNode = {
   ],
 };
 
-// ── Style definitions ──────────────────────────────────────────
+// ── Definiciones de estilos ──────────────────────────────────────────
 
 interface StyleDef {
   key: string;
@@ -251,7 +251,7 @@ body {
 const STYLES: StyleDef[] = [
   {
     key: "mono",
-    name: "Monochrome",
+    name: "Monocromo",
     css: `
 body { background: #18181b; }
 .org-tree { --line-color: #3f3f46; }
@@ -283,7 +283,7 @@ body { background: #18181b; }
   },
   {
     key: "nebula",
-    name: "Nebula",
+    name: "Nebulosa",
     css: `
 body { background: #0f0c29; }
 .org-tree {
@@ -334,7 +334,7 @@ body { background: #0f0c29; }
   },
   {
     key: "circuit",
-    name: "Circuit",
+    name: "Circuito",
     css: `
 body { background: #0c0c0e; }
 .org-tree {
@@ -377,7 +377,7 @@ body { background: #0c0c0e; }
   },
   {
     key: "warm",
-    name: "Warmth",
+    name: "Calidez",
     css: `
 body { background: #fafaf9; }
 .org-tree {
@@ -439,7 +439,7 @@ body { background: #fafaf9; }
   },
   {
     key: "schema",
-    name: "Schematic",
+    name: "Esquema",
     css: `
 body { background: #0d1117; }
 .org-tree {
@@ -513,7 +513,7 @@ body { background: #0d1117; }
   },
 ];
 
-// ── HTML rendering ─────────────────────────────────────────────
+// ── Renderizado de HTML ─────────────────────────────────────────────
 
 function renderNode(
   node: OrgNode,
@@ -564,7 +564,7 @@ ${PAPERCLIP_WATERMARK}
 </body></html>`;
 }
 
-// ── Main ───────────────────────────────────────────────────────
+// ── Principal ───────────────────────────────────────────────────────
 
 async function main() {
   const outDir = path.resolve("tmp/org-chart-images");
@@ -579,17 +579,17 @@ async function main() {
   const results: string[] = [];
 
   for (const style of STYLES) {
-    // README sizes
+    // Tamaños para README
     for (const size of sizes) {
       const page = await context.newPage();
       const html = buildHtml(style, ORGS[size], false);
       await page.setContent(html, { waitUntil: "networkidle" });
 
-      // Wait for fonts to load
+      // Espera a que carguen las fuentes
       await page.waitForFunction(() => document.fonts.ready);
       await page.waitForTimeout(300);
 
-      // Fit to content
+      // Ajusta al contenido
       const box = await page.evaluate(() => {
         const el = document.querySelector(".org-tree")!;
         const rect = el.getBoundingClientRect();
@@ -619,12 +619,12 @@ async function main() {
       console.log(`  ✓ ${filename}`);
     }
 
-    // OG card (1200×630)
+    // Tarjeta OG (1200×630)
     {
       const page = await context.newPage();
       await page.setViewportSize({ width: 1200, height: 630 });
       const html = buildHtml(style, OG_ORG, true);
-      // For OG, center the tree in a fixed viewport
+      // Para OG, centra el árbol en un viewport fijo
       const ogHtml = html.replace(
         "<body>",
         `<body style="width:1200px;height:630px;display:flex;align-items:center;justify-content:center;">`,
@@ -646,11 +646,11 @@ async function main() {
 
   await browser.close();
 
-  // Build an HTML comparison page
+  // Compila una página HTML de comparación
   let compHtml = `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
-<title>Org Chart Style Comparison</title>
+<title>Comparación de estilos de organigrama</title>
 <style>
   body { font-family: 'Inter', system-ui, sans-serif; background: #050505; color: #eee; padding: 40px; }
   h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.03em; }
@@ -664,28 +664,28 @@ async function main() {
   .label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; font-weight: 500; }
 </style>
 </head><body>
-<h1>Org Chart Export — Style Comparison</h1>
-<p class="sub">5 styles × 3 org sizes + OG cards. All rendered via Playwright (browser-native emojis, full CSS).</p>
+<h1>Exportación de organigrama — Comparación de estilos</h1>
+<p class="sub">5 estilos × 3 tamaños de organización + tarjetas OG. Todo renderizado vía Playwright (emojis nativos del navegador, CSS completo).</p>
 `;
 
   for (const style of STYLES) {
     compHtml += `<div class="style-section">
   <h2>${style.name}</h2>
-  <div class="label">README — Small / Medium / Large</div>
+  <div class="label">README — Pequeño / Mediano / Grande</div>
   <div class="grid">
     <img src="${style.key}-sm.png" />
     <img src="${style.key}-med.png" />
     <img src="${style.key}-lg.png" />
   </div>
-  <div class="label">OG Card (1200×630)</div>
+  <div class="label">Tarjeta OG (1200×630)</div>
   <div class="og-row"><img src="${style.key}-og.png" /></div>
 </div>`;
   }
 
   compHtml += `</body></html>`;
   fs.writeFileSync(path.join(outDir, "comparison.html"), compHtml);
-  console.log(`\n✓ All done! ${results.length} images generated.`);
-  console.log(`  Open: tmp/org-chart-images/comparison.html`);
+  console.log(`\n✓ Listo. ${results.length} imágenes generadas.`);
+  console.log(`  Abre: tmp/org-chart-images/comparison.html`);
 }
 
 main().catch((e) => {

@@ -1,11 +1,11 @@
 # @paperclipai/ui
 
-Published static assets for the Paperclip board UI.
+Assets estáticos publicados para la UI del tablero de Paperclip.
 
-## What gets published
+## Qué se publica
 
-The npm package contains the production build under `dist/`. It does not ship the UI source tree or workspace-only dependencies.
+El paquete npm contiene la compilación de producción en `dist/`. No incluye el árbol fuente de la UI ni las dependencias solo del workspace.
 
-## Typical use
+## Uso típico
 
-Install the package, then serve or copy the built files from `node_modules/@paperclipai/ui/dist`.
+Instalar el paquete y luego servir o copiar los archivos compilados desde `node_modules/@paperclipai/ui/dist`.

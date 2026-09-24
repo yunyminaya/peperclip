@@ -10,18 +10,18 @@ description: >
   entities, running weekly synthesis, recalling past context, or managing plans.
 ---
 
-# PARA Memory Files
+# Archivos de memoria PARA
 
-Persistent, file-based memory organized by Tiago Forte's PARA method. Three layers: a knowledge graph, daily notes, and tacit knowledge. All paths are relative to `$AGENT_HOME`.
+Memoria persistente basada en archivos, organizada con el método PARA de Tiago Forte. Tres capas: un grafo de conocimiento, notas diarias y conocimiento tácito. Todas las rutas son relativas a `$AGENT_HOME`.
 
-## Three Memory Layers
+## Tres capas de memoria
 
-### Layer 1: Knowledge Graph (`$AGENT_HOME/life/` -- PARA)
+### Capa 1: Grafo de conocimiento (`$AGENT_HOME/life/`, PARA)
 
-Entity-based storage. Each entity gets a folder with two tiers:
+Almacenamiento basado en entidades. Cada entidad tiene una carpeta con dos niveles:
 
-1. `summary.md` -- quick context, load first.
-2. `items.yaml` -- atomic facts, load on demand.
+1. `summary.md` — contexto rápido, cargar primero.
+2. `items.yaml` — hechos atómicos, cargar bajo demanda.
 
 ```text
 $AGENT_HOME/life/
@@ -38,56 +38,56 @@ $AGENT_HOME/life/
   index.md
 ```
 
-**PARA rules:**
+**Reglas PARA:**
 
-- **Projects** -- active work with a goal or deadline. Move to archives when complete.
-- **Areas** -- ongoing (people, companies, responsibilities). No end date.
-- **Resources** -- reference material, topics of interest.
-- **Archives** -- inactive items from any category.
+- **Projects** — trabajo activo con un objetivo o fecha límite. Mover a archives cuando se complete.
+- **Areas** — en curso (personas, empresas, responsabilidades). Sin fecha de finalización.
+- **Resources** — material de referencia, temas de interés.
+- **Archives** — elementos inactivos de cualquier categoría.
 
-**Fact rules:**
+**Reglas de hechos:**
 
-- Save durable facts immediately to `items.yaml`.
-- Weekly: rewrite `summary.md` from active facts.
-- Never delete facts. Supersede instead (`status: superseded`, add `superseded_by`).
-- When an entity goes inactive, move its folder to `$AGENT_HOME/life/archives/`.
+- Guardar los hechos duraderos de inmediato en `items.yaml`.
+- Cada semana: reescribir `summary.md` a partir de los hechos activos.
+- Nunca eliminar hechos. Reemplazarlos en su lugar (`status: superseded`, agregar `superseded_by`).
+- Cuando una entidad se vuelva inactiva, mover su carpeta a `$AGENT_HOME/life/archives/`.
 
-**When to create an entity:**
+**Cuándo crear una entidad:**
 
-- Mentioned 3+ times, OR
-- Direct relationship to the user (family, coworker, partner, client), OR
-- Significant project or company in the user's life.
-- Otherwise, note it in daily notes.
+- Mencionado 3 o más veces, O
+- Relación directa con el usuario (familia, compañero de trabajo, pareja, cliente), O
+- Proyecto o empresa significativa en la vida del usuario.
+- En caso contrario, anotarlo en las notas diarias.
 
-For the atomic fact YAML schema and memory decay rules, see [references/schemas.md](references/schemas.md).
+Para el esquema YAML de hechos atómicos y las reglas de decaimiento de memoria, ver [references/schemas.md](references/schemas.md).
 
-### Layer 2: Daily Notes (`$AGENT_HOME/memory/YYYY-MM-DD.md`)
+### Capa 2: Notas diarias (`$AGENT_HOME/memory/YYYY-MM-DD.md`)
 
-Raw timeline of events -- the "when" layer.
+Cronología cruda de eventos: la capa del "cuándo".
 
-- Write continuously during conversations.
-- Extract durable facts to Layer 1 during heartbeats.
+- Escribir continuamente durante las conversaciones.
+- Extraer hechos duraderos a la Capa 1 durante los latidos.
 
-### Layer 3: Tacit Knowledge (`$AGENT_HOME/MEMORY.md`)
+### Capa 3: Conocimiento tácito (`$AGENT_HOME/MEMORY.md`)
 
-How the user operates -- patterns, preferences, lessons learned.
+Cómo opera el usuario: patrones, preferencias, lecciones aprendidas.
 
-- Not facts about the world; facts about the user.
-- Update whenever you learn new operating patterns.
+- No son hechos sobre el mundo; son hechos sobre el usuario.
+- Actualizar cada vez que aprendas patrones operativos nuevos.
 
-## Write It Down -- No Mental Notes
+## Escríbelo: sin notas mentales
 
-Memory does not survive session restarts. Files do.
+La memoria no sobrevive a los reinicios de sesión. Los archivos sí.
 
-- Want to remember something -> WRITE IT TO A FILE.
-- "Remember this" -> update `$AGENT_HOME/memory/YYYY-MM-DD.md` or the relevant entity file.
-- Learn a lesson -> update AGENTS.md, TOOLS.md, or the relevant skill file.
-- Make a mistake -> document it so future-you does not repeat it.
-- On-disk text files are always better than holding it in temporary context.
+- ¿Quieres recordar algo? ESCRÍBELO EN UN ARCHIVO.
+- "Recuerda esto" → actualizar `$AGENT_HOME/memory/YYYY-MM-DD.md` o el archivo de la entidad relevante.
+- Aprende una lección → actualizar AGENTS.md, TOOLS.md o el archivo de la habilidad relevante.
+- Comete un error → documentarlo para que tu yo futuro no lo repita.
+- Los archivos de texto en disco siempre son mejores que mantenerlo en contexto temporal.
 
-## Memory Recall -- Use qmd
+## Recuperación de memoria: usar qmd
 
-Use `qmd` rather than grepping files:
+Usar `qmd` en vez de buscar con grep en los archivos:
 
 ```bash
 qmd query "what happened at Christmas"   # Semantic search with reranking
@@ -95,10 +95,10 @@ qmd search "specific phrase"              # BM25 keyword search
 qmd vsearch "conceptual question"         # Pure vector similarity
 ```
 
-Index your personal folder: `qmd index $AGENT_HOME`
+Indexar tu carpeta personal: `qmd index $AGENT_HOME`
 
-Vectors + BM25 + reranking finds things even when the wording differs.
+Vectores + BM25 + reranking encuentran cosas incluso cuando la redacción difiere.
 
-## Planning
+## Planificación
 
-Keep plans in timestamped files in `plans/` at the project root (outside personal memory so other agents can access them). Use `qmd` to search plans. Plans go stale -- if a newer plan exists, do not confuse yourself with an older version. If you notice staleness, update the file to note what it is supersededBy.
+Mantener los planes en archivos con marca de tiempo en `plans/` en la raíz del proyecto (fuera de la memoria personal para que otros agentes puedan acceder a ellos). Usar `qmd` para buscar planes. Los planes se desactualizan: si existe un plan más nuevo, no confundirse con una versión anterior. Si se nota desactualización, actualizar el archivo para indicar por qué fue reemplazado (`supersededBy`).

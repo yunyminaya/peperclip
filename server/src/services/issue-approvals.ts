@@ -28,13 +28,13 @@ export function issueApprovalService(db: Db) {
 
   async function assertIssueAndApprovalSameCompany(issueId: string, approvalId: string) {
     const issue = await getIssue(issueId);
-    if (!issue) throw notFound("Issue not found");
+    if (!issue) throw notFound("Issue no encontrado");
 
     const approval = await getApproval(approvalId);
-    if (!approval) throw notFound("Approval not found");
+    if (!approval) throw notFound("Aprobación no encontrada");
 
     if (issue.companyId !== approval.companyId) {
-      throw unprocessable("Issue and approval must belong to the same company");
+      throw unprocessable("El issue y la aprobación deben pertenecer a la misma empresa");
     }
 
     return { issue, approval };
@@ -43,7 +43,7 @@ export function issueApprovalService(db: Db) {
   return {
     listApprovalsForIssue: async (issueId: string) => {
       const issue = await getIssue(issueId);
-      if (!issue) throw notFound("Issue not found");
+      if (!issue) throw notFound("Issue no encontrado");
 
       const result = await db
         .select({
@@ -72,7 +72,7 @@ export function issueApprovalService(db: Db) {
 
     listIssuesForApproval: async (approvalId: string) => {
       const approval = await getApproval(approvalId);
-      if (!approval) throw notFound("Approval not found");
+      if (!approval) throw notFound("Aprobación no encontrada");
 
       return db
         .select({
@@ -136,7 +136,7 @@ export function issueApprovalService(db: Db) {
       if (issueIds.length === 0) return;
 
       const approval = await getApproval(approvalId);
-      if (!approval) throw notFound("Approval not found");
+      if (!approval) throw notFound("Aprobación no encontrada");
 
       const uniqueIssueIds = Array.from(new Set(issueIds));
       const rows = await db
@@ -148,12 +148,12 @@ export function issueApprovalService(db: Db) {
         .where(inArray(issues.id, uniqueIssueIds));
 
       if (rows.length !== uniqueIssueIds.length) {
-        throw notFound("One or more issues not found");
+        throw notFound("No se encontró uno o más issues");
       }
 
       for (const row of rows) {
         if (row.companyId !== approval.companyId) {
-          throw unprocessable("Issue and approval must belong to the same company");
+          throw unprocessable("El issue y la aprobación deben pertenecer a la misma empresa");
         }
       }
 

@@ -32,12 +32,12 @@ function stringifyUnknown(value: unknown): string {
   }
 }
 
-/** Max chars of stdout/stderr to show in run log for shell tool results. */
+/** Máx. de caracteres de stdout/stderr a mostrar en el registro de ejecución para resultados de herramientas shell. */
 const SHELL_OUTPUT_TRUNCATE = 2000;
 
 /**
- * Format shell tool result for run log: exit code + stdout/stderr (truncated).
- * If the result is not a shell-shaped object, returns full stringify.
+ * Formatea el resultado de una herramienta shell para el registro de ejecución: código de salida + stdout/stderr (truncado).
+ * Si el resultado no tiene forma de shell, devuelve el stringify completo.
  */
 function formatShellToolResultForLog(result: unknown): string {
   const obj = asRecord(result);
@@ -53,19 +53,19 @@ function formatShellToolResultForLog(result: unknown): string {
   const lines: string[] = [];
   if (Number.isFinite(exitCode)) lines.push(`exit ${exitCode}`);
   if (stdout) {
-    const out = stdout.length > SHELL_OUTPUT_TRUNCATE ? stdout.slice(0, SHELL_OUTPUT_TRUNCATE) + "\n... (truncated)" : stdout;
+    const out = stdout.length > SHELL_OUTPUT_TRUNCATE ? stdout.slice(0, SHELL_OUTPUT_TRUNCATE) + "\n... (truncado)" : stdout;
     lines.push("<stdout>");
     lines.push(out);
   }
   if (stderr) {
-    const err = stderr.length > SHELL_OUTPUT_TRUNCATE ? stderr.slice(0, SHELL_OUTPUT_TRUNCATE) + "\n... (truncated)" : stderr;
+    const err = stderr.length > SHELL_OUTPUT_TRUNCATE ? stderr.slice(0, SHELL_OUTPUT_TRUNCATE) + "\n... (truncado)" : stderr;
     lines.push("<stderr>");
     lines.push(err);
   }
   return lines.join("\n");
 }
 
-/** Return compact input for run log when tool is shell/shellToolCall (command only). */
+/** Devuelve la entrada compacta para el registro de ejecución cuando la herramienta es shell/shellToolCall (solo el comando). */
 function compactShellToolInput(rawInput: unknown, payload?: Record<string, unknown>): unknown {
   const cmd = asString(payload?.command ?? asRecord(rawInput)?.command);
   if (cmd) return { command: cmd };
@@ -229,7 +229,7 @@ function parseCursorToolCallEvent(event: Record<string, unknown>, ts: string): T
         ? isShellTool
           ? formatShellToolResultForLog(result)
           : stringifyUnknown(result)
-        : `${toolName} completed`;
+        : `${toolName} completada`;
     return [{
       kind: "tool_result",
       ts,
@@ -266,7 +266,7 @@ export function parseCursorStdoutLine(line: string, ts: string): TranscriptEntry
         asString(parsed.sessionID);
       return [{ kind: "init", ts, model: asString(parsed.model, "cursor"), sessionId }];
     }
-    return [{ kind: "system", ts, text: subtype ? `system: ${subtype}` : "system" }];
+    return [{ kind: "system", ts, text: subtype ? `sistema: ${subtype}` : "sistema" }];
   }
 
   if (type === "assistant") {
@@ -327,10 +327,10 @@ export function parseCursorStdoutLine(line: string, ts: string): TranscriptEntry
     return [{ kind: "stderr", ts, text: message }];
   }
 
-  // Compatibility with older stream-json event shapes.
+  // Compatibilidad con formatos antiguos de eventos stream-json.
   if (type === "step_start") {
     const sessionId = asString(parsed.sessionID);
-    return [{ kind: "system", ts, text: `step started${sessionId ? ` (${sessionId})` : ""}` }];
+    return [{ kind: "system", ts, text: `paso iniciado${sessionId ? ` (${sessionId})` : ""}` }];
   }
 
   if (type === "text") {
@@ -376,7 +376,7 @@ export function parseCursorStdoutLine(line: string, ts: string): TranscriptEntry
         kind: "tool_result",
         ts,
         toolUseId,
-        content: lines.join("\n").trim() || "tool completed",
+        content: lines.join("\n").trim() || "herramienta completada",
         isError,
       });
     }

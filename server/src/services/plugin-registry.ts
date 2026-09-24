@@ -32,8 +32,8 @@ import { conflict, notFound } from "../errors.js";
 // ---------------------------------------------------------------------------
 
 /**
- * Detect if a Postgres error is a unique-constraint violation on the
- * `plugins_plugin_key_idx` unique index.
+ * Detecta si un error de Postgres es una violación de restricción única en
+ * el índice único `plugins_plugin_key_idx`.
  */
 function isPluginKeyConflict(error: unknown): boolean {
   if (typeof error !== "object" || error === null) return false;
@@ -47,20 +47,21 @@ function isPluginKeyConflict(error: unknown): boolean {
 // ---------------------------------------------------------------------------
 
 /**
- * PluginRegistry – CRUD operations for the `plugins` and `plugin_config`
- * tables.  Follows the same factory-function pattern used by the rest of
- * the Paperclip service layer.
+ * PluginRegistry – operaciones CRUD para las tablas `plugins` y
+ * `plugin_config`. Sigue el mismo patrón de función fábrica usado por el
+ * resto de la capa de servicios de Paperclip.
  *
- * This is the lowest-level persistence layer for plugins. Higher-level
- * concerns such as lifecycle state-machine enforcement and capability
- * gating are handled by {@link pluginLifecycleManager} and
- * {@link pluginCapabilityValidator} respectively.
+ * Esta es la capa de persistencia de más bajo nivel para plugins. Las
+ * preocupaciones de más alto nivel como el cumplimiento de la máquina de
+ * estados del ciclo de vida y la restricción de capacidades las manejan
+ * {@link pluginLifecycleManager} y {@link pluginCapabilityValidator}
+ * respectivamente.
  *
- * @see PLUGIN_SPEC.md §21.3 — Required Tables
+ * @see PLUGIN_SPEC.md §21.3 — Tablas requeridas
  */
 export function pluginRegistryService(db: Db) {
   // -----------------------------------------------------------------------
-  // Internal helpers
+  // Utilidades internas
   // -----------------------------------------------------------------------
 
   async function getById(id: string) {
@@ -91,9 +92,9 @@ export function pluginRegistryService(db: Db) {
   // -----------------------------------------------------------------------
 
   return {
-    // ----- Read -----------------------------------------------------------
+    // ----- Lectura ------------------------------------------------------
 
-    /** List all registered plugins ordered by install order. */
+    /** Lista todos los plugins registrados ordenados por orden de instalación. */
     list: () =>
       db
         .select()
@@ -101,8 +102,9 @@ export function pluginRegistryService(db: Db) {
         .orderBy(asc(plugins.installOrder)),
 
     /**
-     * List installed plugins (excludes soft-deleted/uninstalled).
-     * Use for Plugin Manager and default API list so uninstalled plugins do not appear.
+     * Lista los plugins instalados (excluye los eliminados/desinstalados).
+     * Use para el Administrador de plugins y la lista API predeterminada
+     * para que los plugins desinstalados no aparezcan.
      */
     listInstalled: () =>
       db
@@ -111,7 +113,7 @@ export function pluginRegistryService(db: Db) {
         .where(ne(plugins.status, "uninstalled"))
         .orderBy(asc(plugins.installOrder)),
 
-    /** List plugins filtered by status. */
+    /** Lista los plugins filtrados por estado. */
     listByStatus: (status: PluginStatus) =>
       db
         .select()
@@ -119,30 +121,31 @@ export function pluginRegistryService(db: Db) {
         .where(eq(plugins.status, status))
         .orderBy(asc(plugins.installOrder)),
 
-    /** Get a single plugin by primary key. */
+    /** Obtiene un solo plugin por clave primaria. */
     getById,
 
-    /** Get a single plugin by its unique `pluginKey`. */
+    /** Obtiene un solo plugin por su `pluginKey` único. */
     getByKey,
 
-    // ----- Install / Register --------------------------------------------
+    // ----- Instalación / Registro -----------------------------------------
 
     /**
-     * Register (install) a new plugin.
+     * Registra (instala) un nuevo plugin.
      *
-     * The caller is expected to have already resolved and validated the
-     * manifest from the package.  This method persists the plugin row and
-     * assigns the next install order.
+     * Se espera que el llamador ya haya resuelto y validado el manifiesto
+     * desde el paquete. Este método persiste la fila del plugin y asigna el
+     * siguiente orden de instalación.
      */
     install: async (input: InstallPlugin, manifest: PaperclipPluginManifestV1) => {
       const existing = await getByKey(manifest.id);
       if (existing) {
         if (existing.status !== "uninstalled") {
-          throw conflict(`Plugin already installed: ${manifest.id}`);
+          throw conflict(`El plugin ya está instalado: ${manifest.id}`);
         }
 
-        // Reinstall after soft-delete: reactivate the existing row so plugin-scoped
-        // data and references remain stable across uninstall/reinstall cycles.
+        // Reinstalación tras borrado lógico: reactiva la fila existente para
+        // que los datos con alcance de plugin y las referencias permanezcan
+        // estables a través de ciclos de desinstalación/reinstalación.
         return db
           .update(plugins)
           .set({
@@ -181,17 +184,17 @@ export function pluginRegistryService(db: Db) {
         return rows[0];
       } catch (error) {
         if (isPluginKeyConflict(error)) {
-          throw conflict(`Plugin already installed: ${manifest.id}`);
+          throw conflict(`El plugin ya está instalado: ${manifest.id}`);
         }
         throw error;
       }
     },
 
-    // ----- Update ---------------------------------------------------------
+    // ----- Actualización ------------------------------------------------
 
     /**
-     * Update a plugin's manifest and version (e.g. on upgrade).
-     * The plugin must already exist.
+     * Actualiza el manifiesto y la versión de un plugin (p. ej. en
+     * actualización). El plugin debe existir ya.
      */
     update: async (
       id: string,
@@ -202,7 +205,7 @@ export function pluginRegistryService(db: Db) {
       },
     ) => {
       const plugin = await getById(id);
-      if (!plugin) throw notFound("Plugin not found");
+      if (!plugin) throw notFound("Plugin no encontrado");
 
       const setClause: Partial<typeof plugins.$inferInsert> & { updatedAt: Date } = {
         updatedAt: new Date(),
@@ -223,12 +226,12 @@ export function pluginRegistryService(db: Db) {
         .then((rows) => rows[0] ?? null);
     },
 
-    // ----- Status ---------------------------------------------------------
+    // ----- Estado -----------------------------------------------------
 
-    /** Update a plugin's lifecycle status and optional error message. */
+    /** Actualiza el estado del ciclo de vida de un plugin y el mensaje de error opcional. */
     updateStatus: async (id: string, input: UpdatePluginStatus) => {
       const plugin = await getById(id);
-      if (!plugin) throw notFound("Plugin not found");
+      if (!plugin) throw notFound("Plugin no encontrado");
 
       return db
         .update(plugins)
@@ -242,21 +245,22 @@ export function pluginRegistryService(db: Db) {
         .then((rows) => rows[0] ?? null);
     },
 
-    // ----- Uninstall / Remove --------------------------------------------
+    // ----- Desinstalación / Eliminación -----------------------------------
 
     /**
-     * Uninstall a plugin.
+     * Desinstala un plugin.
      *
-     * When `removeData` is true the plugin row (and cascaded config) is
-     * hard-deleted.  Otherwise the status is set to `"uninstalled"` for
-     * a soft-delete that preserves the record.
+     * Cuando `removeData` es true, la fila del plugin (y la configuración en
+     * cascada) se elimina permanentemente. De lo contrario, el estado se
+     * fija a `"uninstalled"` para un borrado lógico que preserva el
+     * registro.
      */
     uninstall: async (id: string, removeData = false) => {
       const plugin = await getById(id);
-      if (!plugin) throw notFound("Plugin not found");
+      if (!plugin) throw notFound("Plugin no encontrado");
 
       if (removeData) {
-        // Hard delete – plugin_config cascades via FK onDelete
+        // Eliminación permanente – plugin_config cae en cascada vía FK onDelete
         return db
           .delete(plugins)
           .where(eq(plugins.id, id))
@@ -264,7 +268,7 @@ export function pluginRegistryService(db: Db) {
           .then((rows) => rows[0] ?? null);
       }
 
-      // Soft delete – mark as uninstalled
+      // Borrado lógico – marca como desinstalado
       return db
         .update(plugins)
         .set({
@@ -276,9 +280,9 @@ export function pluginRegistryService(db: Db) {
         .then((rows) => rows[0] ?? null);
     },
 
-    // ----- Config ---------------------------------------------------------
+    // ----- Config -----------------------------------------------------
 
-    /** Retrieve a plugin's instance configuration. */
+    /** Recupera la configuración de instancia de un plugin. */
     getConfig: (pluginId: string) =>
       db
         .select()
@@ -287,13 +291,13 @@ export function pluginRegistryService(db: Db) {
         .then((rows) => rows[0] ?? null),
 
     /**
-     * Create or fully replace a plugin's instance configuration.
-     * If a config row already exists for the plugin it is replaced;
-     * otherwise a new row is inserted.
+     * Crea o reemplaza completamente la configuración de instancia de un
+     * plugin. Si ya existe una fila de configuración para el plugin se
+     * reemplaza; de lo contrario se inserta una nueva fila.
      */
     upsertConfig: async (pluginId: string, input: UpsertPluginConfig) => {
       const plugin = await getById(pluginId);
-      if (!plugin) throw notFound("Plugin not found");
+      if (!plugin) throw notFound("Plugin no encontrado");
 
       const existing = await db
         .select()
@@ -325,12 +329,13 @@ export function pluginRegistryService(db: Db) {
     },
 
     /**
-     * Partially update a plugin's instance configuration via shallow merge.
-     * If no config row exists yet one is created with the supplied values.
+     * Actualiza parcialmente la configuración de instancia de un plugin vía
+     * fusión superficial. Si aún no existe una fila de configuración, se
+     * crea con los valores suministrados.
      */
     patchConfig: async (pluginId: string, input: PatchPluginConfig) => {
       const plugin = await getById(pluginId);
-      if (!plugin) throw notFound("Plugin not found");
+      if (!plugin) throw notFound("Plugin no encontrado");
 
       const existing = await db
         .select()
@@ -363,8 +368,8 @@ export function pluginRegistryService(db: Db) {
     },
 
     /**
-     * Record an error against a plugin's config (e.g. validation failure
-     * against the plugin's instanceConfigSchema).
+     * Registra un error contra la configuración de un plugin (p. ej. fallo
+     * de validación contra el instanceConfigSchema del plugin).
      */
     setConfigError: async (pluginId: string, lastError: string | null) => {
       const rows = await db
@@ -373,11 +378,11 @@ export function pluginRegistryService(db: Db) {
         .where(eq(pluginConfig.pluginId, pluginId))
         .returning();
 
-      if (rows.length === 0) throw notFound("Plugin config not found");
+      if (rows.length === 0) throw notFound("Config del plugin no encontrada");
       return rows[0];
     },
 
-    /** Delete a plugin's config row. */
+    /** Elimina la fila de configuración de un plugin. */
     deleteConfig: async (pluginId: string) => {
       const rows = await db
         .delete(pluginConfig)
@@ -387,14 +392,15 @@ export function pluginRegistryService(db: Db) {
       return rows[0] ?? null;
     },
 
-    // ----- Entities -------------------------------------------------------
+    // ----- Entidades --------------------------------------------------
 
     /**
-     * List persistent entity mappings owned by a specific plugin, with filtering and pagination.
+     * Lista los mapeos de entidades persistentes propiedad de un plugin
+     * específico, con filtrado y paginación.
      *
-     * @param pluginId - The UUID of the plugin.
-     * @param query - Optional filters (type, externalId) and pagination (limit, offset).
-     * @returns A list of matching `PluginEntityRecord` objects.
+     * @param pluginId - El UUID del plugin.
+     * @param query - Filtros opcionales (type, externalId) y paginación (limit, offset).
+     * @returns Una lista de objetos `PluginEntityRecord` coincidentes.
      */
     listEntities: (pluginId: string, query?: PluginEntityQuery) => {
       const conditions = [eq(pluginEntities.pluginId, pluginId)];
@@ -411,12 +417,13 @@ export function pluginRegistryService(db: Db) {
     },
 
     /**
-     * Look up a plugin-owned entity mapping by its external identifier.
+     * Busca un mapeo de entidad propiedad de un plugin por su identificador
+     * externo.
      *
-     * @param pluginId - The UUID of the plugin.
-     * @param entityType - The type of entity (e.g., 'project', 'issue').
-     * @param externalId - The identifier in the external system.
-     * @returns The matching `PluginEntityRecord` or null.
+     * @param pluginId - El UUID del plugin.
+     * @param entityType - El tipo de entidad (p. ej. 'project', 'issue').
+     * @param externalId - El identificador en el sistema externo.
+     * @returns El `PluginEntityRecord` coincidente o null.
      */
     getEntityByExternalId: (
       pluginId: string,
@@ -436,19 +443,20 @@ export function pluginRegistryService(db: Db) {
         .then((rows) => rows[0] ?? null),
 
     /**
-     * Create or update a persistent mapping between a Paperclip object and an
-     * external entity.
+     * Crea o actualiza un mapeo persistente entre un objeto Paperclip y una
+     * entidad externa.
      *
-     * @param pluginId - The UUID of the plugin.
-     * @param input - The entity data to persist.
-     * @returns The newly created or updated `PluginEntityRecord`.
+     * @param pluginId - El UUID del plugin.
+     * @param input - Los datos de la entidad a persistir.
+     * @returns El `PluginEntityRecord` recién creado o actualizado.
      */
     upsertEntity: async (
       pluginId: string,
       input: Omit<typeof pluginEntities.$inferInsert, "id" | "pluginId" | "createdAt" | "updatedAt">,
     ) => {
-      // Drizzle doesn't support pg-specific onConflictDoUpdate easily in the insert() call
-      // with complex where clauses, so we do it manually.
+      // Drizzle no soporta onConflictDoUpdate específico de pg fácilmente
+      // en la llamada insert() con cláusulas where complejas, así que lo
+      // hacemos manualmente.
       const existing = await db
         .select()
         .from(pluginEntities)
@@ -484,10 +492,11 @@ export function pluginRegistryService(db: Db) {
     },
 
     /**
-     * Delete a specific plugin-owned entity mapping by its internal UUID.
+     * Elimina un mapeo de entidad específico propiedad de un plugin por su
+     * UUID interno.
      *
-     * @param id - The UUID of the entity record.
-     * @returns The deleted record, or null if not found.
+     * @param id - El UUID del registro de la entidad.
+     * @returns El registro eliminado, o null si no se encontró.
      */
     deleteEntity: async (id: string) => {
       const rows = await db
@@ -497,13 +506,14 @@ export function pluginRegistryService(db: Db) {
       return rows[0] ?? null;
     },
 
-    // ----- Jobs -----------------------------------------------------------
+    // ----- Trabajos ---------------------------------------------------
 
     /**
-     * List all scheduled jobs registered for a specific plugin.
+     * Lista todos los trabajos programados registrados para un plugin
+     * específico.
      *
-     * @param pluginId - The UUID of the plugin.
-     * @returns A list of `PluginJobRecord` objects.
+     * @param pluginId - El UUID del plugin.
+     * @returns Una lista de objetos `PluginJobRecord`.
      */
     listJobs: (pluginId: string) =>
       db
@@ -513,11 +523,11 @@ export function pluginRegistryService(db: Db) {
         .orderBy(asc(pluginJobs.jobKey)),
 
     /**
-     * Look up a plugin job by its unique job key.
+     * Busca un trabajo de plugin por su clave única de trabajo.
      *
-     * @param pluginId - The UUID of the plugin.
-     * @param jobKey - The key defined in the plugin manifest.
-     * @returns The matching `PluginJobRecord` or null.
+     * @param pluginId - El UUID del plugin.
+     * @param jobKey - La clave definida en el manifiesto del plugin.
+     * @returns El `PluginJobRecord` coincidente o null.
      */
     getJobByKey: (pluginId: string, jobKey: string) =>
       db
@@ -527,12 +537,12 @@ export function pluginRegistryService(db: Db) {
         .then((rows) => rows[0] ?? null),
 
     /**
-     * Register or update a scheduled job for a plugin.
+     * Registra o actualiza un trabajo programado para un plugin.
      *
-     * @param pluginId - The UUID of the plugin.
-     * @param jobKey - The unique key for the job.
-     * @param input - The schedule (cron) and optional status.
-     * @returns The updated or created `PluginJobRecord`.
+     * @param pluginId - El UUID del plugin.
+     * @param jobKey - La clave única del trabajo.
+     * @param input - El programa (cron) y estado opcional.
+     * @returns El `PluginJobRecord` actualizado o creado.
      */
     upsertJob: async (
       pluginId: string,
@@ -571,12 +581,12 @@ export function pluginRegistryService(db: Db) {
     },
 
     /**
-     * Record the start of a specific job execution.
+     * Registra el inicio de una ejecución específica de trabajo.
      *
-     * @param pluginId - The UUID of the plugin.
-     * @param jobId - The UUID of the parent job record.
-     * @param trigger - What triggered this run (e.g., 'schedule', 'manual').
-     * @returns The newly created `PluginJobRunRecord` in 'pending' status.
+     * @param pluginId - El UUID del plugin.
+     * @param jobId - El UUID del registro del trabajo padre.
+     * @param trigger - Qué disparó esta ejecución (p. ej. 'schedule', 'manual').
+     * @returns El `PluginJobRunRecord` recién creado en estado 'pending'.
      */
     createJobRun: async (
       pluginId: string,
@@ -596,11 +606,12 @@ export function pluginRegistryService(db: Db) {
     },
 
     /**
-     * Update the status, duration, and logs of a job execution record.
+     * Actualiza el estado, duración y logs de un registro de ejecución de
+     * trabajo.
      *
-     * @param runId - The UUID of the job run.
-     * @param input - The update fields (status, error, duration, etc.).
-     * @returns The updated `PluginJobRunRecord`.
+     * @param runId - El UUID de la ejecución del trabajo.
+     * @param input - Los campos de actualización (status, error, duration, etc.).
+     * @returns El `PluginJobRunRecord` actualizado.
      */
     updateJobRun: async (
       runId: string,
@@ -621,15 +632,15 @@ export function pluginRegistryService(db: Db) {
         .then((rows) => rows[0] ?? null);
     },
 
-    // ----- Webhooks -------------------------------------------------------
+    // ----- Webhooks ---------------------------------------------------
 
     /**
-     * Create a record for an incoming webhook delivery.
+     * Crea un registro para una entrega entrante de webhook.
      *
-     * @param pluginId - The UUID of the receiving plugin.
-     * @param webhookKey - The endpoint key defined in the manifest.
-     * @param input - The payload, headers, and optional external ID.
-     * @returns The newly created `PluginWebhookDeliveryRecord` in 'pending' status.
+     * @param pluginId - El UUID del plugin receptor.
+     * @param webhookKey - La clave del endpoint definida en el manifiesto.
+     * @param input - El payload, headers y ID externo opcional.
+     * @returns El `PluginWebhookDeliveryRecord` recién creado en estado 'pending'.
      */
     createWebhookDelivery: async (
       pluginId: string,
@@ -655,11 +666,12 @@ export function pluginRegistryService(db: Db) {
     },
 
     /**
-     * Update the status and processing metrics of a webhook delivery.
+     * Actualiza el estado y métricas de procesamiento de una entrega de
+     * webhook.
      *
-     * @param deliveryId - The UUID of the delivery record.
-     * @param input - The update fields (status, error, duration, etc.).
-     * @returns The updated `PluginWebhookDeliveryRecord`.
+     * @param deliveryId - El UUID del registro de la entrega.
+     * @param input - Los campos de actualización (status, error, duration, etc.).
+     * @returns El `PluginWebhookDeliveryRecord` actualizado.
      */
     updateWebhookDelivery: async (
       deliveryId: string,

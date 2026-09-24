@@ -1,21 +1,21 @@
-# Creating a Company From an Existing Repository
+# Crear una empresa desde un repositorio existente
 
-When a user provides a git repo (URL, local path, or tweet linking to a repo), analyze it and create a company package that wraps its content.
+Cuando un usuario proporciona un repositorio git (URL, ruta local o tuit con enlace a un repositorio), analízalo y crea un paquete de empresa que envuelva su contenido.
 
-## Analysis Steps
+## Pasos de análisis
 
-1. **Clone or read the repo** - Use `git clone` for URLs, read directly for local paths
-2. **Scan for existing agent/skill files** - Look for SKILL.md, AGENTS.md, CLAUDE.md, .claude/ directories, or similar agent configuration
-3. **Understand the repo's purpose** - Read README, package.json, main source files to understand what the project does
-4. **Identify natural agent roles** - Based on the repo's structure and purpose, determine what agents would be useful
+1. **Clona o lee el repositorio** — usa `git clone` para URLs, lee directamente para rutas locales
+2. **Busca archivos existentes de agentes/habilidades** — busca SKILL.md, AGENTS.md, CLAUDE.md, directorios .claude/ o configuraciones de agente similares
+3. **Comprende el propósito del repositorio** — lee README, package.json y los archivos fuente principales para entender qué hace el proyecto
+4. **Identifica roles naturales de agentes** — según la estructura y el propósito del repositorio, determina qué agentes serían útiles
 
-## Handling Existing Skills
+## Manejo de habilidades existentes
 
-Many repos already contain skills (SKILL.md files). When you find them:
+Muchos repositorios ya contienen habilidades (archivos SKILL.md). Cuando las encuentres:
 
-**Default behavior: use references, not copies.**
+**Comportamiento predeterminado: usa referencias, no copias.**
 
-Instead of copying skill content into your company package, create a source reference:
+En lugar de copiar el contenido de las habilidades en tu paquete de empresa, crea una referencia de fuente:
 
 ```yaml
 metadata:
@@ -29,51 +29,51 @@ metadata:
       usage: referenced
 ```
 
-To get the commit SHA:
+Para obtener el SHA del commit:
 ```bash
 git ls-remote https://github.com/owner/repo HEAD
 ```
 
-Only vendor (copy) skills when:
-- The user explicitly asks to copy them
-- The skill is very small and tightly coupled to the company
-- The source repo is private or may become unavailable
+Incluye (vendor) habilidades solo cuando:
+- El usuario pide explícitamente copiarlas
+- La habilidad es muy pequeña y está estrechamente acoplada a la empresa
+- El repositorio fuente es privado o puede dejar de estar disponible
 
-## Handling Existing Agent Configurations
+## Manejo de configuraciones de agente existentes
 
-If the repo has agent configs (CLAUDE.md, .claude/ directories, codex configs, etc.):
-- Use them as inspiration for AGENTS.md instructions
-- Don't copy them verbatim - adapt them to the Agent Companies format
-- Preserve the intent and key instructions
+Si el repositorio tiene configuraciones de agente (CLAUDE.md, directorios .claude/, configuraciones de codex, etc.):
+- Úsalas como inspiración para las instrucciones de AGENTS.md
+- No las copies textualmente: adáptalas al formato de Agent Companies
+- Preserva la intención y las instrucciones clave
 
-## Repo-Only Skills (No Agents)
+## Habilidades solo de repositorio (sin agentes)
 
-When a repo contains only skills and no agents:
-- Create agents that would naturally use those skills
-- The agents should be minimal - just enough to give the skills a runtime context
-- A single agent may use multiple skills from the repo
-- Name agents based on the domain the skills cover
+Cuando un repositorio contiene solo habilidades y ningún agente:
+- Crea agentes que usarían naturalmente esas habilidades
+- Los agentes deben ser mínimos: lo suficiente para dar a las habilidades un contexto de ejecución
+- Un solo agente puede usar varias habilidades del repositorio
+- Nombra a los agentes según el dominio que cubren las habilidades
 
-Example: A repo with `code-review`, `testing`, and `deployment` skills might become:
-- A "Lead Engineer" agent with all three skills
-- Or separate "Reviewer", "QA Engineer", and "DevOps" agents if the skills are distinct enough
+Ejemplo: un repositorio con habilidades `code-review`, `testing` y `deployment` podría convertirse en:
+- Un agente "Lead Engineer" con las tres habilidades
+- O agentes separados "Reviewer", "QA Engineer" y "DevOps" si las habilidades son lo suficientemente distintas
 
-## Common Repo Patterns
+## Patrones comunes de repositorios
 
-### Developer Tools / CLI repos
-- Create agents for the tool's primary use cases
-- Reference any existing skills
-- Add a project maintainer or lead agent
+### Repositorios de herramientas de desarrollo / CLI
+- Crea agentes para los casos de uso principales de la herramienta
+- Referencia cualquier habilidad existente
+- Agrega un agente encargado del proyecto o un agente líder
 
-### Library / Framework repos
-- Create agents for development, testing, documentation
-- Skills from the repo become agent capabilities
+### Repositorios de bibliotecas / frameworks
+- Crea agentes para desarrollo, pruebas y documentación
+- Las habilidades del repositorio se convierten en capacidades de los agentes
 
-### Full Application repos
-- Map to departments: engineering, product, QA
-- Create a lean team structure appropriate to the project size
+### Repositorios de aplicaciones completas
+- Mapea a departamentos: ingeniería, producto, QA
+- Crea una estructura de equipo ligera apropiada al tamaño del proyecto
 
-### Skills Collection repos (e.g. skills.sh repos)
-- Each skill or skill group gets an agent
-- Create a lightweight company or team wrapper
-- Keep the agent count proportional to the skill diversity
+### Repositorios de colecciones de habilidades (p. ej., repositorios de skills.sh)
+- Cada habilidad o grupo de habilidades obtiene un agente
+- Crea un envoltorio ligero de empresa o equipo
+- Mantén la cantidad de agentes proporcional a la diversidad de habilidades

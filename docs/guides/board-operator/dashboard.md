@@ -1,36 +1,36 @@
 ---
-title: Dashboard
-summary: Understanding the Paperclip dashboard
+title: Panel
+summary: Entender el panel de Paperclip
 ---
 
-The dashboard gives you a real-time overview of your autonomous company's health.
+El panel te da una vista en tiempo real de la salud de tu empresa autónoma.
 
-## What You See
+## Qué ves
 
-The dashboard displays:
+El panel muestra:
 
-- **Agent status** — how many agents are active, idle, running, or in error state
-- **Task breakdown** — counts by status (todo, in progress, blocked, done)
-- **Stale tasks** — tasks that have been in progress for too long without updates
-- **Cost summary** — current month spend vs budget, burn rate
-- **Recent activity** — latest mutations across the company
+- **Estado de agentes** — cuántos agentes están activos, inactivos, en ejecución o en estado de error
+- **Desglose de tareas** — conteos por estado (todo, in progress, blocked, done)
+- **Tareas estancadas** — tareas que llevan demasiado tiempo en progreso sin actualizaciones
+- **Resumen de costos** — gasto del mes actual frente al presupuesto, ritmo de gasto
+- **Actividad reciente** — últimas mutaciones en toda la empresa
 
-## Using the Dashboard
+## Usar el panel
 
-Access the dashboard from the left sidebar after selecting a company. It refreshes in real time via live updates.
+Accede al panel desde la barra lateral izquierda después de seleccionar una empresa. Se actualiza en tiempo real mediante actualizaciones en vivo.
 
-### Key Metrics to Watch
+### Métricas clave a vigilar
 
-- **Blocked tasks** — these need your attention. Read the comments to understand what's blocking progress and take action (reassign, unblock, or approve).
-- **Budget utilization** — agents auto-pause at 100% budget. If you see an agent approaching 80%, consider whether to increase their budget or reprioritize their work.
-- **Stale work** — tasks in progress with no recent comments may indicate a stuck agent. Check the agent's run history for errors.
+- **Tareas bloqueadas** — necesitan tu atención. Lee los comentarios para entender qué bloquea el progreso y toma acción (reasignar, desbloquear o aprobar).
+- **Utilización del presupuesto** — los agentes se pausan automáticamente al 100% del presupuesto. Si ves un agente acercándose al 80%, considera aumentar su presupuesto o repriorizar su trabajo.
+- **Trabajo estancado** — tareas en progreso sin comentarios recientes pueden indicar un agente atascado. Revisa el historial de ejecución del agente para buscar errores.
 
-## Dashboard API
+## API del panel
 
-The dashboard data is also available via the API:
+Los datos del panel también están disponibles vía API:
 
 ```
 GET /api/companies/{companyId}/dashboard
 ```
 
-Returns agent counts by status, task counts by status, cost summaries, and stale task alerts.
+Devuelve conteos de agentes por estado, conteos de tareas por estado, resúmenes de costos y alertas de tareas estancadas.

@@ -17,7 +17,7 @@ function parseModelsOutput(stdout: string): AdapterModel[] {
   const parsed: AdapterModel[] = [];
   const lines = stdout.split(/\r?\n/);
   
-  // Skip header line if present
+  // Omitir la línea de encabezado si está presente
   let startIndex = 0;
   if (lines.length > 0 && (lines[0].includes("provider") || lines[0].includes("model"))) {
     startIndex = 1;
@@ -27,8 +27,8 @@ function parseModelsOutput(stdout: string): AdapterModel[] {
     const line = lines[i].trim();
     if (!line) continue;
     
-    // Parse format: "provider   model   context  max-out  thinking  images"
-    // Split by 2+ spaces to handle the columnar format
+    // Formato de análisis: "provider   model   context  max-out  thinking  images"
+    // Dividir por 2+ espacios para manejar el formato columnar
     const parts = line.split(/\s{2,}/);
     if (parts.length < 2) continue;
     
@@ -36,7 +36,7 @@ function parseModelsOutput(stdout: string): AdapterModel[] {
     const model = parts[1].trim();
     
     if (!provider || !model) continue;
-    if (provider === "provider" && model === "model") continue; // Skip header
+    if (provider === "provider" && model === "model") continue; // Omitir el encabezado
     
     const id = `${provider}/${model}`;
     parsed.push({ id, label: id });
@@ -128,10 +128,10 @@ export async function discoverPiModels(input: {
   }
   if ((result.exitCode ?? 1) !== 0) {
     const detail = firstNonEmptyLine(result.stderr) || firstNonEmptyLine(result.stdout);
-    throw new Error(detail ? `\`pi --list-models\` failed: ${detail}` : "`pi --list-models` failed.");
+    throw new Error(detail ? `\`pi --list-models\` falló: ${detail}` : "`pi --list-models` falló.");
   }
 
-  // Pi outputs model list to stderr, but fall back to stdout for older versions
+  // Pi envía la lista de modelos a stderr, pero se usa stdout como alternativa para versiones anteriores
   const output = result.stderr || result.stdout;
   return sortModels(dedupeModels(parseModelsOutput(output)));
 }
@@ -174,7 +174,7 @@ export async function ensurePiModelConfiguredAndAvailable(input: {
 }): Promise<AdapterModel[]> {
   const model = asString(input.model, "").trim();
   if (!model) {
-    throw new Error("Pi requires `adapterConfig.model` in provider/model format.");
+    throw new Error("Pi requiere `adapterConfig.model` en formato proveedor/modelo.");
   }
 
   const models = await discoverPiModelsCached({
@@ -184,13 +184,13 @@ export async function ensurePiModelConfiguredAndAvailable(input: {
   });
 
   if (models.length === 0) {
-    throw new Error("Pi returned no models. Run `pi --list-models` and verify provider auth.");
+    throw new Error("Pi no devolvió modelos. Ejecuta `pi --list-models` y verifica la autenticación del proveedor.");
   }
 
   if (!models.some((entry) => entry.id === model)) {
     const sample = models.slice(0, 12).map((entry) => entry.id).join(", ");
     throw new Error(
-      `Configured Pi model is unavailable: ${model}. Available models: ${sample}${models.length > 12 ? ", ..." : ""}`,
+      `El modelo de Pi configurado no está disponible: ${model}. Modelos disponibles: ${sample}${models.length > 12 ? ", ..." : ""}`,
     );
   }
 

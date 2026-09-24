@@ -20,28 +20,28 @@ const platforms: { id: Platform; label: string; icon: typeof Apple }[] = [
 const instructions: Record<Platform, { steps: string[]; tip?: string }> = {
   mac: {
     steps: [
-      "Open Finder and navigate to the folder.",
-      "Right-click (or Control-click) the folder.",
-      "Hold the Option (⌥) key — \"Copy\" changes to \"Copy as Pathname\".",
-      "Click \"Copy as Pathname\", then paste here.",
+      "Abre Finder y navega hasta la carpeta.",
+      "Haz clic derecho (o clic con Control) en la carpeta.",
+      "Mantén presionada la tecla Opción (⌥): \"Copy\" cambia a \"Copy as Pathname\".",
+      "Haz clic en \"Copy as Pathname\" y luego pega aquí.",
     ],
-    tip: "You can also open Terminal, type cd, drag the folder into the terminal window, and press Enter. Then type pwd to see the full path.",
+    tip: "También puedes abrir Terminal, escribir cd, arrastrar la carpeta a la ventana de la terminal y presionar Enter. Luego escribe pwd para ver la ruta completa.",
   },
   windows: {
     steps: [
-      "Open File Explorer and navigate to the folder.",
-      "Click in the address bar at the top — the full path will appear.",
-      "Copy the path, then paste here.",
+      "Abre el Explorador de archivos y navega hasta la carpeta.",
+      "Haz clic en la barra de direcciones de arriba: aparecerá la ruta completa.",
+      "Copia la ruta y pégala aquí.",
     ],
-    tip: "Alternatively, hold Shift and right-click the folder, then select \"Copy as path\".",
+    tip: "También puedes mantener presionada Mayús, hacer clic derecho en la carpeta y seleccionar \"Copy as path\".",
   },
   linux: {
     steps: [
-      "Open a terminal and navigate to the directory with cd.",
-      "Run pwd to print the full path.",
-      "Copy the output and paste here.",
+      "Abre una terminal y navega al directorio con cd.",
+      "Ejecuta pwd para mostrar la ruta completa.",
+      "Copia la salida y pégala aquí.",
     ],
-    tip: "In most file managers, Ctrl+L reveals the full path in the address bar.",
+    tip: "En la mayoría de los gestores de archivos, Ctrl+L muestra la ruta completa en la barra de direcciones.",
   },
 };
 
@@ -69,15 +69,15 @@ export function PathInstructionsModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-base">How to get a full path</DialogTitle>
+          <DialogTitle className="text-base">Cómo obtener una ruta completa</DialogTitle>
           <DialogDescription>
-            Paste the absolute path (e.g.{" "}
+            Pega la ruta absoluta (p. ej.{" "}
             <code className="text-xs bg-muted px-1 py-0.5 rounded">/Users/you/project</code>
-            ) into the input field.
+            ) en el campo de entrada.
           </DialogDescription>
         </DialogHeader>
 
-        {/* Platform tabs */}
+        {/* Pestañas de plataforma */}
         <div className="flex gap-1 rounded-md border border-border p-0.5">
           {platforms.map((p) => (
             <button
@@ -97,7 +97,7 @@ export function PathInstructionsModal({
           ))}
         </div>
 
-        {/* Steps */}
+        {/* Pasos */}
         <ol className="space-y-2 text-sm">
           {current.steps.map((step, i) => (
             <li key={i} className="flex gap-2">
@@ -120,8 +120,8 @@ export function PathInstructionsModal({
 }
 
 /**
- * Small "Choose" button that opens the PathInstructionsModal.
- * Drop-in replacement for the old showDirectoryPicker buttons.
+ * Pequeño botón "Elegir" que abre el PathInstructionsModal.
+ * Reemplazo directo de los antiguos botones showDirectoryPicker.
  */
 export function ChoosePathButton({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
@@ -135,7 +135,7 @@ export function ChoosePathButton({ className }: { className?: string }) {
         )}
         onClick={() => setOpen(true)}
       >
-        Choose
+        Elegir
       </button>
       <PathInstructionsModal open={open} onOpenChange={setOpen} />
     </>

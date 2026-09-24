@@ -62,13 +62,13 @@ export function BillerSpendCard({
               {providerDisplayName(row.biller)}
             </CardTitle>
             <CardDescription className="text-xs mt-0.5">
-              <span className="font-mono">{formatTokens(row.inputTokens + row.cachedInputTokens)}</span> in
+              <span className="font-mono">{formatTokens(row.inputTokens + row.cachedInputTokens)}</span> de entrada
               {" · "}
-              <span className="font-mono">{formatTokens(row.outputTokens)}</span> out
+              <span className="font-mono">{formatTokens(row.outputTokens)}</span> de salida
               {" · "}
-              {row.providerCount} provider{row.providerCount === 1 ? "" : "s"}
+              {row.providerCount} proveedor{row.providerCount === 1 ? "" : "es"}
               {" · "}
-              {row.modelCount} model{row.modelCount === 1 ? "" : "s"}
+              {row.modelCount} modelo{row.modelCount === 1 ? "" : "s"}
             </CardDescription>
           </div>
           <span className="text-xl font-bold tabular-nums shrink-0">
@@ -80,21 +80,21 @@ export function BillerSpendCard({
       <CardContent className="px-4 pb-4 pt-3 space-y-4">
         {budgetMonthlyCents > 0 && (
           <QuotaBar
-            label="Period spend"
+            label="Gasto del período"
             percentUsed={budgetPct}
             leftLabel={formatCents(row.costCents)}
-            rightLabel={`${Math.round(budgetPct)}% of allocation`}
+            rightLabel={`${Math.round(budgetPct)}% de la asignación`}
           />
         )}
 
         <div className="text-xs text-muted-foreground">
-          {row.apiRunCount > 0 ? `${row.apiRunCount} metered run${row.apiRunCount === 1 ? "" : "s"}` : "0 metered runs"}
+          {row.apiRunCount > 0 ? `${row.apiRunCount} ejecución${row.apiRunCount === 1 ? "" : "es"} medida${row.apiRunCount === 1 ? "" : "s"}` : "0 ejecuciones medidas"}
           {" · "}
           {row.subscriptionRunCount > 0
-            ? `${row.subscriptionRunCount} subscription run${row.subscriptionRunCount === 1 ? "" : "s"}`
-            : "0 subscription runs"}
+            ? `${row.subscriptionRunCount} ejecución${row.subscriptionRunCount === 1 ? "" : "es"} de suscripción`
+            : "0 ejecuciones de suscripción"}
           {" · "}
-          {formatCents(weekSpendCents)} this week
+          {formatCents(weekSpendCents)} esta semana
         </div>
 
         {billingTypeBreakdown.length > 0 && (
@@ -102,7 +102,7 @@ export function BillerSpendCard({
             <div className="border-t border-border" />
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Billing types
+                Tipos de facturación
               </p>
               <div className="space-y-1.5">
                 {billingTypeBreakdown.map(([billingType, costCents]) => (
@@ -121,7 +121,7 @@ export function BillerSpendCard({
             <div className="border-t border-border" />
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Upstream providers
+                Proveedores de origen
               </p>
               <div className="space-y-1.5">
                 {providerBreakdown.map((entry) => (

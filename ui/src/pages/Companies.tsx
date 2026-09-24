@@ -45,7 +45,7 @@ export function Companies() {
     queryFn: () => companiesApi.stats(),
   });
 
-  // Inline edit state
+  // Estado de edición en línea
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -69,7 +69,7 @@ export function Companies() {
   });
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Companies" }]);
+    setBreadcrumbs([{ label: "Empresas" }]);
   }, [setBreadcrumbs]);
 
   function startEdit(companyId: string, currentName: string) {
@@ -92,12 +92,12 @@ export function Companies() {
       <div className="flex items-center justify-end">
         <Button size="sm" onClick={() => openOnboarding()}>
           <Plus className="h-3.5 w-3.5 mr-1.5" />
-          New Company
+          Nueva empresa
         </Button>
       </div>
 
       <div className="h-6">
-        {loading && <p className="text-sm text-muted-foreground">Loading companies...</p>}
+        {loading && <p className="text-sm text-muted-foreground">Cargando empresas…</p>}
         {error && <p className="text-sm text-destructive">{error.message}</p>}
       </div>
 
@@ -215,7 +215,7 @@ export function Companies() {
                         onClick={() => startEdit(company.id, company.name)}
                       >
                         <Pencil className="h-3.5 w-3.5" />
-                        Rename
+                        Renombrar
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -223,7 +223,7 @@ export function Companies() {
                         onClick={() => setConfirmDeleteId(company.id)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                        Delete Company
+                        Eliminar empresa
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -235,7 +235,7 @@ export function Companies() {
                 <div className="flex items-center gap-1.5">
                   <Users className="h-3.5 w-3.5" />
                   <span>
-                    {agentCount} {agentCount === 1 ? "agent" : "agents"}
+                    {agentCount} {agentCount === 1 ? "agente" : "agentes"}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -250,12 +250,12 @@ export function Companies() {
                     {formatCents(company.spentMonthlyCents)}
                     {company.budgetMonthlyCents > 0
                       ? <> / {formatCents(company.budgetMonthlyCents)} <span className="text-xs">({budgetPct}%)</span></>
-                      : <span className="text-xs ml-1">Unlimited budget</span>}
+                      : <span className="text-xs ml-1">Presupuesto ilimitado</span>}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 ml-auto">
                   <Calendar className="h-3.5 w-3.5" />
-                  <span>Created {relativeTime(company.createdAt)}</span>
+                  <span>Creada {relativeTime(company.createdAt)}</span>
                 </div>
               </div>
 
@@ -266,7 +266,7 @@ export function Companies() {
                   onClick={(e) => e.stopPropagation()}
                 >
                   <p className="text-sm text-destructive font-medium">
-                    Delete this company and all its data? This cannot be undone.
+                    ¿Eliminar esta empresa y todos sus datos? Esto no se puede deshacer.
                   </p>
                   <div className="flex items-center gap-2 ml-4 shrink-0">
                     <Button
@@ -275,7 +275,7 @@ export function Companies() {
                       onClick={() => setConfirmDeleteId(null)}
                       disabled={deleteMutation.isPending}
                     >
-                      Cancel
+                      Cancelar
                     </Button>
                     <Button
                       variant="destructive"
@@ -283,7 +283,7 @@ export function Companies() {
                       onClick={() => deleteMutation.mutate(company.id)}
                       disabled={deleteMutation.isPending}
                     >
-                      {deleteMutation.isPending ? "Deleting…" : "Delete"}
+                      {deleteMutation.isPending ? "Eliminando…" : "Eliminar"}
                     </Button>
                   </div>
                 </div>

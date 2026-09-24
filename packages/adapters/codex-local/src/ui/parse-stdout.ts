@@ -93,7 +93,7 @@ function parseCommandExecutionItem(
     kind: "tool_result",
     ts,
     toolUseId: id || command || "command_execution",
-    content: lines.join("\n").trim() || "command completed",
+    content: lines.join("\n").trim() || "comando completado",
     isError,
   }];
 }
@@ -110,12 +110,12 @@ function parseFileChangeItem(item: Record<string, unknown>, ts: string): Transcr
     });
 
   if (entries.length === 0) {
-    return [{ kind: "system", ts, text: "file changes applied" }];
+    return [{ kind: "system", ts, text: "cambios de archivo aplicados" }];
   }
 
   const preview = entries.slice(0, 6).join(", ");
-  const more = entries.length > 6 ? ` (+${entries.length - 6} more)` : "";
-  return [{ kind: "system", ts, text: `file changes: ${preview}${more}` }];
+  const more = entries.length > 6 ? ` (+${entries.length - 6} más)` : "";
+  return [{ kind: "system", ts, text: `cambios de archivo: ${preview}${more}` }];
 }
 
 function parseCodexItem(
@@ -134,7 +134,7 @@ function parseCodexItem(
   if (itemType === "reasoning") {
     const text = asString(item.text);
     if (text) return [{ kind: "thinking", ts, text }];
-    return [{ kind: "system", ts, text: phase === "started" ? "reasoning started" : "reasoning completed" }];
+    return [{ kind: "system", ts, text: phase === "started" ? "razonamiento iniciado" : "razonamiento completado" }];
   }
 
   if (itemType === "command_execution") {
@@ -168,7 +168,7 @@ function parseCodexItem(
 
   if (itemType === "error" && phase === "completed") {
     const text = errorText(item.message ?? item.error ?? item);
-    return [{ kind: "stderr", ts, text: text || "error" }];
+    return [{ kind: "stderr", ts, text: text || "Error" }];
   }
 
   const id = asString(item.id);
@@ -177,7 +177,7 @@ function parseCodexItem(
   return [{
     kind: "system",
     ts,
-    text: `item ${phase}: ${itemType || "unknown"}${meta ? ` (${meta})` : ""}`,
+    text: `elemento ${phase === "started" ? "iniciado" : "completado"}: ${itemType || "desconocido"}${meta ? ` (${meta})` : ""}`,
   }];
 }
 
@@ -200,12 +200,12 @@ export function parseCodexStdoutLine(line: string, ts: string): TranscriptEntry[
   }
 
   if (type === "turn.started") {
-    return [{ kind: "system", ts, text: "turn started" }];
+    return [{ kind: "system", ts, text: "turno iniciado" }];
   }
 
   if (type === "item.started" || type === "item.completed") {
     const item = asRecord(parsed.item);
-    if (!item) return [{ kind: "system", ts, text: type.replace(".", " ") }];
+    if (!item) return [{ kind: "system", ts, text: type === "item.started" ? "elemento iniciado" : "elemento completado" }];
     return parseCodexItem(item, ts, type === "item.started" ? "started" : "completed");
   }
 

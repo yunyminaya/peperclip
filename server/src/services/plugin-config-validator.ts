@@ -1,9 +1,11 @@
 /**
- * @fileoverview Validates plugin instance configuration against its JSON Schema.
+ * @fileoverview Valida la configuración de una instancia de plugin contra
+ * su JSON Schema.
  *
- * Uses Ajv to validate `configJson` values against the `instanceConfigSchema`
- * declared in a plugin's manifest. This ensures that invalid configuration is
- * rejected at the API boundary, not discovered later at worker startup.
+ * Usa Ajv para validar los valores de `configJson` contra el
+ * `instanceConfigSchema` declarado en el manifiesto de un plugin. Esto
+ * asegura que la configuración inválida se rechace en el límite de la API,
+ * en lugar de descubrirse después al iniciar el worker.
  *
  * @module server/services/plugin-config-validator
  */
@@ -18,11 +20,11 @@ export interface ConfigValidationResult {
 }
 
 /**
- * Validate a config object against a JSON Schema.
+ * Valida un objeto de configuración contra un JSON Schema.
  *
- * @param configJson - The configuration values to validate.
- * @param schema - The JSON Schema from the plugin manifest's `instanceConfigSchema`.
- * @returns Validation result with structured field errors on failure.
+ * @param configJson - Los valores de configuración a validar.
+ * @param schema - El JSON Schema del `instanceConfigSchema` del manifiesto del plugin.
+ * @returns Resultado de validación con errores de campo estructurados en caso de fallo.
  */
 export function validateInstanceConfig(
   configJson: Record<string, unknown>,
@@ -31,12 +33,13 @@ export function validateInstanceConfig(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const AjvCtor = (Ajv as any).default ?? Ajv;
   const ajv = new AjvCtor({ allErrors: true });
-  // ajv-formats v3 default export is a FormatsPlugin object; call it as a plugin.
+  // ajv-formats v3 exporta por defecto un objeto FormatsPlugin; llamarlo como plugin.
   const applyFormats = (addFormats as any).default ?? addFormats;
   applyFormats(ajv);
-  // Register the secret-ref format used by plugin manifests to mark fields that
-  // hold a Paperclip secret UUID rather than a raw value. The format is a UI
-  // hint only — UUID validation happens in the secrets handler at resolve time.
+  // Registra el formato secret-ref usado por los manifiestos de plugins para
+  // marcar campos que contienen un UUID de secreto de Paperclip en lugar de
+  // un valor en crudo. El formato es solo una pista de UI — la validación del
+  // UUID ocurre en el manejador de secretos al momento de resolverlo.
   ajv.addFormat("secret-ref", { validate: () => true });
   const validate = ajv.compile(schema);
   const valid = validate(configJson);
@@ -47,7 +50,7 @@ export function validateInstanceConfig(
 
   const errors = (validate.errors ?? []).map((err: ErrorObject) => ({
     field: err.instancePath || "/",
-    message: err.message ?? "validation failed",
+    message: err.message ?? "la validación falló",
   }));
 
   return { valid: false, errors };

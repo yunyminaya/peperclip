@@ -17,7 +17,7 @@ export interface EnvSecretRefBinding {
   version?: SecretVersionSelector;
 }
 
-// Backward-compatible: legacy plaintext string values are still accepted.
+// Compatible hacia atrás: los valores de texto plano heredados aún se aceptan.
 export type EnvBinding = string | EnvPlainBinding | EnvSecretRefBinding;
 
 export type AgentEnvConfig = Record<string, EnvBinding>;

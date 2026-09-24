@@ -1,21 +1,27 @@
 /**
- * PluginToolRegistry — host-side registry for plugin-contributed agent tools.
+ * PluginToolRegistry — registro host de herramientas de agentes aportadas
+ * por plugins.
  *
- * Responsibilities:
- * - Store tool declarations (from plugin manifests) alongside routing metadata
- *   so the host can resolve namespaced tool names to the owning plugin worker.
- * - Namespace tools automatically: a tool `"search-issues"` from plugin
- *   `"acme.linear"` is exposed to agents as `"acme.linear:search-issues"`.
- * - Route `executeTool` calls to the correct plugin worker via the
+ * Responsabilidades:
+ * - Almacena declaraciones de herramientas (desde manifiestos de plugins)
+ *   junto con metadata de enrutamiento para que el host pueda resolver
+ *   nombres de herramientas namespaced al worker del plugin propietario.
+ * - Hace namespace de herramientas automáticamente: una herramienta
+ *   `"search-issues"` del plugin `"acme.linear"` se expone a los agentes
+ *   como `"acme.linear:search-issues"`.
+ * - Enruta llamadas `executeTool` al worker correcto del plugin vía el
  *   `PluginWorkerManager`.
- * - Provide tool discovery queries so agents can list available tools.
- * - Clean up tool registrations when a plugin is unloaded or its worker stops.
+ * - Provee consultas de descubrimiento de herramientas para que los agentes
+ *   listen las herramientas disponibles.
+ * - Limpia registros de herramientas cuando un plugin se descarga o su
+ *   worker se detiene.
  *
- * The registry is an in-memory structure — tool declarations are derived from
- * the plugin manifest at load time and do not need persistence. When a plugin
- * worker restarts, the host re-registers its manifest tools.
+ * El registro es una estructura en memoria — las declaraciones de
+ * herramientas derivan del manifiesto del plugin en tiempo de carga y no
+ * necesitan persistencia. Cuando el worker de un plugin se reinicia, el
+ * host re-registra las herramientas de su manifiesto.
  *
- * @see PLUGIN_SPEC.md §11 — Agent Tools
+ * @see PLUGIN_SPEC.md §11 — Herramientas de agente
  * @see PLUGIN_SPEC.md §13.10 — `executeTool`
  */
 
@@ -32,9 +38,10 @@ import { logger } from "../middleware/logger.js";
 // ---------------------------------------------------------------------------
 
 /**
- * Separator between plugin ID and tool name in the namespaced tool identifier.
+ * Separador entre ID de plugin y nombre de herramienta en el identificador
+ * de herramienta namespaced.
  *
- * Example: `"acme.linear:search-issues"`
+ * Ejemplo: `"acme.linear:search-issues"`
  */
 export const TOOL_NAMESPACE_SEPARATOR = ":";
 
@@ -43,49 +50,51 @@ export const TOOL_NAMESPACE_SEPARATOR = ":";
 // ---------------------------------------------------------------------------
 
 /**
- * A registered tool entry stored in the registry.
+ * Una entrada de herramienta registrada almacenada en el registro.
  *
- * Combines the manifest-level declaration with routing metadata so the host
- * can resolve a namespaced tool name → plugin worker in O(1).
+ * Combina la declaración a nivel de manifiesto con metadata de enrutamiento
+ * para que el host pueda resolver un nombre de herramienta namespaced →
+ * worker de plugin en O(1).
  */
 export interface RegisteredTool {
-  /** The plugin key used for namespacing (e.g. `"acme.linear"`). */
+  /** La clave del plugin usada para el namespacing (p. ej. `"acme.linear"`). */
   pluginId: string;
   /**
-   * The plugin's database UUID, used for worker routing and availability
-   * checks. Falls back to `pluginId` when not provided (e.g. in tests
-   * where `id === pluginKey`).
+   * El UUID de base de datos del plugin, usado para enrutamiento de worker y
+   * chequeos de disponibilidad. Vuelve a `pluginId` cuando no se provee
+   * (p. ej. en pruebas donde `id === pluginKey`).
    */
   pluginDbId: string;
-  /** The tool's bare name (without namespace prefix). */
+  /** El nombre desnudo de la herramienta (sin prefijo de namespace). */
   name: string;
-  /** Fully namespaced identifier: `"<pluginId>:<toolName>"`. */
+  /** Identificador completamente namespaced: `"<pluginId>:<toolName>"`. */
   namespacedName: string;
-  /** Human-readable display name. */
+  /** Nombre legible para mostrar. */
   displayName: string;
-  /** Description provided to the agent so it knows when to use this tool. */
+  /** Descripción provista al agente para que sepa cuándo usar esta herramienta. */
   description: string;
-  /** JSON Schema describing the tool's input parameters. */
+  /** JSON Schema que describe los parámetros de entrada de la herramienta. */
   parametersSchema: Record<string, unknown>;
 }
 
 /**
- * Filter criteria for listing available tools.
+ * Criterios de filtro para listar herramientas disponibles.
  */
 export interface ToolListFilter {
-  /** Only return tools owned by this plugin. */
+  /** Solo devuelve herramientas propiedad de este plugin. */
   pluginId?: string;
 }
 
 /**
- * Result of executing a tool, extending `ToolResult` with routing metadata.
+ * Resultado de ejecutar una herramienta, extendiendo `ToolResult` con
+ * metadata de enrutamiento.
  */
 export interface ToolExecutionResult {
-  /** The plugin that handled the tool call. */
+  /** El plugin que manejó la llamada de la herramienta. */
   pluginId: string;
-  /** The bare tool name that was executed. */
+  /** El nombre desnudo de la herramienta que se ejecutó. */
   toolName: string;
-  /** The result returned by the plugin's tool handler. */
+  /** El resultado devuelto por el manejador de herramientas del plugin. */
   result: ToolResult;
 }
 
@@ -94,88 +103,95 @@ export interface ToolExecutionResult {
 // ---------------------------------------------------------------------------
 
 /**
- * The host-side tool registry — held by the host process.
+ * El registro de herramientas lado host — retenido por el proceso host.
  *
- * Created once at server startup and shared across the application. Plugins
- * register their tools when their worker starts, and unregister when the
- * worker stops or the plugin is uninstalled.
+ * Creado una vez al arranque del servidor y compartido en la aplicación.
+ * Los plugins registran sus herramientas cuando su worker arranca, y las
+ * desregistran cuando el worker se detiene o el plugin se desinstala.
  */
 export interface PluginToolRegistry {
   /**
-   * Register all tools declared in a plugin's manifest.
+   * Registra todas las herramientas declaradas en el manifiesto de un
+   * plugin.
    *
-   * Called when a plugin worker starts and its manifest is loaded. Any
-   * previously registered tools for the same plugin are replaced (idempotent).
+   * Se llama cuando el worker de un plugin arranca y su manifiesto se carga.
+   * Cualquier herramienta previamente registrada para el mismo plugin se
+   * reemplaza (idempotente).
    *
-   * @param pluginId - The plugin's unique identifier (e.g. `"acme.linear"`)
-   * @param manifest - The plugin manifest containing the `tools` array
-   * @param pluginDbId - The plugin's database UUID, used for worker routing
-   *   and availability checks. If omitted, `pluginId` is used (backwards-compat).
+   * @param pluginId - El identificador único del plugin (p. ej. `"acme.linear"`)
+   * @param manifest - El manifiesto del plugin que contiene el array `tools`
+   * @param pluginDbId - El UUID de base de datos del plugin, usado para
+   *   enrutamiento de worker y chequeos de disponibilidad. Si se omite, se
+   *   usa `pluginId` (retrocompatibilidad).
    */
   registerPlugin(pluginId: string, manifest: PaperclipPluginManifestV1, pluginDbId?: string): void;
 
   /**
-   * Remove all tool registrations for a plugin.
+   * Elimina todos los registros de herramientas de un plugin.
    *
-   * Called when a plugin worker stops, crashes, or is uninstalled.
+   * Se llama cuando el worker de un plugin se detiene, falla, o se
+   * desinstala.
    *
-   * @param pluginId - The plugin to clear
+   * @param pluginId - El plugin a limpiar
    */
   unregisterPlugin(pluginId: string): void;
 
   /**
-   * Look up a registered tool by its namespaced name.
+   * Busca una herramienta registrada por su nombre namespaced.
    *
-   * @param namespacedName - Fully qualified name, e.g. `"acme.linear:search-issues"`
-   * @returns The registered tool entry, or `null` if not found
+   * @param namespacedName - Nombre totalmente calificado, p. ej. `"acme.linear:search-issues"`
+   * @returns La entrada de herramienta registrada, o `null` si no se encuentra
    */
   getTool(namespacedName: string): RegisteredTool | null;
 
   /**
-   * Look up a registered tool by plugin ID and bare tool name.
+   * Busca una herramienta registrada por ID de plugin y nombre desnudo.
    *
-   * @param pluginId - The owning plugin
-   * @param toolName - The bare tool name (without namespace prefix)
-   * @returns The registered tool entry, or `null` if not found
+   * @param pluginId - El plugin propietario
+   * @param toolName - El nombre desnudo de la herramienta (sin prefijo de namespace)
+   * @returns La entrada de herramienta registrada, o `null` si no se encuentra
    */
   getToolByPlugin(pluginId: string, toolName: string): RegisteredTool | null;
 
   /**
-   * List all registered tools, optionally filtered.
+   * Lista todas las herramientas registradas, opcionalmente filtradas.
    *
-   * @param filter - Optional filter criteria
-   * @returns Array of registered tool entries
+   * @param filter - Criterios opcionales de filtro
+   * @returns Array de entradas de herramientas registradas
    */
   listTools(filter?: ToolListFilter): RegisteredTool[];
 
   /**
-   * Parse a namespaced tool name into plugin ID and bare tool name.
+   * Parsea un nombre de herramienta namespaced en ID de plugin y nombre
+   * desnudo.
    *
-   * @param namespacedName - e.g. `"acme.linear:search-issues"`
-   * @returns `{ pluginId, toolName }` or `null` if the format is invalid
+   * @param namespacedName - p. ej. `"acme.linear:search-issues"`
+   * @returns `{ pluginId, toolName }` o `null` si el formato es inválido
    */
   parseNamespacedName(namespacedName: string): { pluginId: string; toolName: string } | null;
 
   /**
-   * Build a namespaced tool name from a plugin ID and bare tool name.
+   * Construye un nombre de herramienta namespaced desde un ID de plugin y
+   * nombre desnudo.
    *
-   * @param pluginId - e.g. `"acme.linear"`
-   * @param toolName - e.g. `"search-issues"`
-   * @returns The namespaced name, e.g. `"acme.linear:search-issues"`
+   * @param pluginId - p. ej. `"acme.linear"`
+   * @param toolName - p. ej. `"search-issues"`
+   * @returns El nombre namespaced, p. ej. `"acme.linear:search-issues"`
    */
   buildNamespacedName(pluginId: string, toolName: string): string;
 
   /**
-   * Execute a tool by its namespaced name, routing to the correct plugin worker.
+   * Ejecuta una herramienta por su nombre namespaced, enrutando al worker
+   * correcto del plugin.
    *
-   * Resolves the namespaced name to the owning plugin, validates the tool
-   * exists, and dispatches the `executeTool` RPC call to the worker.
+   * Resuelve el nombre namespaced al plugin propietario, valida que la
+   * herramienta exista, y despacha la llamada RPC `executeTool` al worker.
    *
-   * @param namespacedName - Fully qualified tool name (e.g. `"acme.linear:search-issues"`)
-   * @param parameters - The parsed parameters matching the tool's schema
-   * @param runContext - Agent run context
-   * @returns The execution result with routing metadata
-   * @throws {Error} if the tool is not found or the worker is not running
+   * @param namespacedName - Nombre totalmente calificado de la herramienta (p. ej. `"acme.linear:search-issues"`)
+   * @param parameters - Los parámetros parseados que coinciden con el schema de la herramienta
+   * @param runContext - Contexto de ejecución del agente
+   * @returns El resultado de la ejecución con metadata de enrutamiento
+   * @throws {Error} si la herramienta no se encuentra o el worker no está corriendo
    */
   executeTool(
     namespacedName: string,
@@ -184,9 +200,10 @@ export interface PluginToolRegistry {
   ): Promise<ToolExecutionResult>;
 
   /**
-   * Get the number of registered tools, optionally scoped to a plugin.
+   * Obtiene el número de herramientas registradas, opcionalmente limitado a
+   * un plugin.
    *
-   * @param pluginId - If provided, count only this plugin's tools
+   * @param pluginId - Si se provee, cuenta solo las herramientas de este plugin
    */
   toolCount(pluginId?: string): number;
 }
@@ -196,27 +213,29 @@ export interface PluginToolRegistry {
 // ---------------------------------------------------------------------------
 
 /**
- * Create a new `PluginToolRegistry`.
+ * Crea un nuevo `PluginToolRegistry`.
  *
- * The registry is backed by two in-memory maps:
- * - `byNamespace`: namespaced name → `RegisteredTool` for O(1) lookups.
- * - `byPlugin`: pluginId → Set of namespaced names for efficient per-plugin ops.
+ * El registro está respaldado por dos mapas en memoria:
+ * - `byNamespace`: nombre namespaced → `RegisteredTool` para búsquedas O(1).
+ * - `byPlugin`: pluginId → Set de nombres namespaced para operaciones
+ *   eficientes por plugin.
  *
- * @param workerManager - The worker manager used to dispatch `executeTool` RPC
- *   calls to plugin workers. If not provided, `executeTool` will throw.
+ * @param workerManager - El worker manager usado para despachar llamadas RPC
+ *   `executeTool` a los workers de plugins. Si no se provee, `executeTool`
+ *   lanzará un error.
  *
  * @example
  * ```ts
  * const toolRegistry = createPluginToolRegistry(workerManager);
  *
- * // Register tools from a plugin manifest
+ * // Registra herramientas desde un manifiesto de plugin
  * toolRegistry.registerPlugin("acme.linear", linearManifest);
  *
- * // List all available tools for agents
+ * // Lista todas las herramientas disponibles para agentes
  * const tools = toolRegistry.listTools();
  * // → [{ namespacedName: "acme.linear:search-issues", ... }]
  *
- * // Execute a tool
+ * // Ejecuta una herramienta
  * const result = await toolRegistry.executeTool(
  *   "acme.linear:search-issues",
  *   { query: "auth bug" },
@@ -229,10 +248,10 @@ export function createPluginToolRegistry(
 ): PluginToolRegistry {
   const log = logger.child({ service: "plugin-tool-registry" });
 
-  // Primary index: namespaced name → tool entry
+  // Índice primario: nombre namespaced → entrada de herramienta
   const byNamespace = new Map<string, RegisteredTool>();
 
-  // Secondary index: pluginId → set of namespaced names (for bulk operations)
+  // Índice secundario: pluginId → set de nombres namespaced (para operaciones por lote)
   const byPlugin = new Map<string, Set<string>>();
 
   // -----------------------------------------------------------------------
@@ -298,18 +317,18 @@ export function createPluginToolRegistry(
     registerPlugin(pluginId: string, manifest: PaperclipPluginManifestV1, pluginDbId?: string): void {
       const dbId = pluginDbId ?? pluginId;
 
-      // Remove any previously registered tools for this plugin (idempotent)
+      // Elimina cualquier herramienta previamente registrada para este plugin (idempotente)
       const previousCount = removePluginTools(pluginId);
       if (previousCount > 0) {
         log.debug(
           { pluginId, previousCount },
-          "cleared previous tool registrations before re-registering",
+          "registros previos de herramientas limpiados antes de re-registrar",
         );
       }
 
       const tools = manifest.tools ?? [];
       if (tools.length === 0) {
-        log.debug({ pluginId }, "plugin declares no tools");
+        log.debug({ pluginId }, "el plugin no declara herramientas");
         return;
       }
 
@@ -323,7 +342,7 @@ export function createPluginToolRegistry(
           toolCount: tools.length,
           tools: tools.map((t) => buildName(pluginId, t.name)),
         },
-        `registered ${tools.length} tool(s) for plugin`,
+        `se registraron ${tools.length} herramienta(s) para el plugin`,
       );
     },
 
@@ -332,7 +351,7 @@ export function createPluginToolRegistry(
       if (removed > 0) {
         log.info(
           { pluginId, removedCount: removed },
-          `unregistered ${removed} tool(s) for plugin`,
+          `se desregistraron ${removed} herramienta(s) para el plugin`,
         );
       }
     },
@@ -374,46 +393,46 @@ export function createPluginToolRegistry(
       parameters: unknown,
       runContext: ToolRunContext,
     ): Promise<ToolExecutionResult> {
-      // 1. Resolve the namespaced name
+      // 1. Resuelve el nombre namespaced
       const parsed = parseName(namespacedName);
       if (!parsed) {
         throw new Error(
-          `Invalid tool name "${namespacedName}". Expected format: "<pluginId>${TOOL_NAMESPACE_SEPARATOR}<toolName>"`,
+          `Nombre de herramienta inválido "${namespacedName}". Formato esperado: "<pluginId>${TOOL_NAMESPACE_SEPARATOR}<toolName>"`,
         );
       }
 
       const { pluginId, toolName } = parsed;
 
-      // 2. Verify the tool is registered
+      // 2. Verifica que la herramienta esté registrada
       const tool = byNamespace.get(namespacedName);
       if (!tool) {
         throw new Error(
-          `Tool "${namespacedName}" is not registered. ` +
-          `The plugin may not be installed or its worker may not be running.`,
+          `La herramienta "${namespacedName}" no está registrada. ` +
+          `El plugin puede no estar instalado o su worker puede no estar corriendo.`,
         );
       }
 
-      // 3. Verify the worker manager is available
+      // 3. Verifica que el worker manager esté disponible
       if (!workerManager) {
         throw new Error(
-          `Cannot execute tool "${namespacedName}" — no worker manager configured. ` +
-          `Tool execution requires a PluginWorkerManager.`,
+          `No se puede ejecutar la herramienta "${namespacedName}" — no hay worker manager configurado. ` +
+          `La ejecución de herramientas requiere un PluginWorkerManager.`,
         );
       }
 
-      // 4. Verify the plugin worker is running (use DB UUID for worker lookup)
+      // 4. Verifica que el worker del plugin esté corriendo (usa el UUID de DB para la búsqueda del worker)
       const dbId = tool.pluginDbId;
       if (!workerManager.isRunning(dbId)) {
         throw new Error(
-          `Cannot execute tool "${namespacedName}" — ` +
-          `worker for plugin "${pluginId}" is not running.`,
+          `No se puede ejecutar la herramienta "${namespacedName}" — ` +
+          `el worker del plugin "${pluginId}" no está corriendo.`,
         );
       }
 
-      // 5. Dispatch the executeTool RPC call to the worker
+      // 5. Despacha la llamada RPC executeTool al worker
       log.debug(
         { pluginId, pluginDbId: dbId, toolName, namespacedName, agentId: runContext.agentId, runId: runContext.runId },
-        "executing tool via plugin worker",
+        "ejecutando herramienta vía worker del plugin",
       );
 
       const rpcParams: ExecuteToolParams = {
@@ -433,7 +452,7 @@ export function createPluginToolRegistry(
           hasData: result.data !== undefined,
           hasError: !!result.error,
         },
-        "tool execution completed",
+        "ejecución de herramienta completada",
       );
 
       return { pluginId, toolName, result };

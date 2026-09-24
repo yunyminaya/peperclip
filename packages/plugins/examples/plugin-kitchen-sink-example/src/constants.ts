@@ -59,24 +59,24 @@ export const STREAM_CHANNELS = {
 export const SAFE_COMMANDS = [
   {
     key: "pwd",
-    label: "Print workspace path",
+    label: "Imprimir ruta del workspace",
     command: "pwd",
     args: [] as string[],
-    description: "Prints the current workspace directory.",
+    description: "Imprime el directorio actual del workspace.",
   },
   {
     key: "ls",
-    label: "List workspace files",
+    label: "Listar archivos del workspace",
     command: "ls",
     args: ["-la"] as string[],
-    description: "Lists files in the selected workspace.",
+    description: "Lista los archivos del workspace seleccionado.",
   },
   {
     key: "git-status",
-    label: "Git status",
+    label: "Estado de git",
     command: "git",
     args: ["status", "--short", "--branch"] as string[],
-    description: "Shows git status for the selected workspace.",
+    description: "Muestra el estado de git del workspace seleccionado.",
   },
 ] as const;
 
@@ -98,8 +98,8 @@ export const DEFAULT_CONFIG = {
 
 export const RUNTIME_LAUNCHER: PluginLauncherRegistration = {
   id: "kitchen-sink-runtime-launcher",
-  displayName: "Kitchen Sink Modal",
-  description: "Demonstrates runtime launcher registration from the worker.",
+  displayName: "Modal de Kitchen Sink",
+  description: "Demuestra el registro de lanzador en runtime desde el worker.",
   placementZone: "toolbarButton",
   entityTypes: ["project", "issue"],
   action: {

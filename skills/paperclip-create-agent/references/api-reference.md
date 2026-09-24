@@ -1,6 +1,6 @@
-# Paperclip Create Agent API Reference
+# Referencia de la API para crear agentes en Paperclip
 
-## Core Endpoints
+## Endpoints principales
 
 - `GET /llms/agent-configuration.txt`
 - `GET /llms/agent-configuration/:adapterType.txt`
@@ -17,10 +17,10 @@
 - `POST /api/issues/:issueId/approvals`
 - `GET /api/approvals/:approvalId/issues`
 
-Approval collaboration:
+Colaboración de aprobación:
 
 - `GET /api/approvals/:approvalId`
-- `POST /api/approvals/:approvalId/request-revision` (board)
+- `POST /api/approvals/:approvalId/request-revision` (tablero)
 - `POST /api/approvals/:approvalId/resubmit`
 - `GET /api/approvals/:approvalId/comments`
 - `POST /api/approvals/:approvalId/comments`
@@ -28,7 +28,7 @@ Approval collaboration:
 
 ## `POST /api/companies/:companyId/agent-hires`
 
-Request body matches agent create shape:
+El cuerpo de la solicitud coincide con el formato de creación de agente:
 
 ```json
 {
@@ -58,7 +58,7 @@ Request body matches agent create shape:
 }
 ```
 
-Response:
+Respuesta:
 
 ```json
 {
@@ -77,13 +77,13 @@ Response:
 }
 ```
 
-If company setting disables required approval, `approval` is `null` and the agent is created as `idle`.
+Si el ajuste de la empresa desactiva la aprobación requerida, `approval` es `null` y el agente se crea como `idle`.
 
-`desiredSkills` accepts company skill ids, canonical keys, or a unique slug. The server resolves and stores canonical company skill keys.
+`desiredSkills` acepta ids de habilidades de la empresa, claves canónicas o un slug único. El servidor resuelve y almacena las claves canónicas de habilidades de la empresa.
 
-## Approval Lifecycle
+## Ciclo de vida de la aprobación
 
-Statuses:
+Estados:
 
 - `pending`
 - `revision_requested`
@@ -91,15 +91,15 @@ Statuses:
 - `rejected`
 - `cancelled`
 
-For hire approvals:
+Para aprobaciones de contratación:
 
-- approved: linked agent transitions `pending_approval -> idle`
-- rejected: linked agent is terminated
+- approved: el agente vinculado transiciona `pending_approval -> idle`
+- rejected: el agente vinculado se termina
 
-## Safety Notes
+## Notas de seguridad
 
-- Config read APIs redact obvious secrets.
-- `pending_approval` agents cannot run heartbeats, receive assignments, or create keys.
-- All actions are logged in activity for auditability.
-- Use markdown in issue/approval comments and include links to approval, agent, and source issue.
-- After approval resolution, requester may be woken with `PAPERCLIP_APPROVAL_ID` and should reconcile linked issues.
+- Las APIs de lectura de config redactan secretos obvios.
+- Los agentes `pending_approval` no pueden ejecutar latidos, recibir asignaciones ni crear claves.
+- Todas las acciones se registran en actividad para auditabilidad.
+- Usa markdown en comentarios de issues/aprobaciones e incluye enlaces a la aprobación, el agente y el issue de origen.
+- Después de la resolución de la aprobación, el solicitante puede despertar con `PAPERCLIP_APPROVAL_ID` y debe conciliar los issues vinculados.

@@ -39,17 +39,17 @@ export function printPiStreamEvent(raw: string, _debug: boolean): void {
   const type = asString(parsed.type);
 
   if (type === "agent_start") {
-    console.log(pc.blue("Pi agent started"));
+    console.log(pc.blue("Agente Pi iniciado"));
     return;
   }
 
   if (type === "agent_end") {
-    console.log(pc.blue("Pi agent finished"));
+    console.log(pc.blue("Agente Pi finalizado"));
     return;
   }
 
   if (type === "turn_start") {
-    console.log(pc.blue("Turn started"));
+    console.log(pc.blue("Turno iniciado"));
     return;
   }
 

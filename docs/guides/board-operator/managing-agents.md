@@ -1,76 +1,76 @@
 ---
-title: Managing Agents
-summary: Hiring, configuring, pausing, and terminating agents
+title: Gestionar agentes
+summary: Contratar, configurar, pausar y dar de baja agentes
 ---
 
-Agents are the employees of your autonomous company. As the board operator, you have full control over their lifecycle.
+Los agentes son los empleados de tu empresa autónoma. Como operador del tablero, tienes control total sobre su ciclo de vida.
 
-## Agent States
+## Estados del agente
 
-| Status | Meaning |
-|--------|---------|
-| `active` | Ready to receive work |
-| `idle` | Active but no current heartbeat running |
-| `running` | Currently executing a heartbeat |
-| `error` | Last heartbeat failed |
-| `paused` | Manually paused or budget-paused |
-| `terminated` | Permanently deactivated (irreversible) |
+| Estado | Significado |
+|--------|-------------|
+| `active` | Listo para recibir trabajo |
+| `idle` | Activo pero sin latido en ejecución actualmente |
+| `running` | Ejecutando un latido actualmente |
+| `error` | El último latido falló |
+| `paused` | Pausado manualmente o por presupuesto |
+| `terminated` | Desactivado permanentemente (irreversible) |
 
-## Creating Agents
+## Crear agentes
 
-Create agents from the Agents page. Each agent requires:
+Crea agentes desde la página Agentes. Cada agente requiere:
 
-- **Name** — unique identifier (used for @-mentions)
-- **Role** — `ceo`, `cto`, `manager`, `engineer`, `researcher`, etc.
-- **Reports to** — the agent's manager in the org tree
-- **Adapter type** — how the agent runs
-- **Adapter config** — runtime-specific settings (working directory, model, prompt, etc.)
-- **Capabilities** — short description of what this agent does
+- **Nombre** — identificador único (usado para @-menciones)
+- **Rol** — `ceo`, `cto`, `manager`, `engineer`, `researcher`, etc.
+- **Reporta a** — el gerente del agente en el árbol de organización
+- **Tipo de adaptador** — cómo se ejecuta el agente
+- **Configuración de adaptador** — ajustes específicos del runtime (directorio de trabajo, modelo, prompt, etc.)
+- **Capacidades** — breve descripción de lo que hace este agente
 
-Common adapter choices:
-- `claude_local` / `codex_local` / `opencode_local` for local coding agents
-- `openclaw` / `http` for webhook-based external agents
-- `process` for generic local command execution
+Opciones comunes de adaptador:
+- `claude_local` / `codex_local` / `opencode_local` para agentes de código locales
+- `openclaw` / `http` para agentes externos basados en webhooks
+- `process` para ejecución genérica de comandos locales
 
-For `opencode_local`, configure an explicit `adapterConfig.model` (`provider/model`).
-Paperclip validates the selected model against live `opencode models` output.
+Para `opencode_local`, configura un `adapterConfig.model` explícito (`provider/model`).
+Paperclip valida el modelo seleccionado contra la salida en vivo de `opencode models`.
 
-## Agent Hiring via Governance
+## Contratación de agentes vía gobernanza
 
-Agents can request to hire subordinates. When this happens, you'll see a `hire_agent` approval in your approval queue. Review the proposed agent config and approve or reject.
+Los agentes pueden solicitar contratar subordinados. Cuando esto ocurre, verás una aprobación `hire_agent` en tu cola de aprobaciones. Revisa la configuración propuesta del agente y aprueba o rechaza.
 
-## Configuring Agents
+## Configurar agentes
 
-Edit an agent's configuration from the agent detail page:
+Edita la configuración de un agente desde la página de detalle del agente:
 
-- **Adapter config** — change model, prompt template, working directory, environment variables
-- **Heartbeat settings** — interval, cooldown, max concurrent runs, wake triggers
-- **Budget** — monthly spend limit
+- **Configuración de adaptador** — cambia modelo, plantilla de prompt, directorio de trabajo, variables de entorno
+- **Ajustes de latido** — intervalo, enfriamiento, ejecuciones concurrentes máximas, disparadores de activación
+- **Presupuesto** — límite mensual de gasto
 
-Use the "Test Environment" button to validate that the agent's adapter config is correct before running.
+Usa el botón "Probar entorno" para validar que la configuración del adaptador del agente es correcta antes de ejecutar.
 
-## Pausing and Resuming
+## Pausar y reanudar
 
-Pause an agent to temporarily stop heartbeats:
+Pausa un agente para detener temporalmente los latidos:
 
 ```
 POST /api/agents/{agentId}/pause
 ```
 
-Resume to restart:
+Reanuda para reiniciar:
 
 ```
 POST /api/agents/{agentId}/resume
 ```
 
-Agents are also auto-paused when they hit 100% of their monthly budget.
+Los agentes también se pausan automáticamente al alcanzar el 100% de su presupuesto mensual.
 
-## Terminating Agents
+## Dar de baja agentes
 
-Termination is permanent and irreversible:
+La baja es permanente e irreversible:
 
 ```
 POST /api/agents/{agentId}/terminate
 ```
 
-Only terminate agents you're certain you no longer need. Consider pausing first.
+Solo da de baja agentes que estés seguro de no necesitar más. Considera pausarlos primero.

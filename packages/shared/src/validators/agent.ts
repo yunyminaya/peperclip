@@ -37,7 +37,7 @@ const adapterConfigSchema = z.record(z.unknown()).superRefine((value, ctx) => {
   if (!parsed.success) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "adapterConfig.env must be a map of valid env bindings",
+      message: "adapterConfig.env debe ser un mapa de enlaces de entorno válidos",
       path: ["env"],
     });
   }

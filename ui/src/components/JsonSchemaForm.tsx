@@ -22,22 +22,22 @@ import {
 } from "@/components/ui/select";
 
 // ---------------------------------------------------------------------------
-// Constants
+// Constantes
 // ---------------------------------------------------------------------------
 
 /**
- * Threshold for string length above which a Textarea is used instead of a standard Input.
+ * Umbral de longitud de cadena a partir del cual se usa un Textarea en lugar de un Input estándar.
  */
 const TEXTAREA_THRESHOLD = 200;
 
 // ---------------------------------------------------------------------------
-// Types
+// Tipos
 // ---------------------------------------------------------------------------
 
 /**
- * Subset of JSON Schema properties we understand for form rendering.
- * We intentionally keep this loose (`Record<string, unknown>`) at the top
- * level to match the `JsonSchema` type in shared, but narrow internally.
+ * Subconjunto de propiedades de JSON Schema que entendemos para renderizar formularios.
+ * Intencionalmente lo mantenemos suelto (`Record<string, unknown>`) en el nivel superior
+ * para coincidir con el tipo `JsonSchema` en shared, pero lo estrechamos internamente.
  */
 export interface JsonSchemaNode {
   type?: string | string[];
@@ -79,47 +79,47 @@ export interface JsonSchemaNode {
 }
 
 export interface JsonSchemaFormProps {
-  /** The JSON Schema to render. */
+  /** El JSON Schema a renderizar. */
   schema: JsonSchemaNode;
-  /** Current form values. */
+  /** Valores actuales del formulario. */
   values: Record<string, unknown>;
-  /** Called whenever any field value changes. */
+  /** Se llama cada vez que cambia el valor de un campo. */
   onChange: (values: Record<string, unknown>) => void;
-  /** Validation errors keyed by JSON pointer path (e.g. "/apiKey"). */
+  /** Errores de validación indexados por ruta de puntero JSON (p. ej. "/apiKey"). */
   errors?: Record<string, string>;
-  /** If true, all fields are disabled. */
+  /** Si es true, todos los campos están deshabilitados. */
   disabled?: boolean;
-  /** Additional CSS class for the root container. */
+  /** Clase CSS adicional para el contenedor raíz. */
   className?: string;
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Funciones auxiliares
 // ---------------------------------------------------------------------------
 
-/** Resolve the primary type string from a schema node. */
+/** Resuelve la cadena de tipo principal de un nodo de schema. */
 export function resolveType(schema: JsonSchemaNode): string {
   if (schema.enum) return "enum";
   if (schema.const !== undefined) return "const";
   if (schema.format === "secret-ref") return "secret-ref";
   if (Array.isArray(schema.type)) {
-    // Use the first non-null type
+    // Usar el primer tipo no nulo
     return schema.type.find((t) => t !== "null") ?? "string";
   }
   return schema.type ?? "string";
 }
 
-/** Human-readable label from schema title or property key. */
+/** Etiqueta legible a partir del título del schema o la clave de propiedad. */
 export function labelFromKey(key: string, schema: JsonSchemaNode): string {
   if (schema.title) return schema.title;
-  // Convert camelCase / snake_case to Title Case
+  // Convertir camelCase / snake_case a Mayúsculas Iniciales
   return key
     .replace(/([a-z])([A-Z])/g, "$1 $2")
     .replace(/[_-]+/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/** Produce a sensible default value for a schema node. */
+/** Produce un valor predeterminado sensato para un nodo de schema. */
 export function getDefaultForSchema(schema: JsonSchemaNode): unknown {
   if (schema.default !== undefined) return schema.default;
 
@@ -150,7 +150,7 @@ export function getDefaultForSchema(schema: JsonSchemaNode): unknown {
   }
 }
 
-/** Validate a single field value against schema constraints. Returns error string or null. */
+/** Valida el valor de un campo contra las restricciones del schema. Devuelve el error o null. */
 export function validateField(
   value: unknown,
   schema: JsonSchemaNode,
@@ -158,34 +158,34 @@ export function validateField(
 ): string | null {
   const type = resolveType(schema);
 
-  // Required check
+  // Verificación de requerido
   if (isRequired && (value === undefined || value === null || value === "")) {
-    return "This field is required";
+    return "Este campo es obligatorio";
   }
 
-  // Skip further validation if empty and not required
+  // Omitir más validación si está vacío y no es requerido
   if (value === undefined || value === null || value === "") return null;
 
   if (type === "string" || type === "secret-ref") {
     const str = String(value);
     if (schema.minLength != null && str.length < schema.minLength) {
-      return `Must be at least ${schema.minLength} characters`;
+      return `Debe tener al menos ${schema.minLength} caracteres`;
     }
     if (schema.maxLength != null && str.length > schema.maxLength) {
-      return `Must be at most ${schema.maxLength} characters`;
+      return `Debe tener como máximo ${schema.maxLength} caracteres`;
     }
     if (schema.pattern) {
-      // Guard against ReDoS: reject overly complex patterns from plugin JSON Schemas.
-      // Limit pattern length and run the regex with a defensive try/catch.
+      // Protección contra ReDoS: rechazar patrones demasiado complejos de los JSON Schemas de plugins.
+      // Limitar la longitud del patrón y ejecutar la regex con un try/catch defensivo.
       const MAX_PATTERN_LENGTH = 512;
       if (schema.pattern.length <= MAX_PATTERN_LENGTH) {
         try {
           const re = new RegExp(schema.pattern);
           if (!re.test(str)) {
-            return `Must match pattern: ${schema.pattern}`;
+            return `Debe coincidir con el patrón: ${schema.pattern}`;
           }
         } catch {
-          // Invalid regex in schema — skip
+          // Regex inválida en el schema — omitir
         }
       }
     }
@@ -193,41 +193,41 @@ export function validateField(
 
   if (type === "number" || type === "integer") {
     const num = Number(value);
-    if (isNaN(num)) return "Must be a valid number";
+    if (isNaN(num)) return "Debe ser un número válido";
     if (schema.minimum != null && num < schema.minimum) {
-      return `Must be at least ${schema.minimum}`;
+      return `Debe ser al menos ${schema.minimum}`;
     }
     if (schema.maximum != null && num > schema.maximum) {
-      return `Must be at most ${schema.maximum}`;
+      return `Debe ser como máximo ${schema.maximum}`;
     }
     if (schema.exclusiveMinimum != null && num <= schema.exclusiveMinimum) {
-      return `Must be greater than ${schema.exclusiveMinimum}`;
+      return `Debe ser mayor que ${schema.exclusiveMinimum}`;
     }
     if (schema.exclusiveMaximum != null && num >= schema.exclusiveMaximum) {
-      return `Must be less than ${schema.exclusiveMaximum}`;
+      return `Debe ser menor que ${schema.exclusiveMaximum}`;
     }
     if (type === "integer" && !Number.isInteger(num)) {
-      return "Must be a whole number";
+      return "Debe ser un número entero";
     }
     if (schema.multipleOf != null && num % schema.multipleOf !== 0) {
-      return `Must be a multiple of ${schema.multipleOf}`;
+      return `Debe ser múltiplo de ${schema.multipleOf}`;
     }
   }
 
   if (type === "array") {
     const arr = value as unknown[];
     if (schema.minItems != null && arr.length < schema.minItems) {
-      return `Must have at least ${schema.minItems} items`;
+      return `Debe tener al menos ${schema.minItems} elementos`;
     }
     if (schema.maxItems != null && arr.length > schema.maxItems) {
-      return `Must have at most ${schema.maxItems} items`;
+      return `Debe tener como máximo ${schema.maxItems} elementos`;
     }
   }
 
   return null;
 }
 
-/** Public API for validation */
+/** API pública para validación */
 export function validateJsonSchemaForm(
   schema: JsonSchemaNode,
   values: Record<string, unknown>,
@@ -244,13 +244,13 @@ export function validateJsonSchemaForm(
     const isRequired = requiredFields.has(key);
     const type = resolveType(propSchema);
 
-    // Per-field validation
+    // Validación por campo
     const fieldErr = validateField(value, propSchema, isRequired);
     if (fieldErr) {
       errors[errorKey] = fieldErr;
     }
 
-    // Recurse into objects
+    // Recurrir en objetos
     if (type === "object" && propSchema.properties && typeof value === "object" && value !== null) {
       Object.assign(
         errors,
@@ -258,7 +258,7 @@ export function validateJsonSchemaForm(
       );
     }
 
-    // Recurse into arrays
+    // Recurrir en arreglos
     if (type === "array" && propSchema.items && Array.isArray(value)) {
       const itemSchema = propSchema.items as JsonSchemaNode;
       const isObjectItem = resolveType(itemSchema) === "object";
@@ -289,7 +289,7 @@ export function validateJsonSchemaForm(
   return errors;
 }
 
-/** Public API for default values */
+/** API pública para valores predeterminados */
 export function getDefaultValues(schema: JsonSchemaNode): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   const properties = schema.properties ?? {};
@@ -305,7 +305,7 @@ export function getDefaultValues(schema: JsonSchemaNode): Record<string, unknown
 }
 
 // ---------------------------------------------------------------------------
-// Internal Components
+// Componentes internos
 // ---------------------------------------------------------------------------
 
 interface FieldWrapperProps {
@@ -318,7 +318,7 @@ interface FieldWrapperProps {
 }
 
 /**
- * Common wrapper for form fields that handles labels, descriptions, and error messages.
+ * Envoltorio común para campos de formulario que maneja etiquetas, descripciones y mensajes de error.
  */
 const FieldWrapper = React.memo(({
   label,
@@ -361,12 +361,12 @@ interface FormFieldProps {
   disabled?: boolean;
   label: string;
   isRequired?: boolean;
-  errors: Record<string, string>; // needed for recursion
-  path: string; // needed for recursion error filtering
+  errors: Record<string, string>; // necesario para la recursión
+  path: string; // necesario para filtrar errores en la recursión
 }
 
 /**
- * Specialized field for boolean (checkbox) values.
+ * Campo especializado para valores booleanos (checkbox).
  */
 const BooleanField = React.memo(({
   id,
@@ -417,7 +417,7 @@ const BooleanField = React.memo(({
 BooleanField.displayName = "BooleanField";
 
 /**
- * Specialized field for enum (select) values.
+ * Campo especializado para valores enum (select).
  */
 const EnumField = React.memo(({
   value,
@@ -451,7 +451,7 @@ const EnumField = React.memo(({
       disabled={disabled}
     >
       <SelectTrigger className="w-full">
-        <SelectValue placeholder="Select an option" />
+        <SelectValue placeholder="Selecciona una opción" />
       </SelectTrigger>
       <SelectContent>
         {options.map((option) => (
@@ -467,7 +467,7 @@ const EnumField = React.memo(({
 EnumField.displayName = "EnumField";
 
 /**
- * Specialized field for secret-ref values, providing a toggleable password input.
+ * Campo especializado para valores secret-ref, con un input de contraseña conmutable.
  */
 const SecretField = React.memo(({
   value,
@@ -494,7 +494,7 @@ const SecretField = React.memo(({
       label={label}
       description={
         description ||
-        "This secret is stored securely via the Paperclip secret provider."
+        "Este secreto se almacena de forma segura mediante el proveedor de secretos de Paperclip."
       }
       required={isRequired}
       error={error}
@@ -524,7 +524,7 @@ const SecretField = React.memo(({
             <Eye className="h-4 w-4 text-muted-foreground" />
           )}
           <span className="sr-only">
-            {isVisible ? "Hide secret" : "Show secret"}
+            {isVisible ? "Ocultar secreto" : "Mostrar secreto"}
           </span>
         </Button>
       </div>
@@ -535,7 +535,7 @@ const SecretField = React.memo(({
 SecretField.displayName = "SecretField";
 
 /**
- * Specialized field for numeric (number/integer) values.
+ * Campo especializado para valores numéricos (number/integer).
  */
 const NumberField = React.memo(({
   value,
@@ -583,7 +583,7 @@ const NumberField = React.memo(({
 NumberField.displayName = "NumberField";
 
 /**
- * Specialized field for string values, rendering either an Input or Textarea based on length or format.
+ * Campo especializado para valores de cadena, renderizando un Input o Textarea según la longitud o el formato.
  */
 const StringField = React.memo(({
   value,
@@ -643,7 +643,7 @@ const StringField = React.memo(({
 StringField.displayName = "StringField";
 
 /**
- * Specialized field for array values, handling dynamic addition and removal of items.
+ * Campo especializado para valores de arreglo, con adición y eliminación dinámica de elementos.
  */
 const ArrayField = React.memo(({
   propSchema,
@@ -694,7 +694,7 @@ const ArrayField = React.memo(({
           }}
         >
           <Plus className="mr-2 h-4 w-4" />
-          {isComplex ? "Add item" : "Add"}
+          {isComplex ? "Añadir elemento" : "Añadir"}
         </Button>
       </div>
 
@@ -706,7 +706,7 @@ const ArrayField = React.memo(({
           >
             <div className="flex-1">
               <div className="mb-2 text-xs font-medium text-muted-foreground">
-                Item {index + 1}
+                Elemento {index + 1}
               </div>
               <FormField
                 propSchema={itemSchema}
@@ -739,13 +739,13 @@ const ArrayField = React.memo(({
               }}
             >
               <Trash2 className="h-4 w-4" />
-              <span className="sr-only">Remove item</span>
+              <span className="sr-only">Quitar elemento</span>
             </Button>
           </div>
         ))}
         {items.length === 0 && (
           <div className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
-            No items added yet.
+            Aún no se añadieron elementos.
           </div>
         )}
       </div>
@@ -759,7 +759,7 @@ const ArrayField = React.memo(({
 ArrayField.displayName = "ArrayField";
 
 /**
- * Specialized field for object values, handling recursive rendering of nested properties.
+ * Campo especializado para valores de objeto, con renderizado recursivo de propiedades anidadas.
  */
 const ObjectField = React.memo(({
   propSchema,
@@ -829,7 +829,7 @@ const ObjectField = React.memo(({
 ObjectField.displayName = "ObjectField";
 
 /**
- * Orchestrator component that selects and renders the appropriate field type based on the schema node.
+ * Componente orquestador que selecciona y renderiza el tipo de campo apropiado según el nodo de schema.
  */
 const FormField = React.memo(({
   propSchema,
@@ -931,7 +931,7 @@ const FormField = React.memo(({
         />
       );
 
-    default: // string
+    default: // cadena
       return (
         <StringField
           value={value}
@@ -952,13 +952,13 @@ const FormField = React.memo(({
 FormField.displayName = "FormField";
 
 // ---------------------------------------------------------------------------
-// Main Component
+// Componente principal
 // ---------------------------------------------------------------------------
 
 /**
- * Main JsonSchemaForm component.
- * Renders a form based on a subset of JSON Schema specification.
- * Supports primitive types, enums, secrets, objects, and arrays with recursion.
+ * Componente principal JsonSchemaForm.
+ * Renderiza un formulario basado en un subconjunto de la especificación JSON Schema.
+ * Soporta tipos primitivos, enums, secretos, objetos y arreglos con recursión.
  */
 export function JsonSchemaForm({
   schema,
@@ -971,11 +971,11 @@ export function JsonSchemaForm({
   const type = resolveType(schema);
 
   const handleRootScalarChange = useCallback((newVal: unknown) => {
-    // If root is a scalar, values IS the value
+    // Si la raíz es un escalar, values ES el valor
     onChange(newVal as Record<string, unknown>);
   }, [onChange]);
 
-  // If it's a scalar at root, render a single FormField
+  // Si es un escalar en la raíz, renderizar un solo FormField
   if (type !== "object") {
     return (
       <div className={className}>
@@ -992,7 +992,7 @@ export function JsonSchemaForm({
     );
   }
 
-  // Memoize to avoid re-renders when parent provides new object references
+  // Memoizar para evitar re-renders cuando el padre provee nuevas referencias de objeto
   const properties = useMemo(() => schema.properties ?? {}, [schema.properties]);
   const requiredFields = useMemo(
     () => new Set(schema.required ?? []),
@@ -1014,7 +1014,7 @@ export function JsonSchemaForm({
           className,
         )}
       >
-        No configuration options available.
+        No hay opciones de configuración disponibles.
       </div>
     );
   }

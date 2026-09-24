@@ -31,7 +31,7 @@ function buildKey(prefix: string, objectKey: string): string {
 }
 
 async function toReadableStream(body: unknown): Promise<Readable> {
-  if (!body) throw notFound("Object not found");
+  if (!body) throw notFound("Objeto no encontrado");
   if (body instanceof Readable) return body;
 
   const candidate = body as {
@@ -56,7 +56,7 @@ async function toReadableStream(body: unknown): Promise<Readable> {
     return Readable.from(buffer);
   }
 
-  throw unprocessable("Unsupported S3 body stream type");
+  throw unprocessable("Tipo de stream del cuerpo S3 no soportado");
 }
 
 function toDate(value: Date | undefined): Date | undefined {
@@ -66,8 +66,8 @@ function toDate(value: Date | undefined): Date | undefined {
 export function createS3StorageProvider(config: S3ProviderConfig): StorageProvider {
   const bucket = config.bucket.trim();
   const region = config.region.trim();
-  if (!bucket) throw unprocessable("S3 storage bucket is required");
-  if (!region) throw unprocessable("S3 storage region is required");
+  if (!bucket) throw unprocessable("Se requiere el bucket de almacenamiento S3");
+  if (!region) throw unprocessable("Se requiere la región de almacenamiento S3");
 
   const prefix = normalizePrefix(config.prefix);
   const client = new S3Client({
@@ -111,7 +111,7 @@ export function createS3StorageProvider(config: S3ProviderConfig): StorageProvid
         };
       } catch (err) {
         const code = (err as { name?: string }).name;
-        if (code === "NoSuchKey" || code === "NotFound") throw notFound("Object not found");
+        if (code === "NoSuchKey" || code === "NotFound") throw notFound("Objeto no encontrado");
         throw err;
       }
     },

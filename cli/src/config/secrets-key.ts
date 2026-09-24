@@ -42,7 +42,7 @@ export function ensureLocalSecretsKeyFile(
   try {
     fs.chmodSync(keyFilePath, 0o600);
   } catch {
-    // best effort
+    // mejor esfuerzo
   }
   return { status: "created", path: keyFilePath };
 }

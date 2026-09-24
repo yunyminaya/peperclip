@@ -57,7 +57,7 @@ function sortTopologically(packages) {
   function visit(pkg) {
     if (visited.has(pkg.name)) return;
     if (visiting.has(pkg.name)) {
-      throw new Error(`cycle detected in public package graph at ${pkg.name}`);
+      throw new Error(`se detectó un ciclo en el grafo de paquetes públicos en ${pkg.name}`);
     }
 
     visiting.add(pkg.name);
@@ -124,7 +124,7 @@ function setVersion(version) {
   );
 
   if (cliEntry === nextCliEntry) {
-    throw new Error("failed to rewrite CLI version string in cli/src/index.ts");
+    throw new Error("no se pudo reescribir la cadena de versión de la CLI en cli/src/index.ts");
   }
 
   writeFileSync(cliEntryPath, nextCliEntry);
@@ -140,7 +140,7 @@ function listPackages() {
 function usage() {
   process.stderr.write(
     [
-      "Usage:",
+      "Uso:",
       "  node scripts/release-package-map.mjs list",
       "  node scripts/release-package-map.mjs set-version <version>",
       "",

@@ -1,35 +1,35 @@
 ---
-title: Agents
-summary: Agent lifecycle, configuration, keys, and heartbeat invocation
+title: Agentes
+summary: Ciclo de vida de agentes, configuración, claves e invocación de latidos
 ---
 
-Manage AI agents (employees) within a company.
+Gestiona agentes de IA (empleados) dentro de una empresa.
 
-## List Agents
+## Listar agentes
 
 ```
 GET /api/companies/{companyId}/agents
 ```
 
-Returns all agents in the company.
+Devuelve todos los agentes de la empresa.
 
-## Get Agent
+## Obtener agente
 
 ```
 GET /api/agents/{agentId}
 ```
 
-Returns agent details including chain of command.
+Devuelve los detalles del agente, incluida la cadena de mando.
 
-## Get Current Agent
+## Obtener el agente actual
 
 ```
 GET /api/agents/me
 ```
 
-Returns the agent record for the currently authenticated agent.
+Devuelve el registro del agente autenticado actualmente.
 
-**Response:**
+**Respuesta:**
 
 ```json
 {
@@ -50,7 +50,7 @@ Returns the agent record for the currently authenticated agent.
 }
 ```
 
-## Create Agent
+## Crear agente
 
 ```
 POST /api/companies/{companyId}/agents
@@ -65,7 +65,7 @@ POST /api/companies/{companyId}/agents
 }
 ```
 
-## Update Agent
+## Actualizar agente
 
 ```
 PATCH /api/agents/{agentId}
@@ -75,71 +75,71 @@ PATCH /api/agents/{agentId}
 }
 ```
 
-## Pause Agent
+## Pausar agente
 
 ```
 POST /api/agents/{agentId}/pause
 ```
 
-Temporarily stops heartbeats for the agent.
+Detiene temporalmente los latidos del agente.
 
-## Resume Agent
+## Reanudar agente
 
 ```
 POST /api/agents/{agentId}/resume
 ```
 
-Resumes heartbeats for a paused agent.
+Reanuda los latidos de un agente pausado.
 
-## Terminate Agent
+## Terminar agente
 
 ```
 POST /api/agents/{agentId}/terminate
 ```
 
-Permanently deactivates the agent. **Irreversible.**
+Desactiva permanentemente el agente. **Irreversible.**
 
-## Create API Key
+## Crear clave API
 
 ```
 POST /api/agents/{agentId}/keys
 ```
 
-Returns a long-lived API key for the agent. Store it securely — the full value is only shown once.
+Devuelve una clave API de larga duración para el agente. Guárdala de forma segura — el valor completo solo se muestra una vez.
 
-## Invoke Heartbeat
+## Invocar latido
 
 ```
 POST /api/agents/{agentId}/heartbeat/invoke
 ```
 
-Manually triggers a heartbeat for the agent.
+Activa manualmente un latido para el agente.
 
-## Org Chart
+## Organigrama
 
 ```
 GET /api/companies/{companyId}/org
 ```
 
-Returns the full organizational tree for the company.
+Devuelve el árbol organizacional completo de la empresa.
 
-## List Adapter Models
+## Listar modelos de adaptadores
 
 ```
 GET /api/companies/{companyId}/adapters/{adapterType}/models
 ```
 
-Returns selectable models for an adapter type.
+Devuelve los modelos seleccionables para un tipo de adaptador.
 
-- For `codex_local`, models are merged with OpenAI discovery when available.
-- For `opencode_local`, models are discovered from `opencode models` and returned in `provider/model` format.
-- `opencode_local` does not return static fallback models; if discovery is unavailable, this list can be empty.
+- Para `codex_local`, los modelos se combinan con el descubrimiento de OpenAI cuando está disponible.
+- Para `opencode_local`, los modelos se descubren desde `opencode models` y se devuelven en formato `provider/model`.
+- `opencode_local` no devuelve modelos estáticos de respaldo; si el descubrimiento no está disponible, esta lista puede estar vacía.
 
-## Config Revisions
+## Revisiones de configuración
 
 ```
 GET /api/agents/{agentId}/config-revisions
 POST /api/agents/{agentId}/config-revisions/{revisionId}/rollback
 ```
 
-View and roll back agent configuration changes.
+Ver y revertir cambios de configuración del agente.

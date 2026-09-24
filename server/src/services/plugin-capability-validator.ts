@@ -1,23 +1,25 @@
 /**
- * PluginCapabilityValidator — enforces the capability model at both
- * install-time and runtime.
+ * PluginCapabilityValidator — aplica el modelo de capacidades tanto en
+ * el momento de la instalación como en tiempo de ejecución.
  *
- * Every plugin declares the capabilities it requires in its manifest
- * (`manifest.capabilities`). This service checks those declarations
- * against a mapping of operations → required capabilities so that:
+ * Cada plugin declara las capacidades que necesita en su manifiesto
+ * (`manifest.capabilities`). Este servicio verifica esas declaraciones
+ * contra un mapeo de operaciones → capacidades requeridas para que:
  *
- * 1. **Install-time validation** — `validateManifestCapabilities()`
- *    ensures that declared features (tools, jobs, webhooks, UI slots)
- *    have matching capability entries, giving operators clear feedback
- *    before a plugin is activated.
+ * 1. **Validación en la instalación** — `validateManifestCapabilities()`
+ *    se asegura de que las funcionalidades declaradas (herramientas,
+ *    trabajos, webhooks, slots de UI) tengan entradas de capacidad
+ *    coincidentes, dando a los operadores retroalimentación clara
+ *    antes de que se active un plugin.
  *
- * 2. **Runtime gating** — `checkOperation()` / `assertOperation()` are
- *    called on every worker→host bridge call to enforce least-privilege
- *    access. If a plugin attempts an operation it did not declare, the
- *    call is rejected with a 403 error.
+ * 2. **Control en tiempo de ejecución** — `checkOperation()` /
+ *    `assertOperation()` se llaman en cada llamada del puente
+ *    worker→host para aplicar el acceso de mínimo privilegio.
+ *    Si un plugin intenta una operación que no declaró, la llamada
+ *    se rechaza con un error 403.
  *
- * @see PLUGIN_SPEC.md §15 — Capability Model
- * @see host-client-factory.ts — SDK-side capability gating
+ * @see PLUGIN_SPEC.md §15 — Modelo de capacidades
+ * @see host-client-factory.ts — control de capacidades en el SDK
  */
 import type {
   PluginCapability,
@@ -29,20 +31,20 @@ import { forbidden } from "../errors.js";
 import { logger } from "../middleware/logger.js";
 
 // ---------------------------------------------------------------------------
-// Capability requirement mappings
+// Mapeos de requisitos de capacidades
 // ---------------------------------------------------------------------------
 
 /**
- * Maps high-level operations to the capabilities they require.
+ * Mapea operaciones de alto nivel a las capacidades que requieren.
  *
- * When the bridge receives a call from a plugin worker, the host looks up
- * the operation in this map and checks the plugin's declared capabilities.
- * If any required capability is missing, the call is rejected.
+ * Cuando el puente recibe una llamada de un worker de plugin, el host busca
+ * la operación en este mapa y verifica las capacidades declaradas del plugin.
+ * Si falta alguna capacidad requerida, la llamada se rechaza.
  *
- * @see PLUGIN_SPEC.md §15 — Capability Model
+ * @see PLUGIN_SPEC.md §15 — Modelo de capacidades
  */
 const OPERATION_CAPABILITIES: Record<string, readonly PluginCapability[]> = {
-  // Data read operations
+  // Operaciones de lectura de datos
   "companies.list": ["companies.read"],
   "companies.get": ["companies.read"],
   "projects.list": ["projects.read"],
@@ -62,20 +64,20 @@ const OPERATION_CAPABILITIES: Record<string, readonly PluginCapability[]> = {
   "costs.list": ["costs.read"],
   "costs.get": ["costs.read"],
 
-  // Data write operations
+  // Operaciones de escritura de datos
   "issues.create": ["issues.create"],
   "issues.update": ["issues.update"],
   "issue.comments.create": ["issue.comments.create"],
   "activity.log": ["activity.log.write"],
   "metrics.write": ["metrics.write"],
 
-  // Plugin state operations
+  // Operaciones de estado de plugins
   "plugin.state.get": ["plugin.state.read"],
   "plugin.state.list": ["plugin.state.read"],
   "plugin.state.set": ["plugin.state.write"],
   "plugin.state.delete": ["plugin.state.write"],
 
-  // Runtime / Integration operations
+  // Operaciones de runtime / integración
   "events.subscribe": ["events.subscribe"],
   "events.emit": ["events.emit"],
   "jobs.schedule": ["jobs.schedule"],
@@ -84,15 +86,15 @@ const OPERATION_CAPABILITIES: Record<string, readonly PluginCapability[]> = {
   "http.request": ["http.outbound"],
   "secrets.resolve": ["secrets.read-ref"],
 
-  // Agent tools
+  // Herramientas de agentes
   "agent.tools.register": ["agent.tools.register"],
   "agent.tools.execute": ["agent.tools.register"],
 };
 
 /**
- * Maps UI slot types to the capability required to register them.
+ * Mapea tipos de slots de UI a la capacidad requerida para registrarlos.
  *
- * @see PLUGIN_SPEC.md §19 — UI Extension Model
+ * @see PLUGIN_SPEC.md §19 — Modelo de extensión de UI
  */
 const UI_SLOT_CAPABILITIES: Record<PluginUiSlotType, PluginCapability> = {
   sidebar: "ui.sidebar.register",
@@ -111,8 +113,9 @@ const UI_SLOT_CAPABILITIES: Record<PluginUiSlotType, PluginCapability> = {
 };
 
 /**
- * Launcher placement zones align with host UI surfaces and therefore inherit
- * the same capability requirements as the equivalent slot type.
+ * Las zonas de colocación de launchers se alinean con las superficies de UI
+ * del host y por tanto heredan los mismos requisitos de capacidad que el
+ * tipo de slot equivalente.
  */
 const LAUNCHER_PLACEMENT_CAPABILITIES: Record<
   PluginLauncherPlacementZone,
@@ -134,7 +137,8 @@ const LAUNCHER_PLACEMENT_CAPABILITIES: Record<
 };
 
 /**
- * Maps feature declarations in the manifest to their required capabilities.
+ * Mapea las declaraciones de funcionalidades del manifiesto a sus
+ * capacidades requeridas.
  */
 const FEATURE_CAPABILITIES: Record<string, PluginCapability> = {
   tools: "agent.tools.register",
@@ -143,12 +147,12 @@ const FEATURE_CAPABILITIES: Record<string, PluginCapability> = {
 };
 
 // ---------------------------------------------------------------------------
-// Result types
+// Tipos de resultado
 // ---------------------------------------------------------------------------
 
 /**
- * Result of a capability check. When `allowed` is false, `missing` contains
- * the capabilities that the plugin does not declare but the operation requires.
+ * Resultado de un chequeo de capacidad. Cuando `allowed` es false, `missing`
+ * contiene las capacidades que el plugin no declara pero que la operación requiere.
  */
 export interface CapabilityCheckResult {
   allowed: boolean;
@@ -158,12 +162,12 @@ export interface CapabilityCheckResult {
 }
 
 // ---------------------------------------------------------------------------
-// PluginCapabilityValidator interface
+// Interfaz PluginCapabilityValidator
 // ---------------------------------------------------------------------------
 
 export interface PluginCapabilityValidator {
   /**
-   * Check whether a plugin has a specific capability.
+   * Verifica si un plugin tiene una capacidad específica.
    */
   hasCapability(
     manifest: PaperclipPluginManifestV1,
@@ -171,7 +175,7 @@ export interface PluginCapabilityValidator {
   ): boolean;
 
   /**
-   * Check whether a plugin has all of the specified capabilities.
+   * Verifica si un plugin tiene todas las capacidades especificadas.
    */
   hasAllCapabilities(
     manifest: PaperclipPluginManifestV1,
@@ -179,7 +183,7 @@ export interface PluginCapabilityValidator {
   ): CapabilityCheckResult;
 
   /**
-   * Check whether a plugin has at least one of the specified capabilities.
+   * Verifica si un plugin tiene al menos una de las capacidades especificadas.
    */
   hasAnyCapability(
     manifest: PaperclipPluginManifestV1,
@@ -187,10 +191,11 @@ export interface PluginCapabilityValidator {
   ): boolean;
 
   /**
-   * Check whether a plugin is allowed to perform the named operation.
+   * Verifica si un plugin puede realizar la operación indicada.
    *
-   * Operations are mapped to required capabilities via OPERATION_CAPABILITIES.
-   * Unknown operations are rejected by default.
+   * Las operaciones se mapean a las capacidades requeridas vía
+   * OPERATION_CAPABILITIES. Las operaciones desconocidas se rechazan
+   * por defecto.
    */
   checkOperation(
     manifest: PaperclipPluginManifestV1,
@@ -198,8 +203,8 @@ export interface PluginCapabilityValidator {
   ): CapabilityCheckResult;
 
   /**
-   * Assert that a plugin is allowed to perform an operation.
-   * Throws a 403 HttpError if the capability check fails.
+   * Asegura que un plugin puede realizar una operación.
+   * Lanza un HttpError 403 si falla el chequeo de capacidad.
    */
   assertOperation(
     manifest: PaperclipPluginManifestV1,
@@ -207,8 +212,8 @@ export interface PluginCapabilityValidator {
   ): void;
 
   /**
-   * Assert that a plugin has a specific capability.
-   * Throws a 403 HttpError if the capability is missing.
+   * Asegura que un plugin tiene una capacidad específica.
+   * Lanza un HttpError 403 si falta la capacidad.
    */
   assertCapability(
     manifest: PaperclipPluginManifestV1,
@@ -216,7 +221,7 @@ export interface PluginCapabilityValidator {
   ): void;
 
   /**
-   * Check whether a plugin can register the given UI slot type.
+   * Verifica si un plugin puede registrar el tipo de slot de UI dado.
    */
   checkUiSlot(
     manifest: PaperclipPluginManifestV1,
@@ -224,51 +229,54 @@ export interface PluginCapabilityValidator {
   ): CapabilityCheckResult;
 
   /**
-   * Validate that a manifest's declared capabilities are consistent with its
-   * declared features (tools, jobs, webhooks, UI slots).
+   * Valida que las capacidades declaradas de un manifiesto sean consistentes
+   * con sus funcionalidades declaradas (herramientas, trabajos, webhooks,
+   * slots de UI).
    *
-   * Returns all missing capabilities rather than failing on the first one.
-   * This is useful for install-time validation to give comprehensive feedback.
+   * Devuelve todas las capacidades faltantes en lugar de fallar con la primera.
+   * Esto es útil para la validación en la instalación, para dar
+   * retroalimentación completa.
    */
   validateManifestCapabilities(
     manifest: PaperclipPluginManifestV1,
   ): CapabilityCheckResult;
 
   /**
-   * Get the capabilities required for a named operation.
-   * Returns an empty array if the operation is unknown.
+   * Obtiene las capacidades requeridas para una operación indicada.
+   * Devuelve un arreglo vacío si la operación es desconocida.
    */
   getRequiredCapabilities(operation: string): readonly PluginCapability[];
 
   /**
-   * Get the capability required for a UI slot type.
+   * Obtiene la capacidad requerida para un tipo de slot de UI.
    */
   getUiSlotCapability(slotType: PluginUiSlotType): PluginCapability;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// Fábrica
 // ---------------------------------------------------------------------------
 
 /**
- * Create a PluginCapabilityValidator.
+ * Crea un PluginCapabilityValidator.
  *
- * This service enforces capability gates for plugin operations.  The host
- * uses it to verify that a plugin's declared capabilities permit the
- * operation it is attempting, both at install time (manifest validation)
- * and at runtime (bridge call gating).
+ * Este servicio aplica los controles de capacidad para operaciones de
+ * plugins. El host lo usa para verificar que las capacidades declaradas de
+ * un plugin permiten la operación que intenta, tanto en la instalación
+ * (validación del manifiesto) como en tiempo de ejecución (control de
+ * llamadas del puente).
  *
- * Usage:
+ * Uso:
  * ```ts
  * const validator = pluginCapabilityValidator();
  *
- * // Runtime: gate a bridge call
+ * // Tiempo de ejecución: controlar una llamada del puente
  * validator.assertOperation(plugin.manifestJson, "issues.create");
  *
- * // Install time: validate manifest consistency
+ * // Instalación: validar la consistencia del manifiesto
  * const result = validator.validateManifestCapabilities(manifest);
  * if (!result.allowed) {
- *   throw badRequest("Missing capabilities", result.missing);
+ *   throw badRequest("Faltan capacidades", result.missing);
  * }
  * ```
  */
@@ -276,7 +284,7 @@ export function pluginCapabilityValidator(): PluginCapabilityValidator {
   const log = logger.child({ service: "plugin-capability-validator" });
 
   // -----------------------------------------------------------------------
-  // Internal helpers
+  // Utilidades internas
   // -----------------------------------------------------------------------
 
   function capabilitySet(manifest: PaperclipPluginManifestV1): Set<PluginCapability> {
@@ -289,13 +297,13 @@ export function pluginCapabilityValidator(): PluginCapabilityValidator {
     missing: PluginCapability[],
   ): string {
     return (
-      `Plugin '${manifest.id}' is not allowed to perform '${operation}'. ` +
-      `Missing required capabilities: ${missing.join(", ")}`
+      `El plugin '${manifest.id}' no tiene permiso para realizar '${operation}'. ` +
+      `Faltan las capacidades requeridas: ${missing.join(", ")}`
     );
   }
 
   // -----------------------------------------------------------------------
-  // Public API
+  // API pública
   // -----------------------------------------------------------------------
 
   return {
@@ -324,7 +332,7 @@ export function pluginCapabilityValidator(): PluginCapabilityValidator {
       if (!required) {
         log.warn(
           { pluginId: manifest.id, operation },
-          "capability check for unknown operation – rejecting by default",
+          "chequeo de capacidad para operación desconocida – rechazando por defecto",
         );
         return {
           allowed: false,
@@ -340,7 +348,7 @@ export function pluginCapabilityValidator(): PluginCapabilityValidator {
       if (missing.length > 0) {
         log.debug(
           { pluginId: manifest.id, operation, missing },
-          "capability check failed",
+          "chequeo de capacidad fallido",
         );
       }
 
@@ -357,7 +365,7 @@ export function pluginCapabilityValidator(): PluginCapabilityValidator {
       if (!result.allowed) {
         const msg = result.missing.length > 0
           ? buildForbiddenMessage(manifest, operation, result.missing)
-          : `Plugin '${manifest.id}' attempted unknown operation '${operation}'`;
+          : `El plugin '${manifest.id}' intentó una operación desconocida '${operation}'`;
         throw forbidden(msg);
       }
     },
@@ -365,7 +373,7 @@ export function pluginCapabilityValidator(): PluginCapabilityValidator {
     assertCapability(manifest, capability) {
       if (!this.hasCapability(manifest, capability)) {
         throw forbidden(
-          `Plugin '${manifest.id}' lacks required capability '${capability}'`,
+          `El plugin '${manifest.id}' no tiene la capacidad requerida '${capability}'`,
         );
       }
     },
@@ -394,7 +402,7 @@ export function pluginCapabilityValidator(): PluginCapabilityValidator {
       const declared = capabilitySet(manifest);
       const allMissing: PluginCapability[] = [];
 
-      // Check feature declarations → required capabilities
+      // Revisar declaraciones de funcionalidades → capacidades requeridas
       for (const [feature, requiredCap] of Object.entries(FEATURE_CAPABILITIES)) {
         const featureValue = manifest[feature as keyof PaperclipPluginManifestV1];
         if (Array.isArray(featureValue) && featureValue.length > 0) {
@@ -404,7 +412,7 @@ export function pluginCapabilityValidator(): PluginCapabilityValidator {
         }
       }
 
-      // Check UI slots → required capabilities
+      // Revisar slots de UI → capacidades requeridas
       const uiSlots = manifest.ui?.slots ?? [];
       if (uiSlots.length > 0) {
         for (const slot of uiSlots) {
@@ -417,7 +425,7 @@ export function pluginCapabilityValidator(): PluginCapabilityValidator {
         }
       }
 
-      // Check launcher declarations → required capabilities
+      // Revisar declaraciones de launchers → capacidades requeridas
       const launchers = [
         ...(manifest.launchers ?? []),
         ...(manifest.ui?.launchers ?? []),

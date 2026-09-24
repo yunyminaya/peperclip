@@ -21,7 +21,7 @@ export function resolvePaperclipHomeDir(): string {
 export function resolvePaperclipInstanceId(): string {
   const raw = process.env.PAPERCLIP_INSTANCE_ID?.trim() || DEFAULT_INSTANCE_ID;
   if (!INSTANCE_ID_RE.test(raw)) {
-    throw new Error(`Invalid PAPERCLIP_INSTANCE_ID '${raw}'.`);
+    throw new Error(`PAPERCLIP_INSTANCE_ID inválido '${raw}'.`);
   }
   return raw;
 }
@@ -57,7 +57,7 @@ export function resolveDefaultBackupDir(): string {
 export function resolveDefaultAgentWorkspaceDir(agentId: string): string {
   const trimmed = agentId.trim();
   if (!PATH_SEGMENT_RE.test(trimmed)) {
-    throw new Error(`Invalid agent id for workspace path '${agentId}'.`);
+    throw new Error(`Id de agente inválido para la ruta del workspace '${agentId}'.`);
   }
   return path.resolve(resolvePaperclipInstanceRoot(), "workspaces", trimmed);
 }
@@ -79,7 +79,7 @@ export function resolveManagedProjectWorkspaceDir(input: {
   const companyId = input.companyId.trim();
   const projectId = input.projectId.trim();
   if (!companyId || !projectId) {
-    throw new Error("Managed project workspace path requires companyId and projectId.");
+    throw new Error("La ruta del workspace del proyecto gestionado requiere companyId y projectId.");
   }
   return path.resolve(
     resolvePaperclipInstanceRoot(),

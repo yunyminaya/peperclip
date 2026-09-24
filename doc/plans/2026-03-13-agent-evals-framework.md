@@ -1,219 +1,219 @@
-# Agent Evals Framework Plan
+# Plan del framework de evals de agentes
 
-Date: 2026-03-13
+Fecha: 2026-03-13
 
-## Context
+## Contexto
 
-We need evals for the thing Paperclip actually ships:
+Necesitamos evals para lo que Paperclip realmente envía:
 
-- agent behavior produced by adapter config
-- prompt templates and bootstrap prompts
-- skill sets and skill instructions
-- model choice
-- runtime policy choices that affect outcomes and cost
+- comportamiento de agentes producido por la configuración del adaptador
+- plantillas de prompts y prompts bootstrap
+- conjuntos de habilidades e instrucciones de habilidades
+- elección de modelo
+- elecciones de política de tiempo de ejecución que afectan resultados y costo
 
-We do **not** primarily need a fine-tuning pipeline.
-We need a regression framework that can answer:
+Principalmente **no** necesitamos un pipeline de fine-tuning.
+Necesitamos un framework de regresión que pueda responder:
 
-- if we change prompts or skills, do agents still do the right thing?
-- if we switch models, what got better, worse, or more expensive?
-- if we optimize tokens, did we preserve task outcomes?
-- can we grow the suite over time from real Paperclip usage?
+- si cambiamos prompts o habilidades, ¿los agentes aún hacen lo correcto?
+- si cambiamos de modelo, ¿qué mejoró, empeoró o se volvió más caro?
+- si optimizamos tokens, ¿preservamos los resultados de tareas?
+- ¿podemos hacer crecer la suite con el tiempo desde el uso real de Paperclip?
 
-This plan is based on:
+Este plan se basa en:
 
 - `doc/GOAL.md`
 - `doc/PRODUCT.md`
 - `doc/SPEC-implementation.md`
 - `docs/agents-runtime.md`
 - `doc/plans/2026-03-13-TOKEN-OPTIMIZATION-PLAN.md`
-- Discussion #449: <https://github.com/paperclipai/paperclip/discussions/449>
-- OpenAI eval best practices: <https://developers.openai.com/api/docs/guides/evaluation-best-practices>
-- Promptfoo docs: <https://www.promptfoo.dev/docs/configuration/test-cases/> and <https://www.promptfoo.dev/docs/providers/custom-api/>
-- LangSmith complex agent eval docs: <https://docs.langchain.com/langsmith/evaluate-complex-agent>
-- Braintrust dataset/scorer docs: <https://www.braintrust.dev/docs/annotate/datasets> and <https://www.braintrust.dev/docs/evaluate/write-scorers>
+- Discusión #449: <https://github.com/paperclipai/paperclip/discussions/449>
+- Mejores prácticas de evals de OpenAI: <https://developers.openai.com/api/docs/guides/evaluation-best-practices>
+- Docs de Promptfoo: <https://www.promptfoo.dev/docs/configuration/test-cases/> y <https://www.promptfoo.dev/docs/providers/custom-api/>
+- Docs de evals de agentes complejos de LangSmith: <https://docs.langchain.com/langsmith/evaluate-complex-agent>
+- Docs de datasets/scorers de Braintrust: <https://www.braintrust.dev/docs/annotate/datasets> y <https://www.braintrust.dev/docs/evaluate/write-scorers>
 
-## Recommendation
+## Recomendación
 
-Paperclip should take a **two-stage approach**:
+Paperclip debería tomar un **enfoque de dos etapas**:
 
-1. **Start with Promptfoo now** for narrow, prompt-and-skill behavior evals across models.
-2. **Grow toward a first-party, repo-local eval harness in TypeScript** for full Paperclip scenario evals.
+1. **Comenzar con Promptfoo ahora** para evals estrechas de comportamiento de prompts y habilidades entre modelos.
+2. **Crecer hacia un harness propio, local al repo en TypeScript** para evals completas de escenarios de Paperclip.
 
-So the recommendation is no longer “skip Promptfoo.” It is:
+Así que la recomendación ya no es "omitir Promptfoo". Es:
 
-- use Promptfoo as the fastest bootstrap layer
-- keep eval cases and fixtures in this repo
-- avoid making Promptfoo config the deepest long-term abstraction
+- usar Promptfoo como la capa de arranque más rápida
+- mantener los casos de eval y fixtures en este repo
+- evitar hacer de la configuración de Promptfoo la abstracción más profunda a largo plazo
 
-More specifically:
+Más específicamente:
 
-1. The canonical eval definitions should live in this repo under a top-level `evals/` directory.
-2. `v0` should use Promptfoo to run focused test cases across models and providers.
-3. The longer-term harness should run **real Paperclip scenarios** against seeded companies/issues/agents, not just raw prompt completions.
-4. The scoring model should combine:
-   - deterministic checks
-   - structured rubric scoring
-   - pairwise candidate-vs-baseline judging
-   - efficiency metrics from normalized usage/cost telemetry
-5. The framework should compare **bundles**, not just models.
+1. Las definiciones canónicas de eval deberían vivir en este repo bajo un directorio `evals/` de nivel superior.
+2. `v0` debería usar Promptfoo para ejecutar casos de prueba enfocados entre modelos y proveedores.
+3. El harness de largo plazo debería ejecutar **escenarios reales de Paperclip** contra empresas/issues/agentes sembrados, no solo completitudes crudas de prompts.
+4. El modelo de puntuación debería combinar:
+   - verificaciones deterministas
+   - puntuación estructurada de rúbrica
+   - juicio pareado candidato-vs-línea-base
+   - métricas de eficiencia desde telemetría normalizada de uso/costo
+5. El framework debería comparar **bundles**, no solo modelos.
 
-A bundle is:
+Un bundle es:
 
-- adapter type
-- model id
-- prompt template(s)
-- bootstrap prompt template
-- skill allowlist / skill content version
-- relevant runtime flags
+- tipo de adaptador
+- id de modelo
+- plantilla(s) de prompt
+- plantilla de prompt bootstrap
+- lista de permitidos de habilidades / versión de contenido de habilidades
+- flags relevantes de tiempo de ejecución
 
-That is the right unit because that is what actually changes behavior in Paperclip.
+Esa es la unidad correcta porque eso es lo que realmente cambia el comportamiento en Paperclip.
 
-## Why This Is The Right Shape
+## Por qué esta es la forma correcta
 
-### 1. We need to evaluate system behavior, not only prompt output
+### 1. Necesitamos evaluar el comportamiento del sistema, no solo la salida del prompt
 
-Prompt-only tools are useful, but Paperclip’s real failure modes are often:
+Las herramientas solo de prompts son útiles, pero los modos de falla reales de Paperclip son a menudo:
 
-- wrong issue chosen
-- wrong API call sequence
-- bad delegation
-- failure to respect approval boundaries
-- stale session behavior
-- over-reading context
-- claiming completion without producing artifacts or comments
+- issue equivocado elegido
+- secuencia equivocada de llamadas a la API
+- mala delegación
+- falla en respetar límites de aprobación
+- comportamiento de sesión obsoleta
+- sobre-lectura de contexto
+- afirmar completitud sin producir artefactos o comentarios
 
-Those are control-plane behaviors. They require scenario setup, execution, and trace inspection.
+Esos son comportamientos del plano de control. Requieren configuración de escenario, ejecución e inspección de trazas.
 
-### 2. The repo is already TypeScript-first
+### 2. El repo ya es TypeScript-first
 
-The existing monorepo already uses:
+El monorepo existente ya usa:
 
 - `pnpm`
 - `tsx`
 - `vitest`
-- TypeScript across server, UI, shared contracts, and adapters
+- TypeScript en servidor, UI, contratos compartidos y adaptadores
 
-A TypeScript-first harness will fit the repo and CI better than introducing a Python-first test subsystem as the default path.
+Un harness TypeScript-first encajará mejor en el repo y CI que introducir un subsistema de pruebas Python-first como ruta por defecto.
 
-Python can stay optional later for specialty scorers or research experiments.
+Python puede quedar opcional más tarde para scorers especializados o experimentos de investigación.
 
-### 3. We need provider/model comparison without vendor lock-in
+### 3. Necesitamos comparación de proveedores/modelos sin vendor lock-in
 
-OpenAI’s guidance is directionally right:
+La guía de OpenAI es direccionalmente correcta:
 
-- eval early and often
-- use task-specific evals
-- log everything
-- prefer pairwise/comparison-style judging over open-ended scoring
+- evaluar temprano y seguido
+- usar evals específicas de la tarea
+- registrar todo
+- preferir juzgar estilo comparación/pareado sobre puntuación abierta
 
-But OpenAI’s Evals API is not the right control plane for Paperclip as the primary system because our target is explicitly multi-model and multi-provider.
+Pero la API de Evals de OpenAI no es el plano de control correcto para Paperclip como sistema primario porque nuestro objetivo es explícitamente multi-modelo y multi-proveedor.
 
-### 4. Hosted eval products are useful, and Promptfoo is the right bootstrap tool
+### 4. Los productos de evals hospedados son útiles, y Promptfoo es la herramienta correcta de arranque
 
-The current tradeoff:
+El tradeoff actual:
 
-- Promptfoo is very good for local, repo-based prompt/provider matrices and CI integration.
-- LangSmith is strong on trajectory-style agent evals.
-- Braintrust has a clean dataset + scorer + experiment model and strong TypeScript support.
+- Promptfoo es muy bueno para matrices locales basadas en repo de prompts/proveedores e integración CI.
+- LangSmith es fuerte en evals de agentes estilo trayectoria.
+- Braintrust tiene un modelo limpio de dataset + scorer + experimento y fuerte soporte TypeScript.
 
-The community suggestion is directionally right:
+La sugerencia de la comunidad es direccionalmente correcta:
 
-- Promptfoo lets us start small
-- it supports simple assertions like contains / not-contains / regex / custom JS
-- it can run the same cases across multiple models
-- it supports OpenRouter
-- it can move into CI later
+- Promptfoo nos permite empezar pequeño
+- soporta aserciones simples como contains / not-contains / regex / JS personalizado
+- puede ejecutar los mismos casos entre múltiples modelos
+- soporta OpenRouter
+- puede entrar a CI más tarde
 
-That makes it the best `v0` tool for “did this prompt/skill/model change obviously regress?”
+Eso lo hace la mejor herramienta `v0` para "¿este cambio de prompt/habilidad/modelo obviamente regresó algo?"
 
-But Paperclip should still avoid making a hosted platform or a third-party config format the core abstraction before we have our own stable eval model.
+Pero Paperclip aún debería evitar hacer de una plataforma hospedada o un formato de configuración de terceros la abstracción central antes de tener nuestro propio modelo de eval estable.
 
-The right move is:
+El movimiento correcto es:
 
-- start with Promptfoo for quick wins
-- keep the data portable and repo-owned
-- build a thin first-party harness around Paperclip concepts as the system grows
-- optionally export to or integrate with other tools later if useful
+- comenzar con Promptfoo para ganancias rápidas
+- mantener los datos portables y propiedad del repo
+- construir un harness propio delgado alrededor de conceptos de Paperclip a medida que el sistema crece
+- opcionalmente exportar a o integrar con otras herramientas más tarde si es útil
 
-## What We Should Evaluate
+## Qué deberíamos evaluar
 
-We should split evals into four layers.
+Deberíamos dividir las evals en cuatro capas.
 
-### Layer 1: Deterministic contract evals
+### Capa 1: Evals deterministas de contrato
 
-These should require no judge model.
+Estas no deberían requerir un modelo juez.
 
-Examples:
+Ejemplos:
 
-- agent comments on the assigned issue
-- no mutation outside the agent’s company
-- approval-required actions do not bypass approval flow
-- task transitions are legal
-- output contains required structured fields
-- artifact links exist when the task required an artifact
-- no full-thread refetch on delta-only cases once the API supports it
+- el agente comenta en el issue asignado
+- sin mutación fuera de la empresa del agente
+- las acciones que requieren aprobación no evaden el flujo de aprobación
+- las transiciones de tareas son legales
+- la salida contiene los campos estructurados requeridos
+- los enlaces de artefactos existen cuando la tarea requería un artefacto
+- sin re-obtención completa del hilo en casos solo-delta una vez que la API lo soporta
 
-These are cheap, reliable, and should be the first line of defense.
+Estas son baratas, confiables y deberían ser la primera línea de defensa.
 
-### Layer 2: Single-step behavior evals
+### Capa 2: Evals de comportamiento de un solo paso
 
-These test narrow behaviors in isolation.
+Estas prueban comportamientos estrechos en aislamiento.
 
-Examples:
+Ejemplos:
 
-- chooses the correct issue from inbox
-- writes a reasonable first status comment
-- decides to ask for approval instead of acting directly
-- delegates to the correct report
-- recognizes blocked state and reports it clearly
+- elige el issue correcto desde la bandeja de entrada
+- escribe un primer comentario de estado razonable
+- decide pedir aprobación en lugar de actuar directamente
+- delega al reporte correcto
+- reconoce el estado bloqueado y lo reporta claramente
 
-These are the closest thing to prompt evals, but still framed in Paperclip terms.
+Estas son lo más cercano a evals de prompts, pero aún enmarcadas en términos de Paperclip.
 
-### Layer 3: End-to-end scenario evals
+### Capa 3: Evals de escenario de punta a punta
 
-These run a full heartbeat or short sequence of heartbeats against a seeded scenario.
+Estas ejecutan un latido completo o una secuencia corta de latidos contra un escenario sembrado.
 
-Examples:
+Ejemplos:
 
-- new assignment pickup
-- long-thread continuation
-- mention-triggered clarification
-- approval-gated hire request
-- manager escalation
-- workspace coding task that must leave a meaningful issue update
+- recepción de nueva asignación
+- continuación de hilo largo
+- aclaración disparada por mención
+- solicitud de contratación con puerta de aprobación
+- escalación del gerente
+- tarea de codificación en workspace que debe dejar una actualización significativa del issue
 
-These should evaluate both final state and trace quality.
+Estas deberían evaluar tanto el estado final como la calidad de la traza.
 
-### Layer 4: Efficiency and regression evals
+### Capa 4: Evals de eficiencia y regresión
 
-These are not “did the answer look good?” evals. They are “did we preserve quality while improving cost/latency?” evals.
+Estas no son evals de "¿la respuesta se veía bien?". Son evals de "¿preservamos la calidad mientras mejoramos costo/latencia?".
 
-Examples:
+Ejemplos:
 
-- normalized input tokens per successful heartbeat
-- normalized tokens per completed issue
-- session reuse rate
-- full-thread reload rate
-- wall-clock duration
-- cost per successful scenario
+- tokens de entrada normalizados por latido exitoso
+- tokens normalizados por issue completado
+- tasa de reutilización de sesiones
+- tasa de recarga completa de hilos
+- duración de reloj de pared
+- costo por escenario exitoso
 
-This layer is especially important for token optimization work.
+Esta capa es especialmente importante para el trabajo de optimización de tokens.
 
-## Core Design
+## Diseño central
 
-## 1. Canonical object: `EvalCase`
+## 1. Objeto canónico: `EvalCase`
 
-Each eval case should define:
+Cada caso de eval debería definir:
 
-- scenario setup
-- target bundle(s)
-- execution mode
-- expected invariants
-- scoring rubric
-- tags/metadata
+- configuración del escenario
+- bundle(s) objetivo
+- modo de ejecución
+- invariantes esperadas
+- rúbrica de puntuación
+- tags/metadatos
 
-Suggested shape:
+Forma sugerida:
 
 ```ts
 type EvalCase = {
@@ -235,11 +235,11 @@ type EvalCase = {
 };
 ```
 
-The important part is that the case is about a Paperclip scenario, not a standalone prompt string.
+Lo importante es que el caso es sobre un escenario de Paperclip, no sobre una cadena de prompt standalone.
 
-## 2. Canonical object: `EvalBundle`
+## 2. Objeto canónico: `EvalBundle`
 
-Suggested shape:
+Forma sugerida:
 
 ```ts
 type EvalBundle = {
@@ -253,159 +253,159 @@ type EvalBundle = {
 };
 ```
 
-Every comparison run should say which bundle was tested.
+Cada ejecución de comparación debería decir qué bundle se probó.
 
-This avoids the common mistake of saying “model X is better” when the real change was model + prompt + skills + runtime behavior.
+Esto evita el error común de decir "el modelo X es mejor" cuando el cambio real fue modelo + prompt + habilidades + comportamiento de tiempo de ejecución.
 
-## 3. Canonical output: `EvalTrace`
+## 3. Salida canónica: `EvalTrace`
 
-We should capture a normalized trace for scoring:
+Deberíamos capturar una traza normalizada para puntuación:
 
-- run ids
-- prompts actually sent
-- session reuse metadata
-- issue mutations
-- comments created
-- approvals requested
-- artifacts created
-- token/cost telemetry
-- timing
-- raw outputs
+- ids de ejecuciones
+- prompts realmente enviados
+- metadatos de reutilización de sesión
+- mutaciones de issues
+- comentarios creados
+- aprobaciones solicitadas
+- artefactos creados
+- telemetría de tokens/costo
+- tiempos
+- salidas crudas
 
-The scorer layer should never need to scrape ad hoc logs.
+La capa de scorers nunca debería necesitar raspar registros ad hoc.
 
-## Scoring Framework
+## Framework de puntuación
 
-## 1. Hard checks first
+## 1. Verificaciones duras primero
 
-Every eval should start with pass/fail checks that can invalidate the run immediately.
+Cada eval debería comenzar con verificaciones pasa/falla que pueden invalidar la ejecución de inmediato.
 
-Examples:
+Ejemplos:
 
-- touched wrong company
-- skipped required approval
-- no issue update produced
-- returned malformed structured output
-- marked task done without required artifact
+- tocó la empresa equivocada
+- omitió una aprobación requerida
+- no produjo actualización de issue
+- devolvió salida estructurada malformada
+- marcó la tarea como hecha sin el artefacto requerido
 
-If a hard check fails, the scenario fails regardless of style or judge score.
+Si una verificación dura falla, el escenario falla sin importar el estilo o el puntaje del juez.
 
-## 2. Rubric scoring second
+## 2. Puntuación de rúbrica segundo
 
-Rubric scoring should use narrow criteria, not vague “how good was this?” prompts.
+La puntuación de rúbrica debería usar criterios estrechos, no prompts vagos de "¿qué tan bueno estuvo esto?".
 
-Good rubric dimensions:
+Buenas dimensiones de rúbrica:
 
-- task understanding
-- governance compliance
-- useful progress communication
-- correct delegation
-- evidence of completion
-- concision / unnecessary verbosity
+- comprensión de la tarea
+- cumplimiento de gobernanza
+- comunicación útil de progreso
+- delegación correcta
+- evidencia de completitud
+- concisión / verbosidad innecesaria
 
-Each rubric should be a small 0-1 or 0-2 decision, not a mushy 1-10 scale.
+Cada rúbrica debería ser una decisión pequeña 0-1 o 0-2, no una escala amorfa de 1-10.
 
-## 3. Pairwise judging for candidate vs baseline
+## 3. Juicio pareado para candidato vs línea base
 
-OpenAI’s eval guidance is right that LLMs are better at discrimination than open-ended generation.
+La guía de evals de OpenAI acierta en que los LLMs son mejores discriminando que generando de forma abierta.
 
-So for non-deterministic quality checks, the default pattern should be:
+Así que para verificaciones de calidad no deterministas, el patrón default debería ser:
 
-- run baseline bundle on the case
-- run candidate bundle on the same case
-- ask a judge model which is better on explicit criteria
-- allow `baseline`, `candidate`, or `tie`
+- ejecutar el bundle de línea base en el caso
+- ejecutar el bundle candidato en el mismo caso
+- pedir a un modelo juez cuál es mejor en criterios explícitos
+- permitir `baseline`, `candidate` o `tie`
 
-This is better than asking a judge for an absolute quality score with no anchor.
+Esto es mejor que pedir al juez un puntaje absoluto de calidad sin ancla.
 
-## 4. Efficiency scoring is separate
+## 4. La puntuación de eficiencia es separada
 
-Do not bury efficiency inside a single blended quality score.
+No enterrar la eficiencia dentro de un solo puntaje mezclado de calidad.
 
-Record it separately:
+Registrarla por separado:
 
-- quality score
-- cost score
-- latency score
+- puntaje de calidad
+- puntaje de costo
+- puntaje de latencia
 
-Then compute a summary decision such as:
+Luego calcular una decisión resumen como:
 
-- candidate is acceptable only if quality is non-inferior and efficiency is improved
+- el candidato es aceptable solo si la calidad es no-inferior y la eficiencia mejoró
 
-That is much easier to reason about than one magic number.
+Eso es mucho más fácil de razonar que un número mágico.
 
-## Suggested Decision Rule
+## Regla de decisión sugerida
 
-For PR gating:
+Para gating de PR:
 
-1. No hard-check regressions.
-2. No significant regression on required scenario pass rate.
-3. No significant regression on key rubric dimensions.
-4. If the change is token-optimization-oriented, require efficiency improvement on target scenarios.
+1. Sin regresiones en verificaciones duras.
+2. Sin regresión significativa en la tasa de pase de escenarios requeridos.
+3. Sin regresión significativa en dimensiones clave de rúbrica.
+4. Si el cambio es orientado a optimización de tokens, requerir mejora de eficiencia en los escenarios objetivo.
 
-For deeper comparison reports, show:
+Para reportes de comparación más profundos, mostrar:
 
-- pass rate
-- pairwise wins/losses/ties
-- median normalized tokens
-- median wall-clock time
-- cost deltas
+- tasa de pase
+- victorias/derrotas/empates pareados
+- mediana de tokens normalizados
+- mediana de tiempo de reloj de pared
+- deltas de costo
 
-## Dataset Strategy
+## Estrategia de dataset
 
-We should explicitly build the dataset from three sources.
+Deberíamos construir explícitamente el dataset desde tres fuentes.
 
-### 1. Hand-authored seed cases
+### 1. Casos semilla escritos a mano
 
-Start here.
+Comenzar aquí.
 
-These should cover core product invariants:
+Estos deberían cubrir invariantes centrales del producto:
 
-- assignment pickup
-- status update
-- blocked reporting
-- delegation
-- approval request
-- cross-company access denial
-- issue comment follow-up
+- recepción de asignación
+- actualización de estado
+- reporte bloqueado
+- delegación
+- solicitud de aprobación
+- denegación de acceso entre empresas
+- seguimiento de comentario de issue
 
-These are small, clear, and stable.
+Estos son pequeños, claros y estables.
 
-### 2. Production-derived cases
+### 2. Casos derivados de producción
 
-Per OpenAI’s guidance, we should log everything and mine real usage for eval cases.
+Según la guía de OpenAI, deberíamos registrar todo y minar el uso real para casos de eval.
 
-Paperclip should grow eval coverage by promoting real runs into cases when we see:
+Paperclip debería hacer crecer la cobertura de evals promoviendo ejecuciones reales a casos cuando veamos:
 
-- regressions
-- interesting failures
-- edge cases
-- high-value success patterns worth preserving
+- regresiones
+- fallas interesantes
+- casos borde
+- patrones de éxito de alto valor que vale la pena preservar
 
-The initial version can be manual:
+La versión inicial puede ser manual:
 
-- take a real run
-- redact/normalize it
-- convert it into an `EvalCase`
+- tomar una ejecución real
+- redactarla/normalizarla
+- convertirla en un `EvalCase`
 
-Later we can automate trace-to-case generation.
+Más tarde podemos automatizar la generación traza-a-caso.
 
-### 3. Adversarial and guardrail cases
+### 3. Casos adversariales y de guarda
 
-These should intentionally probe failure modes:
+Estos deberían sondear intencionalmente modos de falla:
 
-- approval bypass attempts
-- wrong-company references
-- stale context traps
-- irrelevant long threads
-- misleading instructions in comments
-- verbosity traps
+- intentos de bypass de aprobación
+- referencias a la empresa equivocada
+- trampas de contexto obsoleto
+- hilos largos irrelevantes
+- instrucciones engañosas en comentarios
+- trampas de verbosidad
 
-This is where promptfoo-style red-team ideas can become useful later, but it is not the first slice.
+Aquí es donde las ideas red-team estilo promptfoo pueden volverse útiles más tarde, pero no es la primera rebanada.
 
-## Repo Layout
+## Layout del repo
 
-Recommended initial layout:
+Layout inicial recomendado:
 
 ```text
 evals/
@@ -443,59 +443,59 @@ evals/
     .gitignore
 ```
 
-Why top-level `evals/`:
+Por qué `evals/` de nivel superior:
 
-- it makes evals feel first-class
-- it avoids hiding them inside `server/` even though they span adapters and runtime behavior
-- it leaves room for both TS and optional Python helpers later
-- it gives us a clean place for Promptfoo `v0` config plus the later first-party runner
+- hace que las evals se sientan de primera clase
+- evita ocultarlas dentro de `server/` aunque abarquen adaptadores y comportamiento de tiempo de ejecución
+- deja espacio tanto para TS como para helpers opcionales de Python más tarde
+- nos da un lugar limpio para la configuración Promptfoo `v0` más el runner propio posterior
 
-## Execution Model
+## Modelo de ejecución
 
-The harness should support three modes.
+El harness debería soportar tres modos.
 
-### Mode A: Cheap local smoke
+### Modo A: Smoke local barato
 
-Purpose:
+Propósito:
 
-- run on PRs
-- keep cost low
-- catch obvious regressions
+- correr en PRs
+- mantener bajo el costo
+- atrapar regresiones obvias
 
-Characteristics:
+Características:
 
-- 5 to 20 cases
-- 1 or 2 bundles
-- mostly hard checks and narrow rubrics
+- 5 a 20 casos
+- 1 o 2 bundles
+- mayormente verificaciones duras y rúbricas estrechas
 
-### Mode B: Candidate vs baseline compare
+### Modo B: Comparación candidato vs línea base
 
-Purpose:
+Propósito:
 
-- evaluate a prompt/skill/model change before merge
+- evaluar un cambio de prompt/habilidad/modelo antes del merge
 
-Characteristics:
+Características:
 
-- paired runs
-- pairwise judging enabled
-- quality + efficiency diff report
+- ejecuciones pareadas
+- juicio pareado habilitado
+- reporte de diff de calidad + eficiencia
 
-### Mode C: Nightly broader matrix
+### Modo C: Matriz nocturna más amplia
 
-Purpose:
+Propósito:
 
-- compare multiple models and bundles
-- grow historical benchmark data
+- comparar múltiples modelos y bundles
+- hacer crecer datos históricos de benchmark
 
-Characteristics:
+Características:
 
-- larger case set
-- multiple models
-- more expensive rubric/pairwise judging
+- conjunto de casos más grande
+- múltiples modelos
+- juicio de rúbrica/pareado más caro
 
-## CI and Developer Workflow
+## CI y flujo de trabajo de desarrollador
 
-Suggested commands:
+Comandos sugeridos:
 
 ```sh
 pnpm evals:smoke
@@ -503,200 +503,200 @@ pnpm evals:compare --baseline baseline/codex-default --candidate experiments/cod
 pnpm evals:nightly
 ```
 
-PR behavior:
+Comportamiento de PR:
 
-- run `evals:smoke` on prompt/skill/adapter/runtime changes
-- optionally trigger `evals:compare` for labeled PRs or manual runs
+- ejecutar `evals:smoke` en cambios de prompt/habilidad/adaptador/tiempo de ejecución
+- opcionalmente disparar `evals:compare` para PRs etiquetados o ejecuciones manuales
 
-Nightly behavior:
+Comportamiento nocturno:
 
-- run larger matrix
-- save report artifact
-- surface trend lines on pass rate, pairwise wins, and efficiency
+- ejecutar una matriz más grande
+- guardar el artefacto de reporte
+- exponer líneas de tendencia en tasa de pase, victorias pareadas y eficiencia
 
-## Framework Comparison
+## Comparación de frameworks
 
 ## Promptfoo
 
-Best use for Paperclip:
+Mejor uso para Paperclip:
 
-- prompt-level micro-evals
-- provider/model comparison
-- quick local CI integration
-- custom JS assertions and custom providers
-- bootstrap-layer evals for one skill or one agent workflow
+- micro-evals a nivel de prompt
+- comparación de proveedor/modelo
+- integración rápida de CI local
+- aserciones JS personalizadas y proveedores personalizados
+- evals de capa bootstrap para una habilidad o un flujo de trabajo de agente
 
-What changed in this recommendation:
+Qué cambió en esta recomendación:
 
-- Promptfoo is now the recommended **starting point**
-- especially for “one skill, a handful of cases, compare across models”
+- Promptfoo es ahora el **punto de partida** recomendado
+- especialmente para "una habilidad, un puñado de casos, comparar entre modelos"
 
-Why it still should not be the only long-term system:
+Por qué aún no debería ser el único sistema a largo plazo:
 
-- its primary abstraction is still prompt/provider/test-case oriented
-- Paperclip needs scenario setup, control-plane state inspection, and multi-step traces as first-class concepts
+- su abstracción primaria sigue orientada a prompt/proveedor/caso de prueba
+- Paperclip necesita configuración de escenario, inspección de estado del plano de control y trazas multi-paso como conceptos de primera clase
 
-Recommendation:
+Recomendación:
 
-- use Promptfoo first
-- store Promptfoo config and cases in-repo under `evals/promptfoo/`
-- use custom JS/TS assertions and, if needed later, a custom provider that calls Paperclip scenario runners
-- do not make Promptfoo YAML the only canonical Paperclip eval format once we outgrow prompt-level evals
+- usar Promptfoo primero
+- almacenar la configuración y casos de Promptfoo en el repo bajo `evals/promptfoo/`
+- usar aserciones JS/TS personalizadas y, si se necesita más tarde, un proveedor personalizado que llame a los runners de escenario de Paperclip
+- no hacer del YAML de Promptfoo el único formato canónico de eval de Paperclip una vez que superemos las evals a nivel de prompt
 
 ## LangSmith
 
-What it gets right:
+Qué acierta:
 
-- final response evals
-- trajectory evals
-- single-step evals
+- evals de respuesta final
+- evals de trayectoria
+- evals de un solo paso
 
-Why not the primary system today:
+Por qué no el sistema primario hoy:
 
-- stronger fit for teams already centered on LangChain/LangGraph
-- introduces hosted/external workflow gravity before our own eval model is stable
+- mejor ajuste para equipos ya centrados en LangChain/LangGraph
+- introduce gravedad de flujo de trabajo hospedado/externo antes de que nuestro propio modelo de eval esté estable
 
-Recommendation:
+Recomendación:
 
-- copy the trajectory/final/single-step taxonomy
-- do not adopt the platform as the default requirement
+- copiar la taxonomía trayectoria/final/un-solo-paso
+- no adoptar la plataforma como el requisito por defecto
 
 ## Braintrust
 
-What it gets right:
+Qué acierta:
 
-- TypeScript support
-- clean dataset/task/scorer model
-- production logging to datasets
-- experiment comparison over time
+- soporte TypeScript
+- modelo limpio de dataset/tarea/scorer
+- registro de producción a datasets
+- comparación de experimentos en el tiempo
 
-Why not the primary system today:
+Por qué no el sistema primario hoy:
 
-- still externalizes the canonical dataset and review workflow
-- we are not yet at the maturity where hosted experiment management should define the shape of the system
+- aún externaliza el dataset canónico y el flujo de revisión
+- no estamos aún en la madurez donde la gestión hospedada de experimentos debería definir la forma del sistema
 
-Recommendation:
+Recomendación:
 
-- borrow its dataset/scorer/experiment mental model
-- revisit once we want hosted review and experiment history at scale
+- tomar prestado su modelo mental de dataset/scorer/experimento
+- revisitar una vez que queramos revisión hospedada e historial de experimentos a escala
 
-## OpenAI Evals / Evals API
+## OpenAI Evals / API de Evals
 
-What it gets right:
+Qué acierta:
 
-- strong eval principles
-- emphasis on task-specific evals
-- continuous evaluation mindset
+- principios fuertes de eval
+- énfasis en evals específicas de la tarea
+- mentalidad de evaluación continua
 
-Why not the primary system:
+Por qué no el sistema primario:
 
-- Paperclip must compare across models/providers
-- we do not want our primary eval runner coupled to one model vendor
+- Paperclip debe comparar entre modelos/proveedores
+- no queremos que nuestro runner primario de evals esté acoplado a un vendor de modelos
 
-Recommendation:
+Recomendación:
 
-- use the guidance
-- do not use it as the core Paperclip eval runtime
+- usar la guía
+- no usarlo como el tiempo de ejecución central de evals de Paperclip
 
-## First Implementation Slice
+## Primera rebanada de implementación
 
-The first version should be intentionally small.
+La primera versión debería ser intencionalmente pequeña.
 
-## Phase 0: Promptfoo bootstrap
+## Fase 0: Bootstrap de Promptfoo
 
-Build:
+Construir:
 
 - `evals/promptfoo/promptfooconfig.yaml`
-- 5 to 10 focused cases for one skill or one agent workflow
-- model matrix using the providers we care about most
-- mostly deterministic assertions:
+- 5 a 10 casos enfocados para una habilidad o un flujo de trabajo de agente
+- matriz de modelos usando los proveedores que más nos importan
+- mayormente aserciones deterministas:
   - contains
   - not-contains
   - regex
-  - custom JS assertions
+  - aserciones JS personalizadas
 
-Target scope:
+Alcance objetivo:
 
-- one skill, or one narrow workflow such as assignment pickup / first status update
-- compare a small set of bundles across several models
+- una habilidad, o un flujo de trabajo estrecho como recepción de asignación / primera actualización de estado
+- comparar un conjunto pequeño de bundles entre varios modelos
 
-Success criteria:
+Criterios de éxito:
 
-- we can run one command and compare outputs across models
-- prompt/skill regressions become visible quickly
-- the team gets signal before building heavier infrastructure
+- podemos ejecutar un comando y comparar salidas entre modelos
+- las regresiones de prompt/habilidad se vuelven visibles rápidamente
+- el equipo obtiene señal antes de construir infraestructura más pesada
 
-## Phase 1: Skeleton and core cases
+## Fase 1: Esqueleto y casos centrales
 
-Build:
+Construir:
 
-- `evals/` scaffold
-- `EvalCase`, `EvalBundle`, `EvalTrace` types
-- scenario runner for seeded local cases
-- 10 hand-authored core cases
-- hard checks only
+- scaffold de `evals/`
+- tipos `EvalCase`, `EvalBundle`, `EvalTrace`
+- runner de escenario para casos locales sembrados
+- 10 casos centrales escritos a mano
+- solo verificaciones duras
 
-Target cases:
+Casos objetivo:
 
-- assigned issue pickup
-- write progress comment
-- ask for approval when required
-- respect company boundary
-- report blocked state
-- avoid marking done without artifact/comment evidence
+- recepción de issue asignado
+- escribir comentario de progreso
+- pedir aprobación cuando se requiere
+- respetar el límite de empresa
+- reportar estado bloqueado
+- evitar marcar como hecho sin evidencia de artefacto/comentario
 
-Success criteria:
+Criterios de éxito:
 
-- a developer can run a local smoke suite
-- prompt/skill changes can fail the suite deterministically
-- Promptfoo `v0` cases either migrate into or coexist with this layer cleanly
+- un desarrollador puede ejecutar una suite smoke local
+- los cambios de prompt/habilidad pueden fallar la suite de forma determinista
+- los casos Promptfoo `v0` migran a o coexisten con esta capa limpiamente
 
-## Phase 2: Pairwise and rubric layer
+## Fase 2: Capa pareada y de rúbrica
 
-Build:
+Construir:
 
-- rubric scorer interface
-- pairwise judge runner
-- candidate vs baseline compare command
-- markdown/html report output
+- interfaz de scorer de rúbrica
+- runner de juez pareado
+- comando de comparación candidato vs línea base
+- salida de reporte markdown/html
 
-Success criteria:
+Criterios de éxito:
 
-- model/prompt bundle changes produce a readable diff report
-- we can tell “better”, “worse”, or “same” on curated scenarios
+- los cambios de bundle de modelo/prompt producen un reporte de diff legible
+- podemos decir "mejor", "peor" o "igual" en escenarios curados
 
-## Phase 3: Efficiency integration
+## Fase 3: Integración de eficiencia
 
-Build:
+Construir:
 
-- normalized token/cost metrics into eval traces
-- cost and latency comparisons
-- efficiency gates for token optimization work
+- métricas de tokens/costo normalizados en trazas de eval
+- comparaciones de costo y latencia
+- puertas de eficiencia para el trabajo de optimización de tokens
 
-Dependency:
+Dependencia:
 
-- this should align with the telemetry normalization work in `2026-03-13-TOKEN-OPTIMIZATION-PLAN.md`
+- esto debería alinearse con el trabajo de normalización de telemetría en `2026-03-13-TOKEN-OPTIMIZATION-PLAN.md`
 
-Success criteria:
+Criterios de éxito:
 
-- quality and efficiency can be judged together
-- token-reduction work no longer relies on anecdotal improvements
+- la calidad y la eficiencia pueden juzgarse juntas
+- el trabajo de reducción de tokens ya no depende de mejoras anecdóticas
 
-## Phase 4: Production-case ingestion
+## Fase 4: Ingesta de casos de producción
 
-Build:
+Construir:
 
-- tooling to promote real runs into new eval cases
-- metadata tagging
-- failure corpus growth process
+- herramientas para promover ejecuciones reales a nuevos casos de eval
+- etiquetado de metadatos
+- proceso de crecimiento del corpus de fallas
 
-Success criteria:
+Criterios de éxito:
 
-- the eval suite grows from real product behavior instead of staying synthetic
+- la suite de evals crece desde el comportamiento real del producto en lugar de quedarse sintética
 
-## Initial Case Categories
+## Categorías iniciales de casos
 
-We should start with these categories:
+Deberíamos comenzar con estas categorías:
 
 1. `core.assignment_pickup`
 2. `core.progress_update`
@@ -707,69 +707,69 @@ We should start with these categories:
 7. `threads.long_context_followup`
 8. `efficiency.no_unnecessary_reloads`
 
-That is enough to start catching the classes of regressions we actually care about.
+Eso es suficiente para empezar a atrapar las clases de regresiones que realmente nos importan.
 
-## Important Guardrails
+## Guardas importantes
 
-### 1. Do not rely on judge models alone
+### 1. No confiar solo en modelos jueces
 
-Every important scenario needs deterministic checks first.
+Cada escenario importante necesita primero verificaciones deterministas.
 
-### 2. Do not gate PRs on a single noisy score
+### 2. No bloquear PRs en un solo puntaje ruidoso
 
-Use pass/fail invariants plus a small number of stable rubric or pairwise checks.
+Usar invariantes pasa/falla más un número pequeño de verificaciones estables de rúbrica o pareadas.
 
-### 3. Do not confuse benchmark score with product quality
+### 3. No confundir puntaje de benchmark con calidad de producto
 
-The suite must keep growing from real runs, otherwise it will become a toy benchmark.
+La suite debe seguir creciendo desde ejecuciones reales, de lo contrario se volverá un benchmark de juguete.
 
-### 4. Do not evaluate only final output
+### 4. No evaluar solo la salida final
 
-Trajectory matters for agents:
+La trayectoria importa para los agentes:
 
-- did they call the right Paperclip APIs?
-- did they ask for approval?
-- did they communicate progress?
-- did they choose the right issue?
+- ¿llamaron a las APIs correctas de Paperclip?
+- ¿pidieron aprobación?
+- ¿comunicaron progreso?
+- ¿eligieron el issue correcto?
 
-### 5. Do not make the framework vendor-shaped
+### 5. No hacer el framework con forma de vendor
 
-Our eval model should survive changes in:
+Nuestro modelo de eval debería sobrevivir cambios en:
 
-- judge provider
-- candidate provider
-- adapter implementation
-- hosted tooling choices
+- proveedor juez
+- proveedor candidato
+- implementación de adaptador
+- elecciones de herramientas hospedadas
 
-## Open Questions
+## Preguntas abiertas
 
-1. Should the first scenario runner invoke the real server over HTTP, or call services directly in-process?
-   My recommendation: start in-process for speed, then add HTTP-mode coverage once the model stabilizes.
+1. ¿Debería el primer runner de escenario invocar al servidor real por HTTP, o llamar servicios directamente en proceso?
+   Mi recomendación: comenzar en proceso por velocidad, luego agregar cobertura en modo HTTP una vez que el modelo se estabilice.
 
-2. Should we support Python scorers in v1?
-   My recommendation: no. Keep v1 all-TypeScript.
+2. ¿Deberíamos soportar scorers de Python en v1?
+   Mi recomendación: no. Mantener v1 todo TypeScript.
 
-3. Should we commit baseline outputs?
-   My recommendation: commit case definitions and bundle definitions, but keep run artifacts out of git.
+3. ¿Deberíamos commitear las salidas de línea base?
+   Mi recomendación: commitear definiciones de casos y definiciones de bundles, pero mantener los artefactos de ejecución fuera de git.
 
-4. Should we add hosted experiment tracking immediately?
-   My recommendation: no. Revisit after the local harness proves useful.
+4. ¿Deberíamos agregar seguimiento hospedado de experimentos de inmediato?
+   Mi recomendación: no. Revisitar después de que el harness local pruebe ser útil.
 
-## Final Recommendation
+## Recomendación final
 
-Start with Promptfoo for immediate, narrow model-and-prompt comparisons, then grow into a first-party `evals/` framework in TypeScript that evaluates **Paperclip scenarios and bundles**, not just prompts.
+Comenzar con Promptfoo para comparaciones inmediatas y estrechas de modelo y prompt, luego crecer hacia un framework propio `evals/` en TypeScript que evalúe **escenarios y bundles de Paperclip**, no solo prompts.
 
-Use this structure:
+Usar esta estructura:
 
-- Promptfoo for `v0` bootstrap
-- deterministic hard checks as the foundation
-- rubric and pairwise judging for non-deterministic quality
-- normalized efficiency metrics as a separate axis
-- repo-local datasets that grow from real runs
+- Promptfoo para bootstrap `v0`
+- verificaciones duras deterministas como base
+- juicio de rúbrica y pareado para calidad no determinista
+- métricas de eficiencia normalizadas como un eje separado
+- datasets locales al repo que crecen desde ejecuciones reales
 
-Use external tools selectively:
+Usar herramientas externas selectivamente:
 
-- Promptfoo as the initial path for narrow prompt/provider tests
-- Braintrust or LangSmith later if we want hosted experiment management
+- Promptfoo como la ruta inicial para pruebas estrechas de prompt/proveedor
+- Braintrust o LangSmith más tarde si queremos gestión hospedada de experimentos
 
-But keep the canonical eval model inside the Paperclip repo and aligned to Paperclip’s actual control-plane behaviors.
+Pero mantener el modelo canónico de eval dentro del repo de Paperclip y alineado a los comportamientos reales del plano de control de Paperclip.

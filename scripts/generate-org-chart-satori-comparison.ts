@@ -1,14 +1,14 @@
 #!/usr/bin/env npx tsx
 /**
- * Standalone org chart comparison generator — pure SVG (no Playwright).
+ * Generador standalone de comparación de organigramas — SVG puro (sin Playwright).
  *
- * Generates SVG files for all 5 styles × 3 org sizes, plus a comparison HTML page.
- * Uses the server-side SVG renderer directly — same code that powers the routes.
+ * Genera archivos SVG para los 5 estilos × 3 tamaños de organización, más una página HTML de comparación.
+ * Usa directamente el renderizador SVG del lado del servidor — el mismo código que alimenta las rutas.
  *
- * Usage:
+ * Uso:
  *   npx tsx scripts/generate-org-chart-satori-comparison.ts
  *
- * Output: tmp/org-chart-svg-comparison/
+ * Salida: tmp/org-chart-svg-comparison/
  */
 import * as fs from "fs";
 import * as path from "path";
@@ -20,7 +20,7 @@ import {
   ORG_CHART_STYLES,
 } from "../server/src/routes/org-chart-svg.js";
 
-// ── Sample org data ──────────────────────────────────────────────
+// ── Datos de organización de ejemplo ─────────────────────────────────────────
 
 const ORGS: Record<string, OrgNode> = {
   sm: {
@@ -116,14 +116,14 @@ const ORGS: Record<string, OrgNode> = {
 };
 
 const STYLE_META: Record<OrgChartStyle, { name: string; vibe: string; bestFor: string }> = {
-  monochrome: { name: "Monochrome", vibe: "Vercel — zero color noise, dark", bestFor: "GitHub READMEs, developer docs" },
-  nebula: { name: "Nebula", vibe: "Glassmorphism — cosmic gradient", bestFor: "Hero sections, marketing" },
-  circuit: { name: "Circuit", vibe: "Linear/Raycast — indigo traces", bestFor: "Product pages, dev tools" },
-  warmth: { name: "Warmth", vibe: "Airbnb — light, colored avatars", bestFor: "Light-mode READMEs, presentations" },
-  schematic: { name: "Schematic", vibe: "Blueprint — grid bg, monospace", bestFor: "Technical docs, infra diagrams" },
+  monochrome: { name: "Monocromo", vibe: "Vercel — sin ruido de color, oscuro", bestFor: "READMEs de GitHub, documentación para desarrolladores" },
+  nebula: { name: "Nebulosa", vibe: "Glassmorphism — degradado cósmico", bestFor: "Secciones hero, marketing" },
+  circuit: { name: "Circuito", vibe: "Linear/Raycast — trazos índigo", bestFor: "Páginas de producto, herramientas de desarrollo" },
+  warmth: { name: "Calidez", vibe: "Airbnb — claro, avatares de colores", bestFor: "READMEs en modo claro, presentaciones" },
+  schematic: { name: "Esquema", vibe: "Plano — fondo de cuadrícula, monoespaciado", bestFor: "Documentación técnica, diagramas de infraestructura" },
 };
 
-// ── Main ─────────────────────────────────────────────────────────
+// ── Principal ─────────────────────────────────────────────────────────
 
 async function main() {
   const outDir = path.resolve("tmp/org-chart-svg-comparison");
@@ -140,7 +140,7 @@ async function main() {
       results.push(svgFile);
       console.log(`  ✓ ${svgFile}`);
 
-      // Also generate PNG
+      // También genera PNG
       try {
         const png = await renderOrgChartPng([ORGS[size]], style);
         const pngFile = `${style}-${size}.png`;
@@ -148,16 +148,16 @@ async function main() {
         results.push(pngFile);
         console.log(`  ✓ ${pngFile}`);
       } catch (e) {
-        console.log(`  ⚠ PNG failed for ${style}-${size}: ${(e as Error).message}`);
+        console.log(`  ⚠ PNG falló para ${style}-${size}: ${(e as Error).message}`);
       }
     }
   }
 
-  // Build comparison HTML
+  // Compila el HTML de comparación
   let html = `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
-<title>Org Chart Style Comparison — Pure SVG (No Playwright)</title>
+<title>Comparación de estilos de organigrama — SVG puro (sin Playwright)</title>
 <style>
   body { font-family: 'Inter', system-ui, sans-serif; background: #050505; color: #eee; padding: 40px; }
   h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.03em; }
@@ -176,47 +176,47 @@ async function main() {
   .note code { background: #1a1a1a; padding: 2px 6px; border-radius: 3px; font-size: 12px; color: #6366f1; }
 </style>
 </head><body>
-<h1>Org Chart Export — Style Comparison</h1>
-<p class="sub">5 styles × 3 org sizes. Pure SVG — no Playwright, no Satori, no browser needed.</p>
-<div class="badge">Server-side compatible — works on any route</div>
+<h1>Exportación de organigrama — Comparación de estilos</h1>
+<p class="sub">5 estilos × 3 tamaños de organización. SVG puro — sin Playwright, sin Satori, sin navegador necesario.</p>
+<div class="badge">Compatible del lado del servidor — funciona en cualquier ruta</div>
 `;
 
   for (const style of ORG_CHART_STYLES) {
     const meta = STYLE_META[style];
     html += `<div class="style-section">
   <h2>${meta.name}</h2>
-  <div class="style-meta"><em>${meta.vibe}</em> — Best for: ${meta.bestFor}</div>
-  <div class="label">Small / Medium / Large</div>
+  <div class="style-meta"><em>${meta.vibe}</em> — Ideal para: ${meta.bestFor}</div>
+  <div class="label">Pequeño / Mediano / Grande</div>
   <div class="grid">
-    <div><img src="${style}-sm.png" onerror="this.outerHTML='<object data=\\'${style}-sm.svg\\' type=\\'image/svg+xml\\' style=\\'width:100%;border-radius:8px;border:1px solid #222\\'></object>'" /><div class="size-label">3 agents</div></div>
-    <div><img src="${style}-med.png" onerror="this.outerHTML='<object data=\\'${style}-med.svg\\' type=\\'image/svg+xml\\' style=\\'width:100%;border-radius:8px;border:1px solid #222\\'></object>'" /><div class="size-label">8 agents</div></div>
-    <div><img src="${style}-lg.png" onerror="this.outerHTML='<object data=\\'${style}-lg.svg\\' type=\\'image/svg+xml\\' style=\\'width:100%;border-radius:8px;border:1px solid #222\\'></object>'" /><div class="size-label">14 agents</div></div>
+    <div><img src="${style}-sm.png" onerror="this.outerHTML='<object data=\\'${style}-sm.svg\\' type=\\'image/svg+xml\\' style=\\'width:100%;border-radius:8px;border:1px solid #222\\'></object>'" /><div class="size-label">3 agentes</div></div>
+    <div><img src="${style}-med.png" onerror="this.outerHTML='<object data=\\'${style}-med.svg\\' type=\\'image/svg+xml\\' style=\\'width:100%;border-radius:8px;border:1px solid #222\\'></object>'" /><div class="size-label">8 agentes</div></div>
+    <div><img src="${style}-lg.png" onerror="this.outerHTML='<object data=\\'${style}-lg.svg\\' type=\\'image/svg+xml\\' style=\\'width:100%;border-radius:8px;border:1px solid #222\\'></object>'" /><div class="size-label">14 agentes</div></div>
   </div>
 </div>`;
   }
 
   html += `
 <div class="note">
-  <h3>Why Pure SVG instead of Satori?</h3>
+  <h3>¿Por qué SVG puro en lugar de Satori?</h3>
   <p>
-    <strong>Satori</strong> converts JSX → SVG using Yoga (flexbox). It's great for OG cards but has limitations for org charts:
-    no <code>::before/::after</code> pseudo-elements, no CSS grid, limited gradient support,
-    and connector lines between nodes would need post-processing.
+    <strong>Satori</strong> convierte JSX → SVG usando Yoga (flexbox). Es ideal para tarjetas OG pero tiene limitaciones para organigramas:
+    sin pseudo-elementos <code>::before/::after</code>, sin CSS grid, soporte limitado de degradados,
+    y las líneas conectoras entre nodos necesitarían post-procesamiento.
   </p>
   <p>
-    <strong>Pure SVG rendering</strong> (what we're using here) gives us full control over layout, connectors,
-    gradients, filters, and patterns — with zero runtime dependencies beyond <code>sharp</code> for PNG.
-    It runs on any Node.js route, generates in &lt;10ms, and produces identical output every time.
+    <strong>El renderizado SVG puro</strong> (lo que usamos aquí) nos da control total sobre el diseño, los conectores,
+    los degradados, los filtros y los patrones — sin dependencias de ejecución más allá de <code>sharp</code> para PNG.
+    Se ejecuta en cualquier ruta de Node.js, genera en &lt;10ms y produce una salida idéntica cada vez.
   </p>
   <p>
-    Routes: <code>GET /api/companies/:id/org.svg?style=monochrome</code> and <code>GET /api/companies/:id/org.png?style=circuit</code>
+    Rutas: <code>GET /api/companies/:id/org.svg?style=monochrome</code> y <code>GET /api/companies/:id/org.png?style=circuit</code>
   </p>
 </div>
 </body></html>`;
 
   fs.writeFileSync(path.join(outDir, "comparison.html"), html);
-  console.log(`\n✓ All done! ${results.length} files generated.`);
-  console.log(`  Open: tmp/org-chart-svg-comparison/comparison.html`);
+  console.log(`\n✓ Listo. ${results.length} archivos generados.`);
+  console.log(`  Abre: tmp/org-chart-svg-comparison/comparison.html`);
 }
 
 main().catch((e) => {

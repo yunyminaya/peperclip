@@ -261,7 +261,7 @@ async function runGit(args: string[], cwd: string): Promise<string> {
     cwd,
   });
   if (proc.code !== 0) {
-    throw new Error(proc.stderr.trim() || proc.stdout.trim() || `git ${args.join(" ")} failed`);
+    throw new Error(proc.stderr.trim() || proc.stdout.trim() || `git ${args.join(" ")} falló`);
   }
   return proc.stdout.trim();
 }
@@ -282,7 +282,7 @@ function terminateChildProcess(child: ChildProcess) {
       process.kill(-child.pid, "SIGTERM");
       return;
     } catch {
-      // Fall through to the direct child kill.
+      // Cae a la terminación directa del hijo.
     }
   }
   if (!child.killed) {
@@ -339,8 +339,8 @@ async function runWorkspaceCommand(input: {
   const details = [proc.stderr.trim(), proc.stdout.trim()].filter(Boolean).join("\n");
   throw new Error(
     details.length > 0
-      ? `${input.label} failed: ${details}`
-      : `${input.label} failed with exit code ${proc.code ?? -1}`,
+      ? `${input.label} falló: ${details}`
+      : `${input.label} falló con código de salida ${proc.code ?? -1}`,
   );
 }
 
@@ -390,8 +390,8 @@ async function recordGitOperation(
     const details = [stderr.trim(), stdout.trim()].filter(Boolean).join("\n");
     throw new Error(
       details.length > 0
-        ? `${input.failureLabel ?? `git ${input.args.join(" ")}`} failed: ${details}`
-        : `${input.failureLabel ?? `git ${input.args.join(" ")}`} failed with exit code ${code ?? -1}`,
+        ? `${input.failureLabel ?? `git ${input.args.join(" ")}`} falló: ${details}`
+        : `${input.failureLabel ?? `git ${input.args.join(" ")}`} falló con código de salida ${code ?? -1}`,
     );
   }
   return stdout.trim();
@@ -448,8 +448,8 @@ async function recordWorkspaceCommandOperation(
   const details = [stderr.trim(), stdout.trim()].filter(Boolean).join("\n");
   throw new Error(
     details.length > 0
-      ? `${input.label} failed: ${details}`
-      : `${input.label} failed with exit code ${code ?? -1}`,
+      ? `${input.label} falló: ${details}`
+      : `${input.label} falló con código de salida ${code ?? -1}`,
   );
 }
 
@@ -480,14 +480,14 @@ async function provisionExecutionWorktree(input: {
       agent: input.agent,
       created: input.created,
     }),
-    label: `Execution workspace provision command "${provisionCommand}"`,
+    label: `Comando de aprovisionamiento del workspace de ejecución "${provisionCommand}"`,
     metadata: {
       repoRoot: input.repoRoot,
       worktreePath: input.worktreePath,
       branchName: input.branchName,
       created: input.created,
     },
-    successMessage: `Provisioned workspace at ${input.worktreePath}\n`,
+    successMessage: `Workspace aprovisionado en ${input.worktreePath}\n`,
   });
 }
 
@@ -598,7 +598,7 @@ export async function realizeExecutionWorkspace(input: {
           run: async () => ({
             status: "succeeded",
             exitCode: 0,
-            system: `Reused existing git worktree at ${worktreePath}\n`,
+            system: `Git worktree existente en ${worktreePath} reutilizado\n`,
           }),
         });
       }
@@ -623,7 +623,7 @@ export async function realizeExecutionWorkspace(input: {
         created: false,
       };
     }
-    throw new Error(`Configured worktree path "${worktreePath}" already exists and is not a git worktree.`);
+    throw new Error(`La ruta de worktree configurada "${worktreePath}" ya existe y no es un git worktree.`);
   }
 
   try {
@@ -638,7 +638,7 @@ export async function realizeExecutionWorkspace(input: {
         baseRef,
         created: true,
       },
-      successMessage: `Created git worktree at ${worktreePath}\n`,
+      successMessage: `Git worktree creado en ${worktreePath}\n`,
       failureLabel: `git worktree add ${worktreePath}`,
     });
   } catch (error) {
@@ -657,7 +657,7 @@ export async function realizeExecutionWorkspace(input: {
         created: false,
         reusedExistingBranch: true,
       },
-      successMessage: `Attached existing branch ${branchName} at ${worktreePath}\n`,
+      successMessage: `Rama existente ${branchName} adjuntada en ${worktreePath}\n`,
       failureLabel: `git worktree add ${worktreePath}`,
     });
   }
@@ -726,14 +726,14 @@ export async function cleanupExecutionWorkspaceArtifacts(input: {
         command,
         cwd: workspacePath ?? input.projectWorkspace?.cwd ?? process.cwd(),
         env: cleanupEnv,
-        label: `Execution workspace cleanup command "${command}"`,
+        label: `Comando de limpieza del workspace de ejecución "${command}"`,
         metadata: {
           workspaceId: input.workspace.id,
           workspacePath,
           branchName: input.workspace.branchName,
           providerType: input.workspace.providerType,
         },
-        successMessage: `Completed cleanup command "${command}"\n`,
+        successMessage: `Comando de limpieza "${command}" completado\n`,
       });
     } catch (err) {
       warnings.push(err instanceof Error ? err.message : String(err));
@@ -748,7 +748,7 @@ export async function cleanupExecutionWorkspaceArtifacts(input: {
     const worktreeExists = await directoryExists(workspacePath);
     if (worktreeExists) {
       if (!repoRoot) {
-        warnings.push(`Could not resolve git repo root for "${workspacePath}".`);
+        warnings.push(`No se pudo resolver la raíz del repo git para "${workspacePath}".`);
       } else {
         try {
           await recordGitOperation(input.recorder, {
@@ -761,7 +761,7 @@ export async function cleanupExecutionWorkspaceArtifacts(input: {
               branchName: input.workspace.branchName,
               cleanupAction: "worktree_remove",
             },
-            successMessage: `Removed git worktree ${workspacePath}\n`,
+            successMessage: `Git worktree ${workspacePath} eliminado\n`,
             failureLabel: `git worktree remove ${workspacePath}`,
           });
         } catch (err) {
@@ -771,7 +771,7 @@ export async function cleanupExecutionWorkspaceArtifacts(input: {
     }
     if (createdByRuntime && input.workspace.branchName) {
       if (!repoRoot) {
-        warnings.push(`Could not resolve git repo root to delete branch "${input.workspace.branchName}".`);
+        warnings.push(`No se pudo resolver la raíz del repo git para eliminar la rama "${input.workspace.branchName}".`);
       } else {
         try {
           await recordGitOperation(input.recorder, {
@@ -784,12 +784,12 @@ export async function cleanupExecutionWorkspaceArtifacts(input: {
               branchName: input.workspace.branchName,
               cleanupAction: "branch_delete",
             },
-            successMessage: `Deleted branch ${input.workspace.branchName}\n`,
+            successMessage: `Rama ${input.workspace.branchName} eliminada\n`,
             failureLabel: `git branch -d ${input.workspace.branchName}`,
           });
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
-          warnings.push(`Skipped deleting branch "${input.workspace.branchName}": ${message}`);
+          warnings.push(`Omitida la eliminación de la rama "${input.workspace.branchName}": ${message}`);
         }
       }
     }
@@ -803,7 +803,7 @@ export async function cleanupExecutionWorkspaceArtifacts(input: {
         )
       : false;
     if (containsProjectWorkspace) {
-      warnings.push(`Refusing to remove path "${workspacePath}" because it contains the project workspace.`);
+      warnings.push(`Se omite eliminar la ruta "${workspacePath}" porque contiene el workspace del proyecto.`);
     } else {
       await fs.rm(resolvedWorkspacePath, { recursive: true, force: true });
       if (input.recorder) {
@@ -847,7 +847,7 @@ async function allocatePort(): Promise<number> {
           return;
         }
         if (!address || typeof address === "string") {
-          reject(new Error("Failed to allocate port"));
+          reject(new Error("Falló la asignación de puerto"));
           return;
         }
         resolve(address.port);
@@ -922,18 +922,18 @@ async function waitForReadiness(input: {
   const timeoutSec = Math.max(1, asNumber(readiness.timeoutSec, 30));
   const intervalMs = Math.max(100, asNumber(readiness.intervalMs, 500));
   const deadline = Date.now() + timeoutSec * 1000;
-  let lastError = "service did not become ready";
+  let lastError = "el servicio no quedó listo";
   while (Date.now() < deadline) {
     try {
       const response = await fetch(input.url);
       if (response.ok) return;
-      lastError = `received HTTP ${response.status}`;
+      lastError = `HTTP recibido ${response.status}`;
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
     }
     await delay(intervalMs);
   }
-  throw new Error(`Readiness check failed for ${input.url}: ${lastError}`);
+  throw new Error(`La comprobación de readiness falló para ${input.url}: ${lastError}`);
 }
 
 function toPersistedWorkspaceRuntimeService(record: RuntimeServiceRecord): typeof workspaceRuntimeServices.$inferInsert {
@@ -1096,7 +1096,7 @@ async function startLocalRuntimeService(input: {
   const serviceName = asString(input.service.name, "service");
   const lifecycle = asString(input.service.lifecycle, "shared") === "ephemeral" ? "ephemeral" : "shared";
   const command = asString(input.service.command, "");
-  if (!command) throw new Error(`Runtime service "${serviceName}" is missing command`);
+  if (!command) throw new Error(`El servicio de runtime "${serviceName}" no tiene comando`);
   const serviceCwdTemplate = asString(input.service.cwd, ".");
   const portConfig = parseObject(input.service.port);
   const port = asString(portConfig.type, "") === "auto" ? await allocatePort() : null;
@@ -1154,7 +1154,7 @@ async function startLocalRuntimeService(input: {
   } catch (err) {
     terminateChildProcess(child);
     throw new Error(
-      `Failed to start runtime service "${serviceName}": ${err instanceof Error ? err.message : String(err)}${stderrExcerpt ? ` | stderr: ${stderrExcerpt.trim()}` : ""}`,
+      `Falló el arranque del servicio de runtime "${serviceName}": ${err instanceof Error ? err.message : String(err)}${stderrExcerpt ? ` | stderr: ${stderrExcerpt.trim()}` : ""}`,
     );
   }
 
@@ -1548,17 +1548,17 @@ export function buildWorkspaceReadyComment(input: {
   workspace: RealizedExecutionWorkspace;
   runtimeServices: RuntimeServiceRef[];
 }) {
-  const lines = ["## Workspace Ready", ""];
-  lines.push(`- Strategy: \`${input.workspace.strategy}\``);
-  if (input.workspace.branchName) lines.push(`- Branch: \`${input.workspace.branchName}\``);
+  const lines = ["## Workspace listo", ""];
+  lines.push(`- Estrategia: \`${input.workspace.strategy}\``);
+  if (input.workspace.branchName) lines.push(`- Rama: \`${input.workspace.branchName}\``);
   lines.push(`- CWD: \`${input.workspace.cwd}\``);
   if (input.workspace.worktreePath && input.workspace.worktreePath !== input.workspace.cwd) {
     lines.push(`- Worktree: \`${input.workspace.worktreePath}\``);
   }
   for (const service of input.runtimeServices) {
-    const detail = service.url ? `${service.serviceName}: ${service.url}` : `${service.serviceName}: running`;
-    const suffix = service.reused ? " (reused)" : "";
-    lines.push(`- Service: ${detail}${suffix}`);
+    const detail = service.url ? `${service.serviceName}: ${service.url}` : `${service.serviceName}: en ejecución`;
+    const suffix = service.reused ? " (reutilizado)" : "";
+    lines.push(`- Servicio: ${detail}${suffix}`);
   }
   return lines.join("\n");
 }

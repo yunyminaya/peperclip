@@ -34,7 +34,7 @@ import { MentionAwareLinkNode, mentionAwareLinkNodeReplacement } from "../lib/me
 import { mentionDeletionPlugin } from "../lib/mention-deletion";
 import { cn } from "../lib/utils";
 
-/* ---- Mention types ---- */
+/* ---- Tipos de mención ---- */
 
 export interface MentionOption {
   id: string;
@@ -46,7 +46,7 @@ export interface MentionOption {
   projectColor?: string | null;
 }
 
-/* ---- Editor props ---- */
+/* ---- Props del editor ---- */
 
 interface MarkdownEditorProps {
   value: string;
@@ -57,9 +57,9 @@ interface MarkdownEditorProps {
   onBlur?: () => void;
   imageUploadHandler?: (file: File) => Promise<string>;
   bordered?: boolean;
-  /** List of mentionable entities. Enables @-mention autocomplete. */
+  /** Lista de entidades mencionables. Habilita el autocompletado de menciones con @. */
   mentions?: MentionOption[];
-  /** Called on Cmd/Ctrl+Enter */
+  /** Se llama con Cmd/Ctrl+Enter. */
   onSubmit?: () => void;
 }
 
@@ -77,13 +77,13 @@ function isSafeMarkdownLinkUrl(url: string): boolean {
   return !/^(javascript|data|vbscript):/i.test(trimmed);
 }
 
-/* ---- Mention detection helpers ---- */
+/* ---- Funciones auxiliares de detección de menciones ---- */
 
 interface MentionState {
   query: string;
   top: number;
   left: number;
-  /** Viewport-relative coords for portal positioning */
+  /** Coordenadas relativas al viewport para posicionar el portal. */
   viewportTop: number;
   viewportLeft: number;
   textNode: Text;
@@ -92,7 +92,7 @@ interface MentionState {
 }
 
 const CODE_BLOCK_LANGUAGES: Record<string, string> = {
-  txt: "Text",
+  txt: "Texto",
   md: "Markdown",
   js: "JavaScript",
   jsx: "JavaScript (JSX)",
@@ -112,8 +112,8 @@ const CODE_BLOCK_LANGUAGES: Record<string, string> = {
 };
 
 const FALLBACK_CODE_BLOCK_DESCRIPTOR: CodeBlockEditorDescriptor = {
-  // Keep this lower than codeMirrorPlugin's descriptor priority so known languages
-  // still use the standard matching path; this catches malformed/unknown fences.
+  // Mantener esto por debajo de la prioridad del descriptor de codeMirrorPlugin para que los lenguajes conocidos
+  // sigan usando la ruta de coincidencia estándar; esto captura bloques mal formados/desconocidos.
   priority: 0,
   match: () => true,
   Editor: CodeMirrorEditor,
@@ -131,7 +131,7 @@ function detectMention(container: HTMLElement): MentionState | null {
   const text = textNode.textContent ?? "";
   const offset = range.startOffset;
 
-  // Walk backwards from cursor to find @
+  // Recorrer hacia atrás desde el cursor para encontrar @
   let atPos = -1;
   for (let i = offset - 1; i >= 0; i--) {
     const ch = text[i];
@@ -148,7 +148,7 @@ function detectMention(container: HTMLElement): MentionState | null {
 
   const query = text.slice(atPos + 1, offset);
 
-  // Get position relative to container
+  // Obtener la posición relativa al contenedor
   const tempRange = document.createRange();
   tempRange.setStart(textNode, atPos);
   tempRange.setEnd(textNode, atPos + 1);
@@ -175,7 +175,7 @@ function mentionMarkdown(option: MentionOption): string {
   return `[@${option.name}](${buildAgentMentionHref(agentId, option.agentIcon ?? null)}) `;
 }
 
-/** Replace `@<query>` in the markdown string with the selected mention token. */
+/** Reemplaza `@<query>` en la cadena de markdown con el token de mención seleccionado. */
 function applyMention(markdown: string, query: string, option: MentionOption): string {
   const search = `@${query}`;
   const replacement = mentionMarkdown(option);
@@ -184,7 +184,7 @@ function applyMention(markdown: string, query: string, option: MentionOption): s
   return markdown.slice(0, idx) + replacement + markdown.slice(idx + search.length);
 }
 
-/* ---- Component ---- */
+/* ---- Componente ---- */
 
 export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(function MarkdownEditor({
   value,
@@ -205,11 +205,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
   const [isDragOver, setIsDragOver] = useState(false);
   const dragDepthRef = useRef(0);
 
-  // Stable ref for imageUploadHandler so plugins don't recreate on every render
+  // Ref estable para imageUploadHandler para que los plugins no se recreen en cada render
   const imageUploadHandlerRef = useRef(imageUploadHandler);
   imageUploadHandlerRef.current = imageUploadHandler;
 
-  // Mention state (ref kept in sync so callbacks always see the latest value)
+  // Estado de mención (ref sincronizado para que los callbacks siempre vean el valor más reciente)
   const [mentionState, setMentionState] = useState<MentionState | null>(null);
   const mentionStateRef = useRef<MentionState | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
@@ -240,8 +240,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
     },
   }), []);
 
-  // Whether the image plugin should be included (boolean is stable across renders
-  // as long as the handler presence doesn't toggle)
+  // Si se debe incluir el plugin de imágenes (el booleano es estable entre renders
+  // mientras la presencia del handler no cambie)
   const hasImageUpload = Boolean(imageUploadHandler);
 
   const plugins = useMemo<RealmPlugin[]>(() => {
@@ -252,8 +252,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
           try {
             const src = await handler(file);
             setUploadError(null);
-            // After MDXEditor inserts the image, ensure two newlines follow it
-            // so the cursor isn't stuck right next to the image.
+            // Después de que MDXEditor inserte la imagen, asegurar que le sigan dos saltos de línea
+            // para que el cursor no quede pegado a la imagen.
             setTimeout(() => {
               const current = latestValueRef.current;
               const escapedSrc = escapeRegExp(src);
@@ -272,7 +272,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
             }, 100);
             return src;
           } catch (err) {
-            const message = err instanceof Error ? err.message : "Image upload failed";
+            const message = err instanceof Error ? err.message : "No se pudo subir la imagen";
             setUploadError(message);
             throw err;
           }
@@ -336,7 +336,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
     }
   }, [mentionOptionByKey]);
 
-  // Mention detection: listen for selection changes and input events
+  // Detección de menciones: escuchar cambios de selección y eventos de entrada
   const checkMention = useCallback(() => {
     if (!mentions || mentions.length === 0 || !containerRef.current) {
       mentionStateRef.current = null;
@@ -357,8 +357,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
     if (!mentions || mentions.length === 0) return;
 
     const el = containerRef.current;
-    // Listen for input events on the container so mention detection
-    // also fires after typing (e.g. space to dismiss).
+    // Escuchar eventos de entrada en el contenedor para que la detección de menciones
+    // también se dispare al escribir (p. ej. espacio para descartar).
     const onInput = () => requestAnimationFrame(checkMention);
 
     document.addEventListener("selectionchange", checkMention);
@@ -386,8 +386,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
 
   const selectMention = useCallback(
     (option: MentionOption) => {
-      // Read from ref to avoid stale-closure issues (selectionchange can
-      // update state between the last render and this callback firing).
+      // Leer desde el ref para evitar problemas de cierre obsoleto (selectionchange puede
+      // actualizar el estado entre el último render y la ejecución de este callback).
       const state = mentionStateRef.current;
       if (!state) return;
       const current = latestValueRef.current;
@@ -475,7 +475,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
         className,
       )}
       onKeyDownCapture={(e) => {
-        // Cmd/Ctrl+Enter to submit
+        // Cmd/Ctrl+Enter para enviar
         if (onSubmit && e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
           e.preventDefault();
           e.stopPropagation();
@@ -483,15 +483,15 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
           return;
         }
 
-        // Mention keyboard handling
+        // Manejo de teclado para menciones
         if (mentionActive) {
-          // Space dismisses the popup (let the character be typed normally)
+          // Espacio descarta el popup (dejar que el carácter se escriba normalmente)
           if (e.key === " ") {
             mentionStateRef.current = null;
             setMentionState(null);
             return;
           }
-          // Escape always dismisses
+          // Escape siempre descarta
           if (e.key === "Escape") {
             e.preventDefault();
             e.stopPropagation();
@@ -499,7 +499,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
             setMentionState(null);
             return;
           }
-          // Arrow / Enter / Tab only when there are filtered results
+          // Flechas / Enter / Tab solo cuando hay resultados filtrados
           if (filteredMentions.length > 0) {
             if (e.key === "ArrowDown") {
               e.preventDefault();
@@ -560,7 +560,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
         plugins={plugins}
       />
 
-      {/* Mention dropdown — rendered via portal so it isn't clipped by overflow containers */}
+      {/* Desplegable de menciones — renderizado vía portal para que no lo recorten los contenedores con overflow */}
       {mentionActive && filteredMentions.length > 0 &&
         createPortal(
           <div
@@ -575,7 +575,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
                   i === mentionIndex && "bg-accent",
                 )}
                 onMouseDown={(e) => {
-                  e.preventDefault(); // prevent blur
+                  e.preventDefault(); // evitar el blur
                   selectMention(option);
                 }}
                 onMouseEnter={() => setMentionIndex(i)}
@@ -594,7 +594,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
                 <span>{option.name}</span>
                 {option.kind === "project" && option.projectId && (
                   <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Project
+                    Proyecto
                   </span>
                 )}
               </button>
@@ -610,7 +610,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
             !bordered && "inset-0 rounded-sm",
           )}
         >
-          Drop image to upload
+          Suelta la imagen para subirla
         </div>
       )}
       {uploadError && (

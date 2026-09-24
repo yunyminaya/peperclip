@@ -20,12 +20,12 @@ import { printPaperclipCliBanner } from "../utils/banner.js";
 type Section = "llm" | "database" | "logging" | "server" | "storage" | "secrets";
 
 const SECTION_LABELS: Record<Section, string> = {
-  llm: "LLM Provider",
-  database: "Database",
-  logging: "Logging",
-  server: "Server",
-  storage: "Storage",
-  secrets: "Secrets",
+  llm: "Proveedor de LLM",
+  database: "Base de datos",
+  logging: "Logs",
+  server: "Servidor",
+  storage: "Almacenamiento",
+  secrets: "Secretos",
 };
 
 function defaultConfig(): PaperclipConfig {
@@ -77,7 +77,7 @@ export async function configure(opts: {
   const configPath = resolveConfigPath(opts.config);
 
   if (!configExists(opts.config)) {
-    p.log.error("No config file found. Run `paperclipai onboard` first.");
+    p.log.error("No se encontró el archivo de config. Ejecuta primero `paperclipai onboard`.");
     p.outro("");
     return;
   }
@@ -88,7 +88,7 @@ export async function configure(opts: {
   } catch (err) {
     p.log.message(
       pc.yellow(
-        `Existing config is invalid. Loading defaults so you can repair it now.\n${err instanceof Error ? err.message : String(err)}`,
+        `La config existente es inválida. Cargando valores por defecto para que puedas repararla ahora.\n${err instanceof Error ? err.message : String(err)}`,
       ),
     );
     config = defaultConfig();
@@ -97,17 +97,17 @@ export async function configure(opts: {
   let section: Section | undefined = opts.section as Section | undefined;
 
   if (section && !SECTION_LABELS[section]) {
-    p.log.error(`Unknown section: ${section}. Choose from: ${Object.keys(SECTION_LABELS).join(", ")}`);
+    p.log.error(`Sección desconocida: ${section}. Elige entre: ${Object.keys(SECTION_LABELS).join(", ")}`);
     p.outro("");
     return;
   }
 
-  // Section selection loop
+  // Bucle de selección de sección
   let continueLoop = true;
   while (continueLoop) {
     if (!section) {
       const choice = await p.select({
-        message: "Which section do you want to configure?",
+        message: "¿Qué sección quieres configurar?",
         options: Object.entries(SECTION_LABELS).map(([value, label]) => ({
           value: value as Section,
           label,
@@ -115,7 +115,7 @@ export async function configure(opts: {
       });
 
       if (p.isCancel(choice)) {
-        p.cancel("Configuration cancelled.");
+        p.cancel("Configuración cancelada.");
         return;
       }
 
@@ -158,13 +158,13 @@ export async function configure(opts: {
         {
           const keyResult = ensureLocalSecretsKeyFile(config, configPath);
           if (keyResult.status === "created") {
-            p.log.success(`Created local secrets key file at ${pc.dim(keyResult.path)}`);
+            p.log.success(`Archivo de clave local de secretos creado en ${pc.dim(keyResult.path)}`);
           } else if (keyResult.status === "existing") {
-            p.log.message(pc.dim(`Using existing local secrets key file at ${keyResult.path}`));
+            p.log.message(pc.dim(`Usando el archivo de clave local de secretos existente en ${keyResult.path}`));
           } else if (keyResult.status === "skipped_provider") {
-            p.log.message(pc.dim("Skipping local key file management for non-local provider"));
+            p.log.message(pc.dim("Omitiendo la gestión del archivo de clave local para proveedor no local"));
           } else {
-            p.log.message(pc.dim("Skipping local key file management because PAPERCLIP_SECRETS_MASTER_KEY is set"));
+            p.log.message(pc.dim("Omitiendo la gestión del archivo de clave local porque PAPERCLIP_SECRETS_MASTER_KEY está definida"));
           }
         }
         break;
@@ -174,24 +174,24 @@ export async function configure(opts: {
     config.$meta.source = "configure";
 
     writeConfig(config, opts.config);
-    p.log.success(`${SECTION_LABELS[section]} configuration updated.`);
+    p.log.success(`Configuración de ${SECTION_LABELS[section]} actualizada.`);
 
-    // If section was provided via CLI flag, don't loop
+    // Si la sección se pasó por flag del CLI, no iterar
     if (opts.section) {
       continueLoop = false;
     } else {
       const another = await p.confirm({
-        message: "Configure another section?",
+        message: "¿Configurar otra sección?",
         initialValue: false,
       });
 
       if (p.isCancel(another) || !another) {
         continueLoop = false;
       } else {
-        section = undefined; // Reset to show picker again
+        section = undefined; // Reinicia para mostrar el selector de nuevo
       }
     }
   }
 
-  p.outro("Configuration saved.");
+  p.outro("Configuración guardada.");
 }

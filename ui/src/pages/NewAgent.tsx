@@ -104,8 +104,8 @@ export function NewAgent() {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: "Agents", href: "/agents" },
-      { label: "New Agent" },
+      { label: "Agentes", href: "/agents" },
+      { label: "Nuevo agente" },
     ]);
   }, [setBreadcrumbs]);
 
@@ -137,7 +137,7 @@ export function NewAgent() {
       navigate(agentUrl(result.agent));
     },
     onError: (error) => {
-      setFormError(error instanceof Error ? error.message : "Failed to create agent");
+      setFormError(error instanceof Error ? error.message : "No se pudo crear el agente");
     },
   });
 
@@ -152,27 +152,27 @@ export function NewAgent() {
     if (configValues.adapterType === "opencode_local") {
       const selectedModel = configValues.model.trim();
       if (!selectedModel) {
-        setFormError("OpenCode requires an explicit model in provider/model format.");
+        setFormError("OpenCode requiere un modelo explícito en formato proveedor/modelo.");
         return;
       }
       if (adapterModelsError) {
         setFormError(
           adapterModelsError instanceof Error
             ? adapterModelsError.message
-            : "Failed to load OpenCode models.",
+            : "No se pudieron cargar los modelos de OpenCode.",
         );
         return;
       }
       if (adapterModelsLoading || adapterModelsFetching) {
-        setFormError("OpenCode models are still loading. Please wait and try again.");
+        setFormError("Los modelos de OpenCode aún se están cargando. Espera e inténtalo de nuevo.");
         return;
       }
       const discovered = adapterModels ?? [];
       if (!discovered.some((entry) => entry.id === selectedModel)) {
         setFormError(
           discovered.length === 0
-            ? "No OpenCode models discovered. Run `opencode models` and authenticate providers."
-            : `Configured OpenCode model is unavailable: ${selectedModel}`,
+            ? "No se encontraron modelos de OpenCode. Ejecuta `opencode models` y autentica los proveedores."
+            : `El modelo de OpenCode configurado no está disponible: ${selectedModel}`,
         );
         return;
       }
@@ -212,9 +212,9 @@ export function NewAgent() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">New Agent</h1>
+        <h1 className="text-lg font-semibold">Nuevo agente</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Advanced agent configuration
+          Configuración avanzada del agente
         </p>
       </div>
 
@@ -223,7 +223,7 @@ export function NewAgent() {
         <div className="px-4 pt-4 pb-2">
           <input
             className="w-full text-lg font-semibold bg-transparent outline-none placeholder:text-muted-foreground/50"
-            placeholder="Agent name"
+            placeholder="Nombre del agente"
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoFocus
@@ -234,7 +234,7 @@ export function NewAgent() {
         <div className="px-4 pb-2">
           <input
             className="w-full bg-transparent outline-none text-sm text-muted-foreground placeholder:text-muted-foreground/40"
-            placeholder="Title (e.g. VP of Engineering)"
+            placeholder="Título (p. ej., VP de Ingeniería)"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
@@ -290,14 +290,14 @@ export function NewAgent() {
         <div className="border-t border-border px-4 py-4">
           <div className="space-y-3">
             <div>
-              <h2 className="text-sm font-medium">Company skills</h2>
+              <h2 className="text-sm font-medium">Habilidades de la empresa</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Optional skills from the company library. Built-in Paperclip runtime skills are added automatically.
+                Habilidades opcionales de la biblioteca de la empresa. Las habilidades integradas del runtime de Paperclip se agregan automáticamente.
               </p>
             </div>
             {availableSkills.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                No optional company skills installed yet.
+                Aún no hay habilidades opcionales de la empresa instaladas.
               </p>
             ) : (
               <div className="space-y-3">
@@ -328,21 +328,21 @@ export function NewAgent() {
         {/* Footer */}
         <div className="border-t border-border px-4 py-3">
           {isFirstAgent && (
-            <p className="text-xs text-muted-foreground mb-2">This will be the CEO</p>
+            <p className="text-xs text-muted-foreground mb-2">Este será el CEO</p>
           )}
           {formError && (
             <p className="text-xs text-destructive mb-2">{formError}</p>
           )}
           <div className="flex items-center justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => navigate("/agents")}>
-              Cancel
+              Cancelar
             </Button>
             <Button
               size="sm"
               disabled={!name.trim() || createAgent.isPending}
               onClick={handleSubmit}
             >
-              {createAgent.isPending ? "Creating…" : "Create agent"}
+              {createAgent.isPending ? "Creando…" : "Crear agente"}
             </Button>
           </div>
         </div>

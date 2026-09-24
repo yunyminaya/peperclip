@@ -19,19 +19,19 @@ export interface ScaffoldPluginOptions {
   sdkPath?: string;
 }
 
-/** Validate npm-style plugin package names (scoped or unscoped). */
+/** Valida nombres de paquete de plugin estilo npm (con o sin alcance). */
 export function isValidPluginName(name: string): boolean {
   const scopedPattern = /^@[a-z0-9_-]+\/[a-z0-9._-]+$/;
   const unscopedPattern = /^[a-z0-9._-]+$/;
   return scopedPattern.test(name) || unscopedPattern.test(name);
 }
 
-/** Convert `@scope/name` to an output directory basename (`name`). */
+/** Convierte `@scope/name` al nombre base del directorio de salida (`name`). */
 function packageToDirName(pluginName: string): string {
   return pluginName.replace(/^@[^/]+\//, "");
 }
 
-/** Convert an npm package name into a manifest-safe plugin id. */
+/** Convierte un nombre de paquete npm en un id de plugin seguro para el manifiesto. */
 function packageToManifestId(pluginName: string): string {
   if (!pluginName.startsWith("@")) {
     return pluginName;
@@ -40,7 +40,7 @@ function packageToManifestId(pluginName: string): string {
   return pluginName.slice(1).replace("/", ".");
 }
 
-/** Build a human-readable display name from package name tokens. */
+/** Construye un nombre visible legible desde los tokens del nombre del paquete. */
 function makeDisplayName(pluginName: string): string {
   const raw = packageToDirName(pluginName).replace(/[._-]+/g, " ").trim();
   return raw
@@ -86,7 +86,7 @@ function isInsideDir(targetPath: string, parentPath: string): boolean {
 function packLocalPackage(packagePath: string, outputDir: string): string {
   const packageJsonPath = path.join(packagePath, "package.json");
   if (!fs.existsSync(packageJsonPath)) {
-    throw new Error(`Package package.json not found at ${packageJsonPath}`);
+    throw new Error(`No se encontró el package.json del paquete en ${packageJsonPath}`);
   }
 
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8")) as {
@@ -104,40 +104,41 @@ function packLocalPackage(packagePath: string, outputDir: string): string {
 
   const tarballPath = path.join(sdkBundleDir, tarballFileName);
   if (!fs.existsSync(tarballPath)) {
-    throw new Error(`Packed tarball was not created at ${tarballPath}`);
+    throw new Error(`El tarball empaquetado no se creó en ${tarballPath}`);
   }
 
   return tarballPath;
 }
 
 /**
- * Generate a complete Paperclip plugin starter project.
+ * Genera un proyecto inicial completo de plugin de Paperclip.
  *
- * Output includes manifest/worker/UI entries, SDK harness tests, bundler presets,
- * and a local dev server script for hot-reload workflow.
+ * La salida incluye entradas de manifiesto/worker/interfaz, pruebas de harness SDK,
+ * preajustes de bundler y un script de servidor dev local para el flujo de
+ * trabajo de recarga en caliente.
  */
 export function scaffoldPluginProject(options: ScaffoldPluginOptions): string {
   const template = options.template ?? "default";
   if (!VALID_TEMPLATES.includes(template)) {
-    throw new Error(`Invalid template '${template}'. Expected one of: ${VALID_TEMPLATES.join(", ")}`);
+    throw new Error(`Plantilla inválida '${template}'. Se esperaba una de: ${VALID_TEMPLATES.join(", ")}`);
   }
 
   if (!isValidPluginName(options.pluginName)) {
-    throw new Error("Invalid plugin name. Must be lowercase and may include scope, dots, underscores, or hyphens.");
+    throw new Error("Nombre de plugin inválido. Debe estar en minúsculas y puede incluir alcance, puntos, guiones bajos o guiones.");
   }
 
   if (options.category && !VALID_CATEGORIES.has(options.category)) {
-    throw new Error(`Invalid category '${options.category}'. Expected one of: ${[...VALID_CATEGORIES].join(", ")}`);
+    throw new Error(`Categoría inválida '${options.category}'. Se esperaba una de: ${[...VALID_CATEGORIES].join(", ")}`);
   }
 
   const outputDir = path.resolve(options.outputDir);
   if (fs.existsSync(outputDir)) {
-    throw new Error(`Directory already exists: ${outputDir}`);
+    throw new Error(`El directorio ya existe: ${outputDir}`);
   }
 
   const displayName = options.displayName ?? makeDisplayName(options.pluginName);
-  const description = options.description ?? "A Paperclip plugin";
-  const author = options.author ?? "Plugin Author";
+  const description = options.description ?? "Un plugin de Paperclip";
+  const author = options.author ?? "Autor del plugin";
   const category = options.category ?? (template === "workspace" ? "workspace" : "connector");
   const manifestId = packageToManifestId(options.pluginName);
   const localSdkPath = path.resolve(options.sdkPath ?? getLocalSdkPackagePath());
@@ -242,7 +243,7 @@ const uiCtx = await esbuild.context(presets.esbuild.ui);
 
 if (watch) {
   await Promise.all([workerCtx.watch(), manifestCtx.watch(), uiCtx.watch()]);
-  console.log("esbuild watch mode enabled for worker, manifest, and ui");
+  console.log("modo watch de esbuild habilitado para worker, manifest y ui");
 } else {
   await Promise.all([workerCtx.rebuild(), manifestCtx.rebuild(), uiCtx.rebuild()]);
   await Promise.all([workerCtx.dispose(), manifestCtx.dispose(), uiCtx.dispose()]);
@@ -322,7 +323,7 @@ const manifest: PaperclipPluginManifestV1 = {
       {
         type: "dashboardWidget",
         id: "health-widget",
-        displayName: ${quote(`${displayName} Health`)},
+        displayName: ${quote(`${displayName} Salud`)},
         exportName: "DashboardWidget"
       }
     ]
@@ -342,7 +343,7 @@ const plugin = definePlugin({
     ctx.events.on("issue.created", async (event) => {
       const issueId = event.entityId ?? "unknown";
       await ctx.state.set({ scopeKind: "issue", scopeId: issueId, stateKey: "seen" }, true);
-      ctx.logger.info("Observed issue.created", { issueId });
+      ctx.logger.info("issue.created observado", { issueId });
     });
 
     ctx.data.register("health", async () => {
@@ -350,13 +351,13 @@ const plugin = definePlugin({
     });
 
     ctx.actions.register("ping", async () => {
-      ctx.logger.info("Ping action invoked");
+      ctx.logger.info("Acción ping invocada");
       return { pong: true, at: new Date().toISOString() };
     });
   },
 
   async onHealth() {
-    return { status: "ok", message: "Plugin worker is running" };
+    return { status: "ok", message: "El worker del plugin está en ejecución" };
   }
 });
 
@@ -378,15 +379,15 @@ export function DashboardWidget(_props: PluginWidgetProps) {
   const { data, loading, error } = usePluginData<HealthData>("health");
   const ping = usePluginAction("ping");
 
-  if (loading) return <div>Loading plugin health...</div>;
-  if (error) return <div>Plugin error: {error.message}</div>;
+  if (loading) return <div>Cargando salud del plugin…</div>;
+  if (error) return <div>Error del plugin: {error.message}</div>;
 
   return (
     <div style={{ display: "grid", gap: "0.5rem" }}>
       <strong>${displayName}</strong>
-      <div>Health: {data?.status ?? "unknown"}</div>
-      <div>Checked: {data?.checkedAt ?? "never"}</div>
-      <button onClick={() => void ping()}>Ping Worker</button>
+      <div>Salud: {data?.status ?? "desconocido"}</div>
+      <div>Revisado: {data?.checkedAt ?? "nunca"}</div>
+      <button onClick={() => void ping()}>Ping al worker</button>
     </div>
   );
 }
@@ -424,20 +425,20 @@ describe("plugin scaffold", () => {
 
 ${description}
 
-## Development
+## Desarrollo
 
 \`\`\`bash
 pnpm install
-pnpm dev            # watch builds
-pnpm dev:ui         # local dev server with hot-reload events
+pnpm dev            # compilaciones en modo watch
+pnpm dev:ui         # servidor dev local con eventos de recarga en caliente
 pnpm test
 \`\`\`
 
 ${sdkDependency.startsWith("file:")
-  ? `This scaffold snapshots \`@paperclipai/plugin-sdk\` and \`@paperclipai/shared\` from a local Paperclip checkout at:\n\n\`${toPosixPath(localSdkPath)}\`\n\nThe packed tarballs live in \`.paperclip-sdk/\` for local development. Before publishing this plugin, switch those dependencies to published package versions once they are available on npm.\n\n`
+  ? `Este andamio toma instantáneas de \`@paperclipai/plugin-sdk\` y \`@paperclipai/shared\` desde una copia local de Paperclip en:\n\n\`${toPosixPath(localSdkPath)}\`\n\nLos tarballs empaquetados viven en \`.paperclip-sdk/\` para desarrollo local. Antes de publicar este plugin, cambia esas dependencias a versiones publicadas del paquete cuando estén disponibles en npm.\n\n`
   : ""}
 
-## Install Into Paperclip
+## Instalar en Paperclip
 
 \`\`\`bash
 curl -X POST http://127.0.0.1:3100/api/plugins/install \\
@@ -445,10 +446,10 @@ curl -X POST http://127.0.0.1:3100/api/plugins/install \\
   -d '{"packageName":"${toPosixPath(outputDir)}","isLocalPath":true}'
 \`\`\`
 
-## Build Options
+## Opciones de compilación
 
-- \`pnpm build\` uses esbuild presets from \`@paperclipai/plugin-sdk/bundlers\`.
-- \`pnpm build:rollup\` uses rollup presets from the same SDK.
+- \`pnpm build\` usa preajustes de esbuild de \`@paperclipai/plugin-sdk/bundlers\`.
+- \`pnpm build:rollup\` usa preajustes de rollup del mismo SDK.
 `,
   );
 
@@ -463,12 +464,12 @@ function parseArg(name: string): string | undefined {
   return process.argv[index + 1];
 }
 
-/** CLI wrapper for `scaffoldPluginProject`. */
+/** Envoltorio CLI para `scaffoldPluginProject`. */
 function runCli() {
   const pluginName = process.argv[2];
   if (!pluginName) {
     // eslint-disable-next-line no-console
-    console.error("Usage: create-paperclip-plugin <name> [--template default|connector|workspace] [--output <dir>] [--sdk-path <paperclip-sdk-path>]");
+    console.error("Uso: create-paperclip-plugin <name> [--template default|connector|workspace] [--output <dir>] [--sdk-path <paperclip-sdk-path>]");
     process.exit(1);
   }
 
@@ -488,7 +489,7 @@ function runCli() {
   });
 
   // eslint-disable-next-line no-console
-  console.log(`Created plugin scaffold at ${out}`);
+  console.log(`Andamio de plugin creado en ${out}`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

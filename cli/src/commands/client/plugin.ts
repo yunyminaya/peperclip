@@ -10,7 +10,7 @@ import {
 } from "./common.js";
 
 // ---------------------------------------------------------------------------
-// Types mirroring server-side shapes
+// Tipos que reflejan las formas del lado del servidor
 // ---------------------------------------------------------------------------
 
 interface PluginRecord {
@@ -27,7 +27,7 @@ interface PluginRecord {
 
 
 // ---------------------------------------------------------------------------
-// Option types
+// Tipos de opciones
 // ---------------------------------------------------------------------------
 
 interface PluginListOptions extends BaseClientOptions {
@@ -44,7 +44,7 @@ interface PluginUninstallOptions extends BaseClientOptions {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Utilidades
 // ---------------------------------------------------------------------------
 
 /**
@@ -53,9 +53,9 @@ interface PluginUninstallOptions extends BaseClientOptions {
  */
 function resolvePackageArg(packageArg: string, isLocal: boolean): string {
   if (!isLocal) return packageArg;
-  // Already absolute
+  // Ya es absoluta
   if (path.isAbsolute(packageArg)) return packageArg;
-  // Expand leading ~ to home directory
+  // Expandir el ~ inicial al directorio home
   if (packageArg.startsWith("~")) {
     const home = process.env.HOME ?? process.env.USERPROFILE ?? "";
     return path.resolve(home, packageArg.slice(1).replace(/^[\\/]/, ""));
@@ -92,7 +92,7 @@ function formatPlugin(p: PluginRecord): string {
 // ---------------------------------------------------------------------------
 
 export function registerPluginCommands(program: Command): void {
-  const plugin = program.command("plugin").description("Plugin lifecycle management");
+  const plugin = program.command("plugin").description("Gestión del ciclo de vida de plugins");
 
   // -------------------------------------------------------------------------
   // plugin list
@@ -100,8 +100,8 @@ export function registerPluginCommands(program: Command): void {
   addCommonClientOptions(
     plugin
       .command("list")
-      .description("List installed plugins")
-      .option("--status <status>", "Filter by status (ready, error, disabled, installed, upgrade_pending)")
+      .description("Listar plugins instalados")
+      .option("--status <status>", "Filtrar por estado (ready, error, disabled, installed, upgrade_pending)")
       .action(async (opts: PluginListOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -115,7 +115,7 @@ export function registerPluginCommands(program: Command): void {
 
           const rows = plugins ?? [];
           if (rows.length === 0) {
-            console.log(pc.dim("No plugins installed."));
+            console.log(pc.dim("No hay plugins instalados."));
             return;
           }
 
@@ -135,19 +135,19 @@ export function registerPluginCommands(program: Command): void {
     plugin
       .command("install <package>")
       .description(
-        "Install a plugin from a local path or npm package.\n" +
-          "  Examples:\n" +
-          "    paperclipai plugin install ./my-plugin              # local path\n" +
-          "    paperclipai plugin install @acme/plugin-linear      # npm package\n" +
-          "    paperclipai plugin install @acme/plugin-linear@1.2  # pinned version",
+        "Instala un plugin desde una ruta local o un paquete npm.\n" +
+          "  Ejemplos:\n" +
+          "    paperclipai plugin install ./my-plugin              # ruta local\n" +
+          "    paperclipai plugin install @acme/plugin-linear      # paquete npm\n" +
+          "    paperclipai plugin install @acme/plugin-linear@1.2  # versión fija",
       )
-      .option("-l, --local", "Treat <package> as a local filesystem path", false)
-      .option("--version <version>", "Specific npm version to install (npm packages only)")
+      .option("-l, --local", "Tratar <package> como una ruta local del sistema de archivos", false)
+      .option("--version <version>", "Versión npm específica a instalar (solo paquetes npm)")
       .action(async (packageArg: string, opts: PluginInstallOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
 
-          // Auto-detect local paths: starts with . or / or ~ or is an absolute path
+          // Detectar rutas locales automáticamente: empieza con . o / o ~ o es una ruta absoluta
           const isLocal =
             opts.local ||
             packageArg.startsWith("./") ||
@@ -161,8 +161,8 @@ export function registerPluginCommands(program: Command): void {
             console.log(
               pc.dim(
                 isLocal
-                  ? `Installing plugin from local path: ${resolvedPackage}`
-                  : `Installing plugin: ${resolvedPackage}${opts.version ? `@${opts.version}` : ""}`,
+                  ? `Instalando plugin desde ruta local: ${resolvedPackage}`
+                  : `Instalando plugin: ${resolvedPackage}${opts.version ? `@${opts.version}` : ""}`,
               ),
             );
           }
@@ -179,18 +179,18 @@ export function registerPluginCommands(program: Command): void {
           }
 
           if (!installedPlugin) {
-            console.log(pc.dim("Install returned no plugin record."));
+            console.log(pc.dim("La instalación no devolvió registro de plugin."));
             return;
           }
 
           console.log(
             pc.green(
-              `✓ Installed ${pc.bold(installedPlugin.pluginKey)} v${installedPlugin.version} (${installedPlugin.status})`,
+              `✓ Instalado ${pc.bold(installedPlugin.pluginKey)} v${installedPlugin.version} (${installedPlugin.status})`,
             ),
           );
 
           if (installedPlugin.lastError) {
-            console.log(pc.red(`  Warning: ${installedPlugin.lastError}`));
+            console.log(pc.red(`  Advertencia: ${installedPlugin.lastError}`));
           }
         } catch (err) {
           handleCommandError(err);
@@ -205,10 +205,10 @@ export function registerPluginCommands(program: Command): void {
     plugin
       .command("uninstall <pluginKey>")
       .description(
-        "Uninstall a plugin by its plugin key or database ID.\n" +
-          "  Use --force to hard-purge all state and config.",
+        "Desinstala un plugin por su clave de plugin o ID de base de datos.\n" +
+          "  Usa --force para purgar todo el estado y la config.",
       )
-      .option("--force", "Purge all plugin state and config (hard delete)", false)
+      .option("--force", "Purgar todo el estado y la config del plugin (eliminación dura)", false)
       .action(async (pluginKey: string, opts: PluginUninstallOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -219,8 +219,8 @@ export function registerPluginCommands(program: Command): void {
             console.log(
               pc.dim(
                 purge
-                  ? `Uninstalling and purging plugin: ${pluginKey}`
-                  : `Uninstalling plugin: ${pluginKey}`,
+                  ? `Desinstalando y purgando plugin: ${pluginKey}`
+                  : `Desinstalando plugin: ${pluginKey}`,
               ),
             );
           }
@@ -234,7 +234,7 @@ export function registerPluginCommands(program: Command): void {
             return;
           }
 
-          console.log(pc.green(`✓ Uninstalled ${pc.bold(pluginKey)}${purge ? " (purged)" : ""}`));
+          console.log(pc.green(`✓ Desinstalado ${pc.bold(pluginKey)}${purge ? " (purgado)" : ""}`));
         } catch (err) {
           handleCommandError(err);
         }
@@ -247,7 +247,7 @@ export function registerPluginCommands(program: Command): void {
   addCommonClientOptions(
     plugin
       .command("enable <pluginKey>")
-      .description("Enable a disabled or errored plugin")
+      .description("Habilitar un plugin deshabilitado o con error")
       .action(async (pluginKey: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -260,7 +260,7 @@ export function registerPluginCommands(program: Command): void {
             return;
           }
 
-          console.log(pc.green(`✓ Enabled ${pc.bold(pluginKey)} — status: ${result?.status ?? "unknown"}`));
+          console.log(pc.green(`✓ Habilitado ${pc.bold(pluginKey)} — estado: ${result?.status ?? "unknown"}`));
         } catch (err) {
           handleCommandError(err);
         }
@@ -273,7 +273,7 @@ export function registerPluginCommands(program: Command): void {
   addCommonClientOptions(
     plugin
       .command("disable <pluginKey>")
-      .description("Disable a running plugin without uninstalling it")
+      .description("Deshabilitar un plugin en ejecución sin desinstalarlo")
       .action(async (pluginKey: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -286,7 +286,7 @@ export function registerPluginCommands(program: Command): void {
             return;
           }
 
-          console.log(pc.dim(`Disabled ${pc.bold(pluginKey)} — status: ${result?.status ?? "unknown"}`));
+          console.log(pc.dim(`Deshabilitado ${pc.bold(pluginKey)} — estado: ${result?.status ?? "unknown"}`));
         } catch (err) {
           handleCommandError(err);
         }
@@ -299,7 +299,7 @@ export function registerPluginCommands(program: Command): void {
   addCommonClientOptions(
     plugin
       .command("inspect <pluginKey>")
-      .description("Show full details for an installed plugin")
+      .description("Mostrar detalles completos de un plugin instalado")
       .action(async (pluginKey: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -313,13 +313,13 @@ export function registerPluginCommands(program: Command): void {
           }
 
           if (!result) {
-            console.log(pc.red(`Plugin not found: ${pluginKey}`));
+            console.log(pc.red(`Plugin no encontrado: ${pluginKey}`));
             process.exit(1);
           }
 
           console.log(formatPlugin(result));
           if (result.lastError) {
-            console.log(`\n${pc.red("Last error:")}\n${result.lastError}`);
+            console.log(`\n${pc.red("Último error:")}\n${result.lastError}`);
           }
         } catch (err) {
           handleCommandError(err);
@@ -333,7 +333,7 @@ export function registerPluginCommands(program: Command): void {
   addCommonClientOptions(
     plugin
       .command("examples")
-      .description("List bundled example plugins available for local install")
+      .description("Listar plugins de ejemplo incluidos disponibles para instalación local")
       .action(async (opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -355,7 +355,7 @@ export function registerPluginCommands(program: Command): void {
 
           const rows = examples ?? [];
           if (rows.length === 0) {
-            console.log(pc.dim("No bundled examples available."));
+            console.log(pc.dim("No hay ejemplos incluidos disponibles."));
             return;
           }
 

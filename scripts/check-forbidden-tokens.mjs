@@ -2,13 +2,13 @@
 /**
  * check-forbidden-tokens.mjs
  *
- * Scans the codebase for forbidden tokens before publishing to npm.
- * Mirrors the git pre-commit hook logic, but runs against the full
- * working tree (not just staged changes).
+ * Escanea el código en busca de tokens prohibidos antes de publicar en npm.
+ * Replica la lógica del hook pre-commit de git, pero se ejecuta sobre el
+ * árbol de trabajo completo (no solo los cambios en staging).
  *
- * Token list: .git/hooks/forbidden-tokens.txt (one per line, # comments ok).
- * If the file is missing, the check still uses the active local username when
- * available. If username detection fails, the check degrades gracefully.
+ * Lista de tokens: .git/hooks/forbidden-tokens.txt (uno por línea, comentarios con # permitidos).
+ * Si el archivo falta, la verificación igual usa el nombre de usuario local activo cuando
+ * esté disponible. Si la detección del nombre de usuario falla, la verificación continúa de forma degradada.
  */
 
 import { execSync } from "node:child_process";
@@ -27,7 +27,7 @@ export function resolveDynamicForbiddenTokens(env = process.env, osModule = os) 
   try {
     candidates.push(osModule.userInfo().username);
   } catch {
-    // Some environments do not expose userInfo; env vars are enough fallback.
+    // Algunos entornos no exponen userInfo; las variables de entorno bastan como alternativa.
   }
 
   return uniqueNonEmpty(candidates);
@@ -57,7 +57,7 @@ export function runForbiddenTokenCheck({
   error = console.error,
 }) {
   if (tokens.length === 0) {
-    log("  ℹ  Forbidden tokens list is empty — skipping check.");
+    log("  ℹ  La lista de tokens prohibidos está vacía — omitiendo verificación.");
     return 0;
   }
 
@@ -71,7 +71,7 @@ export function runForbiddenTokenCheck({
       );
       if (result.trim()) {
         if (!found) {
-          error("ERROR: Forbidden tokens found in tracked files:\n");
+          error("ERROR: Se encontraron tokens prohibidos en archivos rastreados:\n");
         }
         found = true;
         const lines = result.trim().split("\n");
@@ -80,16 +80,16 @@ export function runForbiddenTokenCheck({
         }
       }
     } catch {
-      // git grep returns exit code 1 when no matches — that's fine
+      // git grep devuelve el código de salida 1 cuando no hay coincidencias — está bien
     }
   }
 
   if (found) {
-    error("\nBuild blocked. Remove the forbidden token(s) before publishing.");
+    error("\nCompilación bloqueada. Elimina los tokens prohibidos antes de publicar.");
     return 1;
   }
 
-  log("  ✓  No forbidden tokens found.");
+  log("  ✓  No se encontraron tokens prohibidos.");
   return 0;
 }
 

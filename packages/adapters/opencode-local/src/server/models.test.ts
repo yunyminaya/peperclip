@@ -19,7 +19,7 @@ describe("openCode models", () => {
   it("rejects when model is missing", async () => {
     await expect(
       ensureOpenCodeModelConfiguredAndAvailable({ model: "" }),
-    ).rejects.toThrow("OpenCode requires `adapterConfig.model`");
+    ).rejects.toThrow("OpenCode requiere `adapterConfig.model`");
   });
 
   it("rejects when discovery cannot run for configured model", async () => {
@@ -28,6 +28,6 @@ describe("openCode models", () => {
       ensureOpenCodeModelConfiguredAndAvailable({
         model: "openai/gpt-5",
       }),
-    ).rejects.toThrow("Failed to start command");
+    ).rejects.toThrow("No se pudo iniciar el comando");
   });
 });

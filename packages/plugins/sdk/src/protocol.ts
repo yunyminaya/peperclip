@@ -1,17 +1,18 @@
 /**
- * JSON-RPC 2.0 message types and protocol helpers for the host ↔ worker IPC
- * channel.
+ * Tipos de mensajes JSON-RPC 2.0 y helpers de protocolo para el canal IPC
+ * de host a worker.
  *
- * The Paperclip plugin runtime uses JSON-RPC 2.0 over stdio to communicate
- * between the host process and each plugin worker process. This module defines:
+ * El runtime de plugins de Paperclip usa JSON-RPC 2.0 sobre stdio para
+ * comunicarse entre el proceso del host y cada proceso de worker de plugin.
+ * Este módulo define:
  *
- * - Core JSON-RPC 2.0 envelope types (request, response, notification, error)
- * - Standard and plugin-specific error codes
- * - Typed method maps for host→worker and worker→host calls
- * - Helper functions for creating well-formed messages
+ * - Tipos de envoltorio centrales de JSON-RPC 2.0 (solicitud, respuesta, notificación, error)
+ * - Códigos de error estándar y específicos de plugin
+ * - Mapas tipados de métodos para llamadas de host a worker y de worker a host
+ * - Funciones de ayuda para crear mensajes bien formados
  *
- * @see PLUGIN_SPEC.md §12.1 — Process Model
- * @see PLUGIN_SPEC.md §13 — Host-Worker Protocol
+ * @see PLUGIN_SPEC.md §12.1 — Modelo de proceso
+ * @see PLUGIN_SPEC.md §13 — Protocolo host-worker
  * @see https://www.jsonrpc.org/specification
  */
 
@@ -46,84 +47,84 @@ import type {
 } from "./define-plugin.js";
 
 // ---------------------------------------------------------------------------
-// JSON-RPC 2.0 — Core Protocol Types
+// JSON-RPC 2.0: tipos centrales del protocolo
 // ---------------------------------------------------------------------------
 
-/** The JSON-RPC protocol version. Always `"2.0"`. */
+/** La versión del protocolo JSON-RPC. Siempre `"2.0"`. */
 export const JSONRPC_VERSION = "2.0" as const;
 
 /**
- * A unique request identifier. JSON-RPC 2.0 allows strings or numbers;
- * we use strings (UUIDs or monotonic counters) for all Paperclip messages.
+ * Un identificador único de solicitud. JSON-RPC 2.0 permite cadenas o números;
+ * usamos cadenas (UUIDs o contadores monótonos) para todos los mensajes de Paperclip.
  */
 export type JsonRpcId = string | number;
 
 /**
- * A JSON-RPC 2.0 request message.
+ * Un mensaje de solicitud JSON-RPC 2.0.
  *
- * The host sends requests to the worker (or vice versa) and expects a
- * matching response with the same `id`.
+ * El host envía solicitudes al worker (o viceversa) y espera una respuesta
+ * coincidente con el mismo `id`.
  */
 export interface JsonRpcRequest<
   TMethod extends string = string,
   TParams = unknown,
 > {
   readonly jsonrpc: typeof JSONRPC_VERSION;
-  /** Unique request identifier. Must be echoed in the response. */
+  /** Identificador único de solicitud. Debe repetirse en la respuesta. */
   readonly id: JsonRpcId;
-  /** The RPC method name to invoke. */
+  /** El nombre del método RPC a invocar. */
   readonly method: TMethod;
-  /** Structured parameters for the method call. */
+  /** Parámetros estructurados para la llamada al método. */
   readonly params: TParams;
 }
 
 /**
- * A JSON-RPC 2.0 success response.
+ * Una respuesta exitosa JSON-RPC 2.0.
  */
 export interface JsonRpcSuccessResponse<TResult = unknown> {
   readonly jsonrpc: typeof JSONRPC_VERSION;
-  /** Echoed request identifier. */
+  /** Identificador de solicitud repetido. */
   readonly id: JsonRpcId;
-  /** The method return value. */
+  /** El valor de retorno del método. */
   readonly result: TResult;
   readonly error?: never;
 }
 
 /**
- * A JSON-RPC 2.0 error object embedded in an error response.
+ * Un objeto de error JSON-RPC 2.0 embebido en una respuesta de error.
  */
 export interface JsonRpcError<TData = unknown> {
-  /** Machine-readable error code. */
+  /** Código de error legible por máquina. */
   readonly code: number;
-  /** Human-readable error message. */
+  /** Mensaje de error legible. */
   readonly message: string;
-  /** Optional structured error data. */
+  /** Datos de error estructurados opcionales. */
   readonly data?: TData;
 }
 
 /**
- * A JSON-RPC 2.0 error response.
+ * Una respuesta de error JSON-RPC 2.0.
  */
 export interface JsonRpcErrorResponse<TData = unknown> {
   readonly jsonrpc: typeof JSONRPC_VERSION;
-  /** Echoed request identifier. */
+  /** Identificador de solicitud repetido. */
   readonly id: JsonRpcId | null;
   readonly result?: never;
-  /** The error object. */
+  /** El objeto de error. */
   readonly error: JsonRpcError<TData>;
 }
 
 /**
- * A JSON-RPC 2.0 response — either success or error.
+ * Una respuesta JSON-RPC 2.0: éxito o error.
  */
 export type JsonRpcResponse<TResult = unknown, TData = unknown> =
   | JsonRpcSuccessResponse<TResult>
   | JsonRpcErrorResponse<TData>;
 
 /**
- * A JSON-RPC 2.0 notification (a request with no `id`).
+ * Una notificación JSON-RPC 2.0 (una solicitud sin `id`).
  *
- * Notifications are fire-and-forget — no response is expected.
+ * Las notificaciones son de disparo y olvido: no se espera respuesta.
  */
 export interface JsonRpcNotification<
   TMethod extends string = string,
@@ -131,14 +132,14 @@ export interface JsonRpcNotification<
 > {
   readonly jsonrpc: typeof JSONRPC_VERSION;
   readonly id?: never;
-  /** The notification method name. */
+  /** El nombre del método de la notificación. */
   readonly method: TMethod;
-  /** Structured parameters for the notification. */
+  /** Parámetros estructurados para la notificación. */
   readonly params: TParams;
 }
 
 /**
- * Any well-formed JSON-RPC 2.0 message (request, response, or notification).
+ * Cualquier mensaje JSON-RPC 2.0 bien formado (solicitud, respuesta o notificación).
  */
 export type JsonRpcMessage =
   | JsonRpcRequest
@@ -146,24 +147,24 @@ export type JsonRpcMessage =
   | JsonRpcNotification;
 
 // ---------------------------------------------------------------------------
-// Error Codes
+// Códigos de error
 // ---------------------------------------------------------------------------
 
 /**
- * Standard JSON-RPC 2.0 error codes.
+ * Códigos de error estándar de JSON-RPC 2.0.
  *
  * @see https://www.jsonrpc.org/specification#error_object
  */
 export const JSONRPC_ERROR_CODES = {
-  /** Invalid JSON was received by the server. */
+  /** El servidor recibió JSON inválido. */
   PARSE_ERROR: -32700,
-  /** The JSON sent is not a valid Request object. */
+  /** El JSON enviado no es un objeto Request válido. */
   INVALID_REQUEST: -32600,
-  /** The method does not exist or is not available. */
+  /** El método no existe o no está disponible. */
   METHOD_NOT_FOUND: -32601,
-  /** Invalid method parameter(s). */
+  /** Parámetro(s) de método inválido(s). */
   INVALID_PARAMS: -32602,
-  /** Internal JSON-RPC error. */
+  /** Error interno de JSON-RPC. */
   INTERNAL_ERROR: -32603,
 } as const;
 
@@ -171,25 +172,26 @@ export type JsonRpcErrorCode =
   (typeof JSONRPC_ERROR_CODES)[keyof typeof JSONRPC_ERROR_CODES];
 
 /**
- * Paperclip plugin-specific error codes.
+ * Códigos de error específicos de plugins de Paperclip.
  *
- * These live in the JSON-RPC "server error" reserved range (-32000 to -32099)
- * as specified by JSON-RPC 2.0 for implementation-defined server errors.
+ * Viven en el rango reservado "server error" de JSON-RPC (-32000 a -32099)
+ * según lo especificado por JSON-RPC 2.0 para errores de servidor definidos
+ * por la implementación.
  *
- * @see PLUGIN_SPEC.md §19.7 — Error Propagation Through The Bridge
+ * @see PLUGIN_SPEC.md §19.7 — Propagación de errores a través del puente
  */
 export const PLUGIN_RPC_ERROR_CODES = {
-  /** The worker process is not running or not reachable. */
+  /** El proceso del worker no está en ejecución o no es alcanzable. */
   WORKER_UNAVAILABLE: -32000,
-  /** The plugin does not have the required capability for this operation. */
+  /** El plugin no tiene la capacidad requerida para esta operación. */
   CAPABILITY_DENIED: -32001,
-  /** The worker reported an unhandled error during method execution. */
+  /** El worker reportó un error no manejado durante la ejecución del método. */
   WORKER_ERROR: -32002,
-  /** The method call timed out waiting for the worker response. */
+  /** La llamada al método agotó el tiempo esperando la respuesta del worker. */
   TIMEOUT: -32003,
-  /** The worker does not implement the requested optional method. */
+  /** El worker no implementa el método opcional solicitado. */
   METHOD_NOT_IMPLEMENTED: -32004,
-  /** A catch-all for errors that do not fit other categories. */
+  /** Comodín para errores que no encajan en otras categorías. */
   UNKNOWN: -32099,
 } as const;
 
@@ -197,147 +199,147 @@ export type PluginRpcErrorCode =
   (typeof PLUGIN_RPC_ERROR_CODES)[keyof typeof PLUGIN_RPC_ERROR_CODES];
 
 // ---------------------------------------------------------------------------
-// Host → Worker Method Signatures (§13 Host-Worker Protocol)
+// Firmas de métodos de host a worker (§13 Protocolo host-worker)
 // ---------------------------------------------------------------------------
 
 /**
- * Input for the `initialize` RPC method.
+ * Entrada para el método RPC `initialize`.
  *
  * @see PLUGIN_SPEC.md §13.1 — `initialize`
  */
 export interface InitializeParams {
-  /** Full plugin manifest snapshot. */
+  /** Instantánea completa del manifiesto del plugin. */
   manifest: PaperclipPluginManifestV1;
-  /** Resolved operator configuration (validated against `instanceConfigSchema`). */
+  /** Configuración resuelta del operador (validada contra `instanceConfigSchema`). */
   config: Record<string, unknown>;
-  /** Instance-level metadata. */
+  /** Metadatos a nivel de instancia. */
   instanceInfo: {
-    /** UUID of this Paperclip instance. */
+    /** UUID de esta instancia de Paperclip. */
     instanceId: string;
-    /** Semver version of the running Paperclip host. */
+    /** Versión semver del host de Paperclip en ejecución. */
     hostVersion: string;
   };
-  /** Host API version. */
+  /** Versión de la API del host. */
   apiVersion: number;
 }
 
 /**
- * Result returned by the `initialize` RPC method.
+ * Resultado devuelto por el método RPC `initialize`.
  */
 export interface InitializeResult {
-  /** Whether initialization succeeded. */
+  /** Indica si la inicialización tuvo éxito. */
   ok: boolean;
-  /** Optional methods the worker has implemented (e.g. "validateConfig", "onEvent"). */
+  /** Métodos opcionales que el worker ha implementado (p. ej. "validateConfig", "onEvent"). */
   supportedMethods?: string[];
 }
 
 /**
- * Input for the `configChanged` RPC method.
+ * Entrada para el método RPC `configChanged`.
  *
  * @see PLUGIN_SPEC.md §13.4 — `configChanged`
  */
 export interface ConfigChangedParams {
-  /** The newly resolved configuration. */
+  /** La configuración recién resuelta. */
   config: Record<string, unknown>;
 }
 
 /**
- * Input for the `validateConfig` RPC method.
+ * Entrada para el método RPC `validateConfig`.
  *
  * @see PLUGIN_SPEC.md §13.3 — `validateConfig`
  */
 export interface ValidateConfigParams {
-  /** The configuration to validate. */
+  /** La configuración a validar. */
   config: Record<string, unknown>;
 }
 
 /**
- * Input for the `onEvent` RPC method.
+ * Entrada para el método RPC `onEvent`.
  *
  * @see PLUGIN_SPEC.md §13.5 — `onEvent`
  */
 export interface OnEventParams {
-  /** The domain event to deliver. */
+  /** El evento de dominio a entregar. */
   event: PluginEvent;
 }
 
 /**
- * Input for the `runJob` RPC method.
+ * Entrada para el método RPC `runJob`.
  *
  * @see PLUGIN_SPEC.md §13.6 — `runJob`
  */
 export interface RunJobParams {
-  /** Job execution context. */
+  /** Contexto de ejecución de la tarea. */
   job: PluginJobContext;
 }
 
 /**
- * Input for the `getData` RPC method.
+ * Entrada para el método RPC `getData`.
  *
  * @see PLUGIN_SPEC.md §13.8 — `getData`
  */
 export interface GetDataParams {
-  /** Plugin-defined data key (e.g. `"sync-health"`). */
+  /** Clave de datos definida por el plugin (p. ej. `"sync-health"`). */
   key: string;
-  /** Context and query parameters from the UI. */
+  /** Parámetros de contexto y consulta desde la interfaz. */
   params: Record<string, unknown>;
-  /** Optional launcher/container metadata from the host render environment. */
+  /** Metadatos opcionales de lanzador/contenedor desde el entorno de renderizado del host. */
   renderEnvironment?: PluginLauncherRenderContextSnapshot | null;
 }
 
 /**
- * Input for the `performAction` RPC method.
+ * Entrada para el método RPC `performAction`.
  *
  * @see PLUGIN_SPEC.md §13.9 — `performAction`
  */
 export interface PerformActionParams {
-  /** Plugin-defined action key (e.g. `"resync"`). */
+  /** Clave de acción definida por el plugin (p. ej. `"resync"`). */
   key: string;
-  /** Action parameters from the UI. */
+  /** Parámetros de acción desde la interfaz. */
   params: Record<string, unknown>;
-  /** Optional launcher/container metadata from the host render environment. */
+  /** Metadatos opcionales de lanzador/contenedor desde el entorno de renderizado del host. */
   renderEnvironment?: PluginLauncherRenderContextSnapshot | null;
 }
 
 /**
- * Input for the `executeTool` RPC method.
+ * Entrada para el método RPC `executeTool`.
  *
  * @see PLUGIN_SPEC.md §13.10 — `executeTool`
  */
 export interface ExecuteToolParams {
-  /** Tool name (without plugin namespace prefix). */
+  /** Nombre de la herramienta (sin prefijo de espacio de nombres del plugin). */
   toolName: string;
-  /** Parsed parameters matching the tool's declared schema. */
+  /** Parámetros analizados que coinciden con el esquema declarado de la herramienta. */
   parameters: unknown;
-  /** Agent run context. */
+  /** Contexto de ejecución del agente. */
   runContext: ToolRunContext;
 }
 
 // ---------------------------------------------------------------------------
-// UI launcher / modal host interaction payloads
+// Cargas útiles de interacción de lanzador/modal de interfaz con el host
 // ---------------------------------------------------------------------------
 
 /**
- * Bounds request issued by a plugin UI running inside a host-managed launcher
- * container such as a modal, drawer, or popover.
+ * Solicitud de límites emitida por una interfaz de plugin que se ejecuta dentro
+ * de un contenedor de lanzador gestionado por el host, como un modal, drawer o popover.
  */
 export interface PluginModalBoundsRequest {
-  /** High-level size preset requested from the host. */
+  /** Preajuste de tamaño de alto nivel solicitado al host. */
   bounds: PluginLauncherBounds;
-  /** Optional explicit width override in CSS pixels. */
+  /** Sobrescritura explícita opcional del ancho en píxeles CSS. */
   width?: number;
-  /** Optional explicit height override in CSS pixels. */
+  /** Sobrescritura explícita opcional del alto en píxeles CSS. */
   height?: number;
-  /** Optional lower bounds for host resizing decisions. */
+  /** Límites inferiores opcionales para decisiones de redimensionado del host. */
   minWidth?: number;
   minHeight?: number;
-  /** Optional upper bounds for host resizing decisions. */
+  /** Límites superiores opcionales para decisiones de redimensionado del host. */
   maxWidth?: number;
   maxHeight?: number;
 }
 
 /**
- * Reason metadata supplied by host-managed close lifecycle callbacks.
+ * Metadatos de motivo suministrados por callbacks de ciclo de vida de cierre gestionados por el host.
  */
 export interface PluginRenderCloseEvent {
   reason:
@@ -351,11 +353,12 @@ export interface PluginRenderCloseEvent {
 }
 
 /**
- * Map of host→worker RPC method names to their `[params, result]` types.
+ * Mapa de nombres de métodos RPC de host a worker a sus tipos `[params, result]`.
  *
- * This type is the single source of truth for all methods the host can call
- * on a worker. Used by both the host dispatcher and the worker handler to
- * ensure type safety across the IPC boundary.
+ * Este tipo es la única fuente de verdad para todos los métodos que el host
+ * puede llamar en un worker. Lo usan tanto el despachador del host como el
+ * manejador del worker para garantizar la seguridad de tipos a través del
+ * límite IPC.
  */
 export interface HostToWorkerMethods {
   /** @see PLUGIN_SPEC.md §13.1 */
@@ -382,17 +385,17 @@ export interface HostToWorkerMethods {
   executeTool: [params: ExecuteToolParams, result: ToolResult];
 }
 
-/** Union of all host→worker method names. */
+/** Unión de todos los nombres de métodos de host a worker. */
 export type HostToWorkerMethodName = keyof HostToWorkerMethods;
 
-/** Required methods the worker MUST implement. */
+/** Métodos requeridos que el worker DEBE implementar. */
 export const HOST_TO_WORKER_REQUIRED_METHODS: readonly HostToWorkerMethodName[] = [
   "initialize",
   "health",
   "shutdown",
 ] as const;
 
-/** Optional methods the worker MAY implement. */
+/** Métodos opcionales que el worker PUEDE implementar. */
 export const HOST_TO_WORKER_OPTIONAL_METHODS: readonly HostToWorkerMethodName[] = [
   "validateConfig",
   "configChanged",
@@ -405,20 +408,20 @@ export const HOST_TO_WORKER_OPTIONAL_METHODS: readonly HostToWorkerMethodName[] 
 ] as const;
 
 // ---------------------------------------------------------------------------
-// Worker → Host Method Signatures (SDK client calls)
+// Firmas de métodos de worker a host (llamadas de cliente SDK)
 // ---------------------------------------------------------------------------
 
 /**
- * Map of worker→host RPC method names to their `[params, result]` types.
+ * Mapa de nombres de métodos RPC de worker a host a sus tipos `[params, result]`.
  *
- * These represent the SDK client calls that the worker makes back to the
- * host to access platform services (state, entities, config, etc.).
+ * Representan las llamadas de cliente SDK que el worker hace de vuelta al host
+ * para acceder a servicios de la plataforma (estado, entidades, configuración, etc.).
  */
 export interface WorkerToHostMethods {
   // Config
   "config.get": [params: Record<string, never>, result: Record<string, unknown>];
 
-  // State
+  // Estado
   "state.get": [
     params: { scopeKind: string; scopeId?: string; namespace?: string; stateKey: string },
     result: unknown,
@@ -432,7 +435,7 @@ export interface WorkerToHostMethods {
     result: void,
   ];
 
-  // Entities
+  // Entidades
   "entities.upsert": [
     params: {
       entityType: string;
@@ -479,7 +482,7 @@ export interface WorkerToHostMethods {
     }>,
   ];
 
-  // Events
+  // Eventos
   "events.emit": [
     params: { name: string; companyId: string; payload: unknown },
     result: void,
@@ -495,13 +498,13 @@ export interface WorkerToHostMethods {
     result: { status: number; statusText: string; headers: Record<string, string>; body: string },
   ];
 
-  // Secrets
+  // Secretos
   "secrets.resolve": [
     params: { secretRef: string },
     result: string,
   ];
 
-  // Activity
+  // Actividad
   "activity.log": [
     params: {
       companyId: string;
@@ -513,7 +516,7 @@ export interface WorkerToHostMethods {
     result: void,
   ];
 
-  // Metrics
+  // Métricas
   "metrics.write": [
     params: { name: string; value: number; tags?: Record<string, string> },
     result: void,
@@ -525,7 +528,7 @@ export interface WorkerToHostMethods {
     result: void,
   ];
 
-  // Companies (read)
+  // Empresas (lectura)
   "companies.list": [
     params: { limit?: number; offset?: number },
     result: Company[],
@@ -535,7 +538,7 @@ export interface WorkerToHostMethods {
     result: Company | null,
   ];
 
-  // Projects (read)
+  // Proyectos (lectura)
   "projects.list": [
     params: { companyId: string; limit?: number; offset?: number },
     result: Project[],
@@ -603,7 +606,7 @@ export interface WorkerToHostMethods {
     result: IssueComment,
   ];
 
-  // Issue Documents
+  // Documentos de issue
   "issues.documents.list": [
     params: { issueId: string; companyId: string },
     result: IssueDocumentSummary[],
@@ -629,7 +632,7 @@ export interface WorkerToHostMethods {
     result: void,
   ];
 
-  // Agents (read)
+  // Agentes (lectura)
   "agents.list": [
     params: { companyId: string; status?: string; limit?: number; offset?: number },
     result: Agent[],
@@ -639,7 +642,7 @@ export interface WorkerToHostMethods {
     result: Agent | null,
   ];
 
-  // Agents (write)
+  // Agentes (escritura)
   "agents.pause": [
     params: { agentId: string; companyId: string },
     result: Agent,
@@ -653,7 +656,7 @@ export interface WorkerToHostMethods {
     result: { runId: string },
   ];
 
-  // Agent Sessions
+  // Sesiones de agente
   "agents.sessions.create": [
     params: { agentId: string; companyId: string; taskKey?: string; reason?: string },
     result: { sessionId: string; agentId: string; companyId: string; status: "active" | "closed"; createdAt: string },
@@ -671,7 +674,7 @@ export interface WorkerToHostMethods {
     result: void,
   ];
 
-  // Goals
+  // Objetivos
   "goals.list": [
     params: { companyId: string; level?: string; status?: string; limit?: number; offset?: number },
     result: Goal[],
@@ -706,25 +709,25 @@ export interface WorkerToHostMethods {
 export type WorkerToHostMethodName = keyof WorkerToHostMethods;
 
 // ---------------------------------------------------------------------------
-// Worker→Host Notification Types (fire-and-forget, no response)
+// Tipos de notificación de worker a host (disparo y olvido, sin respuesta)
 // ---------------------------------------------------------------------------
 
 /**
- * Typed parameter shapes for worker→host JSON-RPC notifications.
+ * Formas de parámetros tipadas para notificaciones JSON-RPC de worker a host.
  *
- * Notifications are fire-and-forget — the worker does not wait for a response.
- * These are used for streaming events and logging, not for request-response RPCs.
+ * Las notificaciones son de disparo y olvido: el worker no espera una respuesta.
+ * Se usan para eventos de flujo y registro, no para RPCs de solicitud-respuesta.
  */
 export interface WorkerToHostNotifications {
   /**
-   * Forward a stream event to connected SSE clients.
+   * Reenvía un evento de flujo a clientes SSE conectados.
    *
-   * Emitted by the worker for each event on a stream channel. The host
-   * publishes to the PluginStreamBus, which fans out to all SSE clients
-   * subscribed to the (pluginId, channel, companyId) tuple.
+   * Emitido por el worker para cada evento en un canal de flujo. El host
+   * publica en el PluginStreamBus, que distribuye a todos los clientes SSE
+   * suscritos a la tupla (pluginId, channel, companyId).
    *
-   * The `event` payload is JSON-serializable and sent as SSE `data:`.
-   * The default SSE event type is `"message"`.
+   * La carga útil `event` es serializable a JSON y se envía como SSE `data:`.
+   * El tipo de evento SSE por defecto es `"message"`.
    */
   "streams.emit": {
     channel: string;
@@ -733,12 +736,12 @@ export interface WorkerToHostNotifications {
   };
 
   /**
-   * Signal that a stream channel has been opened.
+   * Señala que un canal de flujo se ha abierto.
    *
-   * Emitted when the worker calls `ctx.streams.open(channel, companyId)`.
-   * UI clients may use this to display a "connected" indicator or begin
-   * buffering input. The host tracks open channels so it can emit synthetic
-   * close events if the worker crashes.
+   * Emitido cuando el worker llama a `ctx.streams.open(channel, companyId)`.
+   * Los clientes de interfaz pueden usarlo para mostrar un indicador "connected"
+   * o comenzar a almacenar entrada en búfer. El host rastrea los canales abiertos
+   * para poder emitir eventos de cierre sintéticos si el worker falla.
    */
   "streams.open": {
     channel: string;
@@ -746,12 +749,12 @@ export interface WorkerToHostNotifications {
   };
 
   /**
-   * Signal that a stream channel has been closed.
+   * Señala que un canal de flujo se ha cerrado.
    *
-   * Emitted when the worker calls `ctx.streams.close(channel)`, or
-   * synthetically by the host when a worker process exits with channels
-   * still open. UI clients should treat this as terminal and disconnect
-   * the SSE connection.
+   * Emitido cuando el worker llama a `ctx.streams.close(channel)`, o
+   * sintéticamente por el host cuando un proceso de worker termina con canales
+   * aún abiertos. Los clientes de interfaz deben tratarlo como terminal y
+   * desconectar la conexión SSE.
    */
   "streams.close": {
     channel: string;
@@ -759,53 +762,53 @@ export interface WorkerToHostNotifications {
   };
 }
 
-/** Union of all worker→host notification method names. */
+/** Unión de todos los nombres de métodos de notificación de worker a host. */
 export type WorkerToHostNotificationName = keyof WorkerToHostNotifications;
 
 // ---------------------------------------------------------------------------
-// Typed Request / Response Helpers
+// Helpers tipados de solicitud/respuesta
 // ---------------------------------------------------------------------------
 
 /**
- * A typed JSON-RPC request for a specific host→worker method.
+ * Una solicitud JSON-RPC tipada para un método específico de host a worker.
  */
 export type HostToWorkerRequest<M extends HostToWorkerMethodName> =
   JsonRpcRequest<M, HostToWorkerMethods[M][0]>;
 
 /**
- * A typed JSON-RPC success response for a specific host→worker method.
+ * Una respuesta exitosa JSON-RPC tipada para un método específico de host a worker.
  */
 export type HostToWorkerResponse<M extends HostToWorkerMethodName> =
   JsonRpcSuccessResponse<HostToWorkerMethods[M][1]>;
 
 /**
- * A typed JSON-RPC request for a specific worker→host method.
+ * Una solicitud JSON-RPC tipada para un método específico de worker a host.
  */
 export type WorkerToHostRequest<M extends WorkerToHostMethodName> =
   JsonRpcRequest<M, WorkerToHostMethods[M][0]>;
 
 /**
- * A typed JSON-RPC success response for a specific worker→host method.
+ * Una respuesta exitosa JSON-RPC tipada para un método específico de worker a host.
  */
 export type WorkerToHostResponse<M extends WorkerToHostMethodName> =
   JsonRpcSuccessResponse<WorkerToHostMethods[M][1]>;
 
 // ---------------------------------------------------------------------------
-// Message Factory Functions
+// Funciones de fábrica de mensajes
 // ---------------------------------------------------------------------------
 
-/** Counter for generating unique request IDs when no explicit ID is provided. */
+/** Contador para generar IDs de solicitud únicos cuando no se proporciona un ID explícito. */
 let _nextId = 1;
 
-/** Wrap around before reaching Number.MAX_SAFE_INTEGER to prevent precision loss. */
+/** Volver al inicio antes de alcanzar Number.MAX_SAFE_INTEGER para evitar pérdida de precisión. */
 const MAX_SAFE_RPC_ID = Number.MAX_SAFE_INTEGER - 1;
 
 /**
- * Create a JSON-RPC 2.0 request message.
+ * Crea un mensaje de solicitud JSON-RPC 2.0.
  *
- * @param method - The RPC method name
- * @param params - Structured parameters
- * @param id - Optional explicit request ID (auto-generated if omitted)
+ * @param method - El nombre del método RPC
+ * @param params - Parámetros estructurados
+ * @param id - ID de solicitud explícito opcional (autogenerado si se omite)
  */
 export function createRequest<TMethod extends string>(
   method: TMethod,
@@ -824,10 +827,10 @@ export function createRequest<TMethod extends string>(
 }
 
 /**
- * Create a JSON-RPC 2.0 success response.
+ * Crea una respuesta exitosa JSON-RPC 2.0.
  *
- * @param id - The request ID being responded to
- * @param result - The result value
+ * @param id - El ID de la solicitud a la que se responde
+ * @param result - El valor del resultado
  */
 export function createSuccessResponse<TResult>(
   id: JsonRpcId,
@@ -841,12 +844,12 @@ export function createSuccessResponse<TResult>(
 }
 
 /**
- * Create a JSON-RPC 2.0 error response.
+ * Crea una respuesta de error JSON-RPC 2.0.
  *
- * @param id - The request ID being responded to (null if the request ID could not be determined)
- * @param code - Machine-readable error code
- * @param message - Human-readable error message
- * @param data - Optional structured error data
+ * @param id - El ID de la solicitud a la que se responde (null si no se pudo determinar el ID)
+ * @param code - Código de error legible por máquina
+ * @param message - Mensaje de error legible
+ * @param data - Datos de error estructurados opcionales
  */
 export function createErrorResponse<TData = unknown>(
   id: JsonRpcId | null,
@@ -865,10 +868,10 @@ export function createErrorResponse<TData = unknown>(
 }
 
 /**
- * Create a JSON-RPC 2.0 notification (fire-and-forget, no response expected).
+ * Crea una notificación JSON-RPC 2.0 (disparo y olvido, no se espera respuesta).
  *
- * @param method - The notification method name
- * @param params - Structured parameters
+ * @param method - El nombre del método de la notificación
+ * @param params - Parámetros estructurados
  */
 export function createNotification<TMethod extends string>(
   method: TMethod,
@@ -882,13 +885,13 @@ export function createNotification<TMethod extends string>(
 }
 
 // ---------------------------------------------------------------------------
-// Type Guards
+// Guardas de tipo
 // ---------------------------------------------------------------------------
 
 /**
- * Check whether a value is a well-formed JSON-RPC 2.0 request.
+ * Verifica si un valor es una solicitud JSON-RPC 2.0 bien formada.
  *
- * A request has `jsonrpc: "2.0"`, a string `method`, and an `id`.
+ * Una solicitud tiene `jsonrpc: "2.0"`, un `method` de cadena y un `id`.
  */
 export function isJsonRpcRequest(value: unknown): value is JsonRpcRequest {
   if (typeof value !== "object" || value === null) return false;
@@ -903,9 +906,9 @@ export function isJsonRpcRequest(value: unknown): value is JsonRpcRequest {
 }
 
 /**
- * Check whether a value is a well-formed JSON-RPC 2.0 notification.
+ * Verifica si un valor es una notificación JSON-RPC 2.0 bien formada.
  *
- * A notification has `jsonrpc: "2.0"`, a string `method`, but no `id`.
+ * Una notificación tiene `jsonrpc: "2.0"`, un `method` de cadena, pero sin `id`.
  */
 export function isJsonRpcNotification(
   value: unknown,
@@ -920,7 +923,7 @@ export function isJsonRpcNotification(
 }
 
 /**
- * Check whether a value is a well-formed JSON-RPC 2.0 response (success or error).
+ * Verifica si un valor es una respuesta JSON-RPC 2.0 bien formada (éxito o error).
  */
 export function isJsonRpcResponse(value: unknown): value is JsonRpcResponse {
   if (typeof value !== "object" || value === null) return false;
@@ -933,7 +936,7 @@ export function isJsonRpcResponse(value: unknown): value is JsonRpcResponse {
 }
 
 /**
- * Check whether a JSON-RPC response is a success response.
+ * Verifica si una respuesta JSON-RPC es una respuesta exitosa.
  */
 export function isJsonRpcSuccessResponse(
   response: JsonRpcResponse,
@@ -942,7 +945,7 @@ export function isJsonRpcSuccessResponse(
 }
 
 /**
- * Check whether a JSON-RPC response is an error response.
+ * Verifica si una respuesta JSON-RPC es una respuesta de error.
  */
 export function isJsonRpcErrorResponse(
   response: JsonRpcResponse,
@@ -951,74 +954,74 @@ export function isJsonRpcErrorResponse(
 }
 
 // ---------------------------------------------------------------------------
-// Serialization Helpers
+// Helpers de serialización
 // ---------------------------------------------------------------------------
 
 /**
- * Line delimiter for JSON-RPC messages over stdio.
+ * Delimitador de línea para mensajes JSON-RPC sobre stdio.
  *
- * Each message is a single line of JSON terminated by a newline character.
- * This follows the newline-delimited JSON (NDJSON) convention.
+ * Cada mensaje es una sola línea de JSON terminada por un carácter de nueva línea.
+ * Esto sigue la convención de JSON delimitado por nuevas líneas (NDJSON).
  */
 export const MESSAGE_DELIMITER = "\n" as const;
 
 /**
- * Serialize a JSON-RPC message to a newline-delimited string for transmission
- * over stdio.
+ * Serializa un mensaje JSON-RPC a una cadena delimitada por nuevas líneas para
+ * su transmisión sobre stdio.
  *
- * @param message - Any JSON-RPC message (request, response, or notification)
- * @returns The JSON string terminated with a newline
+ * @param message - Cualquier mensaje JSON-RPC (solicitud, respuesta o notificación)
+ * @returns La cadena JSON terminada con una nueva línea
  */
 export function serializeMessage(message: JsonRpcMessage): string {
   return JSON.stringify(message) + MESSAGE_DELIMITER;
 }
 
 /**
- * Parse a JSON string into a JSON-RPC message.
+ * Analiza una cadena JSON en un mensaje JSON-RPC.
  *
- * Returns the parsed message or throws a `JsonRpcParseError` if the input
- * is not valid JSON or does not conform to the JSON-RPC 2.0 structure.
+ * Devuelve el mensaje analizado o lanza un `JsonRpcParseError` si la entrada
+ * no es JSON válido o no se ajusta a la estructura JSON-RPC 2.0.
  *
- * @param line - A single line of JSON text (with or without trailing newline)
- * @returns The parsed JSON-RPC message
- * @throws {JsonRpcParseError} If parsing fails
+ * @param line - Una sola línea de texto JSON (con o sin nueva línea final)
+ * @returns El mensaje JSON-RPC analizado
+ * @throws {JsonRpcParseError} Si el análisis falla
  */
 export function parseMessage(line: string): JsonRpcMessage {
   const trimmed = line.trim();
   if (trimmed.length === 0) {
-    throw new JsonRpcParseError("Empty message");
+    throw new JsonRpcParseError("Mensaje vacío");
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(trimmed);
   } catch {
-    throw new JsonRpcParseError(`Invalid JSON: ${trimmed.slice(0, 200)}`);
+    throw new JsonRpcParseError(`JSON inválido: ${trimmed.slice(0, 200)}`);
   }
 
   if (typeof parsed !== "object" || parsed === null) {
-    throw new JsonRpcParseError("Message must be a JSON object");
+    throw new JsonRpcParseError("El mensaje debe ser un objeto JSON");
   }
 
   const obj = parsed as Record<string, unknown>;
 
   if (obj.jsonrpc !== JSONRPC_VERSION) {
     throw new JsonRpcParseError(
-      `Invalid or missing jsonrpc version (expected "${JSONRPC_VERSION}", got ${JSON.stringify(obj.jsonrpc)})`,
+      `Versión jsonrpc inválida o faltante (se esperaba "${JSONRPC_VERSION}", se obtuvo ${JSON.stringify(obj.jsonrpc)})`,
     );
   }
 
-  // It's a valid JSON-RPC 2.0 envelope — return as-is and let the caller
-  // use the type guards for more specific classification.
+  // Es un envoltorio JSON-RPC 2.0 válido: devolver tal cual y dejar que el llamador
+  // usa las guardas de tipo para una clasificación más específica.
   return parsed as JsonRpcMessage;
 }
 
 // ---------------------------------------------------------------------------
-// Error Classes
+// Clases de error
 // ---------------------------------------------------------------------------
 
 /**
- * Error thrown when a JSON-RPC message cannot be parsed.
+ * Error lanzado cuando un mensaje JSON-RPC no puede analizarse.
  */
 export class JsonRpcParseError extends Error {
   override readonly name = "JsonRpcParseError";
@@ -1028,15 +1031,15 @@ export class JsonRpcParseError extends Error {
 }
 
 /**
- * Error thrown when a JSON-RPC call fails with a structured error response.
+ * Error lanzado cuando una llamada JSON-RPC falla con una respuesta de error estructurada.
  *
- * Captures the full `JsonRpcError` so callers can inspect the code and data.
+ * Captura el `JsonRpcError` completo para que los llamadores puedan inspeccionar el código y los datos.
  */
 export class JsonRpcCallError extends Error {
   override readonly name = "JsonRpcCallError";
-  /** The JSON-RPC error code. */
+  /** El código de error JSON-RPC. */
   readonly code: number;
-  /** Optional structured error data from the response. */
+  /** Datos de error estructurados opcionales de la respuesta. */
   readonly data: unknown;
 
   constructor(error: JsonRpcError) {
@@ -1047,11 +1050,11 @@ export class JsonRpcCallError extends Error {
 }
 
 // ---------------------------------------------------------------------------
-// Reset helper (testing only)
+// Helper de reinicio (solo para pruebas)
 // ---------------------------------------------------------------------------
 
 /**
- * Reset the internal request ID counter. **For testing only.**
+ * Reinicia el contador interno de IDs de solicitud. **Solo para pruebas.**
  *
  * @internal
  */

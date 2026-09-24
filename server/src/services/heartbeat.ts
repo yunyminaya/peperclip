@@ -122,7 +122,7 @@ async function ensureManagedProjectWorkspace(input: {
     if (entries.length > 0) {
       return {
         cwd,
-        warning: `Managed workspace path "${cwd}" already exists but is not a git checkout. Using it as-is.`,
+        warning: `La ruta del espacio de trabajo administrado "${cwd}" ya existe pero no es un checkout de git. Se usará tal cual.`,
       };
     }
     await fs.rm(cwd, { recursive: true, force: true });
@@ -136,7 +136,7 @@ async function ensureManagedProjectWorkspace(input: {
     return { cwd, warning: null };
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to prepare managed checkout for "${input.repoUrl}" at "${cwd}": ${reason}`);
+    throw new Error(`No se pudo preparar el checkout administrado para "${input.repoUrl}" en "${cwd}": ${reason}`);
   }
 }
 
@@ -501,8 +501,8 @@ export function resolveRuntimeSessionParamsForWorkspace(input: {
   return {
     sessionParams: migratedSessionParams,
     warning:
-      `Project workspace "${projectCwd}" is now available. ` +
-      `Attempting to resume session "${previousSessionId}" that was previously saved in fallback workspace "${previousCwd}".`,
+      `El espacio de trabajo del proyecto "${projectCwd}" ya está disponible. ` +
+      `Se intenta reanudar la sesión "${previousSessionId}" que se guardó previamente en el espacio de trabajo alternativo "${previousCwd}".`,
   };
 }
 
@@ -654,9 +654,9 @@ function isTrackedLocalChildProcessAdapter(adapterType: string) {
   return SESSIONED_LOCAL_ADAPTERS.has(adapterType);
 }
 
-// A positive liveness check means some process currently owns the PID.
-// On Linux, PIDs can be recycled, so this is a best-effort signal rather
-// than proof that the original child is still alive.
+// Una verificación de actividad positiva significa que algún proceso posee actualmente el PID.
+// En Linux, los PID se pueden reciclar, así que es una señal aproximada
+// y no una prueba de que el hijo original siga vivo.
 function isProcessAlive(pid: number | null | undefined) {
   if (typeof pid !== "number" || !Number.isInteger(pid) || pid <= 0) return false;
   try {
@@ -979,12 +979,12 @@ export function heartbeatService(db: Db) {
       readNonEmptyString(latestRun.error);
 
     const handoffMarkdown = [
-      "Paperclip session handoff:",
-      `- Previous session: ${sessionId}`,
+      "Traspaso de sesión de Paperclip:",
+      `- Sesión anterior: ${sessionId}`,
       issueId ? `- Issue: ${issueId}` : "",
-      `- Rotation reason: ${reason}`,
-      latestTextSummary ? `- Last run summary: ${latestTextSummary}` : "",
-      "Continue from the current task state. Rebuild only the minimum context you need.",
+      `- Motivo de rotación: ${reason}`,
+      latestTextSummary ? `- Resumen de la última ejecución: ${latestTextSummary}` : "",
+      "Continúa desde el estado actual de la tarea. Reconstruye solo el contexto mínimo que necesites.",
     ]
       .filter(Boolean)
       .join("\n");
@@ -1133,7 +1133,7 @@ export function heartbeatService(db: Db) {
       let preferredWorkspaceWarning: string | null = null;
       if (preferredProjectWorkspaceId && !preferredWorkspace) {
         preferredWorkspaceWarning =
-          `Selected project workspace "${preferredProjectWorkspaceId}" is not available on this project.`;
+          `El espacio de trabajo del proyecto seleccionado "${preferredProjectWorkspaceId}" no está disponible en este proyecto.`;
       }
       for (const workspace of projectWorkspaceRows) {
         let projectCwd = readNonEmptyString(workspace.cwd);
@@ -1175,7 +1175,7 @@ export function heartbeatService(db: Db) {
         }
         if (preferredWorkspace?.id === workspace.id) {
           preferredWorkspaceWarning =
-            `Selected project workspace path "${projectCwd}" is not available yet.`;
+            `La ruta del espacio de trabajo del proyecto seleccionado "${projectCwd}" aún no está disponible.`;
         }
         missingProjectCwds.push(projectCwd);
       }
@@ -1191,12 +1191,12 @@ export function heartbeatService(db: Db) {
         const extraMissingCount = Math.max(0, missingProjectCwds.length - 1);
         warnings.push(
           extraMissingCount > 0
-            ? `Project workspace path "${firstMissing}" and ${extraMissingCount} other configured path(s) are not available yet. Using fallback workspace "${fallbackCwd}" for this run.`
-            : `Project workspace path "${firstMissing}" is not available yet. Using fallback workspace "${fallbackCwd}" for this run.`,
+            ? `La ruta del espacio de trabajo del proyecto "${firstMissing}" y ${extraMissingCount} ruta(s) configurada(s) más aún no están disponibles. Se usará el espacio de trabajo alternativo "${fallbackCwd}" para esta ejecución.`
+            : `La ruta del espacio de trabajo del proyecto "${firstMissing}" aún no está disponible. Se usará el espacio de trabajo alternativo "${fallbackCwd}" para esta ejecución.`,
         );
       } else if (!hasConfiguredProjectCwd) {
         warnings.push(
-          `Project workspace has no local cwd configured. Using fallback workspace "${fallbackCwd}" for this run.`,
+          `El espacio de trabajo del proyecto no tiene ningún cwd local configurado. Se usará el espacio de trabajo alternativo "${fallbackCwd}" para esta ejecución.`,
         );
       }
       return {
@@ -1254,15 +1254,15 @@ export function heartbeatService(db: Db) {
     const warnings: string[] = [];
     if (sessionCwd) {
       warnings.push(
-        `Saved session workspace "${sessionCwd}" is not available. Using fallback workspace "${cwd}" for this run.`,
+        `El espacio de trabajo de la sesión guardada "${sessionCwd}" no está disponible. Se usará el espacio de trabajo alternativo "${cwd}" para esta ejecución.`,
       );
     } else if (resolvedProjectId) {
       warnings.push(
-        `No project workspace directory is currently available for this issue. Using fallback workspace "${cwd}" for this run.`,
+        `No hay ningún directorio de espacio de trabajo del proyecto disponible actualmente para este issue. Se usará el espacio de trabajo alternativo "${cwd}" para esta ejecución.`,
       );
     } else {
       warnings.push(
-        `No project or prior session workspace was available. Using fallback workspace "${cwd}" for this run.`,
+        `No había ningún espacio de trabajo del proyecto ni de sesión anterior disponible. Se usará el espacio de trabajo alternativo "${cwd}" para esta ejecución.`,
       );
     }
     return {
@@ -1500,7 +1500,7 @@ export function heartbeatService(db: Db) {
       eventType: "lifecycle",
       stream: "system",
       level: "info",
-      message: "Detached child process reported activity; cleared detached warning",
+      message: "El proceso hijo separado reportó actividad; se eliminó la advertencia de separación",
     });
     return updated;
   }
@@ -1599,7 +1599,7 @@ export function heartbeatService(db: Db) {
       eventType: "lifecycle",
       stream: "system",
       level: "warn",
-      message: "Queued automatic retry after orphaned child process was confirmed dead",
+      message: "Reintento automático en cola tras confirmar que el proceso hijo huérfano murió",
       payload: {
         retryOfRunId: run.id,
       },
@@ -1632,11 +1632,11 @@ export function heartbeatService(db: Db) {
     if (run.status !== "queued") return run;
     const agent = await getAgent(run.agentId);
     if (!agent) {
-      await cancelRunInternal(run.id, "Cancelled because the agent no longer exists");
+      await cancelRunInternal(run.id, "Cancelada porque el agente ya no existe");
       return null;
     }
     if (agent.status === "paused" || agent.status === "terminated" || agent.status === "pending_approval") {
-      await cancelRunInternal(run.id, "Cancelled because the agent is not invokable");
+      await cancelRunInternal(run.id, "Cancelada porque el agente no se puede invocar");
       return null;
     }
 
@@ -1733,7 +1733,7 @@ export function heartbeatService(db: Db) {
     const staleThresholdMs = opts?.staleThresholdMs ?? 0;
     const now = new Date();
 
-    // Find all runs stuck in "running" state (queued runs are legitimately waiting; resumeQueuedRuns handles them)
+    // Encuentra todas las ejecuciones atascadas en estado "running" (las ejecuciones en cola esperan legítimamente; resumeQueuedRuns se encarga de ellas)
     const activeRuns = await db
       .select({
         run: heartbeatRuns,
@@ -1748,7 +1748,7 @@ export function heartbeatService(db: Db) {
     for (const { run, adapterType } of activeRuns) {
       if (runningProcesses.has(run.id) || activeRunExecutions.has(run.id)) continue;
 
-      // Apply staleness threshold to avoid false positives
+      // Aplica el umbral de antigüedad para evitar falsos positivos
       if (staleThresholdMs > 0) {
         const refTime = run.updatedAt ? new Date(run.updatedAt).getTime() : 0;
         if (now.getTime() - refTime < staleThresholdMs) continue;
@@ -1757,7 +1757,7 @@ export function heartbeatService(db: Db) {
       const tracksLocalChild = isTrackedLocalChildProcessAdapter(adapterType);
       if (tracksLocalChild && run.processPid && isProcessAlive(run.processPid)) {
         if (run.errorCode !== DETACHED_PROCESS_ERROR_CODE) {
-          const detachedMessage = `Lost in-memory process handle, but child pid ${run.processPid} is still alive`;
+          const detachedMessage = `Se perdió el manejador del proceso en memoria, pero el proceso hijo ${run.processPid} sigue vivo`;
           const detachedRun = await setRunStatus(run.id, "running", {
             error: detachedMessage,
             errorCode: DETACHED_PROCESS_ERROR_CODE,
@@ -1779,8 +1779,8 @@ export function heartbeatService(db: Db) {
 
       const shouldRetry = tracksLocalChild && !!run.processPid && (run.processLossRetryCount ?? 0) < 1;
       const baseMessage = run.processPid
-        ? `Process lost -- child pid ${run.processPid} is no longer running`
-        : "Process lost -- server may have restarted";
+        ? `Proceso perdido: el proceso hijo ${run.processPid} ya no se está ejecutando`
+        : "Proceso perdido: es posible que el servidor se haya reiniciado";
 
       let finalizedRun = await setRunStatus(run.id, "failed", {
         error: shouldRetry ? `${baseMessage}; retrying once` : baseMessage,
@@ -1824,7 +1824,7 @@ export function heartbeatService(db: Db) {
     }
 
     if (reaped.length > 0) {
-      logger.warn({ reapedCount: reaped.length, runIds: reaped }, "reaped orphaned heartbeat runs");
+      logger.warn({ reapedCount: reaped.length, runIds: reaped }, "ejecuciones de latido huérfanas recolectadas");
     }
     return { reaped: reaped.length, runIds: reaped };
   }
@@ -1925,7 +1925,7 @@ export function heartbeatService(db: Db) {
 
       for (const claimedRun of claimedRuns) {
         void executeRun(claimedRun.id).catch((err) => {
-          logger.error({ err, runId: claimedRun.id }, "queued heartbeat execution failed");
+          logger.error({ err, runId: claimedRun.id }, "falló la ejecución del latido en cola");
         });
       }
       return claimedRuns;
@@ -1940,7 +1940,7 @@ export function heartbeatService(db: Db) {
     if (run.status === "queued") {
       const claimed = await claimQueuedRun(run);
       if (!claimed) {
-        // Another worker has already claimed or finalized this run.
+        // Otro worker ya reclamó o finalizó esta ejecución.
         return;
       }
       run = claimed;
@@ -1952,13 +1952,13 @@ export function heartbeatService(db: Db) {
     const agent = await getAgent(run.agentId);
     if (!agent) {
       await setRunStatus(runId, "failed", {
-        error: "Agent not found",
+        error: "Agente no encontrado",
         errorCode: "agent_not_found",
         finishedAt: new Date(),
       });
       await setWakeupStatus(run.wakeupRequestId, "failed", {
         finishedAt: new Date(),
-        error: "Agent not found",
+        error: "Agente no encontrado",
       });
       const failedRun = await getRun(runId);
       if (failedRun) await releaseIssueExecutionAndPromote(failedRun);
@@ -2186,7 +2186,7 @@ export function heartbeatService(db: Db) {
               executionWorkspaceCwd: executionWorkspace.cwd,
               cleanupError: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
             },
-            "Failed to cleanup realized execution workspace after persistence failure",
+            "No se pudo limpiar el espacio de trabajo de ejecución materializado tras el fallo de persistencia",
           );
         }
       }
@@ -2254,8 +2254,8 @@ export function heartbeatService(db: Db) {
       ...(resetTaskSession && sessionResetReason
         ? [
             taskKey
-              ? `Skipping saved session resume for task "${taskKey}" because ${sessionResetReason}.`
-              : `Skipping saved session resume because ${sessionResetReason}.`,
+              ? `Se omite la reanudación de la sesión guardada para la tarea "${taskKey}" porque ${sessionResetReason}.`
+              : `Se omite la reanudación de la sesión guardada porque ${sessionResetReason}.`,
           ]
         : []),
     ];
@@ -2319,7 +2319,7 @@ export function heartbeatService(db: Db) {
       previousSessionDisplayId = null;
       if (sessionCompaction.reason) {
         runtimeWorkspaceWarnings.push(
-          `Starting a fresh session because ${sessionCompaction.reason}.`,
+          `Se inicia una sesión nueva porque ${sessionCompaction.reason}.`,
         );
       }
     } else {
@@ -2509,7 +2509,7 @@ export function heartbeatService(db: Db) {
             runId: run.id,
             adapterType: agent.adapterType,
           },
-          "local agent jwt secret missing or invalid; running without injected PAPERCLIP_API_KEY",
+          "el secreto jwt del agente local falta o no es válido; se ejecuta sin PAPERCLIP_API_KEY inyectada",
         );
       }
       const adapterResult = await adapter.execute({
@@ -2647,7 +2647,7 @@ export function heartbeatService(db: Db) {
           outcome === "succeeded"
             ? null
             : redactCurrentUserText(
-                adapterResult.errorMessage ?? (outcome === "timed_out" ? "Timed out" : "Adapter failed"),
+                adapterResult.errorMessage ?? (outcome === "timed_out" ? "Tiempo de espera agotado" : "El adaptador falló"),
                 currentUserRedactionOptions,
               ),
         errorCode:
@@ -2717,17 +2717,17 @@ export function heartbeatService(db: Db) {
       await finalizeAgentStatus(agent.id, outcome);
     } catch (err) {
       const message = redactCurrentUserText(
-        err instanceof Error ? err.message : "Unknown adapter failure",
+        err instanceof Error ? err.message : "Fallo desconocido del adaptador",
         await getCurrentUserRedactionOptions(),
       );
-      logger.error({ err, runId }, "heartbeat execution failed");
+      logger.error({ err, runId }, "falló la ejecución del latido");
 
       let logSummary: { bytes: number; sha256?: string; compressed: boolean } | null = null;
       if (handle) {
         try {
           logSummary = await runLogStore.finalize(handle);
         } catch (finalizeErr) {
-          logger.warn({ err: finalizeErr, runId }, "failed to finalize run log after error");
+          logger.warn({ err: finalizeErr, runId }, "no se pudo finalizar el registro de ejecución después del error");
         }
       }
 
@@ -2781,10 +2781,10 @@ export function heartbeatService(db: Db) {
       await finalizeAgentStatus(agent.id, "failed");
     }
     } catch (outerErr) {
-          // Setup code before adapter.execute threw (e.g. ensureRuntimeState, resolveWorkspaceForRun).
-          // The inner catch did not fire, so we must record the failure here.
-          const message = outerErr instanceof Error ? outerErr.message : "Unknown setup failure";
-          logger.error({ err: outerErr, runId }, "heartbeat execution setup failed");
+          // El código de configuración previo a adapter.execute lanzó una excepción (p. ej. ensureRuntimeState, resolveWorkspaceForRun).
+          // El catch interno no se activó, así que el fallo debe registrarse aquí.
+          const message = outerErr instanceof Error ? outerErr.message : "Fallo desconocido de configuración";
+          logger.error({ err: outerErr, runId }, "falló la configuración de la ejecución del latido");
           await setRunStatus(runId, "failed", {
             error: message,
             errorCode: "adapter_failed",
@@ -2796,8 +2796,8 @@ export function heartbeatService(db: Db) {
           }).catch(() => undefined);
           const failedRun = await getRun(runId).catch(() => null);
           if (failedRun) {
-            // Emit a run-log event so the failure is visible in the run timeline,
-            // consistent with what the inner catch block does for adapter failures.
+            // Emite un evento del registro de ejecución para que el fallo sea visible en la línea de tiempo de la ejecución,
+            // consistente con lo que hace el bloque catch interno para los fallos del adaptador.
             await appendRunEvent(failedRun, 1, {
               eventType: "error",
               stream: "system",
@@ -2806,8 +2806,7 @@ export function heartbeatService(db: Db) {
             }).catch(() => undefined);
             await releaseIssueExecutionAndPromote(failedRun).catch(() => undefined);
           }
-          // Ensure the agent is not left stuck in "running" if the inner catch handler's
-          // DB calls threw (e.g. a transient DB error in finalizeAgentStatus).
+          // Asegura que el agente no quede atascado en "running" si las llamadas a la BD del manejador catch interno lanzaron una excepción (p. ej. un error transitorio de la BD en finalizeAgentStatus).
           await finalizeAgentStatus(run.agentId, "failed").catch(() => undefined);
         } finally {
           await releaseRuntimeServicesForRun(run.id).catch(() => undefined);
@@ -2878,7 +2877,7 @@ export function heartbeatService(db: Db) {
             .set({
               status: "failed",
               finishedAt: new Date(),
-              error: "Deferred wake could not be promoted: agent is not invokable",
+              error: "No se pudo promover la activación diferida: el agente no se puede invocar",
               updatedAt: new Date(),
             })
             .where(eq(agentWakeupRequests.id, deferred.id));
@@ -2991,7 +2990,7 @@ export function heartbeatService(db: Db) {
     let issueId = readNonEmptyString(enrichedContextSnapshot.issueId) ?? issueIdFromPayload;
 
     const agent = await getAgent(agentId);
-    if (!agent) throw notFound("Agent not found");
+    if (!agent) throw notFound("Agente no encontrado");
     const explicitResumeSession = await resolveExplicitResumeSessionOverride(agent, payload, taskKey);
     if (explicitResumeSession) {
       enrichedContextSnapshot.resumeFromRunId = explicitResumeSession.resumeFromRunId;
@@ -3055,7 +3054,7 @@ export function heartbeatService(db: Db) {
       agent.status === "terminated" ||
       agent.status === "pending_approval"
     ) {
-      throw conflict("Agent is not invokable in its current state", { status: agent.status });
+      throw conflict("El agente no se puede invocar en su estado actual", { status: agent.status });
     }
 
     const policy = parseHeartbeatPolicy(agent);
@@ -3556,7 +3555,7 @@ export function heartbeatService(db: Db) {
       .set({
         status: "cancelled",
         finishedAt: now,
-        error: "Cancelled due to budget pause",
+        error: "Cancelada por pausa del presupuesto",
         updatedAt: now,
       })
       .where(inArray(agentWakeupRequests.id, wakeupIds));
@@ -3564,9 +3563,9 @@ export function heartbeatService(db: Db) {
     return wakeupIds.length;
   }
 
-  async function cancelRunInternal(runId: string, reason = "Cancelled by control plane") {
+  async function cancelRunInternal(runId: string, reason = "Cancelada por el plano de control") {
     const run = await getRun(runId);
-    if (!run) throw notFound("Heartbeat run not found");
+    if (!run) throw notFound("Ejecución de latido no encontrada");
     if (run.status !== "running" && run.status !== "queued") return run;
 
     const running = runningProcesses.get(run.id);
@@ -3596,7 +3595,7 @@ export function heartbeatService(db: Db) {
         eventType: "lifecycle",
         stream: "system",
         level: "warn",
-        message: "run cancelled",
+        message: "ejecución cancelada",
       });
       await releaseIssueExecutionAndPromote(cancelled);
     }
@@ -3607,7 +3606,7 @@ export function heartbeatService(db: Db) {
     return cancelled;
   }
 
-  async function cancelActiveForAgentInternal(agentId: string, reason = "Cancelled due to agent pause") {
+  async function cancelActiveForAgentInternal(agentId: string, reason = "Cancelada por pausa del agente") {
     const runs = await db
       .select()
       .from(heartbeatRuns)
@@ -3638,7 +3637,7 @@ export function heartbeatService(db: Db) {
 
   async function cancelBudgetScopeWork(scope: BudgetEnforcementScope) {
     if (scope.scopeType === "agent") {
-      await cancelActiveForAgentInternal(scope.scopeId, "Cancelled due to budget pause");
+      await cancelActiveForAgentInternal(scope.scopeId, "Cancelada por pausa del presupuesto");
       await cancelPendingWakeupsForBudgetScope(scope);
       return;
     }
@@ -3658,7 +3657,7 @@ export function heartbeatService(db: Db) {
         : await listProjectScopedRunIds(scope.companyId, scope.scopeId);
 
     for (const runId of runIds) {
-      await cancelRunInternal(runId, "Cancelled due to budget pause");
+      await cancelRunInternal(runId, "Cancelada por pausa del presupuesto");
     }
 
     await cancelPendingWakeupsForBudgetScope(scope);
@@ -3706,7 +3705,7 @@ export function heartbeatService(db: Db) {
 
     listTaskSessions: async (agentId: string) => {
       const agent = await getAgent(agentId);
-      if (!agent) throw notFound("Agent not found");
+      if (!agent) throw notFound("Agente no encontrado");
 
       return db
         .select()
@@ -3717,7 +3716,7 @@ export function heartbeatService(db: Db) {
 
     resetRuntimeSession: async (agentId: string, opts?: { taskKey?: string | null }) => {
       const agent = await getAgent(agentId);
-      if (!agent) throw notFound("Agent not found");
+      if (!agent) throw notFound("Agente no encontrado");
       await ensureRuntimeState(agent);
       const taskKey = readNonEmptyString(opts?.taskKey);
       const clearedTaskSessions = await clearTaskSessions(
@@ -3760,8 +3759,8 @@ export function heartbeatService(db: Db) {
 
     readLog: async (runId: string, opts?: { offset?: number; limitBytes?: number }) => {
       const run = await getRun(runId);
-      if (!run) throw notFound("Heartbeat run not found");
-      if (!run.logStore || !run.logRef) throw notFound("Run log not found");
+      if (!run) throw notFound("Ejecución de latido no encontrada");
+      if (!run.logStore || !run.logRef) throw notFound("Registro de ejecución no encontrado");
 
       const result = await runLogStore.read(
         {

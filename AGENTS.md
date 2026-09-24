@@ -1,15 +1,15 @@
 # AGENTS.md
 
-Guidance for human and AI contributors working in this repository.
+Guía para contribuyentes humanos y de IA que trabajan en este repositorio.
 
-## 1. Purpose
+## 1. Propósito
 
-Paperclip is a control plane for AI-agent companies.
-The current implementation target is V1 and is defined in `doc/SPEC-implementation.md`.
+Paperclip es un plano de control para empresas de agentes de IA.
+El objetivo de implementación actual es V1 y está definido en `doc/SPEC-implementation.md`.
 
-## 2. Read This First
+## 2. Lee esto primero
 
-Before making changes, read in this order:
+Antes de hacer cambios, lee en este orden:
 
 1. `doc/GOAL.md`
 2. `doc/PRODUCT.md`
@@ -17,98 +17,98 @@ Before making changes, read in this order:
 4. `doc/DEVELOPING.md`
 5. `doc/DATABASE.md`
 
-`doc/SPEC.md` is long-horizon product context.
-`doc/SPEC-implementation.md` is the concrete V1 build contract.
+`doc/SPEC.md` es contexto de producto de largo plazo.
+`doc/SPEC-implementation.md` es el contrato concreto de construcción de V1.
 
-## 3. Repo Map
+## 3. Mapa del repo
 
-- `server/`: Express REST API and orchestration services
-- `ui/`: React + Vite board UI
-- `packages/db/`: Drizzle schema, migrations, DB clients
-- `packages/shared/`: shared types, constants, validators, API path constants
-- `packages/adapters/`: agent adapter implementations (Claude, Codex, Cursor, etc.)
-- `packages/adapter-utils/`: shared adapter utilities
-- `packages/plugins/`: plugin system packages
-- `doc/`: operational and product docs
+- `server/`: API REST Express y servicios de orquestación
+- `ui/`: UI de tablero React + Vite
+- `packages/db/`: esquema Drizzle, migraciones, clientes de BD
+- `packages/shared/`: tipos compartidos, constantes, validadores, constantes de rutas de API
+- `packages/adapters/`: implementaciones de adaptadores de agentes (Claude, Codex, Cursor, etc.)
+- `packages/adapter-utils/`: utilidades compartidas de adaptadores
+- `packages/plugins/`: paquetes del sistema de plugins
+- `doc/`: documentos operativos y de producto
 
-## 4. Dev Setup (Auto DB)
+## 4. Configuración de dev (BD automática)
 
-Use embedded PGlite in dev by leaving `DATABASE_URL` unset.
+Usa PGlite embebido en dev dejando `DATABASE_URL` sin definir.
 
 ```sh
 pnpm install
 pnpm dev
 ```
 
-This starts:
+Esto inicia:
 
 - API: `http://localhost:3100`
-- UI: `http://localhost:3100` (served by API server in dev middleware mode)
+- UI: `http://localhost:3100` (servida por el servidor API en modo middleware de dev)
 
-Quick checks:
+Chequeos rápidos:
 
 ```sh
 curl http://localhost:3100/api/health
 curl http://localhost:3100/api/companies
 ```
 
-Reset local dev DB:
+Reiniciar la BD local de dev:
 
 ```sh
 rm -rf data/pglite
 pnpm dev
 ```
 
-## 5. Core Engineering Rules
+## 5. Reglas centrales de ingeniería
 
-1. Keep changes company-scoped.
-Every domain entity should be scoped to a company and company boundaries must be enforced in routes/services.
+1. Mantén los cambios con alcance de empresa.
+Cada entidad de dominio debe tener alcance de empresa y los límites de empresa deben aplicarse en rutas/servicios.
 
-2. Keep contracts synchronized.
-If you change schema/API behavior, update all impacted layers:
-- `packages/db` schema and exports
-- `packages/shared` types/constants/validators
-- `server` routes/services
-- `ui` API clients and pages
+2. Mantén los contratos sincronizados.
+Si cambias el comportamiento de esquema/API, actualiza todas las capas impactadas:
+- esquema y exports de `packages/db`
+- tipos/constantes/validadores de `packages/shared`
+- rutas/servicios de `server`
+- clientes de API y páginas de `ui`
 
-3. Preserve control-plane invariants.
-- Single-assignee task model
-- Atomic issue checkout semantics
-- Approval gates for governed actions
-- Budget hard-stop auto-pause behavior
-- Activity logging for mutating actions
+3. Preserva las invariantes del plano de control.
+- Modelo de tarea con un solo asignado
+- Semántica atómica de checkout de issues
+- Puertas de aprobación para acciones gobernadas
+- Comportamiento de pausa automática por tope duro de presupuesto
+- Registro de actividad para acciones que mutan
 
-4. Do not replace strategic docs wholesale unless asked.
-Prefer additive updates. Keep `doc/SPEC.md` and `doc/SPEC-implementation.md` aligned.
+4. No reemplaces documentos estratégicos por completo a menos que se pida.
+Prefiere actualizaciones aditivas. Mantén `doc/SPEC.md` y `doc/SPEC-implementation.md` alineados.
 
-5. Keep plan docs dated and centralized.
-New plan documents belong in `doc/plans/` and should use `YYYY-MM-DD-slug.md` filenames.
+5. Mantén los documentos de plan fechados y centralizados.
+Los nuevos documentos de plan van en `doc/plans/` y deben usar nombres de archivo `YYYY-MM-DD-slug.md`.
 
-## 6. Database Change Workflow
+## 6. Flujo de trabajo de cambios de base de datos
 
-When changing data model:
+Al cambiar el modelo de datos:
 
-1. Edit `packages/db/src/schema/*.ts`
-2. Ensure new tables are exported from `packages/db/src/schema/index.ts`
-3. Generate migration:
+1. Edita `packages/db/src/schema/*.ts`
+2. Asegúrate de que las nuevas tablas se exporten desde `packages/db/src/schema/index.ts`
+3. Genera la migración:
 
 ```sh
 pnpm db:generate
 ```
 
-4. Validate compile:
+4. Valida la compilación:
 
 ```sh
 pnpm -r typecheck
 ```
 
-Notes:
-- `packages/db/drizzle.config.ts` reads compiled schema from `dist/schema/*.js`
-- `pnpm db:generate` compiles `packages/db` first
+Notas:
+- `packages/db/drizzle.config.ts` lee el esquema compilado desde `dist/schema/*.js`
+- `pnpm db:generate` compila primero `packages/db`
 
-## 7. Verification Before Hand-off
+## 7. Verificación antes de entregar
 
-Run this full check before claiming done:
+Ejecuta este chequeo completo antes de decir que terminaste:
 
 ```sh
 pnpm -r typecheck
@@ -116,33 +116,33 @@ pnpm test:run
 pnpm build
 ```
 
-If anything cannot be run, explicitly report what was not run and why.
+Si algo no se puede ejecutar, reporta explícitamente qué no se ejecutó y por qué.
 
-## 8. API and Auth Expectations
+## 8. Expectativas de API y autenticación
 
-- Base path: `/api`
-- Board access is treated as full-control operator context
-- Agent access uses bearer API keys (`agent_api_keys`), hashed at rest
-- Agent keys must not access other companies
+- Ruta base: `/api`
+- El acceso al tablero se trata como contexto de operador con control total
+- El acceso de agentes usa API keys bearer (`agent_api_keys`), hasheadas en reposo
+- Las keys de agentes no deben acceder a otras empresas
 
-When adding endpoints:
+Al agregar endpoints:
 
-- apply company access checks
-- enforce actor permissions (board vs agent)
-- write activity log entries for mutations
-- return consistent HTTP errors (`400/401/403/404/409/422/500`)
+- aplica chequeos de acceso de empresa
+- aplica permisos de actor (tablero vs agente)
+- escribe entradas de registro de actividad para mutaciones
+- retorna errores HTTP consistentes (`400/401/403/404/409/422/500`)
 
-## 9. UI Expectations
+## 9. Expectativas de UI
 
-- Keep routes and nav aligned with available API surface
-- Use company selection context for company-scoped pages
-- Surface failures clearly; do not silently ignore API errors
+- Mantén rutas y navegación alineadas con la superficie de API disponible
+- Usa el contexto de selección de empresa para páginas con alcance de empresa
+- Muestra las fallas con claridad; no ignores errores de API en silencio
 
-## 10. Definition of Done
+## 10. Definición de terminado
 
-A change is done when all are true:
+Un cambio está terminado cuando todo esto es cierto:
 
-1. Behavior matches `doc/SPEC-implementation.md`
-2. Typecheck, tests, and build pass
-3. Contracts are synced across db/shared/server/ui
-4. Docs updated when behavior or commands change
+1. El comportamiento coincide con `doc/SPEC-implementation.md`
+2. Typecheck, pruebas y build pasan
+3. Los contratos están sincronizados entre db/shared/server/ui
+4. Documentos actualizados cuando el comportamiento o los comandos cambian

@@ -72,7 +72,7 @@ describe("codex local adapter skill injection", () => {
     expect(logs).toContainEqual(
       expect.objectContaining({
         stream: "stdout",
-        chunk: expect.stringContaining('Repaired Codex skill "paperclip"'),
+        chunk: expect.stringContaining('Habilidad de Codex "paperclip" reparada'),
       }),
     );
   });
@@ -138,7 +138,7 @@ describe("codex local adapter skill injection", () => {
     expect(logs).toContainEqual(
       expect.objectContaining({
         stream: "stdout",
-        chunk: expect.stringContaining('Removed stale Codex skill "agent-browser"'),
+        chunk: expect.stringContaining('Habilidad obsoleta de Codex "agent-browser" eliminada'),
       }),
     );
   });

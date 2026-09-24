@@ -6,12 +6,12 @@ import { notFound, badRequest } from "../errors.js";
 function normalizeObjectKey(objectKey: string): string {
   const normalized = objectKey.replace(/\\/g, "/").trim();
   if (!normalized || normalized.startsWith("/")) {
-    throw badRequest("Invalid object key");
+    throw badRequest("Clave de objeto inválida");
   }
 
   const parts = normalized.split("/").filter((part) => part.length > 0);
   if (parts.length === 0 || parts.some((part) => part === "." || part === "..")) {
-    throw badRequest("Invalid object key");
+    throw badRequest("Clave de objeto inválida");
   }
 
   return parts.join("/");
@@ -22,7 +22,7 @@ function resolveWithin(baseDir: string, objectKey: string): string {
   const resolved = path.resolve(baseDir, normalizedKey);
   const base = path.resolve(baseDir);
   if (resolved !== base && !resolved.startsWith(base + path.sep)) {
-    throw badRequest("Invalid object key path");
+    throw badRequest("Ruta de clave de objeto inválida");
   }
   return resolved;
 }
@@ -55,7 +55,7 @@ export function createLocalDiskStorageProvider(baseDir: string): StorageProvider
       const filePath = resolveWithin(root, input.objectKey);
       const stat = await statOrNull(filePath);
       if (!stat || !stat.isFile()) {
-        throw notFound("Object not found");
+        throw notFound("Objeto no encontrado");
       }
       return {
         stream: createReadStream(filePath),
@@ -82,7 +82,7 @@ export function createLocalDiskStorageProvider(baseDir: string): StorageProvider
       try {
         await fs.unlink(filePath);
       } catch {
-        // idempotent delete
+        // eliminación idempotente
       }
     },
   };

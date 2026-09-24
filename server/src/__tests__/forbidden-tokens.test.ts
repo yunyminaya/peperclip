@@ -70,8 +70,8 @@ describe("forbidden token check", () => {
 
     expect(exitCode).toBe(1);
     expect(exec).toHaveBeenCalledTimes(2);
-    expect(error).toHaveBeenCalledWith("ERROR: Forbidden tokens found in tracked files:\n");
+    expect(error).toHaveBeenCalledWith("ERROR: Se encontraron tokens prohibidos en archivos rastreados:\n");
     expect(error).toHaveBeenCalledWith("  server/file.ts:1:found");
-    expect(error).toHaveBeenCalledWith("\nBuild blocked. Remove the forbidden token(s) before publishing.");
+    expect(error).toHaveBeenCalledWith("\nCompilación bloqueada. Elimina los tokens prohibidos antes de publicar.");
   });
 });

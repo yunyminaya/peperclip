@@ -37,7 +37,7 @@ export function actorMiddleware(db: Db, opts: ActorMiddlewareOptions): RequestHa
         } catch (err) {
           logger.warn(
             { err, method: req.method, url: req.originalUrl },
-            "Failed to resolve auth session from request headers",
+            "Falló la resolución de la sesión de autenticación desde los encabezados de la solicitud",
           );
         }
         if (session?.user?.id) {

@@ -34,7 +34,7 @@ export const healthApi = {
     });
     if (!res.ok) {
       const payload = await res.json().catch(() => null) as { error?: string } | null;
-      throw new Error(payload?.error ?? `Failed to load health (${res.status})`);
+      throw new Error(payload?.error ?? `No se pudo cargar el estado del sistema (${res.status})`);
     }
     return res.json();
   },

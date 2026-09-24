@@ -1,58 +1,58 @@
 # `@paperclipai/plugin-sdk`
 
-Official TypeScript SDK for Paperclip plugin authors.
+SDK oficial de TypeScript para autores de plugins de Paperclip.
 
-- **Worker SDK:** `@paperclipai/plugin-sdk` — `definePlugin`, context, lifecycle
-- **UI SDK:** `@paperclipai/plugin-sdk/ui` — React hooks and slot props
-- **Testing:** `@paperclipai/plugin-sdk/testing` — in-memory host harness
-- **Bundlers:** `@paperclipai/plugin-sdk/bundlers` — esbuild/rollup presets
-- **Dev server:** `@paperclipai/plugin-sdk/dev-server` — static UI server + SSE reload
+- **SDK del worker:** `@paperclipai/plugin-sdk` — `definePlugin`, contexto, ciclo de vida
+- **SDK de UI:** `@paperclipai/plugin-sdk/ui` — Hooks de React y props de slots
+- **Pruebas:** `@paperclipai/plugin-sdk/testing` — arnés de host en memoria
+- **Empaquetadores:** `@paperclipai/plugin-sdk/bundlers` — preajustes de esbuild/rollup
+- **Servidor de desarrollo:** `@paperclipai/plugin-sdk/dev-server` — servidor de UI estático + recarga por SSE
 
-Reference: `doc/plugins/PLUGIN_SPEC.md`
+Referencia: `doc/plugins/PLUGIN_SPEC.md`
 
-## Package surface
+## Superficie del paquete
 
-| Import | Purpose |
+| Importación | Propósito |
 |--------|--------|
-| `@paperclipai/plugin-sdk` | Worker entry: `definePlugin`, `runWorker`, context types, protocol helpers |
-| `@paperclipai/plugin-sdk/ui` | UI entry: `usePluginData`, `usePluginAction`, `usePluginStream`, `useHostContext`, slot prop types |
-| `@paperclipai/plugin-sdk/ui/hooks` | Hooks only |
-| `@paperclipai/plugin-sdk/ui/types` | UI types and slot prop interfaces |
-| `@paperclipai/plugin-sdk/testing` | `createTestHarness` for unit/integration tests |
-| `@paperclipai/plugin-sdk/bundlers` | `createPluginBundlerPresets` for worker/manifest/ui builds |
+| `@paperclipai/plugin-sdk` | Entrada del worker: `definePlugin`, `runWorker`, tipos de contexto, ayudantes de protocolo |
+| `@paperclipai/plugin-sdk/ui` | Entrada de UI: `usePluginData`, `usePluginAction`, `usePluginStream`, `useHostContext`, tipos de props de slot |
+| `@paperclipai/plugin-sdk/ui/hooks` | Solo hooks |
+| `@paperclipai/plugin-sdk/ui/types` | Tipos de UI e interfaces de props de slot |
+| `@paperclipai/plugin-sdk/testing` | `createTestHarness` para pruebas unitarias/de integración |
+| `@paperclipai/plugin-sdk/bundlers` | `createPluginBundlerPresets` para compilaciones de worker/manifiesto/UI |
 | `@paperclipai/plugin-sdk/dev-server` | `startPluginDevServer`, `getUiBuildSnapshot` |
-| `@paperclipai/plugin-sdk/protocol` | JSON-RPC protocol types and helpers (advanced) |
-| `@paperclipai/plugin-sdk/types` | Worker context and API types (advanced) |
+| `@paperclipai/plugin-sdk/protocol` | Tipos y ayudantes del protocolo JSON-RPC (avanzado) |
+| `@paperclipai/plugin-sdk/types` | Contexto del worker y tipos de API (avanzado) |
 
-## Manifest entrypoints
+## Puntos de entrada del manifiesto
 
-In your plugin manifest you declare:
+En el manifiesto de tu plugin declaras:
 
-- **`entrypoints.worker`** (required) — Path to the worker bundle (e.g. `dist/worker.js`). The host loads this and calls `setup(ctx)`.
-- **`entrypoints.ui`** (required if you use UI) — Path to the UI bundle directory. The host loads components from here for slots and launchers.
+- **`entrypoints.worker`** (obligatorio) — Ruta al bundle del worker (p. ej., `dist/worker.js`). El host lo carga y llama a `setup(ctx)`.
+- **`entrypoints.ui`** (obligatorio si usas UI) — Ruta al directorio del bundle de UI. El host carga componentes desde aquí para slots y lanzadores.
 
-## Install
+## Instalación
 
 ```bash
 pnpm add @paperclipai/plugin-sdk
 ```
 
-## Current deployment caveats
+## Advertencias del despliegue actual
 
-The SDK is stable enough for local development and first-party examples, but the runtime deployment model is still early.
+El SDK es lo bastante estable para el desarrollo local y los ejemplos propios, pero el modelo de despliegue en tiempo de ejecución aún es incipiente.
 
-- Plugin workers and plugin UI should both be treated as trusted code today.
-- Plugin UI bundles run as same-origin JavaScript inside the main Paperclip app. They can call ordinary Paperclip HTTP APIs with the board session, so manifest capabilities are not a frontend sandbox.
-- Local-path installs and the repo example plugins are development workflows. They assume the plugin source checkout exists on disk.
-- For deployed plugins, publish an npm package and install that package into the Paperclip instance at runtime.
-- The current host runtime expects a writable filesystem, `npm` available at runtime, and network access to the package registry used for plugin installation.
-- Dynamic plugin install is currently best suited to single-node persistent deployments. Multi-instance cloud deployments still need a shared artifact/distribution model before runtime installs are reliable across nodes.
-- The host does not currently ship a real shared React component kit for plugins. Build your plugin UI with ordinary React components and CSS.
-- `ctx.assets` is not part of the supported runtime in this build. Do not depend on asset upload/read APIs yet.
+- Tanto los workers de plugins como la UI de plugins deben tratarse hoy como código de confianza.
+- Los bundles de UI de plugins se ejecutan como JavaScript del mismo origen dentro de la app principal de Paperclip. Pueden llamar a las API HTTP normales de Paperclip con la sesión del tablero, así que las capacidades del manifiesto no son una sandbox del frontend.
+- Las instalaciones por ruta local y los plugins de ejemplo del repositorio son flujos de desarrollo. Suponen que la copia del código fuente del plugin existe en el disco.
+- Para plugins desplegados, publica un paquete npm e instala ese paquete en la instancia de Paperclip en tiempo de ejecución.
+- El runtime actual del host espera un sistema de archivos con escritura, `npm` disponible en tiempo de ejecución y acceso de red al registro de paquetes usado para la instalación de plugins.
+- La instalación dinámica de plugins hoy es más adecuada para despliegues persistentes de un solo nodo. Los despliegues en la nube con múltiples instancias aún necesitan un modelo compartido de artefactos/distribución antes de que las instalaciones en tiempo de ejecución sean confiables entre nodos.
+- El host aún no incluye un kit real de componentes React compartidos para plugins. Crea la UI de tu plugin con componentes React comunes y CSS.
+- `ctx.assets` no forma parte del runtime soportado en esta compilación. No dependas aún de las API de subida/lectura de assets.
 
-If you are authoring a plugin for others to deploy, treat npm-packaged installation as the supported path and treat repo-local example installs as a development convenience.
+Si estás creando un plugin para que otros lo desplieguen, trata la instalación empaquetada en npm como la ruta soportada y las instalaciones de ejemplo locales del repositorio como una comodidad de desarrollo.
 
-## Worker quick start
+## Inicio rápido del worker
 
 ```ts
 import { definePlugin, runWorker } from "@paperclipai/plugin-sdk";
@@ -85,34 +85,34 @@ export default plugin;
 runWorker(plugin, import.meta.url);
 ```
 
-**Note:** `runWorker(plugin, import.meta.url)` must be called so that when the host runs your worker (e.g. `node dist/worker.js`), the RPC host starts and the process stays alive. When the file is imported (e.g. for tests), the main-module check prevents the host from starting.
+**Nota:** `runWorker(plugin, import.meta.url)` debe llamarse para que, cuando el host ejecute tu worker (p. ej., `node dist/worker.js`), el host RPC inicie y el proceso se mantenga vivo. Cuando el archivo se importa (p. ej., para pruebas), la comprobación del módulo principal evita que el host inicie.
 
-### Worker lifecycle and context
+### Ciclo de vida y contexto del worker
 
-**Lifecycle (definePlugin):**
+**Ciclo de vida (definePlugin):**
 
-| Hook | Purpose |
+| Hook | Propósito |
 |------|--------|
-| `setup(ctx)` | **Required.** Called once at startup. Register event handlers, jobs, data/actions/tools, etc. |
-| `onHealth?()` | Optional. Return `{ status, message?, details? }` for health dashboard. |
-| `onConfigChanged?(newConfig)` | Optional. Apply new config without restart; if omitted, host restarts worker. |
-| `onShutdown?()` | Optional. Clean up before process exit (limited time window). |
-| `onValidateConfig?(config)` | Optional. Return `{ ok, warnings?, errors? }` for settings UI / Test Connection. |
-| `onWebhook?(input)` | Optional. Handle `POST /api/plugins/:pluginId/webhooks/:endpointKey`; required if webhooks declared. |
+| `setup(ctx)` | **Obligatorio.** Se llama una vez al iniciar. Registra manejadores de eventos, trabajos, datos/acciones/herramientas, etc. |
+| `onHealth?()` | Opcional. Devuelve `{ status, message?, details? }` para el panel de salud. |
+| `onConfigChanged?(newConfig)` | Opcional. Aplica la nueva configuración sin reiniciar; si se omite, el host reinicia el worker. |
+| `onShutdown?()` | Opcional. Limpia antes de la salida del proceso (ventana de tiempo limitada). |
+| `onValidateConfig?(config)` | Opcional. Devuelve `{ ok, warnings?, errors? }` para la UI de ajustes / Probar conexión. |
+| `onWebhook?(input)` | Opcional. Maneja `POST /api/plugins/:pluginId/webhooks/:endpointKey`; obligatorio si se declaran webhooks. |
 
-**Context (`ctx`) in setup:** `config`, `events`, `jobs`, `launchers`, `http`, `secrets`, `activity`, `state`, `entities`, `projects`, `companies`, `issues`, `agents`, `goals`, `data`, `actions`, `streams`, `tools`, `metrics`, `logger`, `manifest`. Worker-side host APIs are capability-gated; declare capabilities in the manifest.
+**Contexto (`ctx`) en setup:** `config`, `events`, `jobs`, `launchers`, `http`, `secrets`, `activity`, `state`, `entities`, `projects`, `companies`, `issues`, `agents`, `goals`, `data`, `actions`, `streams`, `tools`, `metrics`, `logger`, `manifest`. Las API del host del lado del worker están controladas por capacidades; declara las capacidades en el manifiesto.
 
-**Agents:** `ctx.agents.invoke(agentId, companyId, opts)` for one-shot invocation. `ctx.agents.sessions` for two-way chat: `create`, `list`, `sendMessage` (with streaming `onEvent` callback), `close`. See the [Plugin Authoring Guide](../../doc/plugins/PLUGIN_AUTHORING_GUIDE.md#agent-sessions-two-way-chat) for details.
+**Agentes:** `ctx.agents.invoke(agentId, companyId, opts)` para invocación única. `ctx.agents.sessions` para chat bidireccional: `create`, `list`, `sendMessage` (con callback `onEvent` de streaming), `close`. Consulta la [guía de autoría de plugins](../../doc/plugins/PLUGIN_AUTHORING_GUIDE.md#agent-sessions-two-way-chat) para más detalles.
 
-**Jobs:** Declare in `manifest.jobs` with `jobKey`, `displayName`, `schedule` (cron). Register handler with `ctx.jobs.register(jobKey, fn)`. **Webhooks:** Declare in `manifest.webhooks` with `endpointKey`; handle in `onWebhook(input)`. **State:** `ctx.state.get/set/delete(scopeKey)`; scope kinds: `instance`, `company`, `project`, `project_workspace`, `agent`, `issue`, `goal`, `run`.
+**Trabajos:** decláralos en `manifest.jobs` con `jobKey`, `displayName`, `schedule` (cron). Registra el manejador con `ctx.jobs.register(jobKey, fn)`. **Webhooks:** decláralos en `manifest.webhooks` con `endpointKey`; manéjalos en `onWebhook(input)`. **Estado:** `ctx.state.get/set/delete(scopeKey)`; tipos de alcance: `instance`, `company`, `project`, `project_workspace`, `agent`, `issue`, `goal`, `run`.
 
-## Events
+## Eventos
 
-Subscribe in `setup` with `ctx.events.on(name, handler)` or `ctx.events.on(name, filter, handler)`. Emit plugin-scoped events with `ctx.events.emit(name, companyId, payload)` (requires `events.emit`).
+Suscríbete en `setup` con `ctx.events.on(name, handler)` o `ctx.events.on(name, filter, handler)`. Emite eventos con alcance de plugin con `ctx.events.emit(name, companyId, payload)` (requiere `events.emit`).
 
-**Core domain events (subscribe with `events.subscribe`):**
+**Eventos centrales del dominio (suscríbete con `events.subscribe`):**
 
-| Event | Typical entity |
+| Evento | Entidad típica |
 |-------|-----------------|
 | `company.created`, `company.updated` | company |
 | `project.created`, `project.updated` | project |
@@ -125,46 +125,46 @@ Subscribe in `setup` with `ctx.events.on(name, handler)` or `ctx.events.on(name,
 | `cost_event.created` | cost |
 | `activity.logged` | activity |
 
-**Plugin-to-plugin:** Subscribe to `plugin.<pluginId>.<eventName>` (e.g. `plugin.acme.linear.sync-done`). Emit with `ctx.events.emit("sync-done", companyId, payload)`; the host namespaces it automatically.
+**De plugin a plugin:** suscríbete a `plugin.<pluginId>.<eventName>` (p. ej., `plugin.acme.linear.sync-done`). Emite con `ctx.events.emit("sync-done", companyId, payload)`; el host le asigna el espacio de nombres automáticamente.
 
-**Filter (optional):** Pass a second argument to `on()`: `{ projectId?, companyId?, agentId? }` so the host only delivers matching events.
+**Filtro (opcional):** pasa un segundo argumento a `on()`: `{ projectId?, companyId?, agentId? }` para que el host solo entregue los eventos coincidentes.
 
-**Company context:** Events still carry `companyId` for company-scoped data, but plugin installation and activation are instance-wide in the current runtime.
+**Contexto de empresa:** los eventos aún llevan `companyId` para datos con alcance de empresa, pero la instalación y activación de plugins son a nivel de instancia en el runtime actual.
 
-## Scheduled (recurring) jobs
+## Trabajos programados (recurrentes)
 
-Plugins can declare **scheduled jobs** that the host runs on a cron schedule. Use this for recurring tasks like syncs, digest reports, or cleanup.
+Los plugins pueden declarar **trabajos programados** que el host ejecuta según un cronograma cron. Úsalo para tareas recurrentes como sincronizaciones, informes de resumen o limpieza.
 
-1. **Capability:** Add `jobs.schedule` to `manifest.capabilities`.
-2. **Declare jobs** in `manifest.jobs`: each entry has `jobKey`, `displayName`, optional `description`, and `schedule` (a 5-field cron expression).
-3. **Register a handler** in `setup()` with `ctx.jobs.register(jobKey, async (job) => { ... })`.
+1. **Capacidad:** agrega `jobs.schedule` a `manifest.capabilities`.
+2. **Declara los trabajos** en `manifest.jobs`: cada entrada tiene `jobKey`, `displayName`, `description` opcional y `schedule` (una expresión cron de 5 campos).
+3. **Registra un manejador** en `setup()` con `ctx.jobs.register(jobKey, async (job) => { ... })`.
 
-**Cron format** (5 fields: minute, hour, day-of-month, month, day-of-week):
+**Formato cron** (5 campos: minuto, hora, día del mes, mes, día de la semana):
 
-| Field        | Values   | Example |
+| Campo        | Valores   | Ejemplo |
 |-------------|----------|---------|
 | minute      | 0–59     | `0`, `*/15` |
 | hour        | 0–23     | `2`, `*` |
 | day of month | 1–31   | `1`, `*` |
 | month       | 1–12     | `*` |
-| day of week | 0–6 (Sun=0) | `*`, `1-5` |
+| day of week | 0–6 (dom=0) | `*`, `1-5` |
 
-Examples: `"0 * * * *"` = every hour at minute 0; `"*/5 * * * *"` = every 5 minutes; `"0 2 * * *"` = daily at 2:00.
+Ejemplos: `"0 * * * *"` = cada hora en el minuto 0; `"*/5 * * * *"` = cada 5 minutos; `"0 2 * * *"` = todos los días a las 2:00.
 
-**Job handler context** (`PluginJobContext`):
+**Contexto del manejador del trabajo** (`PluginJobContext`):
 
-| Field        | Type     | Description |
+| Campo        | Tipo     | Descripción |
 |-------------|----------|-------------|
-| `jobKey`    | string   | Matches the manifest declaration. |
-| `runId`     | string   | UUID for this run. |
-| `trigger`   | `"schedule" \| "manual" \| "retry"` | What caused this run. |
-| `scheduledAt` | string | ISO 8601 time when the run was scheduled. |
+| `jobKey`    | string   | Coincide con la declaración del manifiesto. |
+| `runId`     | string   | UUID de esta ejecución. |
+| `trigger`   | `"schedule" \| "manual" \| "retry"` | Qué causó esta ejecución. |
+| `scheduledAt` | string | Hora ISO 8601 en que se programó la ejecución. |
 
-Runs can be triggered by the **schedule**, **manually** from the UI/API, or as a **retry** (when an operator re-runs a job after a failure). Re-throw from the handler to mark the run as failed; the host records the failure. The host does not automatically retry—operators can trigger another run manually from the UI or API.
+Las ejecuciones pueden dispararse por el **cronograma**, **manualmente** desde la UI/API o como **reintento** (cuando un operador vuelve a ejecutar un trabajo tras un fallo). Vuelve a lanzar la excepción desde el manejador para marcar la ejecución como fallida; el host registra el fallo. El host no reintenta automáticamente: los operadores pueden disparar otra ejecución manualmente desde la UI o la API.
 
-Example:
+Ejemplo:
 
-**Manifest** — include `jobs.schedule` and declare the job:
+**Manifiesto** — incluye `jobs.schedule` y declara el trabajo:
 
 ```ts
 // In your manifest (e.g. manifest.ts):
@@ -183,7 +183,7 @@ const manifest = {
 };
 ```
 
-**Worker** — register the handler in `setup()`:
+**Worker** — registra el manejador en `setup()`:
 
 ```ts
 ctx.jobs.register("heartbeat", async (job) => {
@@ -192,15 +192,15 @@ ctx.jobs.register("heartbeat", async (job) => {
 });
 ```
 
-## UI slots and launchers
+## Slots y lanzadores de UI
 
-Slots are mount points for plugin React components. Launchers are host-rendered entry points (buttons, menu items) that open plugin UI. Declare slots in `manifest.ui.slots` with `type`, `id`, `displayName`, `exportName`; for context-sensitive slots add `entityTypes`. Declare launchers in `manifest.ui.launchers` (or legacy `manifest.launchers`).
+Los slots son puntos de montaje para componentes React de plugins. Los lanzadores son puntos de entrada renderizados por el host (botones, elementos de menú) que abren la UI del plugin. Declara los slots en `manifest.ui.slots` con `type`, `id`, `displayName`, `exportName`; para slots sensibles al contexto agrega `entityTypes`. Declara los lanzadores en `manifest.ui.launchers` (o en el heredado `manifest.launchers`).
 
-### Slot types / launcher placement zones
+### Tipos de slot / zonas de colocación de lanzadores
 
-The same set of values is used as **slot types** (where a component mounts) and **launcher placement zones** (where a launcher can appear). Hierarchy:
+El mismo conjunto de valores se usa como **tipos de slot** (dónde se monta un componente) y **zonas de colocación de lanzadores** (dónde puede aparecer un lanzador). Jerarquía:
 
-| Slot type / placement zone | Scope | Entity types (when context-sensitive) |
+| Tipo de slot / zona de colocación | Alcance | Tipos de entidad (cuando depende del contexto) |
 |----------------------------|-------|---------------------------------------|
 | `page` | Global | — |
 | `sidebar` | Global | — |
@@ -208,95 +208,95 @@ The same set of values is used as **slot types** (where a component mounts) and 
 | `settingsPage` | Global | — |
 | `dashboardWidget` | Global | — |
 | `globalToolbarButton` | Global | — |
-| `detailTab` | Entity | `project`, `issue`, `agent`, `goal`, `run` |
-| `taskDetailView` | Entity | (task/issue context) |
-| `commentAnnotation` | Entity | `comment` |
-| `commentContextMenuItem` | Entity | `comment` |
-| `projectSidebarItem` | Entity | `project` |
-| `toolbarButton` | Entity | varies by host surface |
-| `contextMenuItem` | Entity | varies by host surface |
+| `detailTab` | Entidad | `project`, `issue`, `agent`, `goal`, `run` |
+| `taskDetailView` | Entidad | (contexto de tarea/issue) |
+| `commentAnnotation` | Entidad | `comment` |
+| `commentContextMenuItem` | Entidad | `comment` |
+| `projectSidebarItem` | Entidad | `project` |
+| `toolbarButton` | Entidad | varía según la superficie del host |
+| `contextMenuItem` | Entidad | varía según la superficie del host |
 
-**Scope** describes whether the slot requires an entity to render. **Global** slots render without a specific entity but still receive the active `companyId` through `PluginHostContext` — use it to scope data fetches to the current company. **Entity** slots additionally require `entityId` and `entityType` (e.g. a detail tab on a specific issue).
+**Alcance** describe si el slot requiere una entidad para renderizarse. Los slots **globales** se renderizan sin una entidad específica, pero aún reciben el `companyId` activo a través de `PluginHostContext`; úsalo para limitar las consultas de datos a la empresa actual. Los slots de **entidad** además requieren `entityId` y `entityType` (p. ej., una pestaña de detalle en un issue específico).
 
-**Entity types** (for `entityTypes` on slots): `project` \| `issue` \| `agent` \| `goal` \| `run` \| `comment`. Full list: import `PLUGIN_UI_SLOT_TYPES` and `PLUGIN_UI_SLOT_ENTITY_TYPES` from `@paperclipai/plugin-sdk`.
+**Tipos de entidad** (para `entityTypes` en slots): `project` \| `issue` \| `agent` \| `goal` \| `run` \| `comment`. Lista completa: importa `PLUGIN_UI_SLOT_TYPES` y `PLUGIN_UI_SLOT_ENTITY_TYPES` desde `@paperclipai/plugin-sdk`.
 
-### Slot component descriptions
+### Descripciones de los componentes de slot
 
 #### `page`
 
-A full-page extension mounted at `/plugins/:pluginId` (global) or `/:company/plugins/:pluginId` (company-context route). Use this for rich, standalone plugin experiences such as dashboards, configuration wizards, or multi-step workflows. Receives `PluginPageProps` with `context.companyId` set to the active company. Requires the `ui.page.register` capability.
+Una extensión de página completa montada en `/plugins/:pluginId` (global) o `/:company/plugins/:pluginId` (ruta con contexto de empresa). Úsala para experiencias de plugin ricas e independientes, como paneles, asistentes de configuración o flujos de varios pasos. Recibe `PluginPageProps` con `context.companyId` establecido en la empresa activa. Requiere la capacidad `ui.page.register`.
 
 #### `sidebar`
 
-Adds a navigation-style entry to the main company sidebar navigation area, rendered alongside the core nav items (Dashboard, Issues, Goals, etc.). Use this for lightweight, always-visible links or status indicators that feel native to the sidebar. Receives `PluginSidebarProps` with `context.companyId` set to the active company. Requires the `ui.sidebar.register` capability.
+Agrega una entrada estilo navegación al área de navegación principal de la barra lateral de la empresa, renderizada junto a los elementos centrales de navegación (Dashboard, Issues, Goals, etc.). Úsala para enlaces ligeros siempre visibles o indicadores de estado que se sientan nativos de la barra lateral. Recibe `PluginSidebarProps` con `context.companyId` establecido en la empresa activa. Requiere la capacidad `ui.sidebar.register`.
 
 #### `sidebarPanel`
 
-Renders richer inline content in a dedicated panel area below the company sidebar navigation sections. Use this for mini-widgets, summary cards, quick-action panels, or at-a-glance status views that need more vertical space than a nav link. Receives `context.companyId` set to the active company via `useHostContext()`. Requires the `ui.sidebar.register` capability.
+Renderiza contenido en línea más rico en un área de panel dedicada debajo de las secciones de navegación de la barra lateral de la empresa. Úsala para mini-widgets, tarjetas de resumen, paneles de acciones rápidas o vistas de estado de un vistazo que necesiten más espacio vertical que un enlace de navegación. Recibe `context.companyId` establecido en la empresa activa mediante `useHostContext()`. Requiere la capacidad `ui.sidebar.register`.
 
 #### `settingsPage`
 
-Replaces the auto-generated JSON Schema settings form with a custom React component. Use this when the default form is insufficient — for example, when your plugin needs multi-step configuration, OAuth flows, "Test Connection" buttons, or rich input controls. Receives `PluginSettingsPageProps` with `context.companyId` set to the active company. The component is responsible for reading and writing config through the bridge (via `usePluginData` and `usePluginAction`).
+Reemplaza el formulario de ajustes autogenerado de JSON Schema con un componente React personalizado. Úsala cuando el formulario predeterminado sea insuficiente; por ejemplo, cuando tu plugin necesite configuración de varios pasos, flujos OAuth, botones de "Test Connection" o controles de entrada ricos. Recibe `PluginSettingsPageProps` con `context.companyId` establecido en la empresa activa. El componente es responsable de leer y escribir la configuración a través del puente (mediante `usePluginData` y `usePluginAction`).
 
 #### `dashboardWidget`
 
-A card or section rendered on the main dashboard. Use this for at-a-glance metrics, status indicators, or summary views that surface plugin data alongside core Paperclip information. Receives `PluginWidgetProps` with `context.companyId` set to the active company. Requires the `ui.dashboardWidget.register` capability.
+Una tarjeta o sección renderizada en el panel principal. Úsala para métricas de un vistazo, indicadores de estado o vistas de resumen que muestran datos del plugin junto a la información central de Paperclip. Recibe `PluginWidgetProps` con `context.companyId` establecido en la empresa activa. Requiere la capacidad `ui.dashboardWidget.register`.
 
 #### `detailTab`
 
-An additional tab on a project, issue, agent, goal, or run detail page. Rendered when the user navigates to that entity's detail view. Receives `PluginDetailTabProps` with `context.companyId` set to the active company and `context.entityId` / `context.entityType` guaranteed to be non-null, so you can immediately scope data fetches to the relevant entity. Specify which entity types the tab applies to via the `entityTypes` array in the manifest slot declaration. Requires the `ui.detailTab.register` capability.
+Una pestaña adicional en la página de detalle de un proyecto, issue, agente, objetivo o ejecución. Se renderiza cuando el usuario navega a la vista de detalle de esa entidad. Recibe `PluginDetailTabProps` con `context.companyId` establecido en la empresa activa y `context.entityId` / `context.entityType` garantizados como no nulos, para que puedas limitar de inmediato las consultas de datos a la entidad relevante. Especifica a qué tipos de entidad aplica la pestaña mediante el arreglo `entityTypes` en la declaración del slot del manifiesto. Requiere la capacidad `ui.detailTab.register`.
 
 #### `taskDetailView`
 
-A specialized slot rendered in the context of a task or issue detail view. Similar to `detailTab` but designed for inline content within the task detail layout rather than a separate tab. Receives `context.companyId`, `context.entityId`, and `context.entityType` like `detailTab`. Requires the `ui.detailTab.register` capability.
+Un slot especializado renderizado en el contexto de la vista de detalle de una tarea o issue. Similar a `detailTab`, pero diseñado para contenido en línea dentro del diseño de detalle de la tarea en lugar de una pestaña separada. Recibe `context.companyId`, `context.entityId` y `context.entityType` como `detailTab`. Requiere la capacidad `ui.detailTab.register`.
 
 #### `projectSidebarItem`
 
-A link or small component rendered **once per project** under that project's row in the sidebar Projects list. Use this to add project-scoped navigation entries (e.g. "Files", "Linear Sync") that deep-link into a plugin detail tab: `/:company/projects/:projectRef?tab=plugin:<key>:<slotId>`. Receives `PluginProjectSidebarItemProps` with `context.companyId` set to the active company, `context.entityId` set to the project id, and `context.entityType` set to `"project"`. Use the optional `order` field in the manifest slot to control sort position. Requires the `ui.sidebar.register` capability.
+Un enlace o componente pequeño renderizado **una vez por proyecto** bajo la fila de ese proyecto en la lista Projects de la barra lateral. Úsalo para agregar entradas de navegación con alcance de proyecto (p. ej., "Files", "Linear Sync") que enlacen en profundidad a una pestaña de detalle del plugin: `/:company/projects/:projectRef?tab=plugin:<key>:<slotId>`. Recibe `PluginProjectSidebarItemProps` con `context.companyId` establecido en la empresa activa, `context.entityId` establecido en el id del proyecto y `context.entityType` establecido en `"project"`. Usa el campo opcional `order` en el slot del manifiesto para controlar la posición de orden. Requiere la capacidad `ui.sidebar.register`.
 
 #### `globalToolbarButton`
 
-A button rendered in the global top bar (breadcrumb bar) that appears on every page. Use this for company-wide actions that are not scoped to a specific entity — for example, a universal search trigger, a global sync status indicator, or a floating action that applies across the whole workspace. Receives only `context.companyId` and `context.companyPrefix`; no entity context is available. Requires the `ui.action.register` capability.
+Un botón renderizado en la barra superior global (barra de breadcrumb) que aparece en todas las páginas. Úsalo para acciones a nivel de empresa que no están limitadas a una entidad específica; por ejemplo, un disparador de búsqueda universal, un indicador de estado de sincronización global o una acción flotante que aplica a todo el espacio de trabajo. Recibe solo `context.companyId` y `context.companyPrefix`; no hay contexto de entidad disponible. Requiere la capacidad `ui.action.register`.
 
 #### `toolbarButton`
 
-A button rendered in the toolbar of an entity page (e.g. project detail, issue detail). Use this for short-lived, contextual actions scoped to the current entity — like triggering a project sync, opening a picker, or running a quick command on that entity. The component can open a plugin-owned modal internally for confirmations or compact forms. Receives `context.companyId`, `context.entityId`, and `context.entityType`; declare `entityTypes` in the manifest to control which entity pages the button appears on. Requires the `ui.action.register` capability.
+Un botón renderizado en la barra de herramientas de una página de entidad (p. ej., detalle de proyecto, detalle de issue). Úsalo para acciones contextuales de corta duración limitadas a la entidad actual, como disparar una sincronización de proyecto, abrir un selector o ejecutar un comando rápido en esa entidad. El componente puede abrir internamente un modal propio del plugin para confirmaciones o formularios compactos. Recibe `context.companyId`, `context.entityId` y `context.entityType`; declara `entityTypes` en el manifiesto para controlar en qué páginas de entidad aparece el botón. Requiere la capacidad `ui.action.register`.
 
 #### `contextMenuItem`
 
-An entry added to a right-click or overflow context menu on a host surface. Use this for secondary actions that apply to the entity under the cursor (e.g. "Copy to Linear", "Re-run analysis"). Receives `context.companyId` set to the active company; entity context varies by host surface. Requires the `ui.action.register` capability.
+Una entrada agregada a un menú contextual de clic derecho o desbordamiento en una superficie del host. Úsala para acciones secundarias que aplican a la entidad bajo el cursor (p. ej., "Copy to Linear", "Re-run analysis"). Recibe `context.companyId` establecido en la empresa activa; el contexto de entidad varía según la superficie del host. Requiere la capacidad `ui.action.register`.
 
 #### `commentAnnotation`
 
-A per-comment annotation region rendered below each individual comment in the issue detail timeline. Use this to augment comments with parsed file links, sentiment badges, inline actions, or any per-comment metadata. Receives `PluginCommentAnnotationProps` with `context.entityId` set to the comment UUID, `context.entityType` set to `"comment"`, `context.parentEntityId` set to the parent issue UUID, `context.projectId` set to the issue's project (if any), and `context.companyPrefix` set to the active company slug. Requires the `ui.commentAnnotation.register` capability.
+Una región de anotación por comentario renderizada debajo de cada comentario individual en la línea de tiempo del detalle del issue. Úsala para enriquecer comentarios con enlaces de archivos analizados, insignias de sentimiento, acciones en línea o cualquier metadato por comentario. Recibe `PluginCommentAnnotationProps` con `context.entityId` establecido en el UUID del comentario, `context.entityType` establecido en `"comment"`, `context.parentEntityId` establecido en el UUID del issue padre, `context.projectId` establecido en el proyecto del issue (si lo hay) y `context.companyPrefix` establecido en el slug de la empresa activa. Requiere la capacidad `ui.commentAnnotation.register`.
 
 #### `commentContextMenuItem`
 
-A per-comment context menu item rendered in the "more" dropdown menu (⋮) on each comment in the issue detail timeline. Use this to add per-comment actions such as "Create sub-issue from comment", "Translate", "Flag for review", or custom plugin actions. Receives `PluginCommentContextMenuItemProps` with `context.entityId` set to the comment UUID, `context.entityType` set to `"comment"`, `context.parentEntityId` set to the parent issue UUID, `context.projectId` set to the issue's project (if any), and `context.companyPrefix` set to the active company slug. Plugins can open drawers, modals, or popovers scoped to that comment. The ⋮ menu button only appears on comments where at least one plugin renders visible content. Requires the `ui.action.register` capability.
+Un elemento de menú contextual por comentario renderizado en el menú desplegable "more" (⋮) de cada comentario en la línea de tiempo del detalle del issue. Úsalo para agregar acciones por comentario como "Create sub-issue from comment", "Translate", "Flag for review" o acciones personalizadas del plugin. Recibe `PluginCommentContextMenuItemProps` con `context.entityId` establecido en el UUID del comentario, `context.entityType` establecido en `"comment"`, `context.parentEntityId` establecido en el UUID del issue padre, `context.projectId` establecido en el proyecto del issue (si lo hay) y `context.companyPrefix` establecido en el slug de la empresa activa. Los plugins pueden abrir drawers, modales o popovers limitados a ese comentario. El botón ⋮ del menú solo aparece en comentarios donde al menos un plugin renderiza contenido visible. Requiere la capacidad `ui.action.register`.
 
-### Launcher actions and render options
+### Acciones de lanzadores y opciones de renderizado
 
-| Launcher action | Description |
+| Acción del lanzador | Descripción |
 |-----------------|-------------|
-| `navigate` | Navigate to a route (plugin or host). |
-| `openModal` | Open a modal. |
-| `openDrawer` | Open a drawer. |
-| `openPopover` | Open a popover. |
-| `performAction` | Run an action (e.g. call plugin). |
-| `deepLink` | Deep link to plugin or external URL. |
+| `navigate` | Navega a una ruta (plugin o host). |
+| `openModal` | Abre un modal. |
+| `openDrawer` | Abre un drawer. |
+| `openPopover` | Abre un popover. |
+| `performAction` | Ejecuta una acción (p. ej., llama al plugin). |
+| `deepLink` | Enlace profundo al plugin o a una URL externa. |
 
-| Render option | Values | Description |
+| Opción de renderizado | Valores | Descripción |
 |---------------|--------|-------------|
-| `environment` | `hostInline`, `hostOverlay`, `hostRoute`, `external`, `iframe` | Container the launcher expects after activation. |
-| `bounds` | `inline`, `compact`, `default`, `wide`, `full` | Size hint for overlays/drawers. |
+| `environment` | `hostInline`, `hostOverlay`, `hostRoute`, `external`, `iframe` | Contenedor que el lanzador espera tras la activación. |
+| `bounds` | `inline`, `compact`, `default`, `wide`, `full` | Sugerencia de tamaño para overlays/drawers. |
 
-### Capabilities
+### Capacidades
 
-Declare in `manifest.capabilities`. Grouped by scope:
+Decláralas en `manifest.capabilities`. Agrupadas por alcance:
 
-| Scope | Capability |
+| Alcance | Capacidad |
 |-------|------------|
-| **Company** | `companies.read` |
+| **Empresa** | `companies.read` |
 | | `projects.read` |
 | | `project.workspaces.read` |
 | | `issues.read` |
@@ -312,7 +312,7 @@ Declare in `manifest.capabilities`. Grouped by scope:
 | | `issue.comments.create` |
 | | `activity.log.write` |
 | | `metrics.write` |
-| **Instance** | `instance.settings.register` |
+| **Instancia** | `instance.settings.register` |
 | | `plugin.state.read` |
 | | `plugin.state.write` |
 | **Runtime** | `events.subscribe` |
@@ -321,7 +321,7 @@ Declare in `manifest.capabilities`. Grouped by scope:
 | | `webhooks.receive` |
 | | `http.outbound` |
 | | `secrets.read-ref` |
-| **Agent** | `agent.tools.register` |
+| **Agente** | `agent.tools.register` |
 | | `agents.invoke` |
 | | `agent.sessions.create` |
 | | `agent.sessions.list` |
@@ -334,9 +334,9 @@ Declare in `manifest.capabilities`. Grouped by scope:
 | | `ui.commentAnnotation.register` |
 | | `ui.action.register` |
 
-Full list in code: import `PLUGIN_CAPABILITIES` from `@paperclipai/plugin-sdk`.
+Lista completa en código: importa `PLUGIN_CAPABILITIES` desde `@paperclipai/plugin-sdk`.
 
-## UI quick start
+## Inicio rápido de la UI
 
 ```tsx
 import { usePluginData, usePluginAction } from "@paperclipai/plugin-sdk/ui";
@@ -354,11 +354,11 @@ export function DashboardWidget() {
 }
 ```
 
-### Hooks reference
+### Referencia de hooks
 
 #### `usePluginData<T>(key, params?)`
 
-Fetches data from the worker's registered `getData` handler. Re-fetches when `params` changes. Returns `{ data, loading, error, refresh }`.
+Obtiene datos del manejador `getData` registrado del worker. Vuelve a consultar cuando `params` cambia. Devuelve `{ data, loading, error, refresh }`.
 
 ```tsx
 import { usePluginData } from "@paperclipai/plugin-sdk/ui";
@@ -390,7 +390,7 @@ export function SyncStatusWidget({ context }: PluginWidgetProps) {
 
 #### `usePluginAction(key)`
 
-Returns an async function that calls the worker's `performAction` handler. Throws `PluginBridgeError` on failure.
+Devuelve una función asíncrona que llama al manejador `performAction` del worker. Lanza `PluginBridgeError` en caso de fallo.
 
 ```tsx
 import { useState } from "react";
@@ -426,7 +426,7 @@ export function ResyncButton({ context }: PluginWidgetProps) {
 
 #### `useHostContext()`
 
-Reads the active company, project, entity, and user context. Use this to scope data fetches and actions.
+Lee el contexto activo de empresa, proyecto, entidad y usuario. Úsalo para limitar consultas de datos y acciones.
 
 ```tsx
 import { useHostContext, usePluginData } from "@paperclipai/plugin-sdk/ui";
@@ -446,7 +446,7 @@ export function IssueLinearLink({ context }: PluginDetailTabProps) {
 
 #### `usePluginStream<T>(channel, options?)`
 
-Subscribes to a real-time event stream pushed from the plugin worker via SSE. The worker pushes events using `ctx.streams.emit(channel, event)` and the hook receives them as they arrive. Returns `{ events, lastEvent, connecting, connected, error, close }`.
+Se suscribe a un flujo de eventos en tiempo real enviado por el worker del plugin vía SSE. El worker envía eventos con `ctx.streams.emit(channel, event)` y el hook los recibe a medida que llegan. Devuelve `{ events, lastEvent, connecting, connected, error, close }`.
 
 ```tsx
 import { usePluginStream } from "@paperclipai/plugin-sdk/ui";
@@ -470,17 +470,17 @@ export function ChatMessages({ context }: PluginWidgetProps) {
 }
 ```
 
-The SSE connection targets `GET /api/plugins/:pluginId/bridge/stream/:channel?companyId=...`. The host bridge manages the EventSource lifecycle; `close()` terminates the connection.
+La conexión SSE apunta a `GET /api/plugins/:pluginId/bridge/stream/:channel?companyId=...`. El puente del host gestiona el ciclo de vida del EventSource; `close()` termina la conexión.
 
-### UI authoring note
+### Nota sobre la autoría de UI
 
-The current host does **not** provide a real shared component library to plugins yet. Use normal React components, your own CSS, or your own small design primitives inside the plugin package.
+El host actual **aún no** ofrece a los plugins una biblioteca real de componentes compartidos. Usa componentes React normales, tu propio CSS o tus propios primitivos de diseño pequeños dentro del paquete del plugin.
 
-### Slot component props
+### Props de los componentes de slot
 
-Each slot type receives a typed props object with `context: PluginHostContext`. Import from `@paperclipai/plugin-sdk/ui`.
+Cada tipo de slot recibe un objeto de props tipado con `context: PluginHostContext`. Importa desde `@paperclipai/plugin-sdk/ui`.
 
-| Slot type | Props interface | `context` extras |
+| Tipo de slot | Interfaz de props | extras de `context` |
 |-----------|----------------|------------------|
 | `page` | `PluginPageProps` | — |
 | `sidebar` | `PluginSidebarProps` | — |
@@ -493,7 +493,7 @@ Each slot type receives a typed props object with `context: PluginHostContext`. 
 | `commentContextMenuItem` | `PluginCommentContextMenuItemProps` | `entityId: string`, `entityType: "comment"`, `parentEntityId: string`, `projectId`, `companyPrefix` |
 | `projectSidebarItem` | `PluginProjectSidebarItemProps` | `entityId: string`, `entityType: "project"` |
 
-Example detail tab with entity context:
+Ejemplo de pestaña de detalle con contexto de entidad:
 
 ```tsx
 import type { PluginDetailTabProps } from "@paperclipai/plugin-sdk/ui";
@@ -521,16 +521,16 @@ export function AgentMetricsTab({ context }: PluginDetailTabProps) {
 }
 ```
 
-## Launcher surfaces and modals
+## Superficies de lanzadores y modales
 
-V1 does not provide a dedicated `modal` slot. Plugins can either:
+V1 no proporciona un slot `modal` dedicado. Los plugins pueden:
 
-- declare concrete UI mount points in `ui.slots`
-- declare host-rendered entry points in `ui.launchers`
+- declarar puntos de montaje de UI concretos en `ui.slots`
+- declarar puntos de entrada renderizados por el host en `ui.launchers`
 
-Supported launcher placement zones currently mirror the major host surfaces such as `projectSidebarItem`, `globalToolbarButton`, `toolbarButton`, `detailTab`, `settingsPage`, and `contextMenuItem`. Plugins may still open their own local modal from those entry points when needed.
+Las zonas de colocación de lanzadores soportadas actualmente reflejan las principales superficies del host, como `projectSidebarItem`, `globalToolbarButton`, `toolbarButton`, `detailTab`, `settingsPage` y `contextMenuItem`. Los plugins aún pueden abrir su propio modal local desde esos puntos de entrada cuando sea necesario.
 
-Declarative launcher example:
+Ejemplo de lanzador declarativo:
 
 ```json
 {
@@ -555,16 +555,16 @@ Declarative launcher example:
 }
 ```
 
-The host returns launcher metadata from `GET /api/plugins/ui-contributions` alongside slot declarations.
+El host devuelve los metadatos de lanzadores desde `GET /api/plugins/ui-contributions` junto con las declaraciones de slots.
 
-When a launcher opens a host-owned overlay or page, `useHostContext()`,
-`usePluginData()`, and `usePluginAction()` receive the current
-`renderEnvironment` through the bridge. Use that to tailor compact modal UI vs.
-full-page layouts without adding custom route parsing in the plugin.
+Cuando un lanzador abre un overlay o página propiedad del host, `useHostContext()`,
+`usePluginData()` y `usePluginAction()` reciben el
+`renderEnvironment` actual a través del puente. Úsalo para adaptar la UI de modal compacta frente a
+diseños de página completa sin agregar análisis de rutas personalizado en el plugin.
 
-## Project sidebar item
+## Elemento de la barra lateral del proyecto
 
-Plugins can add a link under each project in the sidebar via the `projectSidebarItem` slot. This is the recommended slot-based launcher pattern for project-scoped workflows because it can deep-link into a richer plugin tab. The component is rendered once per project with that project’s id in `context.entityId`. Declare the slot and capability in your manifest:
+Los plugins pueden agregar un enlace bajo cada proyecto en la barra lateral mediante el slot `projectSidebarItem`. Este es el patrón de lanzador basado en slots recomendado para flujos de trabajo con alcance de proyecto, porque puede enlazar en profundidad a una pestaña de plugin más rica. El componente se renderiza una vez por proyecto con el id de ese proyecto en `context.entityId`. Declara el slot y la capacidad en tu manifiesto:
 
 ```json
 {
@@ -583,7 +583,7 @@ Plugins can add a link under each project in the sidebar via the `projectSidebar
 }
 ```
 
-Minimal React component that links to the project’s plugin tab (see project detail tabs in the spec):
+Componente React mínimo que enlaza a la pestaña de plugin del proyecto (consulta las pestañas de detalle de proyecto en la especificación):
 
 ```tsx
 import type { PluginProjectSidebarItemProps } from "@paperclipai/plugin-sdk/ui";
@@ -600,18 +600,18 @@ export function FilesLink({ context }: PluginProjectSidebarItemProps) {
 }
 ```
 
-Use optional `order` in the slot to sort among other project sidebar items. See §19.5.1 in the plugin spec and project detail plugin tabs (§19.3) for the full flow.
+Usa `order` opcional en el slot para ordenar entre otros elementos de la barra lateral del proyecto. Consulta §19.5.1 en la especificación del plugin y las pestañas de detalle de proyecto del plugin (§19.3) para el flujo completo.
 
-## Toolbar launcher with a local modal
+## Lanzador de barra de herramientas con un modal local
 
-Two toolbar slot types are available depending on where the button should appear:
+Hay dos tipos de slot de barra de herramientas disponibles según dónde deba aparecer el botón:
 
-- **`globalToolbarButton`** — renders in the top bar on every page, scoped to the company. No entity context. Use for workspace-wide actions.
-- **`toolbarButton`** — renders on entity detail pages (project, issue, etc.). Receives `entityId` and `entityType`. Declare `entityTypes` to control which pages the button appears on.
+- **`globalToolbarButton`** — se renderiza en la barra superior en todas las páginas, con alcance de empresa. Sin contexto de entidad. Úsalo para acciones a nivel de espacio de trabajo.
+- **`toolbarButton`** — se renderiza en las páginas de detalle de entidad (proyecto, issue, etc.). Recibe `entityId` y `entityType`. Declara `entityTypes` para controlar en qué páginas aparece el botón.
 
-For short-lived actions, mount the appropriate slot type and open a plugin-owned modal inside the component. Use `useHostContext()` to scope the action to the current company or entity.
+Para acciones de corta duración, monta el tipo de slot adecuado y abre un modal propio del plugin dentro del componente. Usa `useHostContext()` para limitar la acción a la empresa o entidad actual.
 
-Project-scoped example (appears only on project detail pages):
+Ejemplo con alcance de proyecto (aparece solo en páginas de detalle de proyecto):
 
 ```json
 {
@@ -697,15 +697,15 @@ export function SyncToolbarButton() {
 }
 ```
 
-Prefer deep-linkable tabs and pages for primary workflows. Reserve plugin-owned modals for confirmations, pickers, and compact editors.
+Prefiere pestañas y páginas enlazables para los flujos principales. Reserva los modales propios del plugin para confirmaciones, selectores y editores compactos.
 
-## Real-time streaming (`ctx.streams`)
+## Transmisión en tiempo real (`ctx.streams`)
 
-Plugins can push real-time events from the worker to the UI using server-sent events (SSE). This is useful for streaming LLM tokens, live sync progress, or any push-based data.
+Los plugins pueden enviar eventos en tiempo real desde el worker a la UI usando eventos enviados por el servidor (SSE). Esto es útil para transmitir tokens de LLM, progreso de sincronización en vivo o cualquier dato basado en push.
 
-### Worker side
+### Lado del worker
 
-In `setup()`, use `ctx.streams` to open a channel, emit events, and close when done:
+En `setup()`, usa `ctx.streams` para abrir un canal, emitir eventos y cerrar cuando termines:
 
 ```ts
 const plugin = definePlugin({
@@ -727,38 +727,38 @@ const plugin = definePlugin({
 
 **API:**
 
-| Method | Description |
+| Método | Descripción |
 |--------|-------------|
-| `ctx.streams.open(channel, companyId)` | Open a named stream channel and associate it with a company. Sends a `streams.open` notification to the host. |
-| `ctx.streams.emit(channel, event)` | Push an event to the channel. The `companyId` is automatically resolved from the prior `open()` call. |
-| `ctx.streams.close(channel)` | Close the channel and clear the company mapping. Sends a `streams.close` notification. |
+| `ctx.streams.open(channel, companyId)` | Abre un canal de transmisión con nombre y lo asocia a una empresa. Envía una notificación `streams.open` al host. |
+| `ctx.streams.emit(channel, event)` | Envía un evento al canal. El `companyId` se resuelve automáticamente desde la llamada `open()` previa. |
+| `ctx.streams.close(channel)` | Cierra el canal y limpia el mapeo de empresa. Envía una notificación `streams.close`. |
 
-Stream notifications are fire-and-forget JSON-RPC messages (no `id` field). They are sent via `notifyHost()` synchronously during handler execution.
+Las notificaciones de transmisión son mensajes JSON-RPC de tipo «disparar y olvidar» (sin campo `id`). Se envían mediante `notifyHost()` de forma síncrona durante la ejecución del manejador.
 
-### UI side
+### Lado de la UI
 
-Use the `usePluginStream` hook (see [Hooks reference](#usepluginstreamtchannel-options) above) to subscribe to events from the UI.
+Usa el hook `usePluginStream` (consulta la [referencia de hooks](#usepluginstreamtchannel-options) más arriba) para suscribirte a eventos desde la UI.
 
-### Host-side architecture
+### Arquitectura del lado del host
 
-The host maintains an in-memory `PluginStreamBus` that fans out worker notifications to connected SSE clients:
+El host mantiene un `PluginStreamBus` en memoria que distribuye las notificaciones del worker a los clientes SSE conectados:
 
-1. Worker emits `streams.emit` notification via stdout
-2. Host (`plugin-worker-manager`) receives the notification and publishes to `PluginStreamBus`
-3. SSE endpoint (`GET /api/plugins/:pluginId/bridge/stream/:channel?companyId=...`) subscribes to the bus and writes events to the response
+1. El worker emite la notificación `streams.emit` vía stdout
+2. El host (`plugin-worker-manager`) recibe la notificación y la publica en `PluginStreamBus`
+3. El endpoint SSE (`GET /api/plugins/:pluginId/bridge/stream/:channel?companyId=...`) se suscribe al bus y escribe los eventos en la respuesta
 
-The bus is keyed by `pluginId:channel:companyId`, so multiple UI clients can subscribe to the same stream independently.
+El bus se indexa por `pluginId:channel:companyId`, así que múltiples clientes de UI pueden suscribirse a la misma transmisión de forma independiente.
 
-### Streaming agent responses to the UI
+### Transmisión de respuestas del agente a la UI
 
-`ctx.streams` and `ctx.agents.sessions` are complementary. The worker sits between them, relaying agent events to the browser in real time:
+`ctx.streams` y `ctx.agents.sessions` son complementarios. El worker se sitúa entre ambos, retransmitiendo eventos del agente al navegador en tiempo real:
 
 ```
 UI ──usePluginAction──▶ Worker ──sessions.sendMessage──▶ Agent
 UI ◀──usePluginStream── Worker ◀──onEvent callback────── Agent
 ```
 
-The agent doesn't know about streams — the worker decides what to relay. Encode the agent ID in the channel name to scope streams per agent.
+El agente no sabe nada de transmisiones: el worker decide qué retransmitir. Codifica el ID del agente en el nombre del canal para limitar las transmisiones por agente.
 
 **Worker:**
 
@@ -820,9 +820,9 @@ export function AgentChat({ agentId, companyId }: { agentId: string; companyId: 
 }
 ```
 
-## Agent sessions (two-way chat)
+## Sesiones de agente (chat bidireccional)
 
-Plugins can hold multi-turn conversational sessions with agents:
+Los plugins pueden mantener sesiones conversacionales de múltiples turnos con agentes:
 
 ```ts
 // Create a session
@@ -844,11 +844,11 @@ const sessions = await ctx.agents.sessions.list(agentId, companyId);
 await ctx.agents.sessions.close(session.sessionId, companyId);
 ```
 
-Requires capabilities: `agent.sessions.create`, `agent.sessions.list`, `agent.sessions.send`, `agent.sessions.close`.
+Requiere las capacidades: `agent.sessions.create`, `agent.sessions.list`, `agent.sessions.send`, `agent.sessions.close`.
 
-Exported types: `AgentSession`, `AgentSessionEvent`, `AgentSessionSendResult`, `PluginAgentSessionsClient`.
+Tipos exportados: `AgentSession`, `AgentSessionEvent`, `AgentSessionSendResult`, `PluginAgentSessionsClient`.
 
-## Testing utilities
+## Utilidades de pruebas
 
 ```ts
 import { createTestHarness } from "@paperclipai/plugin-sdk/testing";
@@ -860,7 +860,7 @@ await plugin.definition.setup(harness.ctx);
 await harness.emit("issue.created", { issueId: "iss_1" }, { entityId: "iss_1", entityType: "issue" });
 ```
 
-## Bundler presets
+## Preajustes de empaquetadores
 
 ```ts
 import { createPluginBundlerPresets } from "@paperclipai/plugin-sdk/bundlers";
@@ -870,19 +870,19 @@ const presets = createPluginBundlerPresets({ uiEntry: "src/ui/index.tsx" });
 // presets.rollup.worker / presets.rollup.manifest / presets.rollup.ui
 ```
 
-## Local dev server (hot-reload events)
+## Servidor de desarrollo local (eventos de hot-reload)
 
 ```bash
 paperclip-plugin-dev-server --root . --ui-dir dist/ui --port 4177
 ```
 
-Or programmatically:
+O programáticamente:
 
 ```ts
 import { startPluginDevServer } from "@paperclipai/plugin-sdk/dev-server";
 const server = await startPluginDevServer({ rootDir: process.cwd() });
 ```
 
-Dev server endpoints:
-- `GET /__paperclip__/health` returns `{ ok, rootDir, uiDir }`
-- `GET /__paperclip__/events` streams `reload` SSE events on UI build changes
+Endpoints del servidor de desarrollo:
+- `GET /__paperclip__/health` devuelve `{ ok, rootDir, uiDir }`
+- `GET /__paperclip__/events` transmite eventos SSE de `reload` cuando cambia la compilación de la UI

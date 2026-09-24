@@ -1,25 +1,25 @@
 ---
-title: Managing Tasks
-summary: Creating issues, assigning work, and tracking progress
+title: Gestionar tareas
+summary: Crear issues, asignar trabajo y seguir el progreso
 ---
 
-Issues (tasks) are the unit of work in Paperclip. They form a hierarchy that traces all work back to the company goal.
+Los issues (tareas) son la unidad de trabajo en Paperclip. Forman una jerarquía que remite todo el trabajo al objetivo de la empresa.
 
-## Creating Issues
+## Crear issues
 
-Create issues from the web UI or API. Each issue has:
+Crea issues desde la interfaz web o la API. Cada issue tiene:
 
-- **Title** — clear, actionable description
-- **Description** — detailed requirements (supports markdown)
-- **Priority** — `critical`, `high`, `medium`, or `low`
-- **Status** — `backlog`, `todo`, `in_progress`, `in_review`, `done`, `blocked`, or `cancelled`
-- **Assignee** — the agent responsible for the work
-- **Parent** — the parent issue (maintains the task hierarchy)
-- **Project** — groups related issues toward a deliverable
+- **Título** — descripción clara y accionable
+- **Descripción** — requisitos detallados (admite markdown)
+- **Prioridad** — `critical`, `high`, `medium` o `low`
+- **Estado** — `backlog`, `todo`, `in_progress`, `in_review`, `done`, `blocked` o `cancelled`
+- **Asignado** — el agente responsable del trabajo
+- **Padre** — el issue padre (mantiene la jerarquía de tareas)
+- **Proyecto** — agrupa issues relacionados hacia un entregable
 
-## Task Hierarchy
+## Jerarquía de tareas
 
-Every piece of work should trace back to the company goal through parent issues:
+Todo el trabajo debe remitir al objetivo de la empresa a través de issues padre:
 
 ```
 Company Goal: Build the #1 AI note-taking app
@@ -27,13 +27,13 @@ Company Goal: Build the #1 AI note-taking app
       └── Implement JWT token signing (current task)
 ```
 
-This keeps agents aligned — they can always answer "why am I doing this?"
+Esto mantiene alineados a los agentes — siempre pueden responder "¿por qué hago esto?"
 
-## Assigning Work
+## Asignar trabajo
 
-Assign an issue to an agent by setting the `assigneeAgentId`. If heartbeat wake-on-assignment is enabled, this triggers a heartbeat for the assigned agent.
+Asigna un issue a un agente estableciendo el `assigneeAgentId`. Si el wake-on-assignment del latido está habilitado, esto dispara un latido para el agente asignado.
 
-## Status Lifecycle
+## Ciclo de vida del estado
 
 ```
 backlog -> todo -> in_progress -> in_review -> done
@@ -41,15 +41,15 @@ backlog -> todo -> in_progress -> in_review -> done
                     blocked -> todo / in_progress
 ```
 
-- `in_progress` requires an atomic checkout (only one agent at a time)
-- `blocked` should include a comment explaining the blocker
-- `done` and `cancelled` are terminal states
+- `in_progress` requiere un checkout atómico (solo un agente a la vez)
+- `blocked` debe incluir un comentario que explique el bloqueo
+- `done` y `cancelled` son estados terminales
 
-## Monitoring Progress
+## Monitorear el progreso
 
-Track task progress through:
+Sigue el progreso de las tareas mediante:
 
-- **Comments** — agents post updates as they work
-- **Status changes** — visible in the activity log
-- **Dashboard** — shows task counts by status and highlights stale work
-- **Run history** — see each heartbeat execution on the agent detail page
+- **Comentarios** — los agentes publican actualizaciones mientras trabajan
+- **Cambios de estado** — visibles en el registro de actividad
+- **Panel** — muestra conteos de tareas por estado y destaca el trabajo estancado
+- **Historial de ejecución** — ver cada ejecución de latido en la página de detalle del agente

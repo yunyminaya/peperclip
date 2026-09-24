@@ -12,478 +12,477 @@ import type {
 } from "../constants.js";
 
 // ---------------------------------------------------------------------------
-// JSON Schema placeholder – plugins declare config schemas as JSON Schema
+// Marcador de posición de JSON Schema – los plugins declaran esquemas de config como JSON Schema
 // ---------------------------------------------------------------------------
 
 /**
- * A JSON Schema object used for plugin config schemas and tool parameter schemas.
- * Plugins provide these as plain JSON Schema compatible objects.
+ * Un objeto JSON Schema usado para esquemas de config de plugins y esquemas de parámetros de herramientas.
+ * Los plugins los proveen como objetos JSON Schema compatibles simples.
  */
 export type JsonSchema = Record<string, unknown>;
 
 // ---------------------------------------------------------------------------
-// Manifest sub-types — nested declarations within PaperclipPluginManifestV1
+// Subtipos del manifiesto — declaraciones anidadas dentro de PaperclipPluginManifestV1
 // ---------------------------------------------------------------------------
 
 /**
- * Declares a scheduled job a plugin can run.
+ * Declara un trabajo programado que un plugin puede ejecutar.
  *
  * @see PLUGIN_SPEC.md §17 — Scheduled Jobs
  */
 export interface PluginJobDeclaration {
-  /** Stable identifier for this job, unique within the plugin. */
+  /** Identificador estable para este trabajo, único dentro del plugin. */
   jobKey: string;
-  /** Human-readable name shown in the operator UI. */
+  /** Nombre legible mostrado en la UI del operador. */
   displayName: string;
-  /** Optional description of what the job does. */
+  /** Descripción opcional de lo que hace el trabajo. */
   description?: string;
-  /** Cron expression for the schedule (e.g. "star/15 star star star star" or "0 * * * *"). */
+  /** Expresión cron para la programación (p. ej. "star/15 star star star star" u "0 * * * *"). */
   schedule?: string;
 }
 
 /**
- * Declares a webhook endpoint the plugin can receive.
- * Route: `POST /api/plugins/:pluginId/webhooks/:endpointKey`
+ * Declara un endpoint de webhook que el plugin puede recibir.
+ * Ruta: `POST /api/plugins/:pluginId/webhooks/:endpointKey`
  *
  * @see PLUGIN_SPEC.md §18 — Webhooks
  */
 export interface PluginWebhookDeclaration {
-  /** Stable identifier for this endpoint, unique within the plugin. */
+  /** Identificador estable para este endpoint, único dentro del plugin. */
   endpointKey: string;
-  /** Human-readable name shown in the operator UI. */
+  /** Nombre legible mostrado en la UI del operador. */
   displayName: string;
-  /** Optional description of what this webhook handles. */
+  /** Descripción opcional de lo que maneja este webhook. */
   description?: string;
 }
 
 /**
- * Declares an agent tool contributed by the plugin. Tools are namespaced
- * by plugin ID at runtime (e.g. `linear:search-issues`).
+ * Declara una herramienta de agente aportada por el plugin. Las herramientas se agrupan
+ * por ID de plugin en tiempo de ejecución (p. ej. `linear:search-issues`).
  *
- * Requires the `agent.tools.register` capability.
+ * Requiere la capacidad `agent.tools.register`.
  *
  * @see PLUGIN_SPEC.md §11 — Agent Tools
  */
 export interface PluginToolDeclaration {
-  /** Tool name, unique within the plugin. Namespaced by plugin ID at runtime. */
+  /** Nombre de la herramienta, único dentro del plugin. Agrupado por ID de plugin en tiempo de ejecución. */
   name: string;
-  /** Human-readable name shown to agents and in the UI. */
+  /** Nombre legible mostrado a los agentes y en la UI. */
   displayName: string;
-  /** Description provided to the agent so it knows when to use this tool. */
+  /** Descripción provista al agente para que sepa cuándo usar esta herramienta. */
   description: string;
-  /** JSON Schema describing the tool's input parameters. */
+  /** JSON Schema que describe los parámetros de entrada de la herramienta. */
   parametersSchema: JsonSchema;
 }
 
 /**
- * Declares a UI extension slot the plugin fills with a React component.
+ * Declara una ranura de extensión de UI que el plugin llena con un componente React.
  *
  * @see PLUGIN_SPEC.md §19 — UI Extension Model
  */
 export interface PluginUiSlotDeclaration {
-  /** The type of UI mount point (page, detailTab, taskDetailView, toolbarButton, etc.). */
+  /** El tipo de punto de montaje de UI (page, detailTab, taskDetailView, toolbarButton, etc.). */
   type: PluginUiSlotType;
-  /** Unique slot identifier within the plugin. */
+  /** Identificador de ranura único dentro del plugin. */
   id: string;
-  /** Human-readable name shown in navigation or tab labels. */
+  /** Nombre legible mostrado en la navegación o etiquetas de pestañas. */
   displayName: string;
-  /** Which export name in the UI bundle provides this component. */
+  /** Qué nombre de exportación en el paquete de UI provee este componente. */
   exportName: string;
   /**
-   * Entity targets for context-sensitive slots.
-   * Required for `detailTab`, `taskDetailView`, and `contextMenuItem`.
+   * Objetivos de entidad para ranuras sensibles al contexto.
+   * Requerido para `detailTab`, `taskDetailView` y `contextMenuItem`.
    */
   entityTypes?: PluginUiSlotEntityType[];
   /**
-   * Optional company-scoped route segment for page slots.
-   * Example: `kitchensink` becomes `/:companyPrefix/kitchensink`.
+   * Segmento de ruta opcional con alcance de empresa para ranuras de página.
+   * Ejemplo: `kitchensink` se convierte en `/:companyPrefix/kitchensink`.
    */
   routePath?: string;
   /**
-   * Optional ordering hint within a slot surface. Lower numbers appear first.
-   * Defaults to host-defined ordering if omitted.
+   * Sugerencia de orden opcional dentro de una superficie de ranura. Los números menores aparecen primero.
+   * Si se omite, usa el orden definido por el host.
    */
   order?: number;
 }
 
 /**
- * Describes the action triggered by a plugin launcher surface.
+ * Describe la acción desencadenada por una superficie de lanzador de plugin.
  */
 export interface PluginLauncherActionDeclaration {
-  /** What kind of launch behavior the host should perform. */
+  /** Qué tipo de comportamiento de lanzamiento debe realizar el host. */
   type: PluginLauncherAction;
   /**
-   * Stable target identifier or URL. The meaning depends on `type`
-   * (for example a route, tab key, action key, or external URL).
+   * Identificador o URL de destino estable. El significado depende de `type`
+   * (por ejemplo una ruta, clave de pestaña, clave de acción o URL externa).
    */
   target: string;
-  /** Optional arbitrary parameters passed along to the target. */
+  /** Parámetros arbitrarios opcionales pasados al destino. */
   params?: Record<string, unknown>;
 }
 
 /**
- * Optional render metadata for the destination opened by a launcher.
+ * Metadatos de renderizado opcionales para el destino abierto por un lanzador.
  */
 export interface PluginLauncherRenderDeclaration {
-  /** High-level container the launcher expects the host to use. */
+  /** Contenedor de alto nivel que el lanzador espera que el host use. */
   environment: PluginLauncherRenderEnvironment;
-  /** Optional size hint for the destination surface. */
+  /** Sugerencia de tamaño opcional para la superficie de destino. */
   bounds?: PluginLauncherBounds;
 }
 
 /**
- * Serializable runtime snapshot of the host launcher/container environment.
+ * Instantánea serializable en tiempo de ejecución del entorno de lanzador/contenedor del host.
  */
 export interface PluginLauncherRenderContextSnapshot {
-  /** The current launcher/container environment selected by the host. */
+  /** El entorno de lanzador/contenedor actual seleccionado por el host. */
   environment: PluginLauncherRenderEnvironment | null;
-  /** Launcher id that opened this surface, if any. */
+  /** ID del lanzador que abrió esta superficie, si hay. */
   launcherId: string | null;
-  /** Current host-applied bounds hint for the environment, if any. */
+  /** Sugerencia de límites actual aplicada por el host para el entorno, si hay. */
   bounds: PluginLauncherBounds | null;
 }
 
 /**
- * Declares a plugin launcher surface independent of the low-level slot
- * implementation that mounts it.
+ * Declara una superficie de lanzador de plugin independiente de la implementación de ranura de bajo nivel
+ * que la monta.
  */
 export interface PluginLauncherDeclaration {
-  /** Stable identifier for this launcher, unique within the plugin. */
+  /** Identificador estable para este lanzador, único dentro del plugin. */
   id: string;
-  /** Human-readable label shown for the launcher. */
+  /** Etiqueta legible mostrada para el lanzador. */
   displayName: string;
-  /** Optional description for operator-facing docs or future UI affordances. */
+  /** Descripción opcional para documentación orientada al operador o futuras prestaciones de UI. */
   description?: string;
-  /** Where in the host UI this launcher should be placed. */
+  /** Dónde en la UI del host debe colocarse este lanzador. */
   placementZone: PluginLauncherPlacementZone;
-  /** Optional export name in the UI bundle when the launcher has custom UI. */
+  /** Nombre de exportación opcional en el paquete de UI cuando el lanzador tiene UI personalizada. */
   exportName?: string;
   /**
-   * Optional entity targeting for context-sensitive launcher zones.
-   * Reuses the same entity union as UI slots for consistency.
+   * Orientación de entidad opcional para zonas de lanzador sensibles al contexto.
+   * Reutiliza la misma unión de entidades que las ranuras de UI por consistencia.
    */
   entityTypes?: PluginUiSlotEntityType[];
-  /** Optional ordering hint within the placement zone. */
+  /** Sugerencia de orden opcional dentro de la zona de colocación. */
   order?: number;
-  /** What should happen when the launcher is activated. */
+  /** Qué debe ocurrir cuando se activa el lanzador. */
   action: PluginLauncherActionDeclaration;
-  /** Optional render/container hints for the launched destination. */
+  /** Sugerencias de renderizado/contenedor opcionales para el destino lanzado. */
   render?: PluginLauncherRenderDeclaration;
 }
 
 /**
- * Lower-bound semver requirement for the Paperclip host.
+ * Requisito mínimo de semver para el host Paperclip.
  *
- * The host should reject installation when its running version is lower than
- * the declared minimum.
+ * El host debe rechazar la instalación cuando su versión en ejecución sea menor que el mínimo declarado.
  */
 export type PluginMinimumHostVersion = string;
 
 /**
- * Groups plugin UI declarations that are served from the shared UI bundle
- * root declared in `entrypoints.ui`.
+ * Agrupa declaraciones de UI de plugin servidas desde la raíz del paquete de UI compartido
+ * declarada en `entrypoints.ui`.
  */
 export interface PluginUiDeclaration {
-  /** UI extension slots this plugin fills. */
+  /** Ranuras de extensión de UI que este plugin llena. */
   slots?: PluginUiSlotDeclaration[];
-  /** Declarative launcher metadata for host-mounted plugin entry points. */
+  /** Metadatos declarativos de lanzador para puntos de entrada de plugin montados por el host. */
   launchers?: PluginLauncherDeclaration[];
 }
 
 // ---------------------------------------------------------------------------
-// Plugin Manifest V1
+// Manifiesto de plugin V1
 // ---------------------------------------------------------------------------
 
 /**
- * The manifest shape every plugin package must export.
- * See PLUGIN_SPEC.md §10.1 for the normative definition.
+ * La forma del manifiesto que todo paquete de plugin debe exportar.
+ * Ver PLUGIN_SPEC.md §10.1 para la definición normativa.
  */
 export interface PaperclipPluginManifestV1 {
-  /** Globally unique plugin identifier (e.g. `"acme.linear-sync"`). Must be lowercase alphanumeric with dots, hyphens, or underscores. */
+  /** Identificador de plugin globalmente único (p. ej. `"acme.linear-sync"`). Debe ser alfanumérico en minúsculas con puntos, guiones o guiones bajos. */
   id: string;
-  /** Plugin API version. Must be `1` for the current spec. */
+  /** Versión de la API de plugins. Debe ser `1` para la especificación actual. */
   apiVersion: 1;
-  /** Semver version of the plugin package (e.g. `"1.2.0"`). */
+  /** Versión semver del paquete de plugin (p. ej. `"1.2.0"`). */
   version: string;
-  /** Human-readable name (max 100 chars). */
+  /** Nombre legible (máx. 100 caracteres). */
   displayName: string;
-  /** Short description (max 500 chars). */
+  /** Descripción corta (máx. 500 caracteres). */
   description: string;
-  /** Author name (max 200 chars). May include email in angle brackets, e.g. `"Jane Doe <jane@example.com>"`. */
+  /** Nombre del autor (máx. 200 caracteres). Puede incluir correo entre paréntesis angulares, p. ej. `"Jane Doe <jane@example.com>"`. */
   author: string;
-  /** One or more categories classifying this plugin. */
+  /** Una o más categorías que clasifican este plugin. */
   categories: PluginCategory[];
   /**
-   * Minimum host version required (semver lower bound).
-   * Preferred generic field for new manifests.
+   * Versión mínima de host requerida (límite inferior semver).
+   * Campo genérico preferido para manifiestos nuevos.
    */
   minimumHostVersion?: PluginMinimumHostVersion;
   /**
-   * Legacy alias for `minimumHostVersion`.
-   * Kept for backwards compatibility with existing manifests and docs.
+   * Alias heredado de `minimumHostVersion`.
+   * Se conserva por compatibilidad hacia atrás con manifiestos y documentos existentes.
    */
   minimumPaperclipVersion?: PluginMinimumHostVersion;
-  /** Capabilities this plugin requires from the host. Enforced at runtime. */
+  /** Capacidades que este plugin requiere del host. Se aplican en tiempo de ejecución. */
   capabilities: PluginCapability[];
-  /** Entrypoint paths relative to the package root. */
+  /** Rutas de puntos de entrada relativas a la raíz del paquete. */
   entrypoints: {
-    /** Path to the worker entrypoint (required). */
+    /** Ruta al punto de entrada del worker (requerida). */
     worker: string;
-    /** Path to the UI bundle directory (required when `ui.slots` is declared). */
+    /** Ruta al directorio del paquete de UI (requerida cuando se declara `ui.slots`). */
     ui?: string;
   };
-  /** JSON Schema for operator-editable instance configuration. */
+  /** JSON Schema para la configuración de instancia editable por el operador. */
   instanceConfigSchema?: JsonSchema;
-  /** Scheduled jobs this plugin declares. Requires `jobs.schedule` capability. */
+  /** Trabajos programados que este plugin declara. Requiere la capacidad `jobs.schedule`. */
   jobs?: PluginJobDeclaration[];
-  /** Webhook endpoints this plugin declares. Requires `webhooks.receive` capability. */
+  /** Endpoints de webhook que este plugin declara. Requiere la capacidad `webhooks.receive`. */
   webhooks?: PluginWebhookDeclaration[];
-  /** Agent tools this plugin contributes. Requires `agent.tools.register` capability. */
+  /** Herramientas de agente que este plugin aporta. Requiere la capacidad `agent.tools.register`. */
   tools?: PluginToolDeclaration[];
   /**
-   * Legacy top-level launcher declarations.
-   * Prefer `ui.launchers` for new manifests.
+   * Declaraciones de lanzador heredadas de nivel superior.
+   * Prefiere `ui.launchers` para manifiestos nuevos.
    */
   launchers?: PluginLauncherDeclaration[];
-  /** UI bundle declarations. Requires `entrypoints.ui` when populated. */
+  /** Declaraciones del paquete de UI. Requiere `entrypoints.ui` cuando se llena. */
   ui?: PluginUiDeclaration;
 }
 
 // ---------------------------------------------------------------------------
-// Plugin Record – represents a row in the `plugins` table
+// Registro de plugin – representa una fila en la tabla `plugins`
 // ---------------------------------------------------------------------------
 
 /**
- * Domain type for an installed plugin as persisted in the `plugins` table.
- * See PLUGIN_SPEC.md §21.3 for the schema definition.
+ * Tipo de dominio para un plugin instalado según se persiste en la tabla `plugins`.
+ * Ver PLUGIN_SPEC.md §21.3 para la definición del esquema.
  */
 export interface PluginRecord {
-  /** UUID primary key. */
+  /** Clave primaria UUID. */
   id: string;
-  /** Unique key derived from `manifest.id`. Used for lookups. */
+  /** Clave única derivada de `manifest.id`. Usada para búsquedas. */
   pluginKey: string;
-  /** npm package name (e.g. `"@acme/plugin-linear"`). */
+  /** Nombre del paquete npm (p. ej. `"@acme/plugin-linear"`). */
   packageName: string;
-  /** Installed semver version. */
+  /** Versión semver instalada. */
   version: string;
-  /** Plugin API version from the manifest. */
+  /** Versión de la API de plugins del manifiesto. */
   apiVersion: number;
-  /** Plugin categories from the manifest. */
+  /** Categorías del plugin del manifiesto. */
   categories: PluginCategory[];
-  /** Full manifest snapshot persisted at install/upgrade time. */
+  /** Instantánea completa del manifiesto persistida al momento de instalar/actualizar. */
   manifestJson: PaperclipPluginManifestV1;
-  /** Current lifecycle status. */
+  /** Estado actual del ciclo de vida. */
   status: PluginStatus;
-  /** Deterministic load order (null if not yet assigned). */
+  /** Orden de carga determinista (null si aún no se asignó). */
   installOrder: number | null;
-  /** Resolved package path for local-path installs; used to find worker entrypoint. */
+  /** Ruta de paquete resuelta para instalaciones de ruta local; usada para encontrar el punto de entrada del worker. */
   packagePath: string | null;
-  /** Most recent error message, or operator-provided disable reason. */
+  /** Mensaje de error más reciente, o motivo de desactivación provisto por el operador. */
   lastError: string | null;
-  /** Timestamp when the plugin was first installed. */
+  /** Marca de tiempo de cuando se instaló el plugin por primera vez. */
   installedAt: Date;
-  /** Timestamp of the most recent status or metadata change. */
+  /** Marca de tiempo del cambio de estado o metadatos más reciente. */
   updatedAt: Date;
 }
 
 // ---------------------------------------------------------------------------
-// Plugin State – represents a row in the `plugin_state` table
+// Estado del plugin – representa una fila en la tabla `plugin_state`
 // ---------------------------------------------------------------------------
 
 /**
- * Domain type for a single scoped key-value entry in the `plugin_state` table.
- * Plugins read and write these entries through `ctx.state` in the SDK.
+ * Tipo de dominio para una entrada clave-valor con alcance en la tabla `plugin_state`.
+ * Los plugins leen y escriben estas entradas mediante `ctx.state` en el SDK.
  *
- * The five-part composite key `(pluginId, scopeKind, scopeId, namespace, stateKey)`
- * uniquely identifies a state entry.
+ * La clave compuesta de cinco partes `(pluginId, scopeKind, scopeId, namespace, stateKey)`
+ * identifica de forma única una entrada de estado.
  *
  * @see PLUGIN_SPEC.md §21.3 — `plugin_state`
  */
 export interface PluginStateRecord {
-  /** UUID primary key. */
+  /** Clave primaria UUID. */
   id: string;
-  /** FK to `plugins.id`. */
+  /** FK a `plugins.id`. */
   pluginId: string;
-  /** Granularity of the scope. */
+  /** Granularidad del alcance. */
   scopeKind: PluginStateScopeKind;
   /**
-   * UUID or text identifier for the scoped object.
-   * `null` for `instance` scope (no associated entity).
+   * Identificador UUID o de texto para el objeto con alcance.
+   * `null` para el alcance `instance` (sin entidad asociada).
    */
   scopeId: string | null;
   /**
-   * Sub-namespace within the scope to avoid key collisions.
-   * Defaults to `"default"` if not explicitly set by the plugin.
+   * Subespacio de nombres dentro del alcance para evitar colisiones de claves.
+   * Por defecto `"default"` si el plugin no lo define explícitamente.
    */
   namespace: string;
-  /** The key for this state entry within the namespace. */
+  /** La clave de esta entrada de estado dentro del espacio de nombres. */
   stateKey: string;
-  /** Stored JSON value. May be any JSON-serializable type. */
+  /** Valor JSON almacenado. Puede ser cualquier tipo serializable a JSON. */
   valueJson: unknown;
-  /** Timestamp of the most recent write. */
+  /** Marca de tiempo de la escritura más reciente. */
   updatedAt: Date;
 }
 
 // ---------------------------------------------------------------------------
-// Plugin Config – represents a row in the `plugin_config` table
+// Config del plugin – representa una fila en la tabla `plugin_config`
 // ---------------------------------------------------------------------------
 
 /**
- * Domain type for a plugin's instance configuration as persisted in the
- * `plugin_config` table.
- * See PLUGIN_SPEC.md §21.3 for the schema definition.
+ * Tipo de dominio para la configuración de instancia de un plugin según se persiste en la
+ * tabla `plugin_config`.
+ * Ver PLUGIN_SPEC.md §21.3 para la definición del esquema.
  */
 export interface PluginConfig {
-  /** UUID primary key. */
+  /** Clave primaria UUID. */
   id: string;
-  /** FK to `plugins.id`. Unique — each plugin has at most one config row. */
+  /** FK a `plugins.id`. Única — cada plugin tiene como máximo una fila de config. */
   pluginId: string;
-  /** Operator-provided configuration values (validated against `instanceConfigSchema`). */
+  /** Valores de configuración provistos por el operador (validados contra `instanceConfigSchema`). */
   configJson: Record<string, unknown>;
-  /** Most recent config validation error, if any. */
+  /** Error de validación de config más reciente, si hay. */
   lastError: string | null;
-  /** Timestamp when the config row was created. */
+  /** Marca de tiempo de cuando se creó la fila de config. */
   createdAt: Date;
-  /** Timestamp of the most recent config update. */
+  /** Marca de tiempo de la actualización de config más reciente. */
   updatedAt: Date;
 }
 
 /**
- * Query filter for `ctx.entities.list`.
+ * Filtro de consulta para `ctx.entities.list`.
  */
 export interface PluginEntityQuery {
-  /** Optional filter by entity type (e.g. 'project', 'issue'). */
+  /** Filtro opcional por tipo de entidad (p. ej. 'project', 'issue'). */
   entityType?: string;
-  /** Optional filter by external system identifier. */
+  /** Filtro opcional por identificador de sistema externo. */
   externalId?: string;
-  /** Maximum number of records to return. Defaults to 100. */
+  /** Número máximo de registros a devolver. Por defecto 100. */
   limit?: number;
-  /** Number of records to skip. Defaults to 0. */
+  /** Número de registros a omitir. Por defecto 0. */
   offset?: number;
 }
 
 // ---------------------------------------------------------------------------
-// Plugin Entity – represents a row in the `plugin_entities` table
+// Entidad de plugin – representa una fila en la tabla `plugin_entities`
 // ---------------------------------------------------------------------------
 
 /**
- * Domain type for an external entity mapping as persisted in the `plugin_entities` table.
+ * Tipo de dominio para un mapeo de entidad externa según se persiste en la tabla `plugin_entities`.
  */
 export interface PluginEntityRecord {
-  /** UUID primary key. */
+  /** Clave primaria UUID. */
   id: string;
-  /** FK to `plugins.id`. */
+  /** FK a `plugins.id`. */
   pluginId: string;
-  /** Plugin-defined entity type. */
+  /** Tipo de entidad definido por el plugin. */
   entityType: string;
-  /** Scope where this entity lives. */
+  /** Alcance donde vive esta entidad. */
   scopeKind: PluginStateScopeKind;
-  /** UUID or text identifier for the scoped object. */
+  /** Identificador UUID o de texto para el objeto con alcance. */
   scopeId: string | null;
-  /** External identifier in the remote system. */
+  /** Identificador externo en el sistema remoto. */
   externalId: string | null;
-  /** Human-readable title. */
+  /** Título legible. */
   title: string | null;
-  /** Optional status string. */
+  /** Cadena de estado opcional. */
   status: string | null;
-  /** Full entity data blob. */
+  /** Blob completo de datos de la entidad. */
   data: Record<string, unknown>;
-  /** ISO 8601 creation timestamp. */
+  /** Marca de tiempo de creación ISO 8601. */
   createdAt: Date;
-  /** ISO 8601 last-updated timestamp. */
+  /** Marca de tiempo de última actualización ISO 8601. */
   updatedAt: Date;
 }
 
 // ---------------------------------------------------------------------------
-// Plugin Job – represents a row in the `plugin_jobs` table
+// Trabajo de plugin – representa una fila en la tabla `plugin_jobs`
 // ---------------------------------------------------------------------------
 
 /**
- * Domain type for a registered plugin job as persisted in the `plugin_jobs` table.
+ * Tipo de dominio para un trabajo de plugin registrado según se persiste en la tabla `plugin_jobs`.
  */
 export interface PluginJobRecord {
-  /** UUID primary key. */
+  /** Clave primaria UUID. */
   id: string;
-  /** FK to `plugins.id`. */
+  /** FK a `plugins.id`. */
   pluginId: string;
-  /** Job key matching the manifest declaration. */
+  /** Clave de trabajo que coincide con la declaración del manifiesto. */
   jobKey: string;
-  /** Cron expression for the schedule. */
+  /** Expresión cron para la programación. */
   schedule: string;
-  /** Current job status. */
+  /** Estado actual del trabajo. */
   status: "active" | "paused" | "failed";
-  /** Last time the job was executed. */
+  /** Última vez que se ejecutó el trabajo. */
   lastRunAt: Date | null;
-  /** Next scheduled execution time. */
+  /** Próxima hora de ejecución programada. */
   nextRunAt: Date | null;
-  /** ISO 8601 creation timestamp. */
+  /** Marca de tiempo de creación ISO 8601. */
   createdAt: Date;
-  /** ISO 8601 last-updated timestamp. */
+  /** Marca de tiempo de última actualización ISO 8601. */
   updatedAt: Date;
 }
 
 // ---------------------------------------------------------------------------
-// Plugin Job Run – represents a row in the `plugin_job_runs` table
+// Ejecución de trabajo de plugin – representa una fila en la tabla `plugin_job_runs`
 // ---------------------------------------------------------------------------
 
 /**
- * Domain type for a job execution history record.
+ * Tipo de dominio para un registro de historial de ejecución de trabajo.
  */
 export interface PluginJobRunRecord {
-  /** UUID primary key. */
+  /** Clave primaria UUID. */
   id: string;
-  /** FK to `plugin_jobs.id`. */
+  /** FK a `plugin_jobs.id`. */
   jobId: string;
-  /** FK to `plugins.id`. */
+  /** FK a `plugins.id`. */
   pluginId: string;
-  /** What triggered this run. */
+  /** Qué desencadenó esta ejecución. */
   trigger: "schedule" | "manual" | "retry";
-  /** Current run status. */
+  /** Estado actual de la ejecución. */
   status: "pending" | "queued" | "running" | "succeeded" | "failed" | "cancelled";
-  /** Run duration in milliseconds. */
+  /** Duración de la ejecución en milisegundos. */
   durationMs: number | null;
-  /** Error message if the run failed. */
+  /** Mensaje de error si la ejecución falló. */
   error: string | null;
-  /** Run logs. */
+  /** Registros de la ejecución. */
   logs: string[];
-  /** ISO 8601 start timestamp. */
+  /** Marca de tiempo de inicio ISO 8601. */
   startedAt: Date | null;
-  /** ISO 8601 finish timestamp. */
+  /** Marca de tiempo de fin ISO 8601. */
   finishedAt: Date | null;
-  /** ISO 8601 creation timestamp. */
+  /** Marca de tiempo de creación ISO 8601. */
   createdAt: Date;
 }
 
 // ---------------------------------------------------------------------------
-// Plugin Webhook Delivery – represents a row in the `plugin_webhook_deliveries` table
+// Entrega de webhook de plugin – representa una fila en la tabla `plugin_webhook_deliveries`
 // ---------------------------------------------------------------------------
 
 /**
- * Domain type for an inbound webhook delivery record.
+ * Tipo de dominio para un registro de entrega de webhook entrante.
  */
 export interface PluginWebhookDeliveryRecord {
-  /** UUID primary key. */
+  /** Clave primaria UUID. */
   id: string;
-  /** FK to `plugins.id`. */
+  /** FK a `plugins.id`. */
   pluginId: string;
-  /** Webhook endpoint key matching the manifest. */
+  /** Clave de endpoint de webhook que coincide con el manifiesto. */
   webhookKey: string;
-  /** External identifier from the remote system. */
+  /** Identificador externo en el sistema remoto. */
   externalId: string | null;
-  /** Delivery status. */
+  /** Estado de la entrega. */
   status: "pending" | "success" | "failed";
-  /** Processing duration in milliseconds. */
+  /** Duración del procesamiento en milisegundos. */
   durationMs: number | null;
-  /** Error message if processing failed. */
+  /** Mensaje de error si el procesamiento falló. */
   error: string | null;
-  /** Webhook payload. */
+  /** Payload del webhook. */
   payload: Record<string, unknown>;
-  /** Webhook headers. */
+  /** Encabezados del webhook. */
   headers: Record<string, string>;
-  /** ISO 8601 start timestamp. */
+  /** Marca de tiempo de inicio ISO 8601. */
   startedAt: Date | null;
-  /** ISO 8601 finish timestamp. */
+  /** Marca de tiempo de fin ISO 8601. */
   finishedAt: Date | null;
-  /** ISO 8601 creation timestamp. */
+  /** Marca de tiempo de creación ISO 8601. */
   createdAt: Date;
 }

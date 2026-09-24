@@ -1,29 +1,29 @@
 /**
- * Host-side client factory — creates capability-gated handler maps for
- * servicing worker→host JSON-RPC calls.
+ * Fábrica de clientes del lado del host: crea mapas de manejadores protegidos
+ * por capacidades para atender llamadas JSON-RPC de worker a host.
  *
- * When a plugin worker calls `ctx.state.get(...)` inside its process, the
- * SDK serializes the call as a JSON-RPC request over stdio. On the host side,
- * the `PluginWorkerManager` receives the request and dispatches it to the
- * handler registered for that method. This module provides a factory that
- * creates those handlers for all `WorkerToHostMethods`, with automatic
- * capability enforcement.
+ * Cuando un worker de plugin llama a `ctx.state.get(...)` dentro de su proceso,
+ * el SDK serializa la llamada como una solicitud JSON-RPC sobre stdio. En el lado
+ * del host, el `PluginWorkerManager` recibe la solicitud y la despacha al
+ * manejador registrado para ese método. Este módulo proporciona una fábrica que
+ * crea esos manejadores para todos los `WorkerToHostMethods`, con aplicación
+ * automática de capacidades.
  *
- * ## Design
+ * ## Diseño
  *
- * 1. **Capability gating**: Each handler checks the plugin's declared
- *    capabilities before executing. If the plugin lacks a required capability,
- *    the handler throws a `CapabilityDeniedError` (which the worker manager
- *    translates into a JSON-RPC error response with code
+ * 1. **Protección por capacidades**: cada manejador verifica las capacidades
+ *    declaradas del plugin antes de ejecutarse. Si el plugin carece de una
+ *    capacidad requerida, el manejador lanza un `CapabilityDeniedError` (que el
+ *    worker manager traduce en una respuesta de error JSON-RPC con código
  *    `CAPABILITY_DENIED`).
  *
- * 2. **Service adapters**: The caller provides a `HostServices` object with
- *    concrete implementations of each platform service. The factory wires
- *    each handler to the appropriate service method.
+ * 2. **Adaptadores de servicio**: el llamador proporciona un objeto `HostServices`
+ *    con implementaciones concretas de cada servicio de la plataforma. La fábrica
+ *    conecta cada manejador con el método de servicio apropiado.
  *
- * 3. **Type safety**: The returned handler map is typed as
- *    `WorkerToHostHandlers` (from `plugin-worker-manager.ts`) so it plugs
- *    directly into `WorkerStartOptions.hostHandlers`.
+ * 3. **Seguridad de tipos**: el mapa de manejadores devuelto está tipado como
+ *    `WorkerToHostHandlers` (de `plugin-worker-manager.ts`) para que encaje
+ *    directamente en `WorkerStartOptions.hostHandlers`.
  *
  * @example
  * ```ts
@@ -34,7 +34,7 @@
  *     config:    { get: () => registry.getConfig(pluginId) },
  *     state:     { get: ..., set: ..., delete: ... },
  *     entities:  { upsert: ..., list: ... },
- *     // ... all services
+ *     // ... todos los servicios
  *   },
  * });
  *
@@ -44,7 +44,7 @@
  * });
  * ```
  *
- * @see PLUGIN_SPEC.md §13 — Host-Worker Protocol
+ * @see PLUGIN_SPEC.md §13 — Protocolo host-worker
  * @see PLUGIN_SPEC.md §15 — Capability Model
  */
 
@@ -53,14 +53,15 @@ import type { WorkerToHostMethods, WorkerToHostMethodName } from "./protocol.js"
 import { PLUGIN_RPC_ERROR_CODES } from "./protocol.js";
 
 // ---------------------------------------------------------------------------
-// Error types
+// Tipos de error
 // ---------------------------------------------------------------------------
 
 /**
- * Thrown when a plugin calls a host method it does not have the capability for.
+ * Lanzado cuando un plugin llama a un método del host para el que no tiene la capacidad.
  *
- * The `code` field is set to `PLUGIN_RPC_ERROR_CODES.CAPABILITY_DENIED` so
- * the worker manager can propagate it as the correct JSON-RPC error code.
+ * El campo `code` se establece en `PLUGIN_RPC_ERROR_CODES.CAPABILITY_DENIED`
+ * para que el worker manager pueda propagarlo como el código de error JSON-RPC
+ * correcto.
  */
 export class CapabilityDeniedError extends Error {
   override readonly name = "CapabilityDeniedError";
@@ -68,58 +69,59 @@ export class CapabilityDeniedError extends Error {
 
   constructor(pluginId: string, method: string, capability: PluginCapability) {
     super(
-      `Plugin "${pluginId}" is missing required capability "${capability}" for method "${method}"`,
+      `El plugin "${pluginId}" no tiene la capacidad requerida "${capability}" para el método "${method}"`,
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Host service interfaces
+// Interfaces de servicios del host
 // ---------------------------------------------------------------------------
 
 /**
- * Service adapters that the host must provide. Each property maps to a group
- * of `WorkerToHostMethods`. The factory wires JSON-RPC params to these
- * function signatures.
+ * Adaptadores de servicio que el host debe proporcionar. Cada propiedad se
+ * corresponde con un grupo de `WorkerToHostMethods`. La fábrica conecta los
+ * params JSON-RPC a estas firmas de función.
  *
- * All methods return promises to support async I/O (database, HTTP, etc.).
+ * Todos los métodos devuelven promesas para soportar I/O asíncrona (base de
+ * datos, HTTP, etc.).
  */
 export interface HostServices {
-  /** Provides `config.get`. */
+  /** Proporciona `config.get`. */
   config: {
     get(): Promise<Record<string, unknown>>;
   };
 
-  /** Provides `state.get`, `state.set`, `state.delete`. */
+  /** Proporciona `state.get`, `state.set`, `state.delete`. */
   state: {
     get(params: WorkerToHostMethods["state.get"][0]): Promise<WorkerToHostMethods["state.get"][1]>;
     set(params: WorkerToHostMethods["state.set"][0]): Promise<void>;
     delete(params: WorkerToHostMethods["state.delete"][0]): Promise<void>;
   };
 
-  /** Provides `entities.upsert`, `entities.list`. */
+  /** Proporciona `entities.upsert`, `entities.list`. */
   entities: {
     upsert(params: WorkerToHostMethods["entities.upsert"][0]): Promise<WorkerToHostMethods["entities.upsert"][1]>;
     list(params: WorkerToHostMethods["entities.list"][0]): Promise<WorkerToHostMethods["entities.list"][1]>;
   };
 
-  /** Provides `events.emit` and `events.subscribe`. */
+  /** Proporciona `events.emit` y `events.subscribe`. */
   events: {
     emit(params: WorkerToHostMethods["events.emit"][0]): Promise<void>;
     subscribe(params: WorkerToHostMethods["events.subscribe"][0]): Promise<void>;
   };
 
-  /** Provides `http.fetch`. */
+  /** Proporciona `http.fetch`. */
   http: {
     fetch(params: WorkerToHostMethods["http.fetch"][0]): Promise<WorkerToHostMethods["http.fetch"][1]>;
   };
 
-  /** Provides `secrets.resolve`. */
+  /** Proporciona `secrets.resolve`. */
   secrets: {
     resolve(params: WorkerToHostMethods["secrets.resolve"][0]): Promise<string>;
   };
 
-  /** Provides `activity.log`. */
+  /** Proporciona `activity.log`. */
   activity: {
     log(params: {
       companyId: string;
@@ -130,23 +132,23 @@ export interface HostServices {
     }): Promise<void>;
   };
 
-  /** Provides `metrics.write`. */
+  /** Proporciona `metrics.write`. */
   metrics: {
     write(params: WorkerToHostMethods["metrics.write"][0]): Promise<void>;
   };
 
-  /** Provides `log`. */
+  /** Proporciona `log`. */
   logger: {
     log(params: WorkerToHostMethods["log"][0]): Promise<void>;
   };
 
-  /** Provides `companies.list`, `companies.get`. */
+  /** Proporciona `companies.list`, `companies.get`. */
   companies: {
     list(params: WorkerToHostMethods["companies.list"][0]): Promise<WorkerToHostMethods["companies.list"][1]>;
     get(params: WorkerToHostMethods["companies.get"][0]): Promise<WorkerToHostMethods["companies.get"][1]>;
   };
 
-  /** Provides `projects.list`, `projects.get`, `projects.listWorkspaces`, `projects.getPrimaryWorkspace`, `projects.getWorkspaceForIssue`. */
+  /** Proporciona `projects.list`, `projects.get`, `projects.listWorkspaces`, `projects.getPrimaryWorkspace`, `projects.getWorkspaceForIssue`. */
   projects: {
     list(params: WorkerToHostMethods["projects.list"][0]): Promise<WorkerToHostMethods["projects.list"][1]>;
     get(params: WorkerToHostMethods["projects.get"][0]): Promise<WorkerToHostMethods["projects.get"][1]>;
@@ -155,7 +157,7 @@ export interface HostServices {
     getWorkspaceForIssue(params: WorkerToHostMethods["projects.getWorkspaceForIssue"][0]): Promise<WorkerToHostMethods["projects.getWorkspaceForIssue"][1]>;
   };
 
-  /** Provides `issues.list`, `issues.get`, `issues.create`, `issues.update`, `issues.listComments`, `issues.createComment`. */
+  /** Proporciona `issues.list`, `issues.get`, `issues.create`, `issues.update`, `issues.listComments`, `issues.createComment`. */
   issues: {
     list(params: WorkerToHostMethods["issues.list"][0]): Promise<WorkerToHostMethods["issues.list"][1]>;
     get(params: WorkerToHostMethods["issues.get"][0]): Promise<WorkerToHostMethods["issues.get"][1]>;
@@ -165,7 +167,7 @@ export interface HostServices {
     createComment(params: WorkerToHostMethods["issues.createComment"][0]): Promise<WorkerToHostMethods["issues.createComment"][1]>;
   };
 
-  /** Provides `issues.documents.list`, `issues.documents.get`, `issues.documents.upsert`, `issues.documents.delete`. */
+  /** Proporciona `issues.documents.list`, `issues.documents.get`, `issues.documents.upsert`, `issues.documents.delete`. */
   issueDocuments: {
     list(params: WorkerToHostMethods["issues.documents.list"][0]): Promise<WorkerToHostMethods["issues.documents.list"][1]>;
     get(params: WorkerToHostMethods["issues.documents.get"][0]): Promise<WorkerToHostMethods["issues.documents.get"][1]>;
@@ -173,7 +175,7 @@ export interface HostServices {
     delete(params: WorkerToHostMethods["issues.documents.delete"][0]): Promise<WorkerToHostMethods["issues.documents.delete"][1]>;
   };
 
-  /** Provides `agents.list`, `agents.get`, `agents.pause`, `agents.resume`, `agents.invoke`. */
+  /** Proporciona `agents.list`, `agents.get`, `agents.pause`, `agents.resume`, `agents.invoke`. */
   agents: {
     list(params: WorkerToHostMethods["agents.list"][0]): Promise<WorkerToHostMethods["agents.list"][1]>;
     get(params: WorkerToHostMethods["agents.get"][0]): Promise<WorkerToHostMethods["agents.get"][1]>;
@@ -182,7 +184,7 @@ export interface HostServices {
     invoke(params: WorkerToHostMethods["agents.invoke"][0]): Promise<WorkerToHostMethods["agents.invoke"][1]>;
   };
 
-  /** Provides `agents.sessions.create`, `agents.sessions.list`, `agents.sessions.sendMessage`, `agents.sessions.close`. */
+  /** Proporciona `agents.sessions.create`, `agents.sessions.list`, `agents.sessions.sendMessage`, `agents.sessions.close`. */
   agentSessions: {
     create(params: WorkerToHostMethods["agents.sessions.create"][0]): Promise<WorkerToHostMethods["agents.sessions.create"][1]>;
     list(params: WorkerToHostMethods["agents.sessions.list"][0]): Promise<WorkerToHostMethods["agents.sessions.list"][1]>;
@@ -190,7 +192,7 @@ export interface HostServices {
     close(params: WorkerToHostMethods["agents.sessions.close"][0]): Promise<void>;
   };
 
-  /** Provides `goals.list`, `goals.get`, `goals.create`, `goals.update`. */
+  /** Proporciona `goals.list`, `goals.get`, `goals.create`, `goals.update`. */
   goals: {
     list(params: WorkerToHostMethods["goals.list"][0]): Promise<WorkerToHostMethods["goals.list"][1]>;
     get(params: WorkerToHostMethods["goals.get"][0]): Promise<WorkerToHostMethods["goals.get"][1]>;
@@ -200,98 +202,99 @@ export interface HostServices {
 }
 
 // ---------------------------------------------------------------------------
-// Factory input
+// Entrada de la fábrica
 // ---------------------------------------------------------------------------
 
 /**
- * Options for `createHostClientHandlers`.
+ * Opciones para `createHostClientHandlers`.
  */
 export interface HostClientFactoryOptions {
-  /** The plugin ID. Used for error messages and logging. */
+  /** El ID del plugin. Usado para mensajes de error y registro. */
   pluginId: string;
 
   /**
-   * The capabilities declared by the plugin in its manifest. The factory
-   * enforces these at runtime before delegating to the service adapter.
+   * Las capacidades declaradas por el plugin en su manifiesto. La fábrica
+   * las exige en tiempo de ejecución antes de delegar al adaptador de servicio.
    */
   capabilities: readonly PluginCapability[];
 
   /**
-   * Concrete implementations of host platform services. Each handler in the
-   * returned map delegates to the corresponding service method.
+   * Implementaciones concretas de servicios de la plataforma del host. Cada
+   * manejador en el mapa devuelto delega al método de servicio correspondiente.
    */
   services: HostServices;
 }
 
 // ---------------------------------------------------------------------------
-// Handler map type (compatible with WorkerToHostHandlers from worker manager)
+// Tipo de mapa de manejadores (compatible con WorkerToHostHandlers del worker manager)
 // ---------------------------------------------------------------------------
 
 /**
- * A handler function for a specific worker→host method.
+ * Una función manejadora para un método específico de worker a host.
  */
 type HostHandler<M extends WorkerToHostMethodName> = (
   params: WorkerToHostMethods[M][0],
 ) => Promise<WorkerToHostMethods[M][1]>;
 
 /**
- * A complete map of all worker→host method handlers.
+ * Un mapa completo de todos los manejadores de métodos de worker a host.
  *
- * This type matches `WorkerToHostHandlers` from `plugin-worker-manager.ts`
- * but makes every handler required (the factory always provides all handlers).
+ * Este tipo coincide con `WorkerToHostHandlers` de `plugin-worker-manager.ts`
+ * pero hace que cada manejador sea requerido (la fábrica siempre proporciona
+ * todos los manejadores).
  */
 export type HostClientHandlers = {
   [M in WorkerToHostMethodName]: HostHandler<M>;
 };
 
 // ---------------------------------------------------------------------------
-// Capability → method mapping
+// Mapeo de capacidad a método
 // ---------------------------------------------------------------------------
 
 /**
- * Maps each worker→host RPC method to the capability required to invoke it.
- * Methods without a capability requirement (e.g. `config.get`, `log`) are
- * mapped to `null`.
+ * Asigna cada método RPC de worker a host a la capacidad requerida para invocarlo.
+ * Los métodos sin requisito de capacidad (p. ej. `config.get`, `log`) se
+ * asignan a `null`.
  *
  * @see PLUGIN_SPEC.md §15 — Capability Model
  */
 const METHOD_CAPABILITY_MAP: Record<WorkerToHostMethodName, PluginCapability | null> = {
-  // Config — always allowed
+  // Config: siempre permitido
   "config.get": null,
 
-  // State
+  // Estado
   "state.get": "plugin.state.read",
   "state.set": "plugin.state.write",
   "state.delete": "plugin.state.write",
 
-  // Entities — no specific capability required (plugin-scoped by design)
+  // Entidades: sin capacidad específica requerida (acotadas al plugin por diseño)
   "entities.upsert": null,
   "entities.list": null,
 
-  // Events
+  // Eventos
   "events.emit": "events.emit",
   "events.subscribe": "events.subscribe",
 
   // HTTP
   "http.fetch": "http.outbound",
 
-  // Secrets
+  // Secretos
   "secrets.resolve": "secrets.read-ref",
 
-  // Activity
+  // Actividad
   "activity.log": "activity.log.write",
 
-  // Metrics
+  // Métricas
   "metrics.write": "metrics.write",
 
-  // Logger — always allowed
+  // Logger: siempre permitido
   "log": null,
 
-  // Companies
+  // Empresas
   "companies.list": "companies.read",
   "companies.get": "companies.read",
 
-  // Projects
+  // Proyectos
   "projects.list": "projects.read",
   "projects.get": "projects.read",
   "projects.listWorkspaces": "project.workspaces.read",
@@ -306,26 +309,26 @@ const METHOD_CAPABILITY_MAP: Record<WorkerToHostMethodName, PluginCapability | n
   "issues.listComments": "issue.comments.read",
   "issues.createComment": "issue.comments.create",
 
-  // Issue Documents
+  // Documentos de issue
   "issues.documents.list": "issue.documents.read",
   "issues.documents.get": "issue.documents.read",
   "issues.documents.upsert": "issue.documents.write",
   "issues.documents.delete": "issue.documents.write",
 
-  // Agents
+  // Agentes
   "agents.list": "agents.read",
   "agents.get": "agents.read",
   "agents.pause": "agents.pause",
   "agents.resume": "agents.resume",
   "agents.invoke": "agents.invoke",
 
-  // Agent Sessions
+  // Sesiones de agente
   "agents.sessions.create": "agent.sessions.create",
   "agents.sessions.list": "agent.sessions.list",
   "agents.sessions.sendMessage": "agent.sessions.send",
   "agents.sessions.close": "agent.sessions.close",
 
-  // Goals
+  // Objetivos
   "goals.list": "goals.read",
   "goals.get": "goals.read",
   "goals.create": "goals.create",
@@ -333,26 +336,27 @@ const METHOD_CAPABILITY_MAP: Record<WorkerToHostMethodName, PluginCapability | n
 };
 
 // ---------------------------------------------------------------------------
-// Factory
+// Fábrica
 // ---------------------------------------------------------------------------
 
 /**
- * Create a complete handler map for all worker→host JSON-RPC methods.
+ * Crea un mapa completo de manejadores para todos los métodos JSON-RPC de
+ * worker a host.
  *
- * Each handler:
- * 1. Checks the plugin's declared capabilities against the required capability
- *    for the method (if any).
- * 2. Delegates to the corresponding service adapter method.
- * 3. Returns the service result, which is serialized as the JSON-RPC response
- *    by the worker manager.
+ * Cada manejador:
+ * 1. Verifica las capacidades declaradas del plugin contra la capacidad requerida
+ *    para el método (si la hay).
+ * 2. Delega al método correspondiente del adaptador de servicio.
+ * 3. Devuelve el resultado del servicio, que el worker manager serializa como
+ *    la respuesta JSON-RPC.
  *
- * If a capability check fails, the handler throws a `CapabilityDeniedError`
- * with code `CAPABILITY_DENIED`. The worker manager catches this and sends a
- * JSON-RPC error response to the worker, which surfaces as a `JsonRpcCallError`
- * in the plugin's SDK client.
+ * Si falla una verificación de capacidad, el manejador lanza un
+ * `CapabilityDeniedError` con código `CAPABILITY_DENIED`. El worker manager lo
+ * captura y envía una respuesta de error JSON-RPC al worker, que aparece como
+ * un `JsonRpcCallError` en el cliente SDK del plugin.
  *
- * @param options - Plugin ID, capabilities, and service adapters
- * @returns A handler map suitable for `WorkerStartOptions.hostHandlers`
+ * @param options - ID del plugin, capacidades y adaptadores de servicio
+ * @returns Un mapa de manejadores apto para `WorkerStartOptions.hostHandlers`
  */
 export function createHostClientHandlers(
   options: HostClientFactoryOptions,
@@ -361,24 +365,24 @@ export function createHostClientHandlers(
   const capabilitySet = new Set<PluginCapability>(options.capabilities);
 
   /**
-   * Assert that the plugin has the required capability for a method.
-   * Throws `CapabilityDeniedError` if the capability is missing.
+   * Afirma que el plugin tiene la capacidad requerida para un método.
+   * Lanza `CapabilityDeniedError` si falta la capacidad.
    */
   function requireCapability(
     method: WorkerToHostMethodName,
   ): void {
     const required = METHOD_CAPABILITY_MAP[method];
-    if (required === null) return; // No capability required
+    if (required === null) return; // Sin capacidad requerida
     if (capabilitySet.has(required)) return;
     throw new CapabilityDeniedError(pluginId, method, required);
   }
 
   /**
-   * Create a capability-gated proxy handler for a method.
+   * Crea un manejador proxy protegido por capacidad para un método.
    *
-   * @param method - The RPC method name (used for capability lookup)
-   * @param handler - The actual handler implementation
-   * @returns A wrapper that checks capabilities before delegating
+   * @param method - El nombre del método RPC (usado para buscar la capacidad)
+   * @param handler - La implementación real del manejador
+   * @returns Un envoltorio que verifica capacidades antes de delegar
    */
   function gated<M extends WorkerToHostMethodName>(
     method: M,
@@ -391,7 +395,7 @@ export function createHostClientHandlers(
   }
 
   // -------------------------------------------------------------------------
-  // Build the complete handler map
+  // Construye el mapa completo de manejadores
   // -------------------------------------------------------------------------
 
   return {
@@ -400,7 +404,7 @@ export function createHostClientHandlers(
       return services.config.get();
     }),
 
-    // State
+    // Estado
     "state.get": gated("state.get", async (params) => {
       return services.state.get(params);
     }),
@@ -411,7 +415,7 @@ export function createHostClientHandlers(
       return services.state.delete(params);
     }),
 
-    // Entities
+    // Entidades
     "entities.upsert": gated("entities.upsert", async (params) => {
       return services.entities.upsert(params);
     }),
@@ -419,7 +423,7 @@ export function createHostClientHandlers(
       return services.entities.list(params);
     }),
 
-    // Events
+    // Eventos
     "events.emit": gated("events.emit", async (params) => {
       return services.events.emit(params);
     }),
@@ -432,17 +436,17 @@ export function createHostClientHandlers(
       return services.http.fetch(params);
     }),
 
-    // Secrets
+    // Secretos
     "secrets.resolve": gated("secrets.resolve", async (params) => {
       return services.secrets.resolve(params);
     }),
 
-    // Activity
+    // Actividad
     "activity.log": gated("activity.log", async (params) => {
       return services.activity.log(params);
     }),
 
-    // Metrics
+    // Métricas
     "metrics.write": gated("metrics.write", async (params) => {
       return services.metrics.write(params);
     }),
@@ -452,7 +456,7 @@ export function createHostClientHandlers(
       return services.logger.log(params);
     }),
 
-    // Companies
+    // Empresas
     "companies.list": gated("companies.list", async (params) => {
       return services.companies.list(params);
     }),
@@ -460,7 +464,7 @@ export function createHostClientHandlers(
       return services.companies.get(params);
     }),
 
-    // Projects
+    // Proyectos
     "projects.list": gated("projects.list", async (params) => {
       return services.projects.list(params);
     }),
@@ -497,7 +501,7 @@ export function createHostClientHandlers(
       return services.issues.createComment(params);
     }),
 
-    // Issue Documents
+    // Documentos de issue
     "issues.documents.list": gated("issues.documents.list", async (params) => {
       return services.issueDocuments.list(params);
     }),
@@ -511,7 +515,7 @@ export function createHostClientHandlers(
       return services.issueDocuments.delete(params);
     }),
 
-    // Agents
+    // Agentes
     "agents.list": gated("agents.list", async (params) => {
       return services.agents.list(params);
     }),
@@ -528,7 +532,7 @@ export function createHostClientHandlers(
       return services.agents.invoke(params);
     }),
 
-    // Agent Sessions
+    // Sesiones de agente
     "agents.sessions.create": gated("agents.sessions.create", async (params) => {
       return services.agentSessions.create(params);
     }),
@@ -542,7 +546,7 @@ export function createHostClientHandlers(
       return services.agentSessions.close(params);
     }),
 
-    // Goals
+    // Objetivos
     "goals.list": gated("goals.list", async (params) => {
       return services.goals.list(params);
     }),
@@ -559,17 +563,17 @@ export function createHostClientHandlers(
 }
 
 // ---------------------------------------------------------------------------
-// Utility: getRequiredCapability
+// Utilidad: getRequiredCapability
 // ---------------------------------------------------------------------------
 
 /**
- * Get the capability required for a given worker→host method, or `null` if
- * no capability is required.
+ * Obtiene la capacidad requerida para un método dado de worker a host, o `null`
+ * si no se requiere ninguna capacidad.
  *
- * Useful for inspecting capability requirements without calling the factory.
+ * Útil para inspeccionar requisitos de capacidad sin llamar a la fábrica.
  *
- * @param method - The worker→host method name
- * @returns The required capability, or `null`
+ * @param method - El nombre del método de worker a host
+ * @returns La capacidad requerida, o `null`
  */
 export function getRequiredCapability(
   method: WorkerToHostMethodName,

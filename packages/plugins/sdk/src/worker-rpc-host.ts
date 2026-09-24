@@ -1,37 +1,37 @@
 /**
- * Worker-side RPC host — runs inside the child process spawned by the host.
+ * Host RPC del lado del worker: se ejecuta dentro del proceso hijo generado por el host.
  *
- * This module is the worker-side counterpart to the server's
- * `PluginWorkerManager`. It:
+ * Este módulo es la contraparte del lado del worker del `PluginWorkerManager`
+ * del servidor. Este:
  *
- * 1. Reads newline-delimited JSON-RPC 2.0 requests from **stdin**
- * 2. Dispatches them to the appropriate plugin handler (events, jobs, tools, …)
- * 3. Writes JSON-RPC 2.0 responses back on **stdout**
- * 4. Provides a concrete `PluginContext` whose SDK client methods (e.g.
- *    `ctx.state.get()`, `ctx.events.emit()`) send JSON-RPC requests to the
- *    host on stdout and await responses on stdin.
+ * 1. Lee solicitudes JSON-RPC 2.0 delimitadas por nuevas líneas desde **stdin**
+ * 2. Las despacha al manejador de plugin apropiado (eventos, tareas, herramientas, …)
+ * 3. Escribe respuestas JSON-RPC 2.0 de vuelta en **stdout**
+ * 4. Proporciona un `PluginContext` concreto cuyos métodos de cliente SDK (p. ej.
+ *    `ctx.state.get()`, `ctx.events.emit()`) envían solicitudes JSON-RPC al
+ *    host en stdout y esperan respuestas en stdin.
  *
- * ## Message flow
+ * ## Flujo de mensajes
  *
  * ```
- * Host (parent)                          Worker (this module)
+ * Host (proceso padre)                   Worker (este módulo)
  *   |                                        |
- *   |--- request(initialize) ------------->  |  → calls plugin.setup(ctx)
+ *   |--- request(initialize) ------------->  |  → llama a plugin.setup(ctx)
  *   |<-- response(ok:true) ----------------  |
  *   |                                        |
- *   |--- notification(onEvent) ----------->  |  → dispatches to registered handler
+ *   |--- notification(onEvent) ----------->  |  → despacha al manejador registrado
  *   |                                        |
- *   |<-- request(state.get) ---------------  |  ← SDK client call from plugin code
+ *   |<-- request(state.get) ---------------  |  ← llamada de cliente SDK desde código del plugin
  *   |--- response(result) ---------------->  |
  *   |                                        |
- *   |--- request(shutdown) --------------->  |  → calls plugin.onShutdown()
+ *   |--- request(shutdown) --------------->  |  → llama a plugin.onShutdown()
  *   |<-- response(void) ------------------  |
- *   |                                        (process exits)
+ *   |                                        (el proceso termina)
  * ```
  *
- * @see PLUGIN_SPEC.md §12 — Process Model
- * @see PLUGIN_SPEC.md §13 — Host-Worker Protocol
- * @see PLUGIN_SPEC.md §14 — SDK Surface
+ * @see PLUGIN_SPEC.md §12 — Modelo de proceso
+ * @see PLUGIN_SPEC.md §13 — Protocolo host-worker
+ * @see PLUGIN_SPEC.md §14 — Superficie SDK
  */
 
 import path from "node:path";
@@ -93,59 +93,60 @@ import {
 } from "./protocol.js";
 
 // ---------------------------------------------------------------------------
-// Types
+// Tipos
 // ---------------------------------------------------------------------------
 
 /**
- * Options for starting the worker-side RPC host.
+ * Opciones para iniciar el host RPC del lado del worker.
  */
 export interface WorkerRpcHostOptions {
   /**
-   * The plugin definition returned by `definePlugin()`.
+   * La definición del plugin devuelta por `definePlugin()`.
    *
-   * The worker entrypoint should import its plugin and pass it here.
+   * El punto de entrada del worker debería importar su plugin y pasarlo aquí.
    */
   plugin: PaperclipPlugin;
 
   /**
-   * Input stream to read JSON-RPC messages from.
-   * Defaults to `process.stdin`.
+   * Flujo de entrada desde el que leer mensajes JSON-RPC.
+   * Por defecto `process.stdin`.
    */
   stdin?: NodeJS.ReadableStream;
 
   /**
-   * Output stream to write JSON-RPC messages to.
-   * Defaults to `process.stdout`.
+   * Flujo de salida en el que escribir mensajes JSON-RPC.
+   * Por defecto `process.stdout`.
    */
   stdout?: NodeJS.WritableStream;
 
   /**
-   * Default timeout (ms) for worker→host RPC calls.
-   * Defaults to 30 000 ms.
+   * Timeout por defecto (ms) para llamadas RPC de worker a host.
+   * Por defecto 30 000 ms.
    */
   rpcTimeoutMs?: number;
 }
 
 /**
- * A running worker RPC host instance.
+ * Una instancia de host RPC del worker en ejecución.
  *
- * Returned by `startWorkerRpcHost()`. Callers (usually just the worker
- * bootstrap) hold a reference so they can inspect status or force-stop.
+ * Devuelta por `startWorkerRpcHost()`. Los llamadores (normalmente solo el
+ * bootstrap del worker) conservan una referencia para poder inspeccionar el
+ * estado o forzar la detención.
  */
 export interface WorkerRpcHost {
-  /** Whether the host is currently running and listening for messages. */
+  /** Indica si el host está actualmente en ejecución y escuchando mensajes. */
   readonly running: boolean;
 
   /**
-   * Stop the RPC host immediately. Closes readline, rejects pending
-   * outbound calls, and does NOT call the plugin's shutdown hook (that
-   * should have already been called via the `shutdown` RPC method).
+   * Detiene el host RPC de inmediato. Cierra readline, rechaza llamadas
+   * salientes pendientes, y NO llama al hook de apagado del plugin (que
+   * ya debería haberse llamado mediante el método RPC `shutdown`).
    */
   stop(): void;
 }
 
 // ---------------------------------------------------------------------------
-// Internal: event registration
+// Interno: registro de eventos
 // ---------------------------------------------------------------------------
 
 interface EventRegistration {
@@ -155,10 +156,10 @@ interface EventRegistration {
 }
 
 // ---------------------------------------------------------------------------
-// Constants
+// Constantes
 // ---------------------------------------------------------------------------
 
-/** Default timeout for worker→host RPC calls. */
+/** Timeout por defecto para llamadas RPC de worker a host. */
 const DEFAULT_RPC_TIMEOUT_MS = 30_000;
 
 // ---------------------------------------------------------------------------
@@ -166,9 +167,9 @@ const DEFAULT_RPC_TIMEOUT_MS = 30_000;
 // ---------------------------------------------------------------------------
 
 /**
- * Options for runWorker when testing (optional stdio to avoid using process streams).
- * When both stdin and stdout are provided, the "is main module" check is skipped
- * and the host is started with these streams. Used by tests.
+ * Opciones para runWorker al probar (stdio opcional para evitar usar flujos de proceso).
+ * Cuando se proporcionan tanto stdin como stdout, se omite la verificación de "módulo principal"
+ * y el host se inicia con estos flujos. Usado por pruebas.
  */
 export interface RunWorkerOptions {
   stdin?: NodeJS.ReadableStream;
@@ -176,14 +177,14 @@ export interface RunWorkerOptions {
 }
 
 /**
- * Start the worker when this module is the process entrypoint.
+ * Inicia el worker cuando este módulo es el punto de entrada del proceso.
  *
- * Call this at the bottom of your worker file so that when the host runs
- * `node dist/worker.js`, the RPC host starts and the process stays alive.
- * When the module is imported (e.g. for re-exports or tests), nothing runs.
+ * Llama esto al final de tu archivo de worker para que cuando el host ejecute
+ * `node dist/worker.js`, el host RPC arranque y el proceso permanezca vivo.
+ * Cuando el módulo se importa (p. ej. para re-exportaciones o pruebas), nada se ejecuta.
  *
- * When `options.stdin` and `options.stdout` are provided (e.g. in tests),
- * the main-module check is skipped and the host is started with those streams.
+ * Cuando se proporcionan `options.stdin` y `options.stdout` (p. ej. en pruebas),
+ * se omite la verificación de módulo principal y el host se inicia con esos flujos.
  *
  * @example
  * ```ts
@@ -217,10 +218,10 @@ export function runWorker(
 }
 
 /**
- * Start the worker-side RPC host.
+ * Inicia el host RPC del lado del worker.
  *
- * This function is typically called from a thin bootstrap script that is the
- * actual entrypoint of the child process:
+ * Esta función normalmente se llama desde un script bootstrap delgado que es el
+ * punto de entrada real del proceso hijo:
  *
  * ```ts
  * // worker-bootstrap.ts
@@ -230,11 +231,11 @@ export function runWorker(
  * startWorkerRpcHost({ plugin });
  * ```
  *
- * The host begins listening on stdin immediately. It does NOT call
- * `plugin.definition.setup()` yet — that happens when the host sends the
- * `initialize` RPC.
+ * El host comienza a escuchar en stdin de inmediato. Aún NO llama a
+ * `plugin.definition.setup()`: eso ocurre cuando el host envía el RPC
+ * `initialize`.
  *
- * @returns A handle for inspecting or stopping the RPC host
+ * @returns Un manejador para inspeccionar o detener el host RPC
  */
 export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost {
   const { plugin } = options;
@@ -243,7 +244,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   const rpcTimeoutMs = options.rpcTimeoutMs ?? DEFAULT_RPC_TIMEOUT_MS;
 
   // -----------------------------------------------------------------------
-  // State
+  // Estado
   // -----------------------------------------------------------------------
 
   let running = true;
@@ -251,7 +252,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   let manifest: PaperclipPluginManifestV1 | null = null;
   let currentConfig: Record<string, unknown> = {};
 
-  // Plugin handler registrations (populated during setup())
+  // Registros de manejadores del plugin (poblados durante setup())
   const eventHandlers: EventRegistration[] = [];
   const jobHandlers = new Map<string, (job: PluginJobContext) => Promise<void>>();
   const launcherRegistrations = new Map<string, PluginLauncherRegistration>();
@@ -262,10 +263,10 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
     fn: (params: unknown, runCtx: ToolRunContext) => Promise<ToolResult>;
   }>();
 
-  // Agent session event callbacks (populated by sendMessage, cleared by close)
+  // Callbacks de eventos de sesión de agente (poblados por sendMessage, limpiados por close)
   const sessionEventCallbacks = new Map<string, (event: AgentSessionEvent) => void>();
 
-  // Pending outbound (worker→host) requests
+  // Solicitudes salientes pendientes (worker→host)
   const pendingRequests = new Map<string | number, {
     resolve: (response: JsonRpcResponse) => void;
     timer: ReturnType<typeof setTimeout>;
@@ -274,7 +275,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   const MAX_OUTBOUND_ID = Number.MAX_SAFE_INTEGER - 1;
 
   // -----------------------------------------------------------------------
-  // Outbound messaging (worker → host)
+  // Mensajería saliente (worker → host)
   // -----------------------------------------------------------------------
 
   function sendMessage(message: unknown): void {
@@ -284,7 +285,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   }
 
   /**
-   * Send a typed JSON-RPC request to the host and await the response.
+   * Envía una solicitud JSON-RPC tipada al host y espera la respuesta.
    */
   function callHost<M extends WorkerToHostMethodName>(
     method: M,
@@ -293,7 +294,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   ): Promise<WorkerToHostMethods[M][1]> {
     return new Promise<WorkerToHostMethods[M][1]>((resolve, reject) => {
       if (!running) {
-        reject(new Error(`Cannot call "${method}" — worker RPC host is not running`));
+        reject(new Error(`No se puede llamar a "${method}": el host RPC del worker no está en ejecución`));
         return;
       }
 
@@ -317,7 +318,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
           reject,
           new JsonRpcCallError({
             code: PLUGIN_RPC_ERROR_CODES.TIMEOUT,
-            message: `Worker→host call "${method}" timed out after ${timeout}ms`,
+            message: `La llamada de worker a host "${method}" agotó el tiempo después de ${timeout}ms`,
           }),
         );
       }, timeout);
@@ -329,7 +330,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
           } else if (isJsonRpcErrorResponse(response)) {
             settle(reject, new JsonRpcCallError(response.error));
           } else {
-            settle(reject, new Error(`Unexpected response format for "${method}"`));
+            settle(reject, new Error(`Formato de respuesta inesperado para "${method}"`));
           }
         },
         timer,
@@ -345,24 +346,24 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   }
 
   /**
-   * Send a JSON-RPC notification to the host (fire-and-forget).
+   * Envía una notificación JSON-RPC al host (disparo y olvido).
    */
   function notifyHost(method: string, params: unknown): void {
     try {
       sendMessage(createNotification(method, params));
     } catch {
-      // Swallow — the host may have closed stdin
+      // Ignorar: el host puede haber cerrado stdin
     }
   }
 
   // -----------------------------------------------------------------------
-  // Build the PluginContext (SDK surface for plugin code)
+  // Construir el PluginContext (superficie SDK para código de plugin)
   // -----------------------------------------------------------------------
 
   function buildContext(): PluginContext {
     return {
       get manifest() {
-        if (!manifest) throw new Error("Plugin context accessed before initialization");
+        if (!manifest) throw new Error("Contexto de plugin accedido antes de la inicialización");
         return manifest;
       },
 
@@ -382,15 +383,15 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
           if (typeof filterOrFn === "function") {
             registration = { name, fn: filterOrFn };
           } else {
-            if (!maybeFn) throw new Error("Event handler function is required");
+            if (!maybeFn) throw new Error("Se requiere una función manejadora de eventos");
             registration = { name, filter: filterOrFn, fn: maybeFn };
           }
           eventHandlers.push(registration);
-          // Register subscription on the host so events are forwarded to this worker
+          // Registrar la suscripción en el host para que los eventos se reenvíen a este worker
           void callHost("events.subscribe", { eventPattern: name, filter: registration.filter ?? null }).catch((err) => {
             notifyHost("log", {
               level: "warn",
-              message: `Failed to subscribe to event "${name}" on host: ${err instanceof Error ? err.message : String(err)}`,
+              message: `No se pudo suscribir al evento "${name}" en el host: ${err instanceof Error ? err.message : String(err)}`,
             });
           });
           return () => {
@@ -422,7 +423,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
           if (init) {
             if (init.method) serializedInit.method = init.method;
             if (init.headers) {
-              // Normalize headers to a plain object
+              // Normalizar encabezados a un objeto plano
               if (init.headers instanceof Headers) {
                 const obj: Record<string, string> = {};
                 init.headers.forEach((v, k) => { obj[k] = v; });
@@ -447,7 +448,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
             init: Object.keys(serializedInit).length > 0 ? serializedInit : undefined,
           });
 
-          // Reconstruct a Response-like object from the serialized result
+          // Reconstruir un objeto tipo Response desde el resultado serializado
           return new Response(result.body, {
             status: result.status,
             statusText: result.statusText,
@@ -757,7 +758,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
       },
 
       streams: (() => {
-        // Track channel → companyId so emit/close don't require companyId
+        // Rastrear canal → companyId para que emit/close no requieran companyId
         const channelCompanyMap = new Map<string, string>();
         return {
           open(channel: string, companyId: string): void {
@@ -812,13 +813,13 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   const ctx = buildContext();
 
   // -----------------------------------------------------------------------
-  // Inbound message handling (host → worker)
+  // Manejo de mensajes entrantes (host → worker)
   // -----------------------------------------------------------------------
 
   /**
-   * Handle an incoming JSON-RPC request from the host.
+   * Maneja una solicitud JSON-RPC entrante desde el host.
    *
-   * Dispatches to the correct handler based on the method name.
+   * Despacha al manejador correcto según el nombre del método.
    */
   async function handleHostRequest(request: JsonRpcRequest): Promise<void> {
     const { id, method, params } = request;
@@ -828,9 +829,9 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
       sendMessage(createSuccessResponse(id, result ?? null));
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      // Propagate specific error codes from handler errors (e.g.
-      // METHOD_NOT_FOUND, METHOD_NOT_IMPLEMENTED) — fall back to
-      // WORKER_ERROR for untyped exceptions.
+      // Propagar códigos de error específicos desde errores de manejador (p. ej.
+      // METHOD_NOT_FOUND, METHOD_NOT_IMPLEMENTED): usar WORKER_ERROR
+      // como respaldo para excepciones sin tipo.
       const errorCode =
         typeof (err as any)?.code === "number"
           ? (err as any).code
@@ -841,7 +842,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   }
 
   /**
-   * Dispatch a host→worker method call to the appropriate handler.
+   * Despacha una llamada de método de host a worker al manejador apropiado.
    */
   async function dispatchMethod(method: string, params: unknown): Promise<unknown> {
     switch (method) {
@@ -880,30 +881,30 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
 
       default:
         throw Object.assign(
-          new Error(`Unknown method: ${method}`),
+          new Error(`Método desconocido: ${method}`),
           { code: JSONRPC_ERROR_CODES.METHOD_NOT_FOUND },
         );
     }
   }
 
   // -----------------------------------------------------------------------
-  // Host→Worker method handlers
+  // Manejadores de métodos de host a worker
   // -----------------------------------------------------------------------
 
   async function handleInitialize(params: InitializeParams): Promise<InitializeResult> {
     if (initialized) {
-      throw new Error("Worker already initialized");
+      throw new Error("El worker ya está inicializado");
     }
 
     manifest = params.manifest;
     currentConfig = params.config;
 
-    // Call the plugin's setup function
+    // Llamar a la función de setup del plugin
     await plugin.definition.setup(ctx);
 
     initialized = true;
 
-    // Report which optional methods this plugin implements
+    // Reportar qué métodos opcionales implementa este plugin
     const supportedMethods: string[] = [];
     if (plugin.definition.onValidateConfig) supportedMethods.push("validateConfig");
     if (plugin.definition.onConfigChanged) supportedMethods.push("configChanged");
@@ -917,7 +918,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
     if (plugin.definition.onHealth) {
       return plugin.definition.onHealth();
     }
-    // Default: report OK if the worker is alive
+    // Por defecto: reportar OK si el worker está vivo
     return { status: "ok" };
   }
 
@@ -926,10 +927,10 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
       await plugin.definition.onShutdown();
     }
 
-    // Schedule cleanup after we send the response.
-    // Use setImmediate to let the response flush before exiting.
-    // Only call process.exit() when running with real process streams.
-    // When custom streams are provided (tests), just clean up.
+    // Programar la limpieza después de enviar la respuesta.
+    // Usar setImmediate para dejar que la respuesta se vacíe antes de salir.
+    // Solo llamar process.exit() cuando se usen flujos de proceso reales.
+    // Cuando se proporcionan flujos personalizados (pruebas), solo limpiar.
     setImmediate(() => {
       cleanup();
       if (!options.stdin && !options.stdout) {
@@ -943,7 +944,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   ): Promise<PluginConfigValidationResult> {
     if (!plugin.definition.onValidateConfig) {
       throw Object.assign(
-        new Error("validateConfig is not implemented by this plugin"),
+        new Error("validateConfig no está implementado por este plugin"),
         { code: PLUGIN_RPC_ERROR_CODES.METHOD_NOT_IMPLEMENTED },
       );
     }
@@ -962,7 +963,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
     const event = params.event;
 
     for (const registration of eventHandlers) {
-      // Check event type match
+      // Verificar coincidencia de tipo de evento
       const exactMatch = registration.name === event.eventType;
       const wildcardPluginAll =
         registration.name === "plugin.*" &&
@@ -973,17 +974,17 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
 
       if (!exactMatch && !wildcardPluginAll && !wildcardPluginOne) continue;
 
-      // Check filter
+      // Verificar filtro
       if (registration.filter && !allowsEvent(registration.filter, event)) continue;
 
       try {
         await registration.fn(event);
       } catch (err) {
-        // Log error but continue processing other handlers so one failing
-        // handler doesn't prevent the rest from running.
+        // Registrar el error pero continuar procesando otros manejadores para que un
+        // manejador fallido no impida que el resto se ejecute.
         notifyHost("log", {
           level: "error",
-          message: `Event handler for "${registration.name}" failed: ${
+          message: `El manejador de eventos para "${registration.name}" falló: ${
             err instanceof Error ? err.message : String(err)
           }`,
           meta: { eventType: event.eventType, stack: err instanceof Error ? err.stack : undefined },
@@ -995,7 +996,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   async function handleRunJob(params: RunJobParams): Promise<void> {
     const handler = jobHandlers.get(params.job.jobKey);
     if (!handler) {
-      throw new Error(`No handler registered for job "${params.job.jobKey}"`);
+      throw new Error(`No hay manejador registrado para la tarea "${params.job.jobKey}"`);
     }
     await handler(params.job);
   }
@@ -1003,7 +1004,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   async function handleWebhook(params: PluginWebhookInput): Promise<void> {
     if (!plugin.definition.onWebhook) {
       throw Object.assign(
-        new Error("handleWebhook is not implemented by this plugin"),
+        new Error("handleWebhook no está implementado por este plugin"),
         { code: PLUGIN_RPC_ERROR_CODES.METHOD_NOT_IMPLEMENTED },
       );
     }
@@ -1013,7 +1014,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   async function handleGetData(params: GetDataParams): Promise<unknown> {
     const handler = dataHandlers.get(params.key);
     if (!handler) {
-      throw new Error(`No data handler registered for key "${params.key}"`);
+      throw new Error(`No hay manejador de datos registrado para la clave "${params.key}"`);
     }
     return handler(
       params.renderEnvironment === undefined
@@ -1025,7 +1026,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   async function handlePerformAction(params: PerformActionParams): Promise<unknown> {
     const handler = actionHandlers.get(params.key);
     if (!handler) {
-      throw new Error(`No action handler registered for key "${params.key}"`);
+      throw new Error(`No hay manejador de acción registrado para la clave "${params.key}"`);
     }
     return handler(
       params.renderEnvironment === undefined
@@ -1037,13 +1038,13 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   async function handleExecuteTool(params: ExecuteToolParams): Promise<ToolResult> {
     const entry = toolHandlers.get(params.toolName);
     if (!entry) {
-      throw new Error(`No tool handler registered for "${params.toolName}"`);
+      throw new Error(`No hay manejador de herramienta registrado para "${params.toolName}"`);
     }
     return entry.fn(params.parameters, params.runContext);
   }
 
   // -----------------------------------------------------------------------
-  // Event filter helper
+  // Helper de filtro de eventos
   // -----------------------------------------------------------------------
 
   function allowsEvent(filter: EventFilter, event: PluginEvent): boolean {
@@ -1072,7 +1073,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   }
 
   // -----------------------------------------------------------------------
-  // Inbound response handling (host → worker, response to our outbound call)
+  // Manejo de respuestas entrantes (host → worker, respuesta a nuestra llamada saliente)
   // -----------------------------------------------------------------------
 
   function handleHostResponse(response: JsonRpcResponse): void {
@@ -1088,7 +1089,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   }
 
   // -----------------------------------------------------------------------
-  // Incoming line handler
+  // Manejador de líneas entrantes
   // -----------------------------------------------------------------------
 
   function handleLine(line: string): void {
@@ -1099,12 +1100,12 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
       message = parseMessage(line);
     } catch (err) {
       if (err instanceof JsonRpcParseError) {
-        // Send parse error response
+        // Enviar respuesta de error de análisis
         sendMessage(
           createErrorResponse(
             null,
             JSONRPC_ERROR_CODES.PARSE_ERROR,
-            `Parse error: ${err.message}`,
+            `Error de análisis: ${err.message}`,
           ),
         );
       }
@@ -1112,12 +1113,12 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
     }
 
     if (isJsonRpcResponse(message)) {
-      // This is a response to one of our outbound worker→host calls
+      // Esta es una respuesta a una de nuestras llamadas salientes de worker a host
       handleHostResponse(message);
     } else if (isJsonRpcRequest(message)) {
-      // This is a host→worker RPC call — dispatch it
+      // Esta es una llamada RPC de host a worker: despacharla
       handleHostRequest(message as JsonRpcRequest).catch((err) => {
-        // Unhandled error in the async handler — send error response
+        // Error no manejado en el manejador asíncrono: enviar respuesta de error
         const errorMessage = err instanceof Error ? err.message : String(err);
         const errorCode = (err as any)?.code ?? PLUGIN_RPC_ERROR_CODES.WORKER_ERROR;
         try {
@@ -1129,22 +1130,22 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
             ),
           );
         } catch {
-          // Cannot send response, stdout may be closed
+          // No se puede enviar respuesta, stdout puede estar cerrado
         }
       });
     } else if (isJsonRpcNotification(message)) {
-      // Dispatch host→worker push notifications
+      // Despachar notificaciones push de host a worker
       const notif = message as { method: string; params?: unknown };
       if (notif.method === "agents.sessions.event" && notif.params) {
         const event = notif.params as AgentSessionEvent;
         const cb = sessionEventCallbacks.get(event.sessionId);
         if (cb) cb(event);
       } else if (notif.method === "onEvent" && notif.params) {
-        // Plugin event bus notifications — dispatch to registered event handlers
+        // Notificaciones del bus de eventos del plugin: despachar a los manejadores de eventos registrados
         handleOnEvent(notif.params as OnEventParams).catch((err) => {
           notifyHost("log", {
             level: "error",
-            message: `Failed to handle event notification: ${err instanceof Error ? err.message : String(err)}`,
+            message: `No se pudo manejar la notificación de evento: ${err instanceof Error ? err.message : String(err)}`,
           });
         });
       }
@@ -1152,26 +1153,26 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   }
 
   // -----------------------------------------------------------------------
-  // Cleanup
+  // Limpieza
   // -----------------------------------------------------------------------
 
   function cleanup(): void {
     running = false;
 
-    // Close readline
+    // Cerrar readline
     if (readline) {
       readline.close();
       readline = null;
     }
 
-    // Reject all pending outbound calls
+    // Rechazar todas las llamadas salientes pendientes
     for (const [id, pending] of pendingRequests) {
       clearTimeout(pending.timer);
       pending.resolve(
         createErrorResponse(
           id,
           PLUGIN_RPC_ERROR_CODES.WORKER_UNAVAILABLE,
-          "Worker RPC host is shutting down",
+          "El host RPC del worker se está apagando",
         ) as JsonRpcResponse,
       );
     }
@@ -1180,7 +1181,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   }
 
   // -----------------------------------------------------------------------
-  // Bootstrap: wire up stdin readline
+  // Bootstrap: conectar stdin readline
   // -----------------------------------------------------------------------
 
   let readline: ReadlineInterface | null = createInterface({
@@ -1190,7 +1191,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
 
   readline.on("line", handleLine);
 
-  // If stdin closes, we should exit gracefully
+  // Si stdin se cierra, debemos salir con gracia
   readline.on("close", () => {
     if (running) {
       cleanup();
@@ -1200,17 +1201,17 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
     }
   });
 
-  // Handle uncaught errors in the worker process.
-  // Only install these when using the real process streams (not in tests
-  // where the caller provides custom streams).
+  // Manejar errores no capturados en el proceso del worker.
+  // Solo instalar estos cuando se usen los flujos de proceso reales (no en pruebas
+  // donde el llamador proporciona flujos personalizados).
   if (!options.stdin && !options.stdout) {
     process.on("uncaughtException", (err) => {
       notifyHost("log", {
         level: "error",
-        message: `Uncaught exception: ${err.message}`,
+        message: `Excepción no capturada: ${err.message}`,
         meta: { stack: err.stack },
       });
-      // Give the notification a moment to flush, then exit
+      // Dar a la notificación un momento para vaciarse, luego salir
       setTimeout(() => process.exit(1), 100);
     });
 
@@ -1219,14 +1220,14 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
       const stack = reason instanceof Error ? reason.stack : undefined;
       notifyHost("log", {
         level: "error",
-        message: `Unhandled rejection: ${message}`,
+        message: `Rechazo no manejado: ${message}`,
         meta: { stack },
       });
     });
   }
 
   // -----------------------------------------------------------------------
-  // Return the handle
+  // Devolver el manejador
   // -----------------------------------------------------------------------
 
   return {

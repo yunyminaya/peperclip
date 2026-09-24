@@ -12,7 +12,7 @@ export function formatCents(cents: number): string {
 }
 
 export function formatDate(date: Date | string): string {
-  return new Date(date).toLocaleDateString("en-US", {
+  return new Date(date).toLocaleDateString("es", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -20,7 +20,7 @@ export function formatDate(date: Date | string): string {
 }
 
 export function formatDateTime(date: Date | string): string {
-  return new Date(date).toLocaleString("en-US", {
+  return new Date(date).toLocaleString("es", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -33,13 +33,13 @@ export function relativeTime(date: Date | string): string {
   const now = Date.now();
   const then = new Date(date).getTime();
   const diffSec = Math.round((now - then) / 1000);
-  if (diffSec < 60) return "just now";
+  if (diffSec < 60) return "ahora mismo";
   const diffMin = Math.round(diffSec / 60);
-  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffMin < 60) return `hace ${diffMin} min`;
   const diffHr = Math.round(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffHr < 24) return `hace ${diffHr} h`;
   const diffDay = Math.round(diffHr / 24);
-  if (diffDay < 30) return `${diffDay}d ago`;
+  if (diffDay < 30) return `hace ${diffDay} d`;
   return formatDate(date);
 }
 
@@ -49,7 +49,7 @@ export function formatTokens(n: number): string {
   return String(n);
 }
 
-/** Map a raw provider slug to a display-friendly name. */
+/** Convierte un slug de proveedor en un nombre legible. */
 export function providerDisplayName(provider: string): string {
   const map: Record<string, string> = {
     anthropic: "Anthropic",
@@ -65,12 +65,12 @@ export function providerDisplayName(provider: string): string {
 
 export function billingTypeDisplayName(billingType: BillingType): string {
   const map: Record<BillingType, string> = {
-    metered_api: "Metered API",
-    subscription_included: "Subscription",
-    subscription_overage: "Subscription overage",
-    credits: "Credits",
-    fixed: "Fixed",
-    unknown: "Unknown",
+    metered_api: "API medida",
+    subscription_included: "Suscripción",
+    subscription_overage: "Exceso de suscripción",
+    credits: "Créditos",
+    fixed: "Fijo",
+    unknown: "Desconocido",
   };
   return map[billingType];
 }
@@ -119,49 +119,49 @@ export function visibleRunCostUsd(
 
 export function financeEventKindDisplayName(eventKind: FinanceEventKind): string {
   const map: Record<FinanceEventKind, string> = {
-    inference_charge: "Inference charge",
-    platform_fee: "Platform fee",
-    credit_purchase: "Credit purchase",
-    credit_refund: "Credit refund",
-    credit_expiry: "Credit expiry",
-    byok_fee: "BYOK fee",
-    gateway_overhead: "Gateway overhead",
-    log_storage_charge: "Log storage",
+    inference_charge: "Cargo por inferencia",
+    platform_fee: "Comisión de plataforma",
+    credit_purchase: "Compra de crédito",
+    credit_refund: "Reembolso de crédito",
+    credit_expiry: "Vencimiento de crédito",
+    byok_fee: "Comisión BYOK",
+    gateway_overhead: "Sobrecargo de puerta de enlace",
+    log_storage_charge: "Almacenamiento de registros",
     logpush_charge: "Logpush",
-    provisioned_capacity_charge: "Provisioned capacity",
-    training_charge: "Training",
-    custom_model_import_charge: "Custom model import",
-    custom_model_storage_charge: "Custom model storage",
-    manual_adjustment: "Manual adjustment",
+    provisioned_capacity_charge: "Capacidad aprovisionada",
+    training_charge: "Entrenamiento",
+    custom_model_import_charge: "Importación de modelo personalizado",
+    custom_model_storage_charge: "Almacenamiento de modelo personalizado",
+    manual_adjustment: "Ajuste manual",
   };
   return map[eventKind];
 }
 
 export function financeDirectionDisplayName(direction: FinanceDirection): string {
-  return direction === "credit" ? "Credit" : "Debit";
+  return direction === "credit" ? "Crédito" : "Débito";
 }
 
-/** Build an issue URL using the human-readable identifier when available. */
+/** Construye la URL de un issue usando el identificador legible cuando está disponible. */
 export function issueUrl(issue: { id: string; identifier?: string | null }): string {
   return `/issues/${issue.identifier ?? issue.id}`;
 }
 
-/** Build an agent route URL using the short URL key when available. */
+/** Construye la URL de ruta de un agente usando la clave corta de URL cuando está disponible. */
 export function agentRouteRef(agent: { id: string; urlKey?: string | null; name?: string | null }): string {
   return agent.urlKey ?? deriveAgentUrlKey(agent.name, agent.id);
 }
 
-/** Build an agent URL using the short URL key when available. */
+/** Construye la URL de un agente usando la clave corta de URL cuando está disponible. */
 export function agentUrl(agent: { id: string; urlKey?: string | null; name?: string | null }): string {
   return `/agents/${agentRouteRef(agent)}`;
 }
 
-/** Build a project route reference using the short URL key when available. */
+/** Construye la referencia de ruta de un proyecto usando la clave corta de URL cuando está disponible. */
 export function projectRouteRef(project: { id: string; urlKey?: string | null; name?: string | null }): string {
   return project.urlKey ?? deriveProjectUrlKey(project.name, project.id);
 }
 
-/** Build a project URL using the short URL key when available. */
+/** Construye la URL de un proyecto usando la clave corta de URL cuando está disponible. */
 export function projectUrl(project: { id: string; urlKey?: string | null; name?: string | null }): string {
   return `/projects/${projectRouteRef(project)}`;
 }

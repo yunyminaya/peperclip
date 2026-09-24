@@ -49,8 +49,8 @@ export function boardMutationGuard(): RequestHandler {
       return;
     }
 
-    // Local-trusted mode and board bearer keys are not browser-session requests.
-    // In these modes, origin/referer headers can be absent; do not block those mutations.
+    // El modo local-trusted y las claves bearer del panel no son solicitudes de sesión de navegador.
+    // En estos modos, los encabezados origin/referer pueden estar ausentes; no bloquear esas mutaciones.
     if (req.actor.source === "local_implicit" || req.actor.source === "board_key") {
       next();
       return;

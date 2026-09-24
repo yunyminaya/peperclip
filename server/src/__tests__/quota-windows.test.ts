@@ -312,39 +312,39 @@ describe("parseClaudeCliUsageText", () => {
 
     expect(parseClaudeCliUsageText(raw)).toEqual([
       {
-        label: "Current session",
+        label: "Sesión actual",
         usedPercent: 2,
         resetsAt: null,
         valueLabel: null,
         detail: "Resets 5pm (America/Chicago)",
       },
       {
-        label: "Current week (all models)",
+        label: "Semana actual (todos los modelos)",
         usedPercent: 47,
         resetsAt: null,
         valueLabel: null,
         detail: "Resets Mar 18 at 7:59am (America/Chicago)",
       },
       {
-        label: "Current week (Sonnet only)",
+        label: "Semana actual (solo Sonnet)",
         usedPercent: 0,
         resetsAt: null,
         valueLabel: null,
         detail: "Resets Mar 18 at 8:59am (America/Chicago)",
       },
       {
-        label: "Extra usage",
+        label: "Uso extra",
         usedPercent: null,
         resetsAt: null,
         valueLabel: null,
-        detail: "Extra usage not enabled • /extra-usage to enable",
+        detail: "Uso extra no habilitado • /extra-usage para habilitarlo",
       },
     ]);
   });
 
   it("throws a useful error when the Claude CLI panel reports a usage load failure", () => {
     expect(() => parseClaudeCliUsageText("Failed to load usage data")).toThrow(
-      "Claude CLI could not load usage data. Open the CLI and retry `/usage`.",
+      "El CLI de Claude no pudo cargar los datos de uso. Abre el CLI y reintenta `/usage`.",
     );
   });
 });
@@ -507,7 +507,7 @@ describe("fetchClaudeQuota", () => {
 
   it("throws when the API returns a non-200 status", async () => {
     mockFetch({}, false, 401);
-    await expect(fetchClaudeQuota("token")).rejects.toThrow("anthropic usage api returned 401");
+    await expect(fetchClaudeQuota("token")).rejects.toThrow("La API de uso de Anthropic devolvió 401");
   });
 
   it("returns an empty array when all window fields are absent", async () => {
@@ -521,7 +521,7 @@ describe("fetchClaudeQuota", () => {
     const windows = await fetchClaudeQuota("token");
     expect(windows).toHaveLength(1);
     expect(windows[0]).toMatchObject({
-      label: "Current session",
+      label: "Sesión actual",
       usedPercent: 40,
       resetsAt: "2026-01-01T00:00:00Z",
     });
@@ -532,7 +532,7 @@ describe("fetchClaudeQuota", () => {
     const windows = await fetchClaudeQuota("token");
     expect(windows).toHaveLength(1);
     expect(windows[0]).toMatchObject({
-      label: "Current week (all models)",
+      label: "Semana actual (todos los modelos)",
       usedPercent: 75,
       resetsAt: null,
     });
@@ -545,8 +545,8 @@ describe("fetchClaudeQuota", () => {
     });
     const windows = await fetchClaudeQuota("token");
     expect(windows).toHaveLength(2);
-    expect(windows[0]!.label).toBe("Current week (Sonnet only)");
-    expect(windows[1]!.label).toBe("Current week (Opus only)");
+    expect(windows[0]!.label).toBe("Semana actual (solo Sonnet)");
+    expect(windows[1]!.label).toBe("Semana actual (solo Opus)");
   });
 
   it("sets usedPercent to null when utilization is absent", async () => {
@@ -566,10 +566,10 @@ describe("fetchClaudeQuota", () => {
     expect(windows).toHaveLength(4);
     const labels = windows.map((w: QuotaWindow) => w.label);
     expect(labels).toEqual([
-      "Current session",
-      "Current week (all models)",
-      "Current week (Sonnet only)",
-      "Current week (Opus only)",
+      "Sesión actual",
+      "Semana actual (todos los modelos)",
+      "Semana actual (solo Sonnet)",
+      "Semana actual (solo Opus)",
     ]);
   });
 
@@ -583,11 +583,11 @@ describe("fetchClaudeQuota", () => {
     const windows = await fetchClaudeQuota("token");
     expect(windows).toEqual([
       {
-        label: "Extra usage",
+        label: "Uso extra",
         usedPercent: null,
         resetsAt: null,
-        valueLabel: "Not enabled",
-        detail: "Extra usage not enabled",
+        valueLabel: "No habilitado",
+        detail: "Uso extra no habilitado",
       },
     ]);
   });
@@ -616,7 +616,7 @@ describe("fetchCodexQuota", () => {
 
   it("throws when the WHAM API returns a non-200 status", async () => {
     mockFetch({}, false, 403);
-    await expect(fetchCodexQuota("token", null)).rejects.toThrow("chatgpt wham api returned 403");
+    await expect(fetchCodexQuota("token", null)).rejects.toThrow("La API wham de ChatGPT devolvió 403");
   });
 
   it("passes ChatGPT-Account-Id header when accountId is provided", async () => {
@@ -647,7 +647,7 @@ describe("fetchCodexQuota", () => {
     });
     const windows = await fetchCodexQuota("token", null);
     expect(windows).toHaveLength(1);
-    expect(windows[0]).toMatchObject({ label: "5h limit", usedPercent: 30, resetsAt: "2026-01-02T00:00:00.000Z" });
+    expect(windows[0]).toMatchObject({ label: "Límite de 5h", usedPercent: 30, resetsAt: "2026-01-02T00:00:00.000Z" });
   });
 
   it("parses secondary_window alongside primary_window", async () => {
@@ -659,8 +659,8 @@ describe("fetchCodexQuota", () => {
     });
     const windows = await fetchCodexQuota("token", null);
     expect(windows).toHaveLength(2);
-    expect(windows[0]!.label).toBe("5h limit");
-    expect(windows[1]!.label).toBe("Weekly limit");
+    expect(windows[0]!.label).toBe("Límite de 5h");
+    expect(windows[1]!.label).toBe("Límite semanal");
   });
 
   it("includes Credits window when credits present and not unlimited", async () => {
@@ -669,7 +669,7 @@ describe("fetchCodexQuota", () => {
     });
     const windows = await fetchCodexQuota("token", null);
     expect(windows).toHaveLength(1);
-    expect(windows[0]).toMatchObject({ label: "Credits", valueLabel: "$4.20 remaining", usedPercent: null });
+    expect(windows[0]).toMatchObject({ label: "Créditos", valueLabel: "$4.20 restante", usedPercent: null });
   });
 
   it("omits Credits window when unlimited is true", async () => {
@@ -720,28 +720,28 @@ describe("mapCodexRpcQuota", () => {
     expect(snapshot.planType).toBe("pro");
     expect(snapshot.windows).toEqual([
       {
-        label: "5h limit",
+        label: "Límite de 5h",
         usedPercent: 1,
         resetsAt: "2025-11-18T21:06:40.000Z",
         valueLabel: null,
         detail: null,
       },
       {
-        label: "Weekly limit",
+        label: "Límite semanal",
         usedPercent: 27,
         resetsAt: null,
         valueLabel: null,
         detail: null,
       },
       {
-        label: "GPT-5.3-Codex-Spark · 5h limit",
+        label: "GPT-5.3-Codex-Spark · Límite de 5h",
         usedPercent: 8,
         resetsAt: null,
         valueLabel: null,
         detail: null,
       },
       {
-        label: "GPT-5.3-Codex-Spark · Weekly limit",
+        label: "GPT-5.3-Codex-Spark · Límite semanal",
         usedPercent: 20,
         resetsAt: null,
         valueLabel: null,
@@ -763,10 +763,10 @@ describe("mapCodexRpcQuota", () => {
 
     expect(snapshot.windows).toEqual([
       {
-        label: "Credits",
+        label: "Créditos",
         usedPercent: null,
         resetsAt: null,
-        valueLabel: "$12.34 remaining",
+        valueLabel: "$12.34 restante",
         detail: null,
       },
     ]);

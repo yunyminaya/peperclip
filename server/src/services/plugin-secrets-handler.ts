@@ -1,36 +1,37 @@
 /**
- * Plugin secrets host-side handler — resolves secret references through the
- * Paperclip secret provider system.
+ * Manejador de secretos lado host para plugins — resuelve referencias de
+ * secretos a través del sistema de proveedores de secretos de Paperclip.
  *
- * When a plugin worker calls `ctx.secrets.resolve(secretRef)`, the JSON-RPC
- * request arrives at the host with `{ secretRef }`. This module provides the
- * concrete `HostServices.secrets` adapter that:
+ * Cuando un worker de plugin llama `ctx.secrets.resolve(secretRef)`, la
+ * solicitud JSON-RPC llega al host con `{ secretRef }`. Este módulo provee el
+ * adaptador concreto `HostServices.secrets` que:
  *
- * 1. Parses the `secretRef` string to identify the secret.
- * 2. Looks up the secret record and its latest version in the database.
- * 3. Delegates to the configured `SecretProviderModule` to decrypt /
- *    resolve the raw value.
- * 4. Returns the resolved plaintext value to the worker.
+ * 1. Parsea el string `secretRef` para identificar el secreto.
+ * 2. Busca el registro del secreto y su última versión en la base de datos.
+ * 3. Delega al `SecretProviderModule` configurado para descifrar /
+ *    resolver el valor crudo.
+ * 4. Devuelve el valor de texto plano resuelto al worker.
  *
- * ## Secret Reference Format
+ * ## Formato de referencia de secreto
  *
- * A `secretRef` is a **secret UUID** — the primary key (`id`) of a row in
- * the `company_secrets` table. Operators place these UUIDs into plugin
- * config values; plugin workers resolve them at execution time via
- * `ctx.secrets.resolve(secretId)`.
+ * Un `secretRef` es un **UUID de secreto** — la clave primaria (`id`) de
+ * una fila en la tabla `company_secrets`. Los operadores colocan estos UUIDs
+ * en valores de configuración de plugins; los workers de plugins los
+ * resuelven en tiempo de ejecución vía `ctx.secrets.resolve(secretId)`.
  *
- * ## Security Invariants
+ * ## Invariantes de seguridad
  *
- * - Resolved values are **never** logged, persisted, or included in error
- *   messages (per PLUGIN_SPEC.md §22).
- * - The handler is capability-gated: only plugins with `secrets.read-ref`
- *   declared in their manifest may call it (enforced by `host-client-factory`).
- * - The host handler itself does not cache resolved values. Each call goes
- *   through the secret provider to honour rotation.
+ * - Los valores resueltos **nunca** se registran en logs, persisten ni se
+ *   incluyen en mensajes de error (según PLUGIN_SPEC.md §22).
+ * - El manejador está restringido por capacidades: solo los plugins con
+ *   `secrets.read-ref` declarado en su manifiesto pueden llamarlo
+ *   (cumplido por `host-client-factory`).
+ * - El manejador host en sí no cachea valores resueltos. Cada llamada pasa
+ *   por el proveedor de secretos para respetar la rotación.
  *
  * @see PLUGIN_SPEC.md §22 — Secrets
- * @see host-client-factory.ts — capability gating
- * @see services/secrets.ts — secretService used by agent env bindings
+ * @see host-client-factory.ts — restricción por capacidades
+ * @see services/secrets.ts — secretService usado por bindings de entorno de agente
  */
 
 import { eq, and, desc } from "drizzle-orm";
@@ -45,23 +46,23 @@ import { pluginRegistryService } from "./plugin-registry.js";
 // ---------------------------------------------------------------------------
 
 /**
- * Create a sanitised error that never leaks secret material.
- * Only the ref identifier is included; never the resolved value.
+ * Crea un error sanitizado que nunca filtra material de secretos.
+ * Solo se incluye el identificador de referencia; nunca el valor resuelto.
  */
 function secretNotFound(secretRef: string): Error {
-  const err = new Error(`Secret not found: ${secretRef}`);
+  const err = new Error(`Secreto no encontrado: ${secretRef}`);
   err.name = "SecretNotFoundError";
   return err;
 }
 
 function secretVersionNotFound(secretRef: string): Error {
-  const err = new Error(`No version found for secret: ${secretRef}`);
+  const err = new Error(`No se encontró versión para el secreto: ${secretRef}`);
   err.name = "SecretVersionNotFoundError";
   return err;
 }
 
 function invalidSecretRef(secretRef: string): Error {
-  const err = new Error(`Invalid secret reference: ${secretRef}`);
+  const err = new Error(`Referencia de secreto inválida: ${secretRef}`);
   err.name = "InvalidSecretRefError";
   return err;
 }
@@ -70,21 +71,22 @@ function invalidSecretRef(secretRef: string): Error {
 // Validation
 // ---------------------------------------------------------------------------
 
-/** UUID v4 regex for validating secretRef format. */
+/** Regex UUID v4 para validar el formato de secretRef. */
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Check whether a secretRef looks like a valid UUID.
+ * Comprueba si un secretRef parece un UUID válido.
  */
 function isUuid(value: string): boolean {
   return UUID_RE.test(value);
 }
 
 /**
- * Collect the property paths (dot-separated keys) whose schema node declares
- * `format: "secret-ref"`. Only top-level and nested `properties` are walked —
- * this mirrors the flat/nested object shapes that `JsonSchemaForm` renders.
+ * Recolecta las rutas de propiedades (claves separadas por puntos) cuyo nodo
+ * de schema declara `format: "secret-ref"`. Solo se recorren `properties` de
+ * nivel superior y anidadas — esto refleja las formas de objetos
+ * planos/anidados que renderiza `JsonSchemaForm`.
  */
 function collectSecretRefPaths(
   schema: Record<string, unknown> | null | undefined,
@@ -101,7 +103,7 @@ function collectSecretRefPaths(
       if (propSchema.format === "secret-ref") {
         paths.add(path);
       }
-      // Recurse into nested object schemas
+      // Recurre en schemas de objetos anidados
       if (propSchema.type === "object") {
         walk(propSchema, path);
       }
@@ -113,11 +115,13 @@ function collectSecretRefPaths(
 }
 
 /**
- * Extract secret reference UUIDs from a plugin's configJson, scoped to only
- * the fields annotated with `format: "secret-ref"` in the schema.
+ * Extrae los UUIDs de referencias de secretos desde el configJson de un
+ * plugin, limitados solo a los campos anotados con `format: "secret-ref"` en
+ * el schema.
  *
- * When no schema is provided, falls back to collecting all UUID-shaped strings
- * (backwards-compatible for plugins without a declared instanceConfigSchema).
+ * Cuando no se provee schema, vuelve a recolectar todos los strings con
+ * forma de UUID (retrocompatible para plugins sin
+ * instanceConfigSchema declarado).
  */
 export function extractSecretRefsFromConfig(
   configJson: unknown,
@@ -128,7 +132,7 @@ export function extractSecretRefsFromConfig(
 
   const secretPaths = collectSecretRefPaths(schema);
 
-  // If schema declares secret-ref paths, extract only those values.
+  // Si el schema declara rutas secret-ref, extrae solo esos valores.
   if (secretPaths.size > 0) {
     for (const dotPath of secretPaths) {
       const keys = dotPath.split(".");
@@ -144,8 +148,8 @@ export function extractSecretRefsFromConfig(
     return refs;
   }
 
-  // Fallback: no schema or no secret-ref annotations — collect all UUIDs.
-  // This preserves backwards compatibility for plugins that omit
+  // Fallback: sin schema o sin anotaciones secret-ref — recolecta todos los UUIDs.
+  // Esto preserva la retrocompatibilidad para plugins que omiten
   // instanceConfigSchema.
   function walkAll(value: unknown): void {
     if (typeof value === "string") {
@@ -166,50 +170,50 @@ export function extractSecretRefsFromConfig(
 // ---------------------------------------------------------------------------
 
 /**
- * Input shape for the `secrets.resolve` handler.
+ * Forma de entrada para el manejador `secrets.resolve`.
  *
- * Matches `WorkerToHostMethods["secrets.resolve"][0]` from `protocol.ts`.
+ * Coincide con `WorkerToHostMethods["secrets.resolve"][0]` de `protocol.ts`.
  */
 export interface PluginSecretsResolveParams {
-  /** The secret reference string (a secret UUID). */
+  /** El string de referencia del secreto (un UUID de secreto). */
   secretRef: string;
 }
 
 /**
- * Options for creating the plugin secrets handler.
+ * Opciones para crear el manejador de secretos de plugins.
  */
 export interface PluginSecretsHandlerOptions {
-  /** Database connection. */
+  /** Conexión de base de datos. */
   db: Db;
   /**
-   * The plugin ID using this handler.
-   * Used for logging context only; never included in error payloads
-   * that reach the plugin worker.
+   * El ID del plugin que usa este manejador.
+   * Usado solo para contexto de logging; nunca incluido en payloads de error
+   * que llegan al worker del plugin.
    */
   pluginId: string;
 }
 
 /**
- * The `HostServices.secrets` adapter for the plugin host-client factory.
+ * El adaptador `HostServices.secrets` para la fábrica host-client del plugin.
  */
 export interface PluginSecretsService {
   /**
-   * Resolve a secret reference to its current plaintext value.
+   * Resuelve una referencia de secreto a su valor actual de texto plano.
    *
-   * @param params - Contains the `secretRef` (UUID of the secret)
-   * @returns The resolved secret value
-   * @throws {Error} If the secret is not found, has no versions, or
-   *   the provider fails to resolve
+   * @param params - Contiene el `secretRef` (UUID del secreto)
+   * @returns El valor del secreto resuelto
+   * @throws {Error} Si el secreto no se encuentra, no tiene versiones, o
+   *   el proveedor falla al resolver
    */
   resolve(params: PluginSecretsResolveParams): Promise<string>;
 }
 
 /**
- * Create a `HostServices.secrets` adapter for a specific plugin.
+ * Crea un adaptador `HostServices.secrets` para un plugin específico.
  *
- * The returned service looks up secrets by UUID, fetches the latest version
- * material, and delegates to the appropriate `SecretProviderModule` for
- * decryption.
+ * El servicio devuelto busca secretos por UUID, obtiene el material de la
+ * última versión y delega al `SecretProviderModule` apropiado para el
+ * descifrado.
  *
  * @example
  * ```ts
@@ -224,10 +228,10 @@ export interface PluginSecretsService {
  * });
  * ```
  *
- * @param options - Database connection and plugin identity
- * @returns A `PluginSecretsService` suitable for `HostServices.secrets`
+ * @param options - Conexión de base de datos e identidad del plugin
+ * @returns Un `PluginSecretsService` apto para `HostServices.secrets`
  */
-/** Simple sliding-window rate limiter for secret resolution attempts. */
+/** Limitador de tasa simple de ventana deslizante para intentos de resolución de secretos. */
 function createRateLimiter(maxAttempts: number, windowMs: number) {
   const attempts = new Map<string, number[]>();
 
@@ -250,7 +254,7 @@ export function createPluginSecretsHandler(
   const { db, pluginId } = options;
   const registry = pluginRegistryService(db);
 
-  // Rate limit: max 30 resolution attempts per plugin per minute
+  // Límite de tasa: máximo 30 intentos de resolución por plugin por minuto
   const rateLimiter = createRateLimiter(30, 60_000);
 
   let cachedAllowedRefs: Set<string> | null = null;
@@ -262,19 +266,19 @@ export function createPluginSecretsHandler(
       const { secretRef } = params;
 
       // ---------------------------------------------------------------
-      // 0. Rate limiting — prevent brute-force UUID enumeration
+      // 0. Límite de tasa — evita enumeración de UUIDs por fuerza bruta
       // ---------------------------------------------------------------
       if (!rateLimiter.check(pluginId)) {
-        const err = new Error("Rate limit exceeded for secret resolution");
+        const err = new Error("Límite de tasa excedido para resolución de secretos");
         err.name = "RateLimitExceededError";
         throw err;
       }
 
       // ---------------------------------------------------------------
-      // 1. Validate the ref format
+      // 1. Validar el formato de la referencia
       // ---------------------------------------------------------------
       if (!secretRef || typeof secretRef !== "string" || secretRef.trim().length === 0) {
-        throw invalidSecretRef(secretRef ?? "<empty>");
+        throw invalidSecretRef(secretRef ?? "<vacío>");
       }
 
       const trimmedRef = secretRef.trim();
@@ -284,7 +288,8 @@ export function createPluginSecretsHandler(
       }
 
       // ---------------------------------------------------------------
-      // 1b. Scope check — only allow secrets referenced in this plugin's config
+      // 1b. Chequeo de alcance — solo permitir secretos referenciados en
+      // la configuración de este plugin
       // ---------------------------------------------------------------
       const now = Date.now();
       if (!cachedAllowedRefs || now > cachedAllowedRefsExpiry) {
@@ -304,12 +309,12 @@ export function createPluginSecretsHandler(
       }
 
       if (!cachedAllowedRefs.has(trimmedRef)) {
-        // Return "not found" to avoid leaking whether the secret exists
+        // Devuelve "no encontrado" para evitar filtrar si el secreto existe
         throw secretNotFound(trimmedRef);
       }
 
       // ---------------------------------------------------------------
-      // 2. Look up the secret record by UUID
+      // 2. Busca el registro del secreto por UUID
       // ---------------------------------------------------------------
       const secret = await db
         .select()
@@ -322,7 +327,7 @@ export function createPluginSecretsHandler(
       }
 
       // ---------------------------------------------------------------
-      // 3. Fetch the latest version's material
+      // 3. Obtiene el material de la última versión
       // ---------------------------------------------------------------
       const versionRow = await db
         .select()
@@ -340,7 +345,7 @@ export function createPluginSecretsHandler(
       }
 
       // ---------------------------------------------------------------
-      // 4. Resolve through the appropriate secret provider
+      // 4. Resuelve a través del proveedor de secretos apropiado
       // ---------------------------------------------------------------
       const provider = getSecretProvider(secret.provider as SecretProvider);
       const resolved = await provider.resolveVersion({

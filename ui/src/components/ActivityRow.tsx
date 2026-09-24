@@ -5,47 +5,47 @@ import { cn } from "../lib/utils";
 import { deriveProjectUrlKey, type ActivityEvent, type Agent } from "@paperclipai/shared";
 
 const ACTION_VERBS: Record<string, string> = {
-  "issue.created": "created",
-  "issue.updated": "updated",
-  "issue.checked_out": "checked out",
-  "issue.released": "released",
-  "issue.comment_added": "commented on",
-  "issue.attachment_added": "attached file to",
-  "issue.attachment_removed": "removed attachment from",
-  "issue.document_created": "created document for",
-  "issue.document_updated": "updated document on",
-  "issue.document_deleted": "deleted document from",
-  "issue.commented": "commented on",
-  "issue.deleted": "deleted",
-  "agent.created": "created",
-  "agent.updated": "updated",
-  "agent.paused": "paused",
-  "agent.resumed": "resumed",
-  "agent.terminated": "terminated",
-  "agent.key_created": "created API key for",
-  "agent.budget_updated": "updated budget for",
-  "agent.runtime_session_reset": "reset session for",
-  "heartbeat.invoked": "invoked heartbeat for",
-  "heartbeat.cancelled": "cancelled heartbeat for",
-  "approval.created": "requested approval",
-  "approval.approved": "approved",
-  "approval.rejected": "rejected",
-  "project.created": "created",
-  "project.updated": "updated",
-  "project.deleted": "deleted",
-  "goal.created": "created",
-  "goal.updated": "updated",
-  "goal.deleted": "deleted",
-  "cost.reported": "reported cost for",
-  "cost.recorded": "recorded cost for",
-  "company.created": "created company",
-  "company.updated": "updated company",
-  "company.archived": "archived",
-  "company.budget_updated": "updated budget for",
+  "issue.created": "creó",
+  "issue.updated": "actualizó",
+  "issue.checked_out": "tomó",
+  "issue.released": "liberó",
+  "issue.comment_added": "comentó en",
+  "issue.attachment_added": "adjuntó archivo a",
+  "issue.attachment_removed": "quitó el adjunto de",
+  "issue.document_created": "creó documento para",
+  "issue.document_updated": "actualizó documento en",
+  "issue.document_deleted": "eliminó documento de",
+  "issue.commented": "comentó en",
+  "issue.deleted": "eliminó",
+  "agent.created": "creó",
+  "agent.updated": "actualizó",
+  "agent.paused": "pausó",
+  "agent.resumed": "reanudó",
+  "agent.terminated": "terminó",
+  "agent.key_created": "creó clave API para",
+  "agent.budget_updated": "actualizó presupuesto de",
+  "agent.runtime_session_reset": "reinició sesión de",
+  "heartbeat.invoked": "invocó latido de",
+  "heartbeat.cancelled": "canceló latido de",
+  "approval.created": "solicitó aprobación",
+  "approval.approved": "aprobó",
+  "approval.rejected": "rechazó",
+  "project.created": "creó",
+  "project.updated": "actualizó",
+  "project.deleted": "eliminó",
+  "goal.created": "creó",
+  "goal.updated": "actualizó",
+  "goal.deleted": "eliminó",
+  "cost.reported": "reportó costo de",
+  "cost.recorded": "registró costo de",
+  "company.created": "creó empresa",
+  "company.updated": "actualizó empresa",
+  "company.archived": "archivó",
+  "company.budget_updated": "actualizó presupuesto de",
 };
 
 function humanizeValue(value: unknown): string {
-  if (typeof value !== "string") return String(value ?? "none");
+  if (typeof value !== "string") return String(value ?? "ninguno");
   return value.replace(/_/g, " ");
 }
 
@@ -55,14 +55,14 @@ function formatVerb(action: string, details?: Record<string, unknown> | null): s
     if (details.status !== undefined) {
       const from = previous.status;
       return from
-        ? `changed status from ${humanizeValue(from)} to ${humanizeValue(details.status)} on`
-        : `changed status to ${humanizeValue(details.status)} on`;
+        ? `cambió el estado de ${humanizeValue(from)} a ${humanizeValue(details.status)} en`
+        : `cambió el estado a ${humanizeValue(details.status)} en`;
     }
     if (details.priority !== undefined) {
       const from = previous.priority;
       return from
-        ? `changed priority from ${humanizeValue(from)} to ${humanizeValue(details.priority)} on`
-        : `changed priority to ${humanizeValue(details.priority)} on`;
+        ? `cambió la prioridad de ${humanizeValue(from)} a ${humanizeValue(details.priority)} en`
+        : `cambió la prioridad a ${humanizeValue(details.priority)} en`;
     }
   }
   return ACTION_VERBS[action] ?? action.replace(/[._]/g, " ");
@@ -106,7 +106,7 @@ export function ActivityRow({ event, agentMap, entityNameMap, entityTitleMap, cl
     : entityLink(event.entityType, event.entityId, name);
 
   const actor = event.actorType === "agent" ? agentMap.get(event.actorId) : null;
-  const actorName = actor?.name ?? (event.actorType === "system" ? "System" : event.actorType === "user" ? "Board" : event.actorId || "Unknown");
+  const actorName = actor?.name ?? (event.actorType === "system" ? "Sistema" : event.actorType === "user" ? "Panel" : event.actorId || "Desconocido");
 
   const inner = (
     <div className="flex gap-3">

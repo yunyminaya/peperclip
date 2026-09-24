@@ -1,18 +1,18 @@
-# Paperclip Evals
+# Evals de Paperclip
 
-Eval framework for testing Paperclip agent behaviors across models and prompt versions.
+Framework de evals para probar comportamientos de agentes de Paperclip entre modelos y versiones de prompts.
 
-See [the evals framework plan](../doc/plans/2026-03-13-agent-evals-framework.md) for full design rationale.
+Ver [el plan del framework de evals](../doc/plans/2026-03-13-agent-evals-framework.md) para la justificación completa del diseño.
 
-## Quick Start
+## Inicio rápido
 
-### Prerequisites
+### Prerrequisitos
 
 ```bash
 pnpm add -g promptfoo
 ```
 
-You need an API key for at least one provider. Set one of:
+Se necesita una API key de al menos un proveedor. Configurar una de:
 
 ```bash
 export OPENROUTER_API_KEY=sk-or-...    # OpenRouter (recommended - test multiple models)
@@ -20,7 +20,7 @@ export ANTHROPIC_API_KEY=sk-ant-...     # Anthropic direct
 export OPENAI_API_KEY=sk-...            # OpenAI direct
 ```
 
-### Run evals
+### Ejecutar evals
 
 ```bash
 # Smoke test (default models)
@@ -34,31 +34,31 @@ promptfoo eval
 promptfoo view
 ```
 
-### What's tested
+### Qué se prueba
 
-Phase 0 covers narrow behavior evals for the Paperclip heartbeat skill:
+La Fase 0 cubre evals de comportamiento específicos para la habilidad de latido de Paperclip:
 
-| Case | Category | What it checks |
+| Caso | Categoría | Qué verifica |
 |------|----------|---------------|
-| Assignment pickup | `core` | Agent picks up todo/in_progress tasks correctly |
-| Progress update | `core` | Agent writes useful status comments |
-| Blocked reporting | `core` | Agent recognizes and reports blocked state |
-| Approval required | `governance` | Agent requests approval instead of acting |
-| Company boundary | `governance` | Agent refuses cross-company actions |
-| No work exit | `core` | Agent exits cleanly with no assignments |
-| Checkout before work | `core` | Agent always checks out before modifying |
-| 409 conflict handling | `core` | Agent stops on 409, picks different task |
+| Recogida de asignaciones | `core` | El agente recoge tareas todo/in_progress correctamente |
+| Actualización de progreso | `core` | El agente escribe comentarios de estado útiles |
+| Reporte de bloqueo | `core` | El agente reconoce y reporta el estado bloqueado |
+| Aprobación requerida | `governance` | El agente solicita aprobación en vez de actuar |
+| Límite de empresa | `governance` | El agente rechaza acciones entre empresas |
+| Salida sin trabajo | `core` | El agente sale limpiamente sin asignaciones |
+| Checkout antes de trabajar | `core` | El agente siempre hace checkout antes de modificar |
+| Manejo de conflicto 409 | `core` | El agente se detiene en 409, elige otra tarea |
 
-### Adding new cases
+### Agregar casos nuevos
 
-1. Add a YAML file to `evals/promptfoo/cases/`
-2. Follow the existing case format (see `core-assignment-pickup.yaml` for reference)
-3. Run `promptfoo eval` to test
+1. Agregar un archivo YAML a `evals/promptfoo/cases/`
+2. Seguir el formato de caso existente (ver `core-assignment-pickup.yaml` como referencia)
+3. Ejecutar `promptfoo eval` para probar
 
-### Phases
+### Fases
 
-- **Phase 0 (current):** Promptfoo bootstrap - narrow behavior evals with deterministic assertions
-- **Phase 1:** TypeScript eval harness with seeded scenarios and hard checks
-- **Phase 2:** Pairwise and rubric scoring layer
-- **Phase 3:** Efficiency metrics integration
-- **Phase 4:** Production-case ingestion
+- **Fase 0 (actual):** arranque de Promptfoo — evals de comportamiento específicos con aserciones deterministas
+- **Fase 1:** arnés de evals en TypeScript con escenarios sembrados y verificaciones estrictas
+- **Fase 2:** capa de puntuación por pares y rúbricas
+- **Fase 3:** integración de métricas de eficiencia
+- **Fase 4:** ingesta de casos de producción

@@ -1,37 +1,42 @@
 /**
- * PluginJobScheduler — tick-based scheduler for plugin scheduled jobs.
+ * PluginJobScheduler — programador basado en ticks para trabajos
+ * programados de plugins.
  *
- * The scheduler is the central coordinator for all plugin cron jobs. It
- * periodically ticks (default every 30 seconds), queries the `plugin_jobs`
- * table for jobs whose `nextRunAt` has passed, dispatches `runJob` RPC calls
- * to the appropriate worker processes, records each execution in the
- * `plugin_job_runs` table, and advances the scheduling pointer.
+ * El programador es el coordinador central de todos los trabajos cron de
+ * plugins. Hace tick periódicamente (por defecto cada 30 segundos),
+ * consulta la tabla `plugin_jobs` buscando trabajos cuyo `nextRunAt` ya
+ * pasó, despacha llamadas RPC `runJob` a los procesos worker
+ * correspondientes, registra cada ejecución en la tabla `plugin_job_runs` y
+ * avanza el puntero de programación.
  *
- * ## Responsibilities
+ * ## Responsabilidades
  *
- * 1. **Tick loop** — A `setInterval`-based loop fires every `tickIntervalMs`
- *    (default 30s). Each tick scans for due jobs and dispatches them.
+ * 1. **Bucle de ticks** — Un bucle basado en `setInterval` se dispara cada
+ *    `tickIntervalMs` (por defecto 30s). Cada tick busca trabajos vencidos
+ *    y los despacha.
  *
- * 2. **Cron parsing & next-run calculation** — Uses the lightweight built-in
- *    cron parser ({@link parseCron}, {@link nextCronTick}) to compute the
- *    `nextRunAt` timestamp after each run or when a new job is registered.
+ * 2. **Parseo de cron y cálculo de próxima ejecución** — Usa el parser de
+ *    cron liviano incluido ({@link parseCron}, {@link nextCronTick}) para
+ *    calcular el timestamp `nextRunAt` tras cada ejecución o cuando se
+ *    registra un trabajo nuevo.
  *
- * 3. **Overlap prevention** — Before dispatching a job, the scheduler checks
- *    for an existing `running` run for the same job. If one exists, the job
- *    is skipped for that tick.
+ * 3. **Prevención de solapamiento** — Antes de despachar un trabajo, el
+ *    programador verifica si existe una ejecución `running` para el mismo
+ *    trabajo. Si existe, el trabajo se omite en ese tick.
  *
- * 4. **Job run recording** — Every execution creates a `plugin_job_runs` row:
- *    `queued` → `running` → `succeeded` | `failed`. Duration and error are
- *    captured.
+ * 4. **Registro de ejecuciones** — Cada ejecución crea una fila en
+ *    `plugin_job_runs`: `queued` → `running` → `succeeded` | `failed`. Se
+ *    capturan la duración y el error.
  *
- * 5. **Lifecycle integration** — The scheduler exposes `registerPlugin()` and
- *    `unregisterPlugin()` so the host lifecycle manager can wire up job
- *    scheduling when plugins start/stop. On registration, the scheduler
- *    computes `nextRunAt` for all active jobs that don't already have one.
+ * 5. **Integración con el ciclo de vida** — El programador expone
+ *    `registerPlugin()` y `unregisterPlugin()` para que el manejador de
+ *    ciclo de vida del host conecte la programación de trabajos cuando los
+ *    plugins inician/detienen. Al registrar, el programador calcula
+ *    `nextRunAt` para todos los trabajos activos que aún no lo tengan.
  *
- * @see PLUGIN_SPEC.md §17 — Scheduled Jobs
- * @see ./plugin-job-store.ts — Persistence layer
- * @see ./cron.ts — Cron parsing utilities
+ * @see PLUGIN_SPEC.md §17 — Trabajos programados
+ * @see ./plugin-job-store.ts — Capa de persistencia
+ * @see ./cron.ts — Utilidades de parseo de cron
  */
 
 import { and, eq, lte, or } from "drizzle-orm";
@@ -43,141 +48,144 @@ import { parseCron, nextCronTick, validateCron } from "./cron.js";
 import { logger } from "../middleware/logger.js";
 
 // ---------------------------------------------------------------------------
-// Constants
+// Constantes
 // ---------------------------------------------------------------------------
 
-/** Default interval between scheduler ticks (30 seconds). */
+/** Intervalo por defecto entre ticks del programador (30 segundos). */
 const DEFAULT_TICK_INTERVAL_MS = 30_000;
 
-/** Default timeout for a runJob RPC call (5 minutes). */
+/** Timeout por defecto para una llamada RPC runJob (5 minutos). */
 const DEFAULT_JOB_TIMEOUT_MS = 5 * 60 * 1_000;
 
-/** Maximum number of concurrent job executions across all plugins. */
+/** Número máximo de ejecuciones de trabajos concurrentes entre todos los plugins. */
 const DEFAULT_MAX_CONCURRENT_JOBS = 10;
 
 // ---------------------------------------------------------------------------
-// Types
+// Tipos
 // ---------------------------------------------------------------------------
 
 /**
- * Options for creating a PluginJobScheduler.
+ * Opciones para crear un PluginJobScheduler.
  */
 export interface PluginJobSchedulerOptions {
-  /** Drizzle database instance. */
+  /** Instancia de base de datos Drizzle. */
   db: Db;
-  /** Persistence layer for jobs and runs. */
+  /** Capa de persistencia para trabajos y ejecuciones. */
   jobStore: PluginJobStore;
-  /** Worker process manager for RPC calls. */
+  /** Manejador de procesos worker para llamadas RPC. */
   workerManager: PluginWorkerManager;
-  /** Interval between scheduler ticks in ms (default: 30s). */
+  /** Intervalo entre ticks del programador en ms (por defecto: 30s). */
   tickIntervalMs?: number;
-  /** Timeout for individual job RPC calls in ms (default: 5min). */
+  /** Timeout para llamadas RPC de trabajos individuales en ms (por defecto: 5min). */
   jobTimeoutMs?: number;
-  /** Maximum number of concurrent job executions (default: 10). */
+  /** Número máximo de ejecuciones de trabajos concurrentes (por defecto: 10). */
   maxConcurrentJobs?: number;
 }
 
 /**
- * Result of a manual job trigger.
+ * Resultado de un disparo manual de trabajo.
  */
 export interface TriggerJobResult {
-  /** The created run ID. */
+  /** El ID de la ejecución creada. */
   runId: string;
-  /** The job ID that was triggered. */
+  /** El ID del trabajo que se disparó. */
   jobId: string;
 }
 
 /**
- * Diagnostic information about the scheduler.
+ * Información de diagnóstico sobre el programador.
  */
 export interface SchedulerDiagnostics {
-  /** Whether the tick loop is running. */
+  /** Si el bucle de ticks está corriendo. */
   running: boolean;
-  /** Number of jobs currently executing. */
+  /** Número de trabajos ejecutándose actualmente. */
   activeJobCount: number;
-  /** Set of job IDs currently in-flight. */
+  /** Conjunto de IDs de trabajos actualmente en curso. */
   activeJobIds: string[];
-  /** Total number of ticks executed since start. */
+  /** Número total de ticks ejecutados desde el inicio. */
   tickCount: number;
-  /** Timestamp of the last tick (ISO 8601). */
+  /** Timestamp del último tick (ISO 8601). */
   lastTickAt: string | null;
 }
 
 // ---------------------------------------------------------------------------
-// Scheduler
+// Programador
 // ---------------------------------------------------------------------------
 
 /**
- * The public interface of the job scheduler.
+ * La interfaz pública del programador de trabajos.
  */
 export interface PluginJobScheduler {
   /**
-   * Start the scheduler tick loop.
+   * Inicia el bucle de ticks del programador.
    *
-   * Safe to call multiple times — subsequent calls are no-ops.
+   * Es seguro llamarlo múltiples veces — las llamadas subsiguientes son
+   * no-ops.
    */
   start(): void;
 
   /**
-   * Stop the scheduler tick loop.
+   * Detiene el bucle de ticks del programador.
    *
-   * In-flight job runs are NOT cancelled — they are allowed to finish
-   * naturally. The tick loop simply stops firing.
+   * Las ejecuciones de trabajos en curso NO se cancelan — se les permite
+   * terminar naturalmente. El bucle de ticks simplemente deja de dispararse.
    */
   stop(): void;
 
   /**
-   * Register a plugin with the scheduler.
+   * Registra un plugin en el programador.
    *
-   * Computes `nextRunAt` for all active jobs that are missing it. This is
-   * typically called after a plugin's worker process starts and
-   * `syncJobDeclarations()` has been called.
+   * Calcula `nextRunAt` para todos los trabajos activos que no lo tengan.
+   * Normalmente se llama después de que el proceso worker de un plugin
+   * inicia y se ha llamado a `syncJobDeclarations()`.
    *
-   * @param pluginId - UUID of the plugin
+   * @param pluginId - UUID del plugin
    */
   registerPlugin(pluginId: string): Promise<void>;
 
   /**
-   * Unregister a plugin from the scheduler.
+   * Da de baja un plugin del programador.
    *
-   * Cancels any in-flight runs for the plugin and removes tracking state.
+   * Cancela cualquier ejecución en curso del plugin y elimina el estado de
+   * seguimiento.
    *
-   * @param pluginId - UUID of the plugin
+   * @param pluginId - UUID del plugin
    */
   unregisterPlugin(pluginId: string): Promise<void>;
 
   /**
-   * Manually trigger a specific job (outside of the cron schedule).
+   * Dispara manualmente un trabajo específico (fuera del cronograma cron).
    *
-   * Creates a run with `trigger: "manual"` and dispatches immediately,
-   * respecting the overlap prevention check.
+   * Crea una ejecución con `trigger: "manual"` y la despacha de inmediato,
+   * respetando el chequeo de prevención de solapamiento.
    *
-   * @param jobId - UUID of the job to trigger
-   * @param trigger - What triggered this run (default: "manual")
-   * @returns The created run info
-   * @throws {Error} if the job is not found, not active, or already running
+   * @param jobId - UUID del trabajo a disparar
+   * @param trigger - Qué disparó esta ejecución (por defecto: "manual")
+   * @returns La información de la ejecución creada
+   * @throws {Error} si el trabajo no se encuentra, no está activo o ya está
+   *   en ejecución
    */
   triggerJob(jobId: string, trigger?: "manual" | "retry"): Promise<TriggerJobResult>;
 
   /**
-   * Run a single scheduler tick immediately (for testing).
+   * Ejecuta un solo tick del programador de inmediato (para pruebas).
    *
    * @internal
    */
   tick(): Promise<void>;
 
   /**
-   * Get diagnostic information about the scheduler state.
+   * Obtiene información de diagnóstico sobre el estado del programador.
    */
   diagnostics(): SchedulerDiagnostics;
 }
 
 // ---------------------------------------------------------------------------
-// Implementation
+// Implementación
 // ---------------------------------------------------------------------------
 
 /**
- * Create a new PluginJobScheduler.
+ * Crea un nuevo PluginJobScheduler.
  *
  * @example
  * ```ts
@@ -187,16 +195,16 @@ export interface PluginJobScheduler {
  *   workerManager,
  * });
  *
- * // Start the tick loop
+ * // Inicia el bucle de ticks
  * scheduler.start();
  *
- * // When a plugin comes online, register it
+ * // Cuando un plugin se conecta, regístralo
  * await scheduler.registerPlugin(pluginId);
  *
- * // Manually trigger a job
+ * // Dispara manualmente un trabajo
  * const { runId } = await scheduler.triggerJob(jobId);
  *
- * // On server shutdown
+ * // Al apagar el servidor
  * scheduler.stop();
  * ```
  */
@@ -215,38 +223,38 @@ export function createPluginJobScheduler(
   const log = logger.child({ service: "plugin-job-scheduler" });
 
   // -----------------------------------------------------------------------
-  // State
+  // Estado
   // -----------------------------------------------------------------------
 
-  /** Timer handle for the tick loop. */
+  /** Manejador del temporizador para el bucle de ticks. */
   let tickTimer: ReturnType<typeof setInterval> | null = null;
 
-  /** Whether the scheduler is running. */
+  /** Si el programador está corriendo. */
   let running = false;
 
-  /** Set of job IDs currently being executed (for overlap prevention). */
+  /** Conjunto de IDs de trabajos ejecutándose actualmente (para prevención de solapamiento). */
   const activeJobs = new Set<string>();
 
-  /** Total number of ticks since start. */
+  /** Número total de ticks desde el inicio. */
   let tickCount = 0;
 
-  /** Timestamp of the last tick. */
+  /** Timestamp del último tick. */
   let lastTickAt: Date | null = null;
 
-  /** Guard against concurrent tick execution. */
+  /** Protección contra ejecución concurrente de ticks. */
   let tickInProgress = false;
 
   // -----------------------------------------------------------------------
-  // Core: tick
+  // Núcleo: tick
   // -----------------------------------------------------------------------
 
   /**
-   * A single scheduler tick. Queries for due jobs and dispatches them.
+   * Un solo tick del programador. Busca trabajos vencidos y los despacha.
    */
   async function tick(): Promise<void> {
-    // Prevent overlapping ticks (in case a tick takes longer than the interval)
+    // Evita ticks solapados (en caso de que un tick tarde más que el intervalo)
     if (tickInProgress) {
-      log.debug("skipping tick — previous tick still in progress");
+      log.debug("omitido el tick — el tick anterior sigue en curso");
       return;
     }
 
@@ -257,9 +265,9 @@ export function createPluginJobScheduler(
     try {
       const now = new Date();
 
-      // Query for jobs whose nextRunAt has passed and are active.
-      // We include jobs with null nextRunAt since they may have just been
-      // registered and need their first run calculated.
+      // Busca trabajos cuyo nextRunAt ya pasó y estén activos.
+      // Incluimos trabajos con nextRunAt nulo ya que pueden haberse
+      // registrado recién y necesitar el cálculo de su primera ejecución.
       const dueJobs = await db
         .select()
         .from(pluginJobs)
@@ -274,44 +282,44 @@ export function createPluginJobScheduler(
         return;
       }
 
-      log.debug({ count: dueJobs.length }, "found due jobs");
+      log.debug({ count: dueJobs.length }, "trabajos vencidos encontrados");
 
-      // Dispatch each due job (respecting concurrency limits)
+      // Despacha cada trabajo vencido (respetando límites de concurrencia)
       const dispatches: Promise<void>[] = [];
 
       for (const job of dueJobs) {
-        // Concurrency limit
+        // Límite de concurrencia
         if (activeJobs.size >= maxConcurrentJobs) {
           log.warn(
             { maxConcurrentJobs, activeJobCount: activeJobs.size },
-            "max concurrent jobs reached, deferring remaining jobs",
+            "máximo de trabajos concurrentes alcanzado, difiriendo los trabajos restantes",
           );
           break;
         }
 
-        // Overlap prevention: skip if this job is already running
+        // Prevención de solapamiento: omite si este trabajo ya está en ejecución
         if (activeJobs.has(job.id)) {
           log.debug(
             { jobId: job.id, jobKey: job.jobKey, pluginId: job.pluginId },
-            "skipping job — already running (overlap prevention)",
+            "omitido el trabajo — ya está en ejecución (prevención de solapamiento)",
           );
           continue;
         }
 
-        // Check if the worker is available
+        // Verifica si el worker está disponible
         if (!workerManager.isRunning(job.pluginId)) {
           log.debug(
             { jobId: job.id, pluginId: job.pluginId },
-            "skipping job — worker not running",
+            "omitido el trabajo — el worker no está en ejecución",
           );
           continue;
         }
 
-        // Validate cron expression before dispatching
+        // Valida la expresión cron antes de despachar
         if (!job.schedule) {
           log.warn(
             { jobId: job.id, jobKey: job.jobKey },
-            "skipping job — no schedule defined",
+            "omitido el trabajo — no hay cronograma definido",
           );
           continue;
         }
@@ -325,7 +333,7 @@ export function createPluginJobScheduler(
     } catch (err) {
       log.error(
         { err: err instanceof Error ? err.message : String(err) },
-        "scheduler tick error",
+        "error en el tick del programador",
       );
     } finally {
       tickInProgress = false;
@@ -333,12 +341,13 @@ export function createPluginJobScheduler(
   }
 
   // -----------------------------------------------------------------------
-  // Core: dispatch a single job
+  // Núcleo: despachar un solo trabajo
   // -----------------------------------------------------------------------
 
   /**
-   * Dispatch a single job run — create the run record, call the worker,
-   * record the result, and advance the schedule pointer.
+   * Despacha una sola ejecución de trabajo — crea el registro de ejecución,
+   * llama al worker, registra el resultado y avanza el puntero de
+   * programación.
    */
   async function dispatchJob(
     job: typeof pluginJobs.$inferSelect,
@@ -346,14 +355,14 @@ export function createPluginJobScheduler(
     const { id: jobId, pluginId, jobKey, schedule } = job;
     const jobLog = log.child({ jobId, pluginId, jobKey });
 
-    // Mark as active (overlap prevention)
+    // Marca como activo (prevención de solapamiento)
     activeJobs.add(jobId);
 
     let runId: string | undefined;
     const startedAt = Date.now();
 
     try {
-      // 1. Create run record
+      // 1. Crea el registro de ejecución
       const run = await jobStore.createRun({
         jobId,
         pluginId,
@@ -361,12 +370,12 @@ export function createPluginJobScheduler(
       });
       runId = run.id;
 
-      jobLog.info({ runId }, "dispatching scheduled job");
+      jobLog.info({ runId }, "despachando trabajo programado");
 
-      // 2. Mark run as running
+      // 2. Marca la ejecución como en curso
       await jobStore.markRunning(runId);
 
-      // 3. Call worker via RPC
+      // 3. Llama al worker vía RPC
       await workerManager.call(
         pluginId,
         "runJob",
@@ -381,24 +390,24 @@ export function createPluginJobScheduler(
         jobTimeoutMs,
       );
 
-      // 4. Mark run as succeeded
+      // 4. Marca la ejecución como exitosa
       const durationMs = Date.now() - startedAt;
       await jobStore.completeRun(runId, {
         status: "succeeded",
         durationMs,
       });
 
-      jobLog.info({ runId, durationMs }, "job completed successfully");
+      jobLog.info({ runId, durationMs }, "trabajo completado exitosamente");
     } catch (err) {
       const durationMs = Date.now() - startedAt;
       const errorMessage = err instanceof Error ? err.message : String(err);
 
       jobLog.error(
         { runId, durationMs, err: errorMessage },
-        "job execution failed",
+        "falló la ejecución del trabajo",
       );
 
-      // Record the failure
+      // Registra el fallo
       if (runId) {
         try {
           await jobStore.completeRun(runId, {
@@ -412,28 +421,28 @@ export function createPluginJobScheduler(
               runId,
               err: completeErr instanceof Error ? completeErr.message : String(completeErr),
             },
-            "failed to record job failure",
+            "no se pudo registrar el fallo del trabajo",
           );
         }
       }
     } finally {
-      // Remove from active set
+      // Quita del conjunto de activos
       activeJobs.delete(jobId);
 
-      // 5. Always advance the schedule pointer (even on failure)
+      // 5. Siempre avanza el puntero de programación (incluso en fallo)
       try {
         await advanceSchedulePointer(job);
       } catch (err) {
         jobLog.error(
           { err: err instanceof Error ? err.message : String(err) },
-          "failed to advance schedule pointer",
+          "no se pudo avanzar el puntero de programación",
         );
       }
     }
   }
 
   // -----------------------------------------------------------------------
-  // Core: manual trigger
+  // Núcleo: disparo manual
   // -----------------------------------------------------------------------
 
   async function triggerJob(
@@ -442,23 +451,24 @@ export function createPluginJobScheduler(
   ): Promise<TriggerJobResult> {
     const job = await jobStore.getJobById(jobId);
     if (!job) {
-      throw new Error(`Job not found: ${jobId}`);
+      throw new Error(`Trabajo no encontrado: ${jobId}`);
     }
 
     if (job.status !== "active") {
       throw new Error(
-        `Job "${job.jobKey}" is not active (status: ${job.status})`,
+        `El trabajo "${job.jobKey}" no está activo (estado: ${job.status})`,
       );
     }
 
-    // Overlap prevention
+    // Prevención de solapamiento
     if (activeJobs.has(jobId)) {
       throw new Error(
-        `Job "${job.jobKey}" is already running — cannot trigger while in progress`,
+        `El trabajo "${job.jobKey}" ya está en ejecución — no se puede disparar mientras está en curso`,
       );
     }
 
-    // Also check DB for running runs (defensive — covers multi-instance)
+    // También revisa la BD por ejecuciones en curso (defensivo — cubre
+    // múltiples instancias)
     const existingRuns = await db
       .select()
       .from(pluginJobRuns)
@@ -471,32 +481,32 @@ export function createPluginJobScheduler(
 
     if (existingRuns.length > 0) {
       throw new Error(
-        `Job "${job.jobKey}" already has a running execution — cannot trigger while in progress`,
+        `El trabajo "${job.jobKey}" ya tiene una ejecución en curso — no se puede disparar mientras está en curso`,
       );
     }
 
-    // Check worker availability
+    // Verifica la disponibilidad del worker
     if (!workerManager.isRunning(job.pluginId)) {
       throw new Error(
-        `Worker for plugin "${job.pluginId}" is not running — cannot trigger job`,
+        `El worker del plugin "${job.pluginId}" no está en ejecución — no se puede disparar el trabajo`,
       );
     }
 
-    // Create the run and dispatch (non-blocking)
+    // Crea la ejecución y despacha (no bloqueante)
     const run = await jobStore.createRun({
       jobId,
       pluginId: job.pluginId,
       trigger,
     });
 
-    // Dispatch in background — don't block the caller
+    // Despacha en segundo plano — no bloquea al llamador
     void dispatchManualRun(job, run.id, trigger);
 
     return { runId: run.id, jobId };
   }
 
   /**
-   * Dispatch a manually triggered job run.
+   * Despacha una ejecución de trabajo disparada manualmente.
    */
   async function dispatchManualRun(
     job: typeof pluginJobs.$inferSelect,
@@ -532,11 +542,11 @@ export function createPluginJobScheduler(
         durationMs,
       });
 
-      jobLog.info({ durationMs }, "manual job completed successfully");
+      jobLog.info({ durationMs }, "trabajo manual completado exitosamente");
     } catch (err) {
       const durationMs = Date.now() - startedAt;
       const errorMessage = err instanceof Error ? err.message : String(err);
-      jobLog.error({ durationMs, err: errorMessage }, "manual job failed");
+      jobLog.error({ durationMs, err: errorMessage }, "falló el trabajo manual");
 
       try {
         await jobStore.completeRun(runId, {
@@ -549,7 +559,7 @@ export function createPluginJobScheduler(
           {
             err: completeErr instanceof Error ? completeErr.message : String(completeErr),
           },
-          "failed to record manual job failure",
+          "no se pudo registrar el fallo del trabajo manual",
         );
       }
     } finally {
@@ -558,11 +568,12 @@ export function createPluginJobScheduler(
   }
 
   // -----------------------------------------------------------------------
-  // Schedule pointer management
+  // Gestión del puntero de programación
   // -----------------------------------------------------------------------
 
   /**
-   * Advance the `lastRunAt` and `nextRunAt` timestamps on a job after a run.
+   * Avanza los timestamps `lastRunAt` y `nextRunAt` de un trabajo tras una
+   * ejecución.
    */
   async function advanceSchedulePointer(
     job: typeof pluginJobs.$inferSelect,
@@ -575,7 +586,7 @@ export function createPluginJobScheduler(
       if (validationError) {
         log.warn(
           { jobId: job.id, schedule: job.schedule, error: validationError },
-          "invalid cron schedule — cannot compute next run",
+          "cronograma cron inválido — no se puede calcular la próxima ejecución",
         );
       } else {
         const cron = parseCron(job.schedule);
@@ -587,19 +598,19 @@ export function createPluginJobScheduler(
   }
 
   /**
-   * Ensure all active jobs for a plugin have a `nextRunAt` value.
-   * Called when a plugin is registered with the scheduler.
+   * Asegura que todos los trabajos activos de un plugin tengan un valor de
+   * `nextRunAt`. Se llama cuando un plugin se registra en el programador.
    */
   async function ensureNextRunTimestamps(pluginId: string): Promise<void> {
     const jobs = await jobStore.listJobs(pluginId, "active");
 
     for (const job of jobs) {
-      // Skip jobs that already have a valid nextRunAt in the future
+      // Omite trabajos que ya tengan un nextRunAt válido en el futuro
       if (job.nextRunAt && job.nextRunAt.getTime() > Date.now()) {
         continue;
       }
 
-      // Skip jobs without a schedule
+      // Omite trabajos sin cronograma
       if (!job.schedule) {
         continue;
       }
@@ -608,7 +619,7 @@ export function createPluginJobScheduler(
       if (validationError) {
         log.warn(
           { jobId: job.id, jobKey: job.jobKey, schedule: job.schedule, error: validationError },
-          "skipping job with invalid cron schedule",
+          "omitido el trabajo con cronograma cron inválido",
         );
         continue;
       }
@@ -624,26 +635,27 @@ export function createPluginJobScheduler(
         );
         log.debug(
           { jobId: job.id, jobKey: job.jobKey, nextRunAt: nextRunAt.toISOString() },
-          "computed nextRunAt for job",
+          "nextRunAt calculado para el trabajo",
         );
       }
     }
   }
 
   // -----------------------------------------------------------------------
-  // Plugin registration
+  // Registro de plugins
   // -----------------------------------------------------------------------
 
   async function registerPlugin(pluginId: string): Promise<void> {
-    log.info({ pluginId }, "registering plugin with job scheduler");
+    log.info({ pluginId }, "registrando plugin en el programador de trabajos");
     await ensureNextRunTimestamps(pluginId);
   }
 
   async function unregisterPlugin(pluginId: string): Promise<void> {
-    log.info({ pluginId }, "unregistering plugin from job scheduler");
+    log.info({ pluginId }, "dando de baja plugin del programador de trabajos");
 
-    // Cancel any in-flight run records for this plugin that are still
-    // queued or running. Active jobs in-memory will finish naturally.
+    // Cancela cualquier registro de ejecución en curso de este plugin que
+    // siga encolado o en ejecución. Los trabajos activos en memoria
+    // terminarán naturalmente.
     try {
       const runningRuns = await db
         .select()
@@ -661,7 +673,7 @@ export function createPluginJobScheduler(
       for (const run of runningRuns) {
         await jobStore.completeRun(run.id, {
           status: "cancelled",
-          error: "Plugin unregistered",
+          error: "Plugin dado de baja",
           durationMs: run.startedAt
             ? Date.now() - run.startedAt.getTime()
             : null,
@@ -673,11 +685,11 @@ export function createPluginJobScheduler(
           pluginId,
           err: err instanceof Error ? err.message : String(err),
         },
-        "error cancelling in-flight runs during unregister",
+        "error al cancelar ejecuciones en curso durante la baja",
       );
     }
 
-    // Remove any active tracking for jobs owned by this plugin
+    // Elimina cualquier seguimiento activo de trabajos de este plugin
     const jobs = await jobStore.listJobs(pluginId);
     for (const job of jobs) {
       activeJobs.delete(job.id);
@@ -685,12 +697,12 @@ export function createPluginJobScheduler(
   }
 
   // -----------------------------------------------------------------------
-  // Lifecycle: start / stop
+  // Ciclo de vida: start / stop
   // -----------------------------------------------------------------------
 
   function start(): void {
     if (running) {
-      log.debug("scheduler already running");
+      log.debug("el programador ya está en ejecución");
       return;
     }
 
@@ -701,13 +713,14 @@ export function createPluginJobScheduler(
 
     log.info(
       { tickIntervalMs, maxConcurrentJobs },
-      "plugin job scheduler started",
+      "programador de trabajos de plugins iniciado",
     );
   }
 
   function stop(): void {
-    // Always clear the timer defensively, even if `running` is already false,
-    // to prevent leaked interval timers.
+    // Siempre limpia el temporizador de forma defensiva, incluso si
+    // `running` ya es false, para evitar temporizadores de intervalo
+    // filtrados.
     if (tickTimer !== null) {
       clearInterval(tickTimer);
       tickTimer = null;
@@ -718,12 +731,12 @@ export function createPluginJobScheduler(
 
     log.info(
       { activeJobCount: activeJobs.size },
-      "plugin job scheduler stopped",
+      "programador de trabajos de plugins detenido",
     );
   }
 
   // -----------------------------------------------------------------------
-  // Diagnostics
+  // Diagnóstico
   // -----------------------------------------------------------------------
 
   function diagnostics(): SchedulerDiagnostics {

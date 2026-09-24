@@ -59,13 +59,13 @@ export function BreadcrumbBar() {
       size="icon-sm"
       className="mr-2 shrink-0"
       onClick={toggleSidebar}
-      aria-label="Open sidebar"
+      aria-label="Abrir barra lateral"
     >
       <Menu className="h-5 w-5" />
     </Button>
   );
 
-  // Single breadcrumb = page title (uppercase)
+  // Una sola ruta de navegación = título de la página (mayúsculas)
   if (breadcrumbs.length === 1) {
     return (
       <div className="border-b border-border px-4 md:px-6 h-12 shrink-0 flex items-center">
@@ -80,7 +80,7 @@ export function BreadcrumbBar() {
     );
   }
 
-  // Multiple breadcrumbs = breadcrumb trail
+  // Varias rutas de navegación = ruta de navegación completa
   return (
     <div className="border-b border-border px-4 md:px-6 h-12 shrink-0 flex items-center">
       {menuButton}

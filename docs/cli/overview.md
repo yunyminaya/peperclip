@@ -1,67 +1,67 @@
 ---
-title: CLI Overview
-summary: CLI installation and setup
+title: Resumen de la CLI
+summary: Instalación y configuración de la CLI
 ---
 
-The Paperclip CLI handles instance setup, diagnostics, and control-plane operations.
+La CLI de Paperclip gestiona la configuración de la instancia, los diagnósticos y las operaciones del plano de control.
 
-## Usage
+## Uso
 
 ```sh
 pnpm paperclipai --help
 ```
 
-## Global Options
+## Opciones globales
 
-All commands support:
+Todos los comandos admiten:
 
-| Flag | Description |
+| Flag | Descripción |
 |------|-------------|
-| `--data-dir <path>` | Local Paperclip data root (isolates from `~/.paperclip`) |
-| `--api-base <url>` | API base URL |
-| `--api-key <token>` | API authentication token |
-| `--context <path>` | Context file path |
-| `--profile <name>` | Context profile name |
-| `--json` | Output as JSON |
+| `--data-dir <path>` | Raíz de datos local de Paperclip (aisla de `~/.paperclip`) |
+| `--api-base <url>` | URL base de la API |
+| `--api-key <token>` | Token de autenticación de la API |
+| `--context <path>` | Ruta del archivo de contexto |
+| `--profile <name>` | Nombre del perfil de contexto |
+| `--json` | Salida como JSON |
 
-Company-scoped commands also accept `--company-id <id>`.
+Los comandos con alcance de empresa también aceptan `--company-id <id>`.
 
-For clean local instances, pass `--data-dir` on the command you run:
+Para instancias locales limpias, pasa `--data-dir` en el comando que ejecutes:
 
 ```sh
 pnpm paperclipai run --data-dir ./tmp/paperclip-dev
 ```
 
-## Context Profiles
+## Perfiles de contexto
 
-Store defaults to avoid repeating flags:
+Guarda valores por defecto para no repetir las opciones:
 
 ```sh
-# Set defaults
+# Establecer valores por defecto
 pnpm paperclipai context set --api-base http://localhost:3100 --company-id <id>
 
-# View current context
+# Ver el contexto actual
 pnpm paperclipai context show
 
-# List profiles
+# Listar perfiles
 pnpm paperclipai context list
 
-# Switch profile
+# Cambiar de perfil
 pnpm paperclipai context use default
 ```
 
-To avoid storing secrets in context, use an env var:
+Para evitar guardar secretos en el contexto, usa una variable de entorno:
 
 ```sh
 pnpm paperclipai context set --api-key-env-var-name PAPERCLIP_API_KEY
 export PAPERCLIP_API_KEY=...
 ```
 
-Context is stored at `~/.paperclip/context.json`.
+El contexto se guarda en `~/.paperclip/context.json`.
 
-## Command Categories
+## Categorías de comandos
 
-The CLI has two categories:
+La CLI tiene dos categorías:
 
-1. **[Setup commands](/cli/setup-commands)** — instance bootstrap, diagnostics, configuration
-2. **[Control-plane commands](/cli/control-plane-commands)** — issues, agents, approvals, activity
+1. **[Comandos de configuración](/cli/setup-commands)** — arranque de la instancia, diagnósticos, configuración
+2. **[Comandos del plano de control](/cli/control-plane-commands)** — issues, agentes, aprobaciones, actividad

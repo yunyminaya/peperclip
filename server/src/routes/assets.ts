@@ -116,7 +116,7 @@ export function assetRoutes(db: Db, storage: StorageService) {
     } catch (err) {
       if (err instanceof multer.MulterError) {
         if (err.code === "LIMIT_FILE_SIZE") {
-          res.status(422).json({ error: `File exceeds ${MAX_ATTACHMENT_BYTES} bytes` });
+          res.status(422).json({ error: `El archivo excede ${MAX_ATTACHMENT_BYTES} bytes` });
           return;
         }
         res.status(400).json({ error: err.message });
@@ -127,20 +127,20 @@ export function assetRoutes(db: Db, storage: StorageService) {
 
     const file = (req as Request & { file?: { mimetype: string; buffer: Buffer; originalname: string } }).file;
     if (!file) {
-      res.status(400).json({ error: "Missing file field 'file'" });
+      res.status(400).json({ error: "Falta el campo de archivo 'file'" });
       return;
     }
 
     const parsedMeta = createAssetImageMetadataSchema.safeParse(req.body ?? {});
     if (!parsedMeta.success) {
-      res.status(400).json({ error: "Invalid image metadata", details: parsedMeta.error.issues });
+      res.status(400).json({ error: "Metadatos de imagen no válidos", details: parsedMeta.error.issues });
       return;
     }
 
     const namespaceSuffix = parsedMeta.data.namespace ?? "general";
     const contentType = (file.mimetype || "").toLowerCase();
     if (contentType !== SVG_CONTENT_TYPE && !isAllowedContentType(contentType)) {
-      res.status(422).json({ error: `Unsupported file type: ${contentType || "unknown"}` });
+      res.status(422).json({ error: `Tipo de archivo no soportado: ${contentType || "unknown"}` });
       return;
     }
     let fileBody = file.buffer;
@@ -153,7 +153,7 @@ export function assetRoutes(db: Db, storage: StorageService) {
       fileBody = sanitized;
     }
     if (fileBody.length <= 0) {
-      res.status(422).json({ error: "Image is empty" });
+      res.status(422).json({ error: "La imagen está vacía" });
       return;
     }
 
@@ -230,7 +230,7 @@ export function assetRoutes(db: Db, storage: StorageService) {
 
     const file = (req as Request & { file?: { mimetype: string; buffer: Buffer; originalname: string } }).file;
     if (!file) {
-      res.status(400).json({ error: "Missing file field 'file'" });
+      res.status(400).json({ error: "Falta el campo de archivo 'file'" });
       return;
     }
 
@@ -251,7 +251,7 @@ export function assetRoutes(db: Db, storage: StorageService) {
     }
 
     if (fileBody.length <= 0) {
-      res.status(422).json({ error: "Image is empty" });
+      res.status(422).json({ error: "La imagen está vacía" });
       return;
     }
 
@@ -313,7 +313,7 @@ export function assetRoutes(db: Db, storage: StorageService) {
     const assetId = req.params.assetId as string;
     const asset = await svc.getById(assetId);
     if (!asset) {
-      res.status(404).json({ error: "Asset not found" });
+      res.status(404).json({ error: "Recurso no encontrado" });
       return;
     }
     assertCompanyAccess(req, asset.companyId);

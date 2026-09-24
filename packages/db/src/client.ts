@@ -19,7 +19,7 @@ function isSafeIdentifier(value: string): boolean {
 }
 
 function quoteIdentifier(value: string): string {
-  if (!isSafeIdentifier(value)) throw new Error(`Unsafe SQL identifier: ${value}`);
+  if (!isSafeIdentifier(value)) throw new Error(`Identificador SQL no seguro: ${value}`);
   return `"${value.replaceAll("\"", "\"\"")}"`;
 }
 
@@ -135,7 +135,7 @@ async function runInTransaction(sql: SqlExecutor, action: () => Promise<void>): 
     try {
       await sql.unsafe("ROLLBACK");
     } catch {
-      // Ignore rollback failures and surface the original error.
+      // Ignorar los fallos del rollback y mostrar el error original.
     }
     throw error;
   }
@@ -401,7 +401,7 @@ async function migrationStatementAlreadyApplied(
     return constraintExists(sql, addConstraintMatch[2]);
   }
 
-  // If we cannot reason about a statement safely, require manual migration.
+  // Si no se puede analizar una sentencia con seguridad, exigir migración manual.
   return false;
 }
 
@@ -442,14 +442,14 @@ async function loadAppliedMigrations(
       .filter((name): name is string => Boolean(name));
 
     if (appliedFromHashes.length > 0) {
-      // Best-effort: when all hashes resolve, this is authoritative.
+      // Mejor esfuerzo: cuando todos los hashes se resuelven, el resultado es definitivo.
       if (appliedFromHashes.length === rows.length) return appliedFromHashes;
 
-      // Partial hash resolution can happen when files have changed; return what we can trust.
+      // La resolución parcial de hashes puede ocurrir cuando los archivos cambiaron; devolver solo lo confiable.
       return appliedFromHashes;
     }
 
-    // Fallback only when hashes are unavailable/unresolved.
+    // Alternativa solo cuando los hashes no están disponibles o no se resolvieron.
     if (columnNames.has("created_at")) {
       const journalEntries = await listJournalMigrationEntries();
       if (journalEntries.length > 0) {
@@ -684,13 +684,13 @@ export async function applyPendingMigrations(url: string): Promise<void> {
     }
     if (bootstrappedState.status === "upToDate") return;
     throw new Error(
-      `Failed to bootstrap migrations: ${bootstrappedState.pendingMigrations.join(", ")}`,
+      `No se pudo inicializar las migraciones: ${bootstrappedState.pendingMigrations.join(", ")}`,
     );
   }
 
   if (initialState.reason === "no-migration-journal-non-empty-db") {
     throw new Error(
-      "Database has tables but no migration journal; automatic migration is unsafe. Initialize migration history manually.",
+      "La base de datos tiene tablas pero no tiene diario de migraciones; la migración automática no es segura. Inicializa el historial de migraciones manualmente.",
     );
   }
 
@@ -704,7 +704,7 @@ export async function applyPendingMigrations(url: string): Promise<void> {
   }
 
   if (state.status !== "needsMigrations" || state.reason !== "pending-migrations") {
-    throw new Error("Migrations are still pending after migration-history reconciliation; run inspectMigrations for details.");
+    throw new Error("Todavía hay migraciones pendientes después de la reconciliación del historial de migraciones; ejecuta inspectMigrations para más detalles.");
   }
 
   await applyPendingMigrationsManually(url, state.pendingMigrations);
@@ -712,7 +712,7 @@ export async function applyPendingMigrations(url: string): Promise<void> {
   const finalState = await inspectMigrations(url);
   if (finalState.status !== "upToDate") {
     throw new Error(
-      `Failed to apply pending migrations: ${finalState.pendingMigrations.join(", ")}`,
+      `No se pudieron aplicar las migraciones pendientes: ${finalState.pendingMigrations.join(", ")}`,
     );
   }
 }
@@ -759,7 +759,7 @@ export async function ensurePostgresDatabase(
   databaseName: string,
 ): Promise<"created" | "exists"> {
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(databaseName)) {
-    throw new Error(`Unsafe database name: ${databaseName}`);
+    throw new Error(`Nombre de base de datos no seguro: ${databaseName}`);
   }
 
   const sql = createUtilitySql(url);

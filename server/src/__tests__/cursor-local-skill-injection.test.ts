@@ -46,8 +46,8 @@ describe("cursor local adapter skill injection", () => {
     expect(await fs.realpath(injectedB)).toBe(
       await fs.realpath(path.join(skillsDir, "paperclip-create-agent")),
     );
-    expect(logs.some((line) => line.includes('Injected Cursor skill "paperclip"'))).toBe(true);
-    expect(logs.some((line) => line.includes('Injected Cursor skill "paperclip-create-agent"'))).toBe(true);
+    expect(logs.some((line) => line.includes('Habilidad de Cursor "paperclip"'))).toBe(true);
+    expect(logs.some((line) => line.includes('Habilidad de Cursor "paperclip-create-agent"'))).toBe(true);
   });
 
   it("preserves existing targets and only links missing skills", async () => {
@@ -98,6 +98,6 @@ describe("cursor local adapter skill injection", () => {
 
     expect((await fs.lstat(path.join(skillsHome, "ok-skill"))).isSymbolicLink()).toBe(true);
     await expect(fs.lstat(path.join(skillsHome, "fail-skill"))).rejects.toThrow();
-    expect(logs.some((line) => line.includes('Failed to inject Cursor skill "fail-skill"'))).toBe(true);
+    expect(logs.some((line) => line.includes('No se pudo inyectar la habilidad de Cursor "fail-skill"'))).toBe(true);
   });
 });

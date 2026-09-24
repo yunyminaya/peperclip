@@ -1,186 +1,186 @@
-# Paperclip Skill Tightening Plan
+# Plan de ajuste de la habilidad de Paperclip
 
-## Status
+## Estado
 
-Deferred follow-up. Do not include in the current token-optimization PR beyond documenting the plan.
+Seguimiento diferido. No incluir en el PR actual de optimización de tokens más allá de documentar el plan.
 
-## Why This Is Deferred
+## Por qué está diferido
 
-The `paperclip` skill is part of the critical control-plane safety surface. Tightening it may reduce fresh-session token use, but it also carries prompt-regression risk. We do not yet have evals that would let us safely prove behavior preservation across assignment handling, checkout rules, comment etiquette, approval workflows, and escalation paths.
+La habilidad `paperclip` forma parte de la superficie crítica de seguridad del plano de control. Ajustarla puede reducir el uso de tokens en sesiones nuevas, pero también conlleva riesgo de regresión del prompt. Aún no tenemos evaluaciones que nos permitan demostrar con seguridad la preservación del comportamiento en el manejo de asignaciones, las reglas de checkout, la etiqueta de comentarios, los flujos de aprobación y las rutas de escalamiento.
 
-The current PR should ship the lower-risk infrastructure wins first:
+El PR actual debería primero entregar las mejoras de infraestructura de menor riesgo:
 
-- telemetry normalization
-- safe session reuse
-- incremental issue/comment context
-- bootstrap versus heartbeat prompt separation
-- Codex worktree isolation
+- normalización de telemetría
+- reutilización segura de sesiones
+- contexto incremental de issues/comentarios
+- separación de prompts de bootstrap vs de latido
+- aislamiento de worktrees de Codex
 
-## Current Problem
+## Problema actual
 
-Fresh runs still spend substantial input tokens even after the context-path fixes. The remaining large startup cost appears to come from loading the full `paperclip` skill and related instruction surface into context at run start.
+Las ejecuciones nuevas aún gastan una cantidad considerable de tokens de entrada incluso después de las correcciones de rutas de contexto. El costo inicial restante parece provenir de cargar la habilidad `paperclip` completa y la superficie de instrucciones relacionada en el contexto al inicio de la ejecución.
 
-The skill currently mixes three kinds of content in one file:
+La habilidad actualmente mezcla tres tipos de contenido en un solo archivo:
 
-- hot-path heartbeat procedure used on nearly every run
-- critical policy and safety invariants
-- rare workflow/reference material that most runs do not need
+- el procedimiento de latido de la ruta crítica usado en casi cada ejecución
+- la política crítica e invariantes de seguridad
+- material de referencia/flujo de trabajo poco común que la mayoría de las ejecuciones no necesita
 
-That structure is safe but expensive.
+Esa estructura es segura pero costosa.
 
-## Goals
+## Objetivos
 
-- reduce first-run instruction tokens without weakening agent safety
-- preserve all current Paperclip control-plane capabilities
-- keep common heartbeat behavior explicit and easy for agents to follow
-- move rare workflows and reference material out of the hot path
-- create a structure that can later be evaluated systematically
+- reducir los tokens de instrucciones de la primera ejecución sin debilitar la seguridad del agente
+- preservar todas las capacidades actuales del plano de control de Paperclip
+- mantener el comportamiento común de latido explícito y fácil de seguir para los agentes
+- mover los flujos de trabajo poco comunes y el material de referencia fuera de la ruta crítica
+- crear una estructura que más adelante pueda evaluarse sistemáticamente
 
-## Non-Goals
+## No objetivos
 
-- changing Paperclip API semantics
-- removing required governance rules
-- deleting rare workflows
-- changing agent defaults in the current PR
+- cambiar la semántica de la API de Paperclip
+- eliminar reglas de gobernanza requeridas
+- eliminar flujos de trabajo poco comunes
+- cambiar los valores predeterminados del agente en el PR actual
 
-## Recommended Direction
+## Dirección recomendada
 
-### 1. Split Hot Path From Lookup Material
+### 1. Separar la ruta crítica del material de consulta
 
-Restructure the skill into:
+Reestructurar la habilidad en:
 
-- an always-loaded core section for the common heartbeat loop
-- on-demand material for infrequent workflows and deep reference
+- una sección central siempre cargada para el ciclo de latido común
+- material bajo demanda para flujos de trabajo poco frecuentes y referencia profunda
 
-The core should cover only what is needed on nearly every wake:
+El núcleo debería cubrir solo lo necesario en casi cada activación:
 
-- auth and required headers
-- inbox-first assignment retrieval
-- mandatory checkout behavior
-- `heartbeat-context` first
-- incremental comment retrieval rules
-- mention/self-assign exception
-- blocked-task dedup
-- status/comment/release expectations before exit
+- autenticación y encabezados requeridos
+- recuperación de asignaciones con la bandeja de entrada primero
+- comportamiento obligatorio de checkout
+- primero `heartbeat-context`
+- reglas de recuperación incremental de comentarios
+- excepción de mención/autoasignación
+- eliminación de duplicados de tareas bloqueadas
+- expectativas de estado/comentario/versión antes de salir
 
-### 2. Normalize The Skill Around One Canonical Procedure
+### 2. Normalizar la habilidad en torno a un procedimiento canónico
 
-The same rules are currently expressed multiple times across:
+Las mismas reglas están actualmente expresadas varias veces en:
 
-- heartbeat steps
-- critical rules
-- endpoint reference
-- workflow examples
+- pasos de latido
+- reglas críticas
+- referencia de endpoints
+- ejemplos de flujos de trabajo
 
-Refactor so each operational fact has one primary home:
+Refactorizar para que cada hecho operativo tenga un hogar principal:
 
-- procedure
-- invariant list
-- appendix/reference
+- procedimiento
+- lista de invariantes
+- apéndice/referencia
 
-This reduces prompt weight and lowers the chance of internal instruction drift.
+Esto reduce el peso del prompt y disminuye la probabilidad de deriva interna de instrucciones.
 
-### 3. Compress Prose Into High-Signal Instruction Forms
+### 3. Comprimir la prosa en formas de instrucción de alta señal
 
-Rewrite the hot path using compact operational forms:
+Reescribir la ruta crítica usando formas operativas compactas:
 
-- short ordered checklist
-- flat invariant list
-- minimal examples only where ambiguity would be risky
+- lista de verificación ordenada corta
+- lista plana de invariantes
+- ejemplos mínimos solo donde la ambigüedad sería riesgosa
 
-Reduce:
+Reducir:
 
-- narrative explanation
-- repeated warnings already covered elsewhere
-- large example payloads for common operations
-- long endpoint matrices in the main body
+- explicación narrativa
+- advertencias repetidas ya cubiertas en otro lugar
+- cargas útiles de ejemplo grandes para operaciones comunes
+- matrices largas de endpoints en el cuerpo principal
 
-### 4. Move Rare Workflows Behind Explicit Triggers
+### 4. Mover los flujos de trabajo poco comunes detrás de activadores explícitos
 
-These workflows should remain available but should not dominate fresh-run context:
+Estos flujos de trabajo deberían seguir disponibles pero no deberían dominar el contexto de ejecuciones nuevas:
 
-- OpenClaw invite flow
-- project setup flow
-- planning `<plan/>` writeback flow
-- instructions-path update flow
-- detailed link-formatting examples
+- flujo de invitación de OpenClaw
+- flujo de configuración de proyecto
+- flujo de escritura de `<plan/>` en planificación
+- flujo de actualización de ruta de instrucciones
+- ejemplos detallados de formato de enlaces
 
-Recommended approach:
+Enfoque recomendado:
 
-- keep a short pointer in the main skill
-- move detailed procedures into sibling skills or referenced docs that agents read only when needed
+- mantener un puntero corto en la habilidad principal
+- mover los procedimientos detallados a habilidades hermanas o documentos referenciados que los agentes lean solo cuando los necesiten
 
-### 5. Separate Policy From Reference
+### 5. Separar la política de la referencia
 
-The skill should distinguish:
+La habilidad debería distinguir:
 
-- mandatory operating rules
-- endpoint lookup/reference
-- business-process playbooks
+- reglas operativas obligatorias
+- búsqueda/referencia de endpoints
+- guías de procesos de negocio
 
-That separation makes it easier to evaluate prompt changes later and lets adapters or orchestration choose what must always be loaded.
+Esa separación facilita evaluar los cambios de prompt más adelante y permite que los adaptadores o la orquestación elijan qué debe cargarse siempre.
 
-## Proposed Target Structure
+## Estructura objetivo propuesta
 
-1. Purpose and authentication
-2. Compact heartbeat procedure
-3. Hard invariants
-4. Required comment/update style
-5. Triggered workflow index
-6. Appendix/reference
+1. Propósito y autenticación
+2. Procedimiento de latido compacto
+3. Invariantes estrictas
+4. Estilo requerido de comentarios/actualizaciones
+5. Índice de flujos de trabajo activados
+6. Apéndice/referencia
 
-## Rollout Plan
+## Plan de despliegue
 
-### Phase 1. Inventory And Measure
+### Fase 1. Inventario y medición
 
-- annotate the current skill by section and estimate token weight
-- identify which sections are truly hot-path versus rare
-- capture representative runs to compare before/after prompt size and behavior
+- anotar la habilidad actual por sección y estimar el peso en tokens
+- identificar qué secciones son realmente de ruta crítica vs poco comunes
+- capturar ejecuciones representativas para comparar el tamaño del prompt y el comportamiento antes/después
 
-### Phase 2. Structural Refactor Without Semantic Changes
+### Fase 2. Refactorización estructural sin cambios semánticos
 
-- rewrite the main skill into the target structure
-- preserve all existing rules and capabilities
-- move rare workflow details into referenced companion material
-- keep wording changes conservative
+- reescribir la habilidad principal con la estructura objetivo
+- preservar todas las reglas y capacidades existentes
+- mover los detalles de flujos de trabajo poco comunes al material complementario referenciado
+- mantener los cambios de redacción conservadores
 
-### Phase 3. Validate Against Real Scenarios
+### Fase 3. Validar contra escenarios reales
 
-Run scenario checks for:
+Ejecutar verificaciones de escenarios para:
 
-- normal assigned heartbeat
-- comment-triggered wake
-- blocked-task dedup behavior
-- approval-resolution wake
-- delegation/subtask creation
-- board handoff back to user
-- plan-request handling
+- latido normal asignado
+- activación por comentario
+- comportamiento de eliminación de duplicados de tareas bloqueadas
+- activación por resolución de aprobación
+- creación de delegaciones/subtareas
+- traspaso del tablero de vuelta al usuario
+- manejo de solicitudes de plan
 
-### Phase 4. Decide Default Loading Strategy
+### Fase 4. Decidir la estrategia de carga predeterminada
 
-After validation, decide whether:
+Después de la validación, decidir si:
 
-- the entire main skill still loads by default, or
-- only the compact core loads by default and rare sections are fetched on demand
+- toda la habilidad principal sigue cargándose por defecto, o
+- solo el núcleo compacto se carga por defecto y las secciones poco comunes se obtienen bajo demanda
 
-Do not change this loading policy without validation.
+No cambiar esta política de carga sin validación.
 
-## Risks
+## Riesgos
 
-- prompt degradation on control-plane safety rules
-- agents forgetting rare but important workflows
-- accidental removal of repeated wording that was carrying useful behavior
-- introducing ambiguous instruction precedence between the core skill and companion materials
+- degradación del prompt en las reglas de seguridad del plano de control
+- que los agentes olviden flujos de trabajo poco comunes pero importantes
+- eliminación accidental de redacción repetida que aportaba comportamiento útil
+- introducir precedencia de instrucciones ambigua entre la habilidad central y los materiales complementarios
 
-## Preconditions Before Implementation
+## Precondiciones antes de la implementación
 
-- define acceptance scenarios for control-plane correctness
-- add at least lightweight eval or scripted scenario coverage for key Paperclip flows
-- confirm how adapter/bootstrap layering should load skill content versus references
+- definir escenarios de aceptación para la corrección del plano de control
+- agregar al menos una evaluación ligera o cobertura de escenarios con guion para los flujos clave de Paperclip
+- confirmar cómo la capa de adaptador/bootstrap debería cargar el contenido de la habilidad vs las referencias
 
-## Success Criteria
+## Criterios de éxito
 
-- materially lower first-run input tokens for Paperclip-coordinated agents
-- no regression in checkout discipline, issue updates, blocked handling, or delegation
-- no increase in malformed API usage or ownership mistakes
-- agents still complete rare workflows correctly when explicitly asked
+- tokens de entrada de primera ejecución materialmente menores para agentes coordinados por Paperclip
+- sin regresión en la disciplina de checkout, actualizaciones de issues, manejo de bloqueos o delegación
+- sin aumento en el uso incorrecto de la API ni en errores de propiedad
+- los agentes aún completan correctamente los flujos de trabajo poco comunes cuando se les pide explícitamente

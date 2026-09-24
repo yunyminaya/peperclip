@@ -53,7 +53,7 @@ export function printOpenCodeStreamEvent(raw: string, _debug: boolean): void {
 
   if (type === "step_start") {
     const sessionId = asString(parsed.sessionID);
-    console.log(pc.blue(`step started${sessionId ? ` (session: ${sessionId})` : ""}`));
+    console.log(pc.blue(`paso iniciado${sessionId ? ` (session: ${sessionId})` : ""}`));
     return;
   }
 
@@ -106,7 +106,7 @@ export function printOpenCodeStreamEvent(raw: string, _debug: boolean): void {
     const cached = asNumber(cache?.read, 0);
     const cost = asNumber(part?.cost, 0);
     const reason = asString(part?.reason, "step");
-    console.log(pc.blue(`step finished: reason=${reason}`));
+    console.log(pc.blue(`paso finalizado: reason=${reason}`));
     console.log(pc.blue(`tokens: in=${input} out=${output} cached=${cached} cost=$${cost.toFixed(6)}`));
     return;
   }

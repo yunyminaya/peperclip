@@ -1,33 +1,33 @@
 # @paperclipai/plugin-kitchen-sink-example
 
-Kitchen Sink is the first-party reference plugin that demonstrates nearly the full currently implemented Paperclip plugin surface in one package.
+Kitchen Sink es el plugin de referencia propio que demuestra casi toda la superficie de plugins de Paperclip actualmente implementada en un solo paquete.
 
-It is intentionally broad:
+Es intencionalmente amplio:
 
-- full plugin page
-- dashboard widget
-- project and issue surfaces
-- comment surfaces
-- sidebar surfaces
-- settings page
-- worker bridge data/actions
-- events, jobs, webhooks, tools, streams
-- state, entities, assets, metrics, activity
-- local workspace and process demos
+- página completa del plugin
+- widget del panel
+- superficies de proyecto e issue
+- superficies de comentarios
+- superficies de la barra lateral
+- página de ajustes
+- puente de datos/acciones del worker
+- eventos, jobs, webhooks, herramientas, streams
+- estado, entidades, assets, métricas, actividad
+- demos locales de workspace y procesos
 
-This plugin is for local development, contributor onboarding, and runtime regression testing. It is not meant as a production plugin template to ship unchanged.
+Este plugin es para desarrollo local, incorporación de colaboradores y pruebas de regresión del runtime. No está pensado como plantilla de plugin de producción para distribuir sin cambios.
 
-## Install
+## Instalación
 
 ```sh
 pnpm --filter @paperclipai/plugin-kitchen-sink-example build
 pnpm paperclipai plugin install ./packages/plugins/examples/plugin-kitchen-sink-example
 ```
 
-Or install it from the Paperclip plugin manager as a bundled example once this repo is built.
+O instálalo desde el gestor de plugins de Paperclip como un ejemplo incluido una vez que este repositorio esté compilado.
 
-## Notes
+## Notas
 
-- Local workspace and process demos are trusted-only and default to safe, curated commands.
-- The plugin settings page lets you toggle optional demo surfaces and local runtime behavior.
-- Some SDK-defined host surfaces still depend on the Paperclip host wiring them visibly; this package aims to exercise the currently mounted ones and make the rest obvious.
+- Las demos locales de workspace y procesos son solo de confianza y por defecto usan comandos seguros y curados.
+- La página de ajustes del plugin permite activar/desactivar superficies de demo opcionales y el comportamiento del runtime local.
+- Algunas superficies del host definidas por el SDK aún dependen de que el host de Paperclip las conecte de forma visible; este paquete busca ejercitar las actualmente montadas y dejar obvias las demás.

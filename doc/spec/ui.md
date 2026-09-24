@@ -1,59 +1,59 @@
-# Paperclip UI Spec
+# Especificación de UI de Paperclip
 
-Status: Draft
-Date: 2026-02-17
+Estado: Borrador
+Fecha: 2026-02-17
 
-## 1. Design Philosophy
+## 1. Filosofía de diseño
 
-Paperclip's UI is a professional-grade control plane, not a toy dashboard. It should feel like the kind of tool you live in all day — fast, keyboard-driven, information-dense without being cluttered, dark-themed by default. Every pixel should earn its place.
+La UI de Paperclip es un plano de control de nivel profesional, no un panel de juguete. Debe sentirse como la herramienta en la que vives todo el día — rápida, orientada al teclado, densa en información sin estar desordenada, con tema oscuro por defecto. Cada píxel debe ganarse su lugar.
 
-Design principles:
+Principios de diseño:
 
-- **Dense but scannable.** Show maximum information without requiring clicks to reveal it. Use whitespace to separate, not to pad.
-- **Keyboard-first.** Global shortcuts for search (Cmd+K), new issue (C), navigation. Power users should rarely touch the mouse.
-- **Contextual, not modal.** Inline editing over dialog boxes. Dropdowns over page navigations. The user's mental context should never be broken unnecessarily.
-- **Dark theme default.** Neutral grays, not pure black. Accent colors used sparingly for status and priority. Text is the primary visual element.
+- **Denso pero legible.** Muestra la máxima información sin requerir clics para revelarla. Usa el espacio en blanco para separar, no para rellenar.
+- **Teclado primero.** Atajos globales para buscar (Cmd+K), nuevo issue (C), navegación. Los usuarios avanzados rara vez deberían tocar el mouse.
+- **Contextual, no modal.** Edición en línea sobre cuadros de diálogo. Desplegables sobre navegaciones de página. El contexto mental del usuario nunca debe romperse innecesariamente.
+- **Tema oscuro por defecto.** Grises neutros, no negro puro. Colores de acento usados con moderación para estado y prioridad. El texto es el elemento visual principal.
 
-### Color System
+### Sistema de color
 
-- **Background:** `hsl(220, 13%, 10%)` (dark charcoal, not pure black)
-- **Surface/Card:** `hsl(220, 13%, 13%)`
-- **Border:** `hsl(220, 10%, 18%)`
-- **Text primary:** `hsl(220, 10%, 90%)`
-- **Text secondary:** `hsl(220, 10%, 55%)`
-- **Accent (interactive):** `hsl(220, 80%, 60%)` (muted blue)
+- **Fondo:** `hsl(220, 13%, 10%)` (gris carbón oscuro, no negro puro)
+- **Superficie/tarjeta:** `hsl(220, 13%, 13%)`
+- **Borde:** `hsl(220, 10%, 18%)`
+- **Texto primario:** `hsl(220, 10%, 90%)`
+- **Texto secundario:** `hsl(220, 10%, 55%)`
+- **Acento (interactivo):** `hsl(220, 80%, 60%)` (azul apagado)
 
-Status colors (consistent across all entities):
-- **Backlog:** gray `hsl(220, 10%, 45%)`
-- **Todo:** gray-blue `hsl(220, 20%, 55%)`
-- **In Progress:** yellow `hsl(45, 90%, 55%)`
-- **In Review:** violet `hsl(270, 60%, 60%)`
-- **Done:** green `hsl(140, 60%, 50%)`
-- **Cancelled:** gray `hsl(220, 10%, 40%)`
-- **Blocked:** amber `hsl(25, 90%, 55%)`
+Colores de estado (consistentes en todas las entidades):
+- **Backlog:** gris `hsl(220, 10%, 45%)`
+- **Todo:** gris azulado `hsl(220, 20%, 55%)`
+- **In Progress:** amarillo `hsl(45, 90%, 55%)`
+- **In Review:** violeta `hsl(270, 60%, 60%)`
+- **Done:** verde `hsl(140, 60%, 50%)`
+- **Cancelled:** gris `hsl(220, 10%, 40%)`
+- **Blocked:** ámbar `hsl(25, 90%, 55%)`
 
-Priority indicators:
-- **Critical:** red circle, filled
-- **High:** orange circle, half-filled
-- **Medium:** yellow circle, outline
-- **Low:** gray circle, outline, dashed
+Indicadores de prioridad:
+- **Critical:** círculo rojo, relleno
+- **High:** círculo naranja, medio relleno
+- **Medium:** círculo amarillo, contorno
+- **Low:** círculo gris, contorno, punteado
 
-### Typography
+### Tipografía
 
-- **Font:** System font stack (Inter if loaded, else `-apple-system, BlinkMacSystemFont, 'Segoe UI'`)
-- **Body:** 13px / 1.5 line-height
-- **Labels/metadata:** 11px / uppercase tracking
-- **Headings:** 14-18px / semi-bold, never all-caps
+- **Fuente:** pila de fuentes del sistema (Inter si está cargada, si no `-apple-system, BlinkMacSystemFont, 'Segoe UI'`)
+- **Cuerpo:** 13px / interlineado 1.5
+- **Etiquetas/metadatos:** 11px / mayúsculas con espaciado
+- **Encabezados:** 14-18px / seminegrita, nunca todo en mayúsculas
 
-### Icons
+### Íconos
 
-Use `lucide-react` throughout. Every sidebar item, every status indicator, every action button should have an icon. Icons are 16px in nav, 14px inline.
+Usa `lucide-react` en todo. Cada elemento de la barra lateral, cada indicador de estado, cada botón de acción debe tener un ícono. Los íconos son de 16px en la navegación, 14px en línea.
 
 ---
 
-## 2. Application Shell
+## 2. Estructura de la aplicación
 
-The app is a three-zone layout:
+La app es un diseño de tres zonas:
 
 ```
 ┌──────────┬────────────────────────────────────────────────┐
@@ -65,22 +65,22 @@ The app is a three-zone layout:
 └──────────┴──────────────────────────┴─────────────────────┘
 ```
 
-- **Sidebar:** Fixed left, 240px. Collapsible to icon-only (48px) via toggle or keyboard shortcut.
-- **Breadcrumb bar:** Spans the full width above main+properties. Shows navigation path, entity actions, and view controls.
-- **Main content:** Scrollable. Contains the primary view (list, detail, chart, etc).
-- **Properties panel:** Right side, 320px. Shown on detail views (issue detail, project detail, agent detail). Hidden on list views and dashboard. Resizable.
+- **Barra lateral:** Fija a la izquierda, 240px. Colapsable a solo íconos (48px) vía toggle o atajo de teclado.
+- **Barra de migas de pan:** Abarca todo el ancho sobre el contenido principal + propiedades. Muestra la ruta de navegación, acciones de la entidad y controles de vista.
+- **Contenido principal:** Desplazable. Contiene la vista primaria (lista, detalle, gráfico, etc).
+- **Panel de propiedades:** Lado derecho, 320px. Se muestra en vistas de detalle (detalle de issue, detalle de proyecto, detalle de agente). Oculto en vistas de lista y panel. Redimensionable.
 
-The properties panel slides in when you click into a detail view and slides out when you go back to a list. It is NOT a sidebar — it's contextual to the selected entity.
+El panel de propiedades se desliza hacia adentro cuando haces clic en una vista de detalle y se desliza hacia afuera cuando vuelves a una lista. NO es una barra lateral — es contextual a la entidad seleccionada.
 
 ---
 
-## 3. Sidebar
+## 3. Barra lateral
 
-The sidebar is the primary navigation. It is grouped into logical sections with collapsible headers.
+La barra lateral es la navegación principal. Está agrupada en secciones lógicas con encabezados colapsables.
 
-### 3.1 Company Header
+### 3.1 Encabezado de empresa
 
-Top of sidebar. Always visible.
+Parte superior de la barra lateral. Siempre visible.
 
 ```
 ┌─────────────────────────┐
@@ -90,36 +90,36 @@ Top of sidebar. Always visible.
 └─────────────────────────┘
 ```
 
-**Company switcher** is a dropdown button that occupies the full width of the sidebar header. It shows:
-- Company icon (first letter avatar with company color, or uploaded icon)
-- Company name (truncated with ellipsis if long)
-- Chevron-down icon
+El **selector de empresa** es un botón desplegable que ocupa todo el ancho del encabezado de la barra lateral. Muestra:
+- Ícono de empresa (avatar de primera letra con color de empresa, o ícono subido)
+- Nombre de la empresa (truncado con elipsis si es largo)
+- Ícono de chevron-abajo
 
-Clicking opens a dropdown with:
-- List of all companies (with status dot: green=active, yellow=paused, gray=archived)
-- Search field at top of dropdown (for users with many companies)
-- Divider
-- `+ Create company` action at the bottom
+Al hacer clic se abre un desplegable con:
+- Lista de todas las empresas (con punto de estado: verde=activa, amarillo=pausada, gris=archivada)
+- Campo de búsqueda en la parte superior del desplegable (para usuarios con muchas empresas)
+- Separador
+- Acción `+ Create company` al final
 
-Below the company name, a row of icon buttons:
-- **Search** (magnifying glass icon) — opens Cmd+K search modal
-- **New Issue** (pencil/square-pen icon) — opens new issue modal in the current company context
+Debajo del nombre de la empresa, una fila de botones de ícono:
+- **Buscar** (ícono de lupa) — abre el modal de búsqueda Cmd+K
+- **Nuevo issue** (ícono de lápiz/pluma cuadrada) — abre el modal de nuevo issue en el contexto de la empresa actual
 
-### 3.2 Personal Section
+### 3.2 Sección personal
 
-No section header — these are always at the top, below the company header.
+Sin encabezado de sección — siempre están arriba, debajo del encabezado de empresa.
 
 ```
   Inbox                    3
   My Issues
 ```
 
-- **Inbox** — items requiring the board operator's attention. Badge count on the right. Includes: pending approvals, budget alerts, failed heartbeats. The number is the total unread/unresolved count.
-- **My Issues** — issues created by or assigned to the board operator.
+- **Bandeja de entrada** — elementos que requieren la atención del operador del tablero. Contador de insignia a la derecha. Incluye: aprobaciones pendientes, alertas de presupuesto, latidos fallidos. El número es el conteo total de no leídos/no resueltos.
+- **Mis issues** — issues creados por el operador del tablero o asignados a él.
 
-### 3.3 Work Section
+### 3.3 Sección de trabajo
 
-Section header: **Work** (collapsible, with a chevron toggle)
+Encabezado de sección: **Trabajo** (colapsable, con toggle de chevron)
 
 ```
   Work                     ▼
@@ -129,14 +129,14 @@ Section header: **Work** (collapsible, with a chevron toggle)
     Views
 ```
 
-- **Issues** — main task list for the selected company. This is the workhorse view.
-- **Projects** — project list. Projects group issues and link to goals.
-- **Goals** — company goal hierarchy.
-- **Views** — saved filter/sort configurations (e.g., "Critical bugs", "Unassigned tasks", "CEO's tasks"). Users can create, name, and pin custom views here.
+- **Issues** — lista principal de tareas de la empresa seleccionada. Esta es la vista de trabajo.
+- **Proyectos** — lista de proyectos. Los proyectos agrupan issues y enlazan a objetivos.
+- **Objetivos** — jerarquía de objetivos de la empresa.
+- **Vistas** — configuraciones guardadas de filtro/orden (p. ej., "Errores críticos", "Tareas sin asignar", "Tareas del CEO"). Los usuarios pueden crear, nombrar y fijar vistas personalizadas aquí.
 
-### 3.4 Company Section
+### 3.4 Sección de empresa
 
-Section header: **Company** (collapsible)
+Encabezado de sección: **Empresa** (colapsable)
 
 ```
   Company                  ▼
@@ -147,48 +147,48 @@ Section header: **Company** (collapsible)
     Activity
 ```
 
-- **Dashboard** — company health overview: agent statuses, task velocity, cost burn, pending approvals count.
-- **Org Chart** — interactive tree visualization of the agent reporting hierarchy.
-- **Agents** — flat list of all agents with status, role, last heartbeat, spend.
-- **Costs** — cost dashboard with breakdowns by agent, project, model, time.
-- **Activity** — audit log of all system events.
+- **Panel** — resumen de salud de la empresa: estados de agentes, velocidad de tareas, consumo de costos, conteo de aprobaciones pendientes.
+- **Organigrama** — visualización de árbol interactiva de la jerarquía de reportes de agentes.
+- **Agentes** — lista plana de todos los agentes con estado, rol, último latido, gasto.
+- **Costos** — panel de costos con desgloses por agente, proyecto, modelo, tiempo.
+- **Actividad** — log de auditoría de todos los eventos del sistema.
 
-Note: Approvals do not have a top-level sidebar entry. They are surfaced through the **Inbox** (primary interaction point), **Dashboard** (pending count metric), and **inline on entity pages** (e.g., an agent detail page shows the approval that authorized its hire). The `/approvals` route still exists and is reachable via "See all approvals" links in Inbox and Dashboard, but it is not in the sidebar navigation.
+Nota: las aprobaciones no tienen una entrada de navegación superior. Se presentan vía la **bandeja de entrada** (punto de interacción primario), el **panel** (métrica de conteo pendiente) y **en línea en las páginas de entidades** (p. ej., una página de detalle de agente muestra la aprobación que autorizó su contratación). La ruta `/approvals` sigue existiendo y es accesible vía los enlaces "Ver todas las aprobaciones" en la bandeja de entrada y el panel, pero no está en la navegación lateral.
 
-### 3.5 Section Behavior
+### 3.5 Comportamiento de secciones
 
-- Each section header is clickable to collapse/expand its children.
-- Collapsed state persists in localStorage.
-- Active nav item is highlighted with a left-border accent and background tint.
-- Hovering a nav item shows a subtle background highlight.
-- Badge counts are right-aligned, rendered as small pills (e.g., `3` in a rounded rect).
-- Icons are 16px, left-aligned, with 8px gap to label text.
+- Cada encabezado de sección es clicable para colapsar/expandir sus hijos.
+- El estado colapsado persiste en localStorage.
+- El elemento de navegación activo se resalta con un acento de borde izquierdo y tinte de fondo.
+- Pasar el cursor sobre un elemento de navegación muestra un sutil resaltado de fondo.
+- Los contadores de insignia están alineados a la derecha, renderizados como pequeñas píldoras (p. ej., `3` en un rectángulo redondeado).
+- Los íconos son de 16px, alineados a la izquierda, con 8px de separación del texto de la etiqueta.
 
-### 3.6 Sidebar Icons
+### 3.6 Íconos de la barra lateral
 
-Each nav item has a distinctive icon (lucide-react):
+Cada elemento de navegación tiene un ícono distintivo (lucide-react):
 
 | Item | Icon |
 |------|------|
-| Inbox | `Inbox` |
-| My Issues | `CircleUser` |
+| Bandeja de entrada | `Inbox` |
+| Mis issues | `CircleUser` |
 | Issues | `CircleDot` |
-| Projects | `Hexagon` |
-| Goals | `Target` |
-| Views | `LayoutList` |
-| Dashboard | `LayoutDashboard` |
-| Org Chart | `GitBranch` |
-| Agents | `Bot` |
-| Costs | `DollarSign` |
-| Activity | `History` |
+| Proyectos | `Hexagon` |
+| Objetivos | `Target` |
+| Vistas | `LayoutList` |
+| Panel | `LayoutDashboard` |
+| Organigrama | `GitBranch` |
+| Agentes | `Bot` |
+| Costos | `DollarSign` |
+| Actividad | `History` |
 
 ---
 
-## 4. Breadcrumb Bar
+## 4. Barra de migas de pan
 
-The breadcrumb bar sits above the main content and properties panel. It serves as both navigation and context indicator.
+La barra de migas de pan está sobre el contenido principal y el panel de propiedades. Sirve como navegación e indicador de contexto.
 
-### 4.1 Structure
+### 4.1 Estructura
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -196,44 +196,44 @@ The breadcrumb bar sits above the main content and properties panel. It serves a
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-**Left side:**
-- Breadcrumb segments, separated by `›` chevrons.
-- Each segment is clickable to navigate to that level.
-- Current segment is non-clickable, slightly bolder text.
-- Star icon to favorite/pin the current entity.
-- Three-dot menu for entity actions (delete, archive, duplicate, copy link, etc.)
+**Lado izquierdo:**
+- Segmentos de migas de pan, separados por chevrones `›`.
+- Cada segmento es clicable para navegar a ese nivel.
+- El segmento actual no es clicable, texto ligeramente más grueso.
+- Ícono de estrella para marcar/fijar la entidad actual como favorita.
+- Menú de tres puntos para acciones de la entidad (eliminar, archivar, duplicar, copiar enlace, etc.)
 
-**Right side:**
-- Notification bell (if in a detail view — subscribe to changes on this entity)
-- Panel toggle (show/hide the right properties panel)
+**Lado derecho:**
+- Campana de notificación (si está en una vista de detalle — suscribirse a cambios en esta entidad)
+- Toggle del panel (mostrar/ocultar el panel de propiedades derecho)
 
-### 4.2 View-Specific Tabs
+### 4.2 Pestañas específicas de vista
 
-On certain detail pages, the breadcrumb bar also contains a tab row below the breadcrumbs:
+En ciertas páginas de detalle, la barra de migas de pan también contiene una fila de pestañas debajo de las migas:
 
-**Project detail:**
+**Detalle de proyecto:**
 ```
   Overview    Updates    Issues    Settings
 ```
 
-**Agent detail:**
+**Detalle de agente:**
 ```
   Overview    Heartbeats    Issues    Costs
 ```
 
-Tabs are rendered as pill-shaped buttons. Active tab has a subtle background fill.
+Las pestañas se renderizan como botones en forma de píldora. La pestaña activa tiene un sutil relleno de fondo.
 
 ---
 
-## 5. Issues (Task Management)
+## 5. Issues (gestión de tareas)
 
-Issues are the core work unit. This section details the full issue experience.
+Los issues son la unidad central de trabajo. Esta sección detalla la experiencia completa de issues.
 
-### 5.1 Issue List View
+### 5.1 Vista de lista de issues
 
-The issue list is the default view when clicking "Issues" in the sidebar.
+La lista de issues es la vista por defecto al hacer clic en "Issues" en la barra lateral.
 
-**Layout:**
+**Diseño:**
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ [All Issues] [Active] [Backlog]  [⚙ Settings]    [≡ Filter]  [Display ▼] │
@@ -253,45 +253,45 @@ The issue list is the default view when clicking "Issues" in the sidebar.
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Top toolbar:**
-- **Status tabs:** `All Issues`, `Active` (todo + in_progress + in_review + blocked), `Backlog`. Each tab shows a status icon and count. Active tab is filled, others outlined.
-- **Settings gear:** Configure issue display defaults, custom fields.
-- **Filter button:** Opens a filter bar below the toolbar.
-- **Display dropdown:** Toggle between grouping modes (by status, by priority, by assignee, by project, none) and layout modes (list, board/kanban).
+**Barra de herramientas superior:**
+- **Pestañas de estado:** `All Issues`, `Active` (todo + in_progress + in_review + blocked), `Backlog`. Cada pestaña muestra un ícono de estado y un conteo. La pestaña activa está rellena, las demás delineadas.
+- **Engranaje de ajustes:** Configura valores por defecto de visualización de issues, campos personalizados.
+- **Botón de filtro:** Abre una barra de filtros debajo de la barra de herramientas.
+- **Desplegable de visualización:** Alterna entre modos de agrupación (por estado, por prioridad, por asignado, por proyecto, ninguno) y modos de diseño (lista, panel/kanban).
 
-**Grouping:**
-- Issues are grouped by status by default (matching the reference screenshots).
-- Each group header shows: collapse chevron, status icon, status name, count, and a `+` button to create a new issue in that status.
-- Groups are collapsible. Collapsed groups show just the header with count.
+**Agrupación:**
+- Los issues se agrupan por estado por defecto (como en las capturas de referencia).
+- Cada encabezado de grupo muestra: chevron de colapso, ícono de estado, nombre del estado, conteo y un botón `+` para crear un nuevo issue en ese estado.
+- Los grupos son colapsables. Los grupos colapsados muestran solo el encabezado con el conteo.
 
-**Issue rows:**
-Each row contains, left to right:
-1. **Checkbox** — for bulk selection. Hidden by default, appears on hover (left of priority).
-2. **Priority indicator** — icon representing critical/high/medium/low (see Color System above). Always visible.
-3. **Issue key** — e.g., `CLIP-5`. Monospace, muted color. The prefix is derived from the project (or company if no project).
-4. **Status circle** — clickable to open status change dropdown (same as reference screenshot). The circle's fill/color reflects current status.
-5. **Title** — primary text, truncated with ellipsis if too long.
-6. **Assignee** — avatar (agent icon) + agent name, right-aligned. If unassigned, shows a dashed circle placeholder.
-7. **Date** — creation date or target date, muted text, far right.
+**Filas de issues:**
+Cada fila contiene, de izquierda a derecha:
+1. **Casilla de verificación** — para selección múltiple. Oculta por defecto, aparece al pasar el cursor (a la izquierda de la prioridad).
+2. **Indicador de prioridad** — ícono que representa critical/high/medium/low (ver Sistema de color arriba). Siempre visible.
+3. **Clave del issue** — p. ej., `CLIP-5`. Monoespaciado, color atenuado. El prefijo se deriva del proyecto (o de la empresa si no hay proyecto).
+4. **Círculo de estado** — clicable para abrir el desplegable de cambio de estado (igual que la captura de referencia). El relleno/color del círculo refleja el estado actual.
+5. **Título** — texto primario, truncado con elipsis si es demasiado largo.
+6. **Asignado** — avatar (ícono de agente) + nombre del agente, alineado a la derecha. Si no está asignado, muestra un marcador de círculo punteado.
+7. **Fecha** — fecha de creación o fecha objetivo, texto atenuado, al extremo derecho.
 
-**Row interactions:**
-- Click row → navigate to issue detail view.
-- Click status circle → opens inline status dropdown (Backlog, Todo, In Progress, In Review, Done, Cancelled) with keyboard numbers as shortcuts (1-6).
-- Click checkbox → selects for bulk actions. When any checkbox is selected, a bulk action bar appears at the bottom of the list.
-- Hover → shows checkbox, and row gets subtle background highlight.
-- Right-click → context menu (same actions as three-dot menu).
+**Interacciones de fila:**
+- Clic en la fila → navega a la vista de detalle del issue.
+- Clic en el círculo de estado → abre el desplegable de estado en línea (Backlog, Todo, In Progress, In Review, Done, Cancelled) con números del teclado como atajos (1-6).
+- Clic en la casilla → selecciona para acciones masivas. Cuando se selecciona alguna casilla, aparece una barra de acciones masivas al final de la lista.
+- Pasar el cursor → muestra la casilla, y la fila recibe un sutil resaltado de fondo.
+- Clic derecho → menú contextual (mismas acciones que el menú de tres puntos).
 
-**Bulk action bar:**
-When one or more issues are selected, a floating bar appears at the bottom:
+**Barra de acciones masivas:**
+Cuando se seleccionan uno o más issues, aparece una barra flotante al final:
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  3 selected    [Status ▼] [Priority ▼] [Assignee ▼] [Project ▼]  [🗑 Delete]  [✕ Cancel] │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 5.2 Issue Filter Bar
+### 5.2 Barra de filtros de issues
 
-Clicking "Filter" reveals a filter bar below the toolbar:
+Al hacer clic en "Filtrar" se revela una barra de filtros debajo de la barra de herramientas:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -301,16 +301,16 @@ Clicking "Filter" reveals a filter bar below the toolbar:
 └─────────────────────────────────────────────────────────┘
 ```
 
-- Each filter is a chip showing `field operator value`.
-- Click a chip to edit it.
-- `×` removes the filter.
-- `+ Add filter` opens a dropdown of available fields: Status, Priority, Assignee, Project, Goal, Created date, Labels, Creator.
-- Filters are AND-composed.
-- Active filters persist in the URL query string so they're shareable/bookmarkable.
+- Cada filtro es una ficha que muestra `campo operador valor`.
+- Clic en una ficha para editarla.
+- `×` elimina el filtro.
+- `+ Add filter` abre un desplegable de campos disponibles: Estado, Prioridad, Asignado, Proyecto, Objetivo, Fecha de creación, Etiquetas, Creador.
+- Los filtros se componen con AND.
+- Los filtros activos persisten en el query string de la URL para que sean compartibles/marcables.
 
-### 5.3 Issue Detail View (Three-Pane)
+### 5.3 Vista de detalle de issue (tres paneles)
 
-Clicking an issue opens the detail view. The main content area splits into two zones, with the sidebar still visible on the left.
+Al hacer clic en un issue se abre la vista de detalle. El área de contenido principal se divide en dos zonas, con la barra lateral aún visible a la izquierda.
 
 ```
 ┌──────────┬────────────────────────────────┬──────────────────────┐
@@ -331,7 +331,7 @@ Clicking an issue opens the detail view. The main content area splits into two z
 │          │ system has a token refresh...  │   Activity           │
 │          │                                │   CTO commented 2h   │
 │          │ Comments                       │   Status → In Prog   │
-│          │ ─────────────────              │   Created by Board   │
+│          │ ─────────────────              │   Created by Tablero   │
 │          │ [avatar] CTO · 2 hours ago     │                      │
 │          │ I've identified the root...    │                      │
 │          │                                │                      │
@@ -344,61 +344,61 @@ Clicking an issue opens the detail view. The main content area splits into two z
 └──────────┴────────────────────────────────┴──────────────────────┘
 ```
 
-#### Middle Pane (Main Content)
+#### Panel central (contenido principal)
 
-**Header area:**
-- Issue title, large (18px, semi-bold), editable on click (inline editing).
-- Subtitle: issue key `CLIP-42` in muted text.
-- Below the title: inline properties bar showing key properties as clickable chips (same pattern as reference screenshots): `[○ In Progress] [!!! High] [👤 CTO] [📅 Target date] [📁 Auth] [···]`. Each chip is clickable to change that property inline.
+**Área de encabezado:**
+- Título del issue, grande (18px, seminegrita), editable al hacer clic (edición en línea).
+- Subtítulo: clave del issue `CLIP-42` en texto atenuado.
+- Debajo del título: barra de propiedades en línea que muestra propiedades clave como fichas clicables (mismo patrón que las capturas de referencia): `[○ In Progress] [!!! High] [👤 CTO] [📅 Target date] [📁 Auth] [···]`. Cada ficha es clicable para cambiar esa propiedad en línea.
 
-**Description:**
-- Markdown-rendered description.
-- Click to edit — opens a markdown editor in-place.
-- Support for headings, lists, code blocks, links, images.
+**Descripción:**
+- Descripción renderizada en markdown.
+- Clic para editar — abre un editor de markdown en el lugar.
+- Admite encabezados, listas, bloques de código, enlaces, imágenes.
 
-**Subtasks (if any):**
-- Listed below description as a collapsible section.
-- Each subtask is a mini issue row (status circle + title + assignee).
-- `+ Add subtask` button at the bottom.
+**Subtareas (si hay):**
+- Listadas debajo de la descripción como sección colapsable.
+- Cada subtarea es una mini fila de issue (círculo de estado + título + asignado).
+- Botón `+ Add subtask` al final.
 
-**Comments:**
-- Chronological list of comments.
-- Each comment shows: author avatar/icon, author name, timestamp, body (markdown rendered).
-- Comment input at the bottom — a text area with markdown support and a "Comment" button.
-- Comments from agents show a bot icon; comments from the board show a user icon.
+**Comentarios:**
+- Lista cronológica de comentarios.
+- Cada comentario muestra: avatar/ícono del autor, nombre del autor, marca de tiempo, cuerpo (renderizado en markdown).
+- Entrada de comentario al final — un área de texto con soporte de markdown y un botón "Comment".
+- Los comentarios de agentes muestran un ícono de bot; los comentarios del panel muestran un ícono de usuario.
 
-#### Right Pane (Properties Panel)
+#### Panel derecho (panel de propiedades)
 
-**Header:** "Properties" label with a `+` button to add a custom field.
+**Encabezado:** etiqueta "Properties" con un botón `+` para agregar un campo personalizado.
 
-**Property list:** Each property is a row with label on the left and editable value on the right.
+**Lista de propiedades:** Cada propiedad es una fila con etiqueta a la izquierda y valor editable a la derecha.
 
-| Property | Control |
-|----------|---------|
-| Status | Dropdown with status options + colored dot |
-| Priority | Dropdown with priority options + icon |
-| Assignee | Agent picker dropdown with search |
-| Project | Project picker dropdown |
-| Goal | Goal picker dropdown |
-| Labels | Multi-select tag input |
-| Lead | Agent picker |
-| Members | Multi-select agent picker |
-| Start date | Date picker |
-| Target date | Date picker |
-| Created by | Read-only text |
-| Created | Read-only timestamp |
-| Billing code | Text input |
+| Propiedad | Control |
+|-----------|---------|
+| Estado | Desplegable con opciones de estado + punto de color |
+| Prioridad | Desplegable con opciones de prioridad + ícono |
+| Asignado | Selector de agente con búsqueda |
+| Proyecto | Selector de proyecto |
+| Objetivo | Selector de objetivo |
+| Etiquetas | Entrada de etiquetas de selección múltiple |
+| Lead | Selector de agente |
+| Miembros | Selector de agentes de selección múltiple |
+| Fecha de inicio | Selector de fecha |
+| Fecha objetivo | Selector de fecha |
+| Creado por | Texto de solo lectura |
+| Creado | Marca de tiempo de solo lectura |
+| Código de facturación | Entrada de texto |
 
-Below properties, a divider, then:
+Debajo de las propiedades, un separador, luego:
 
-**Activity section:**
-- "Activity" header with "See all" link.
-- Compact timeline of recent events: status changes, assignment changes, comments, etc.
-- Each entry: icon + description + relative timestamp.
+**Sección de actividad:**
+- Encabezado "Activity" con enlace "See all".
+- Línea de tiempo compacta de eventos recientes: cambios de estado, cambios de asignación, comentarios, etc.
+- Cada entrada: ícono + descripción + marca de tiempo relativa.
 
-### 5.4 New Issue Modal
+### 5.4 Modal de nuevo issue
 
-Triggered by the sidebar pencil icon, keyboard shortcut `C`, or the `+` buttons in the issue list.
+Activado por el ícono de lápiz de la barra lateral, el atajo de teclado `C` o los botones `+` en la lista de issues.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -421,55 +421,55 @@ Triggered by the sidebar pencil icon, keyboard shortcut `C`, or the `+` buttons 
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Top bar:**
-- Breadcrumb showing context: project key (or company key) `›` "New issue".
-- "Save as draft" button.
-- Expand icon (open as full page instead of modal).
-- Close `×`.
+**Barra superior:**
+- Migas de pan mostrando contexto: clave de proyecto (o clave de empresa) `›` "New issue".
+- Botón "Save as draft".
+- Ícono de expandir (abrir como página completa en lugar de modal).
+- Cerrar `×`.
 
-**Body:**
-- Title field: large input, placeholder "Issue title". Auto-focused on open.
-- Description: markdown editor below, placeholder "Add a description...". Expandable.
+**Cuerpo:**
+- Campo de título: entrada grande, placeholder "Issue title". Autofoco al abrir.
+- Descripción: editor de markdown debajo, placeholder "Add a description...". Expandible.
 
-**Property chips (bottom bar):**
-- Compact row of property buttons. Each opens a dropdown to set that property.
-- Default chips shown: Status (defaults to Todo), Priority, Assignee, Project, Labels.
-- `···` more button reveals: Goal, Start date, Target date, Billing code, Parent issue.
+**Fichas de propiedades (barra inferior):**
+- Fila compacta de botones de propiedades. Cada uno abre un desplegable para establecer esa propiedad.
+- Fichas mostradas por defecto: Estado (por defecto Todo), Prioridad, Asignado, Proyecto, Etiquetas.
+- Botón más `···` revela: Objetivo, Fecha de inicio, Fecha objetivo, Código de facturación, Issue padre.
 
-**Footer:**
-- Attachment button (paperclip icon).
-- "Create more" toggle — when on, creating an issue clears the form and stays open for rapid entry.
-- "Create issue" primary button.
+**Pie:**
+- Botón de adjunto (ícono de clip).
+- Toggle "Create more" — cuando está activado, crear un issue limpia el formulario y lo mantiene abierto para entrada rápida.
+- Botón primario "Create issue".
 
-**Behavior:**
-- `Cmd+Enter` submits the form.
-- If opened from within a project context, the project is pre-filled.
-- If opened from a specific status group's `+` button, that status is pre-filled.
-- The slug/key is auto-generated from the project prefix + incrementing number (shown in breadcrumb).
+**Comportamiento:**
+- `Cmd+Enter` envía el formulario.
+- Si se abre desde un contexto de proyecto, el proyecto está prellenado.
+- Si se abre desde el botón `+` de un grupo de estado específico, ese estado está prellenado.
+- El slug/clave se autogenera a partir del prefijo del proyecto + número incremental (mostrado en las migas de pan).
 
-### 5.5 Issue Board View (Kanban)
+### 5.5 Vista de panel de issues (Kanban)
 
-Accessible via Display dropdown → Board layout.
+Accesible vía desplegable de visualización → diseño de panel.
 
-Columns represent statuses: Backlog | Todo | In Progress | In Review | Done
+Las columnas representan estados: Backlog | Todo | In Progress | In Review | Done
 
-Each card shows:
-- Issue key (muted)
-- Title (primary text)
-- Priority icon (bottom-left)
-- Assignee avatar (bottom-right)
+Cada tarjeta muestra:
+- Clave del issue (atenuada)
+- Título (texto primario)
+- Ícono de prioridad (abajo a la izquierda)
+- Avatar del asignado (abajo a la derecha)
 
-Cards are draggable between columns. Dragging a card to a new column changes its status (with transition validation — invalid transitions show an error toast).
+Las tarjetas se arrastran entre columnas. Arrastrar una tarjeta a una nueva columna cambia su estado (con validación de transición — las transiciones inválidas muestran un toast de error).
 
-Each column header has a `+` button to create a new issue in that status.
+Cada encabezado de columna tiene un botón `+` para crear un nuevo issue en ese estado.
 
 ---
 
-## 6. Projects
+## 6. Proyectos
 
-### 6.1 Project List View
+### 6.1 Vista de lista de proyectos
 
-Similar to the issue list but for projects.
+Similar a la lista de issues pero para proyectos.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -481,36 +481,36 @@ Similar to the issue list but for projects.
 └─────────────────────────────────────────────────────────┘
 ```
 
-Each row: project icon (colored hexagon), name, status badge, lead agent, target date.
+Cada fila: ícono de proyecto (hexágono de color), nombre, insignia de estado, agente lead, fecha objetivo.
 
-### 6.2 Project Detail View (Three-Pane)
+### 6.2 Vista de detalle de proyecto (tres paneles)
 
-Uses the same three-pane layout as issue detail.
+Usa el mismo diseño de tres paneles que el detalle de issue.
 
-**Breadcrumb tabs:** Overview | Updates | Issues | Settings
+**Pestañas de migas de pan:** Overview | Updates | Issues | Settings
 
-**Overview tab (middle pane):**
-- Project icon + name (editable)
-- Description (markdown, editable)
-- Inline properties bar: `[◌ Backlog] [--- No priority] [👤 Lead] [📅 Target date] [🏢 Team] [···]`
-- "Resources" section: linked documents, URLs
-- "Write first project update" CTA (for project updates/status posts)
-- Description (markdown body)
-- Milestones section (collapsible): list of milestone markers with date and status
+**Pestaña Overview (panel central):**
+- Ícono de proyecto + nombre (editable)
+- Descripción (markdown, editable)
+- Barra de propiedades en línea: `[◌ Backlog] [--- No priority] [👤 Lead] [📅 Target date] [🏢 Team] [···]`
+- Sección "Resources": documentos vinculados, URLs
+- CTA "Write first project update" (para actualizaciones/publicaciones de estado del proyecto)
+- Descripción (cuerpo markdown)
+- Sección de hitos (colapsable): lista de marcadores de hito con fecha y estado
 
-**Issues tab:** filtered issue list showing only issues in this project. Same controls as the main issues view.
+**Pestaña Issues:** lista de issues filtrada que muestra solo issues de este proyecto. Mismos controles que la vista principal de issues.
 
-**Right pane (properties):** Status, Priority, Lead, Members, Start date, Target date, Teams, Labels, Goal link.
+**Panel derecho (propiedades):** Estado, Prioridad, Lead, Miembros, Fecha de inicio, Fecha objetivo, Equipos, Etiquetas, Enlace de objetivo.
 
-**Activity section:** at the bottom of the properties panel.
+**Sección de actividad:** al final del panel de propiedades.
 
 ---
 
-## 7. Goals
+## 7. Objetivos
 
-### 7.1 Goal List View
+### 7.1 Vista de lista de objetivos
 
-Goals are displayed as a hierarchical tree, since goals have parent-child relationships.
+Los objetivos se muestran como un árbol jerárquico, ya que los objetivos tienen relaciones padre-hijo.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -526,21 +526,21 @@ Goals are displayed as a hierarchical tree, since goals have parent-child relati
 └─────────────────────────────────────────────────────────┘
 ```
 
-Each row: expand chevron (if has children), target icon, title, level badge (Company/Team/Agent/Task), status badge.
+Cada fila: chevron de expansión (si tiene hijos), ícono de objetivo, título, insignia de nivel (Empresa/Equipo/Agente/Tarea), insignia de estado.
 
-Indentation reflects hierarchy. Clicking a goal opens its detail view.
+La indentación refleja la jerarquía. Al hacer clic en un objetivo se abre su vista de detalle.
 
-### 7.2 Goal Detail View
+### 7.2 Vista de detalle de objetivo
 
-Three-pane layout. Middle pane shows title, description, child goals, and linked projects. Right pane shows properties (level, status, owner agent, parent goal) and activity.
+Diseño de tres paneles. El panel central muestra título, descripción, objetivos hijos y proyectos vinculados. El panel derecho muestra propiedades (nivel, estado, agente dueño, objetivo padre) y actividad.
 
 ---
 
-## 8. Dashboard
+## 8. Panel
 
-The dashboard is the company health overview. Shown when clicking "Dashboard" in the Company section.
+El panel es el resumen de salud de la empresa. Se muestra al hacer clic en "Dashboard" en la sección Empresa.
 
-### 8.1 Layout
+### 8.1 Diseño
 
 ```
 ┌──────────┬──────────────────────────────────────────────┐
@@ -561,25 +561,25 @@ The dashboard is the company health overview. Shown when clicking "Dashboard" in
 └──────────┴──────────────────────────────────────────────┘
 ```
 
-**Top row: Metric cards** (4 across)
-1. **Agents** — total, active, running, paused, error counts. Each with colored dots.
-2. **Tasks** — open, in progress, blocked, done counts.
-3. **Costs** — month-to-date spend in dollars, budget utilization percentage with a mini progress bar.
-4. **Approvals** — pending count (clickable to navigate to Inbox, which is the primary approval interaction point).
+**Fila superior: tarjetas de métricas** (4 en fila)
+1. **Agentes** — conteos total, activos, en ejecución, pausados, con error. Cada uno con puntos de color.
+2. **Tareas** — conteos abiertas, en progreso, bloqueadas, terminadas.
+3. **Costos** — gasto en dólares del mes a la fecha, porcentaje de utilización del presupuesto con una mini barra de progreso.
+4. **Aprobaciones** — conteo pendiente (clicable para navegar a la bandeja de entrada, que es el punto de interacción primario de aprobaciones).
 
-**Bottom row: Detail panels** (2 across)
-5. **Recent Activity** — last ~10 activity log entries, compact timeline format.
-6. **Stale Tasks** — tasks that have been in progress for too long without updates. Each shows issue key, title, assignee, time since last activity.
+**Fila inferior: paneles de detalle** (2 en fila)
+5. **Actividad reciente** — últimas ~10 entradas del log de actividad, formato de línea de tiempo compacta.
+6. **Tareas estancadas** — tareas que llevan demasiado tiempo en progreso sin actualizaciones. Cada una muestra clave del issue, título, asignado, tiempo desde la última actividad.
 
-All cards and panels are clickable to navigate to their respective full pages.
+Todas las tarjetas y paneles son clicables para navegar a sus respectivas páginas completas.
 
 ---
 
-## 9. Org Chart
+## 9. Organigrama
 
-Interactive visualization of the agent reporting hierarchy.
+Visualización interactiva de la jerarquía de reportes de agentes.
 
-### 9.1 Tree View
+### 9.1 Vista de árbol
 
 ```
                     ┌─────────┐
@@ -597,26 +597,26 @@ Interactive visualization of the agent reporting hierarchy.
        └─────────┘  └─────────┘
 ```
 
-Each node shows:
-- Agent name
-- Role/title (smaller text)
-- Status dot (colored by agent status)
-- Agent avatar (bot icon with unique color per agent)
+Cada nodo muestra:
+- Nombre del agente
+- Rol/título (texto más pequeño)
+- Punto de estado (coloreado según el estado del agente)
+- Avatar del agente (ícono de bot con color único por agente)
 
-Nodes are clickable to navigate to agent detail.
+Los nodos son clicables para navegar al detalle del agente.
 
-### 9.2 Interactions
+### 9.2 Interacciones
 
-- Zoom/pan with mouse wheel and drag.
-- Click a node to select it — shows a brief tooltip with key info (last heartbeat, current task, spend).
-- Double-click a node to navigate to agent detail page.
-- Right-click node for context menu: View, Pause, Resume, Invoke heartbeat, Edit.
+- Zoom/paneo con la rueda del mouse y arrastrar.
+- Clic en un nodo para seleccionarlo — muestra un tooltip breve con información clave (último latido, tarea actual, gasto).
+- Doble clic en un nodo para navegar a la página de detalle del agente.
+- Clic derecho en el nodo para menú contextual: Ver, Pausar, Reanudar, Invocar latido, Editar.
 
 ---
 
-## 10. Agents
+## 10. Agentes
 
-### 10.1 Agent List View
+### 10.1 Vista de lista de agentes
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -625,58 +625,55 @@ Nodes are clickable to navigate to agent detail.
 │ [🤖] CEO           ceo        ● Running   $45.20/$100   2m ago │
 │ [🤖] CTO           cto        ● Active    $23.10/$100   5m ago │
 │ [🤖] Dev-1         engineer   ○ Idle      $12.40/$50   15m ago │
-│ [🤖] CMO           marketing  ○ Idle      $8.30/$50    30m ago │
 │ [🤖] DevOps        devops     ⚠ Paused    $31.00/$50    1h ago │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-Columns: Avatar/icon, Name, Role, Status (with colored dot), Cost (spent/budget this month), Last Heartbeat (relative time).
+Columnas: Avatar/ícono, Nombre, Rol, Estado (con punto de color), Costo (gastado/presupuesto este mes), Último latido (tiempo relativo).
 
-Clicking a row navigates to agent detail.
+Al hacer clic en una fila se navega al detalle del agente.
 
-### 10.2 Agent Detail View (Three-Pane)
+### 10.2 Vista de detalle de agente (tres paneles)
 
-**Breadcrumb tabs:** Overview | Heartbeats | Issues | Costs
+**Pestañas de migas de pan:** Overview | Heartbeats | Issues | Costs
 
-**Overview (middle pane):**
-- Agent name + role
-- Capabilities description
-- Adapter type + config summary
-- Current task (if any)
-- Reports to: [clickable agent name]
-- Direct reports: list of agents
+**Overview (panel central):**
+- Nombre del agente + rol
+- Descripción de capacidades
+- Tipo de adaptador + resumen de configuración
+- Tarea actual (si hay)
+- Reporta a: [nombre de agente clicable]
+- Reportes directos: lista de agentes
 
-**Heartbeats tab:** table of heartbeat runs — time, source (manual/scheduler), status, duration, error (if any). Invoke button at top.
+**Pestaña Heartbeats:** tabla de ejecuciones de latido — hora, origen (manual/programador), estado, duración, error (si hay). Botón de invocar arriba.
 
-**Issues tab:** issues assigned to this agent.
+**Pestaña Issues:** issues asignados a este agente.
 
-**Costs tab:** cost breakdown for this agent — by model, by time period, with budget progress bar.
+**Pestaña Costs:** desglose de costos de este agente — por modelo, por período, con barra de progreso de presupuesto.
 
-**Right pane properties:** Status, Role, Title, Reports To, Adapter Type, Context Mode, Budget (monthly), Spent (monthly), Last Heartbeat.
+**Propiedades del panel derecho:** Estado, Rol, Título, Reporta a, Tipo de adaptador, Modo de contexto, Presupuesto (mensual), Gastado (mensual), Último latido.
 
-**Quick actions** in breadcrumb bar: [Pause] [Resume] [Invoke Heartbeat] [···]
+**Acciones rápidas** en la barra de migas de pan: [Pause] [Resume] [Invoke Heartbeat] [···]
 
----
+## 11. Aprobaciones (contextuales, no independientes)
 
-## 11. Approvals (Contextual, Not Standalone)
+Las aprobaciones son puertas de gobernanza — decisiones que el panel debe tomar (contratar un agente, aprobar una estrategia del CEO). NO son elementos de trabajo. Su modelo de datos permanece separado de los issues (máquina de estados diferente, disparadores de efectos secundarios, payload no estructurado). Pero no necesitan su propia entrada de navegación superior.
 
-Approvals are governance gates — decisions the board must make (hire an agent, approve a CEO strategy). They are NOT work items. Their data model stays separate from issues (different status machine, side-effect triggers, unstructured payload). But they don't need their own top-level nav entry.
+### 11.1 Dónde aparecen las aprobaciones
 
-### 11.1 Where Approvals Surface
+**1. Bandeja de entrada (primaria).** Las aprobaciones pendientes son los elementos de mayor prioridad de la bandeja. El operador del tablero las ve al frente y al centro con acciones de aprobar/rechazar en línea (ver Sección 14).
 
-**1. Inbox (primary).** Pending approvals are the highest-priority inbox items. The board operator sees them front and center with inline approve/reject actions (see Section 14).
+**2. Tarjeta de métrica del panel.** La tarjeta "Aprobaciones pendientes" muestra el conteo y enlaza a la lista completa de aprobaciones.
 
-**2. Dashboard metric card.** The "Pending Approvals" card shows the count and links to the full approvals list.
+**3. En línea en páginas de entidades.** Cuando una entidad se creó vía una aprobación, la página de detalle muestra un banner contextual:
+- Página de detalle de agente: `"Contratado vía aprobación — solicitado por el CEO el 15 feb"` con un enlace al registro de aprobación.
+- Un agente en estado `pending` (aún no creado) podría mostrar: `"Aprobación pendiente — solicitada por el CEO"` con acciones de aprobar/rechazar en línea.
 
-**3. Inline on entity pages.** When an entity was created via an approval, the detail page shows a contextual banner:
-- Agent detail page: `"Hired via approval — requested by CEO on Feb 15"` with a link to the approval record.
-- An agent in `pending` status (not yet created) could show: `"Pending approval — requested by CEO"` with approve/reject actions inline.
+**4. Log de actividad.** Los eventos de aprobación (creada, aprobada, rechazada) aparecen en la línea de tiempo de actividad como cualquier otro evento.
 
-**4. Activity log.** Approval events (created, approved, rejected) appear in the activity timeline like any other event.
+### 11.2 Página de lista de aprobaciones (`/approvals`)
 
-### 11.2 Approvals List Page (`/approvals`)
-
-This page still exists — it's the "See all" destination from Inbox and Dashboard. But it's not in the sidebar.
+Esta página sigue existiendo — es el destino de "Ver todo" desde la bandeja de entrada y el panel. Pero no está en la barra lateral.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -688,17 +685,17 @@ This page still exists — it's the "See all" destination from Inbox and Dashboa
 └─────────────────────────────────────────────────────────┘
 ```
 
-Status tabs filter by approval status. Each row: status dot, type, title/summary (from payload), requester, relative time.
+Las pestañas de estado filtran por estado de aprobación. Cada fila: punto de estado, tipo, título/resumen (del payload), solicitante, tiempo relativo.
 
-### 11.3 Approval Detail View
+### 11.3 Vista de detalle de aprobación
 
-Three-pane layout. Middle pane renders the approval payload nicely based on type:
+Diseño de tres paneles. El panel central renderiza el payload de la aprobación de forma agradable según el tipo:
 
-**`hire_agent` type:** Shows proposed agent name, role, title, reports-to, capabilities, adapter config, budget. Essentially a preview of the agent that will be created.
+Tipo **`hire_agent`:** Muestra el nombre propuesto del agente, rol, título, a quién reporta, capacidades, configuración del adaptador, presupuesto. Esencialmente una vista previa del agente que se creará.
 
-**`approve_ceo_strategy` type:** Shows the strategy text, proposed goal breakdown, initial task structure.
+Tipo **`approve_ceo_strategy`:** Muestra el texto de la estrategia, el desglose de objetivos propuesto, la estructura inicial de tareas.
 
-For pending approvals, prominent action buttons at the top of the middle pane:
+Para aprobaciones pendientes, botones de acción prominentes en la parte superior del panel central:
 ```
 ┌─────────────────────────────────────────────────────────┐
 │ ┌─────────────────────────────────────────────────────┐ │
@@ -716,13 +713,13 @@ For pending approvals, prominent action buttons at the top of the middle pane:
 └─────────────────────────────────────────────────────────┘
 ```
 
-Right pane: Type, Status, Requested by, Requested at, Decided by, Decided at, Decision note. Activity timeline below.
+Panel derecho: Tipo, Estado, Solicitado por, Solicitado el, Decidido por, Decidido el, Nota de decisión. Línea de tiempo de actividad debajo.
 
 ---
 
-## 12. Costs
+## 12. Costos
 
-### 12.1 Cost Dashboard
+### 12.1 Panel de costos
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -748,24 +745,24 @@ Right pane: Type, Status, Requested by, Requested at, Decided by, Decided at, De
 └─────────────────────────────────────────────────────────┘
 ```
 
-Top: company-wide budget progress bar (large, prominent).
+Arriba: barra de progreso de presupuesto de toda la empresa (grande, prominente).
 
-Two side-by-side tables: breakdown by agent and by project. Each row shows entity name and spend amount.
+Dos tablas lado a lado: desglose por agente y por proyecto. Cada fila muestra el nombre de la entidad y el monto gastado.
 
-Bottom: recent cost events table with agent, provider/model, token counts, cost, and timestamp.
+Abajo: tabla de eventos de costo recientes con agente, proveedor/modelo, conteos de tokens, costo y marca de tiempo.
 
 ---
 
-## 13. Activity Log
+## 13. Log de actividad
 
-A chronological, filterable audit trail.
+Un registro de auditoría cronológico y filtrable.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │ Activity                            [Filter by type ▼]  │
 ├─────────────────────────────────────────────────────────┤
 │ 🤖 CEO created issue CLIP-12 "Fix auth"      2 min ago │
-│ 👤 Board approved hire "Marketing Analyst"    5 min ago │
+│ 👤 Tablero approved hire "Marketing Analyst"    5 min ago │
 │ 🤖 CTO changed CLIP-8 status → In Progress  10 min ago │
 │ ⚙  System paused agent DevOps (budget limit) 15 min ago│
 │ 🤖 Dev-1 commented on CLIP-5                30 min ago │
@@ -773,19 +770,19 @@ A chronological, filterable audit trail.
 └─────────────────────────────────────────────────────────┘
 ```
 
-Each entry: actor icon (bot for agent, user for board, gear for system), actor name, action description with entity links, relative timestamp.
+Cada entrada: ícono del actor (bot para agente, usuario para panel, engranaje para sistema), nombre del actor, descripción de la acción con enlaces a entidades, marca de tiempo relativa.
 
-Filterable by: actor type (agent/user/system), entity type (issue/agent/project/etc), action type, time range.
+Filtrable por: tipo de actor (agente/usuario/sistema), tipo de entidad (issue/agente/proyecto/etc), tipo de acción, rango de tiempo.
 
-Infinite scroll with "Load more" fallback.
+Scroll infinito con respaldo de "Load more".
 
 ---
 
-## 14. Inbox
+## 14. Bandeja de entrada
 
-The inbox is the board operator's primary action center. It aggregates everything that needs human attention, with approvals as the highest-priority category.
+La bandeja de entrada es el centro de acción principal del operador del tablero. Agrega todo lo que necesita atención humana, con las aprobaciones como la categoría de mayor prioridad.
 
-### 14.1 Inbox List View
+### 14.1 Vista de lista de la bandeja de entrada
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -811,36 +808,36 @@ The inbox is the board operator's primary action center. It aggregates everythin
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 14.2 Inbox Categories
+### 14.2 Categorías de la bandeja de entrada
 
-Items are grouped by category, with the most actionable items first:
+Los elementos se agrupan por categoría, con los más accionables primero:
 
-**Approvals pending** (top priority). Each approval item shows:
-- Shield icon + approval type + title
-- Requester + relative timestamp
-- Key payload summary (1 line — agent name/role for hires, plan title for strategies)
-- Inline **[Approve]** and **[Reject]** buttons for simple approvals (hire_agent). Clicking Approve/Reject shows a brief confirmation with an optional decision note field.
-- **[View details →]** link for complex approvals (approve_ceo_strategy) that need full review before deciding.
-- "See all approvals →" link in the category header navigates to `/approvals`.
+**Aprobaciones pendientes** (máxima prioridad). Cada elemento de aprobación muestra:
+- Ícono de escudo + tipo de aprobación + título
+- Solicitante + marca de tiempo relativa
+- Resumen clave del payload (1 línea — nombre/rol del agente para contrataciones, título del plan para estrategias)
+- Botones en línea **[Approve]** y **[Reject]** para aprobaciones simples (hire_agent). Al hacer clic en Aprobar/Rechazar se muestra una breve confirmación con un campo opcional de nota de decisión.
+- Enlace **[View details →]** para aprobaciones complejas (approve_ceo_strategy) que necesitan revisión completa antes de decidir.
+- Enlace "See all approvals →" en el encabezado de la categoría navega a `/approvals`.
 
-**Alerts.** Agent errors (failed heartbeats, error status) and budget alerts (agents or company approaching 80% or 100% limits). Each links to the relevant agent or cost page.
+**Alertas.** Errores de agentes (latidos fallidos, estado de error) y alertas de presupuesto (agentes o empresa acercándose a los límites del 80% o 100%). Cada una enlaza a la página del agente o de costos relevante.
 
-**Stale work.** Tasks in `in_progress` or `todo` with no activity (no comments, no status changes) beyond a configurable threshold (default: 24h). Each shows issue key, title, and time since last activity. Clicking navigates to the issue.
+**Trabajo estancado.** Tareas en `in_progress` o `todo` sin actividad (sin comentarios, sin cambios de estado) más allá de un umbral configurable (por defecto: 24h). Cada una muestra clave del issue, título y tiempo desde la última actividad. Al hacer clic se navega al issue.
 
-### 14.3 Inbox Behavior
+### 14.3 Comportamiento de la bandeja de entrada
 
-- Unread items have a filled blue dot indicator on the left.
-- Clicking an item marks it as read.
-- Approvals disappear from the inbox once approved/rejected (they move to the resolved state).
-- Alerts disappear when the underlying condition is resolved (agent resumed, budget increased).
-- The sidebar badge count reflects total unresolved inbox items.
-- Inbox is computed from live data (pending approvals query + alert conditions), not a separate notification table. This keeps it simple for V1.
+- Los elementos no leídos tienen un indicador de punto azul relleno a la izquierda.
+- Hacer clic en un elemento lo marca como leído.
+- Las aprobaciones desaparecen de la bandeja una vez aprobadas/rechazadas (pasan al estado resuelto).
+- Las alertas desaparecen cuando la condición subyacente se resuelve (agente reanudado, presupuesto aumentado).
+- El conteo de insignia de la barra lateral refleja el total de elementos no resueltos de la bandeja.
+- La bandeja se calcula a partir de datos en vivo (consulta de aprobaciones pendientes + condiciones de alerta), no de una tabla de notificaciones separada. Esto la mantiene simple para la V1.
 
 ---
 
-## 15. Search (Cmd+K Modal)
+## 15. Búsqueda (modal Cmd+K)
 
-Global search accessible via `Cmd+K` or the sidebar search icon.
+Búsqueda global accesible vía `Cmd+K` o el ícono de búsqueda de la barra lateral.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -858,91 +855,91 @@ Global search accessible via `Cmd+K` or the sidebar search icon.
 └─────────────────────────────────────────────────────────┘
 ```
 
-- Type-ahead search across all entity types (issues, agents, projects, goals).
-- Results grouped by type with icons.
-- Recent items shown when input is empty.
-- Quick actions section at the bottom.
-- Arrow keys to navigate, Enter to select, Escape to close.
+- Búsqueda predictiva en todos los tipos de entidades (issues, agentes, proyectos, objetivos).
+- Resultados agrupados por tipo con íconos.
+- Elementos recientes mostrados cuando la entrada está vacía.
+- Sección de acciones rápidas al final.
+- Flechas para navegar, Enter para seleccionar, Escape para cerrar.
 
 ---
 
-## 16. Keyboard Shortcuts
+## 16. Atajos de teclado
 
-| Shortcut | Action |
+| Atajo | Acción |
 |----------|--------|
-| `Cmd+K` | Open search |
-| `C` | Create new issue |
-| `Cmd+Enter` | Submit form (in modals) |
-| `Escape` | Close modal / deselect |
-| `[` | Toggle sidebar collapsed |
-| `]` | Toggle properties panel |
-| `J` / `K` | Navigate up/down in lists |
-| `Enter` | Open selected item |
-| `Backspace` | Go back |
-| `S` | Toggle status on selected issue |
-| `X` | Toggle checkbox selection |
-| `Cmd+A` | Select all (in list context) |
+| `Cmd+K` | Abrir búsqueda |
+| `C` | Crear nuevo issue |
+| `Cmd+Enter` | Enviar formulario (en modales) |
+| `Escape` | Cerrar modal / deseleccionar |
+| `[` | Alternar barra lateral colapsada |
+| `]` | Alternar panel de propiedades |
+| `J` / `K` | Navegar arriba/abajo en listas |
+| `Enter` | Abrir elemento seleccionado |
+| `Backspace` | Volver atrás |
+| `S` | Alternar estado en el issue seleccionado |
+| `X` | Alternar selección de casilla |
+| `Cmd+A` | Seleccionar todo (en contexto de lista) |
 
 ---
 
-## 17. Responsive Behavior
+## 17. Comportamiento responsivo
 
-- **>1400px:** Full three-pane layout (sidebar + main + properties).
-- **1024-1400px:** Sidebar collapses to icons. Properties panel available via toggle.
-- **<1024px:** Sidebar hidden (hamburger menu). Properties panel hidden (toggle or tab).
+- **>1400px:** Diseño completo de tres paneles (barra lateral + principal + propiedades).
+- **1024-1400px:** Barra lateral colapsada a íconos. Panel de propiedades disponible vía toggle.
+- **<1024px:** Barra lateral oculta (menú hamburguesa). Panel de propiedades oculto (toggle o pestaña).
 
-The properties panel is always dismissible — it should never block the main content.
-
----
-
-## 18. Empty States
-
-Every list view should have a thoughtful empty state:
-
-- **No issues:** "No issues yet. Create your first issue to start tracking work." with a `[Create issue]` button.
-- **No agents:** "No agents in this company. Create an agent to start building your team." with a `[Create agent]` button.
-- **No company selected:** "Select a company to get started." with a company switcher or `[Create company]` button.
-
-Empty states should use a muted illustration (simple line art, not cartoons) and a single call-to-action.
+El panel de propiedades siempre es descartable — nunca debe bloquear el contenido principal.
 
 ---
 
-## 19. Loading and Error States
+## 18. Estados vacíos
 
-- **Loading:** Skeleton placeholders matching the layout of the expected content (not spinners). Skeleton blocks animate with a subtle shimmer.
-- **Error:** Inline error message with a retry button. Never a full-page error unless the app itself is broken.
-- **Conflict (409):** Toast notification: "This issue was updated by another user. Refresh to see changes." with a [Refresh] action.
-- **Optimistic updates:** Status changes and property edits should update immediately in the UI, with rollback on failure.
+Cada vista de lista debe tener un estado vacío considerado:
+
+- **Sin issues:** "Aún no hay issues. Crea tu primer issue para empezar a dar seguimiento al trabajo." con un botón `[Crear issue]`.
+- **Sin agentes:** "No hay agentes en esta empresa. Crea un agente para empezar a formar tu equipo." con un botón `[Crear agente]`.
+- **Sin empresa seleccionada:** "Selecciona una empresa para empezar." con un selector de empresa o botón `[Crear empresa]`.
+
+Los estados vacíos deben usar una ilustración atenuada (arte de líneas simple, no caricaturas) y un solo llamado a la acción.
 
 ---
 
-## 20. Component Library
+## 19. Estados de carga y error
 
-Build on top of shadcn/ui components with these customizations:
+- **Cargando:** Marcadores de posición esqueleto que coinciden con el diseño del contenido esperado (no spinners). Los bloques esqueleto se animan con un sutil brillo.
+- **Error:** Mensaje de error en línea con un botón de reintentar. Nunca un error de página completa salvo que la app misma esté rota.
+- **Conflicto (409):** Notificación toast: "Este issue fue actualizado por otro usuario. Actualiza para ver los cambios." con una acción [Actualizar].
+- **Actualizaciones optimistas:** Los cambios de estado y ediciones de propiedades deben actualizarse de inmediato en la UI, con reversión ante fallo.
 
-| Component | Base | Customization |
+---
+
+## 20. Biblioteca de componentes
+
+Construida sobre componentes shadcn/ui con estas personalizaciones:
+
+| Componente | Base | Personalización |
 |-----------|------|---------------|
-| StatusBadge | Badge | Colored dot + label, entity-specific palettes |
-| PriorityIcon | custom | SVG circles with fills matching priority |
-| EntityRow | custom | Standardized list row with hover/select states |
-| PropertyEditor | custom | Label + inline-editable value with dropdown |
-| CommentThread | custom | Avatar + author + timestamp + markdown body |
-| BreadcrumbBar | Breadcrumb | Integrated with router, tabs, and entity actions |
-| CommandPalette | Dialog | Cmd+K search with type-ahead and actions |
-| FilterBar | custom | Composable filter chips with add/remove |
-| SidebarNav | custom | Grouped, collapsible, badge-supporting nav |
+| StatusBadge | Badge | Punto de color + etiqueta, paletas específicas de entidad |
+| PriorityIcon | custom | Círculos SVG con rellenos según prioridad |
+| EntityRow | custom | Fila de lista estandarizada con estados de hover/selección |
+| PropertyEditor | custom | Etiqueta + valor editable en línea con desplegable |
+| CommentThread | custom | Avatar + autor + marca de tiempo + cuerpo en markdown |
+| BreadcrumbBar | Breadcrumb | Integrada con el router, pestañas y acciones de entidad |
+| CommandPalette | Dialog | Búsqueda Cmd+K con predictivo y acciones |
+| FilterBar | custom | Fichas de filtro componibles con agregar/quitar |
+| SidebarNav | custom | Navegación agrupada, colapsable, con insignias |
 
 ---
 
-## 21. URL Structure
+## 21. Estructura de URL
 
-All routes are company-scoped after company selection (company context stored in React context, not URL):
+Todas las rutas tienen alcance de empresa después de la selección de empresa (contexto de empresa almacenado en el contexto de React, no en la URL):
 
 ```
 /                           → redirects to /dashboard
 /dashboard                  → company dashboard
 /inbox                      → inbox / attention items
-/my-issues                  → board operator's issues
+/my-issues                  → issues del operador del tablero
 /issues                     → issue list
 /issues/:issueId            → issue detail
 /projects                   → project list
@@ -963,39 +960,39 @@ All routes are company-scoped after company selection (company context stored in
 
 ---
 
-## 22. Implementation Priority
+## 22. Prioridad de implementación
 
-### Phase 1: Shell and Navigation
-1. Sidebar redesign (grouped sections, icons, company switcher, badges)
-2. Breadcrumb bar component
-3. Three-pane layout system
-4. Cmd+K search modal
-5. Install `lucide-react`
+### Fase 1: Estructura y navegación
+1. Rediseño de la barra lateral (secciones agrupadas, íconos, selector de empresa, insignias)
+2. Componente de barra de migas de pan
+3. Sistema de diseño de tres paneles
+4. Modal de búsqueda Cmd+K
+5. Instalar `lucide-react`
 
-### Phase 2: Issue Management (Core)
-6. Issue list view with grouping, filtering, status circles
-7. Issue detail view (three-pane with properties panel)
-8. New issue modal
-9. Issue comments
-10. Bulk selection and actions
-11. Kanban board view
+### Fase 2: Gestión de issues (núcleo)
+6. Vista de lista de issues con agrupación, filtrado, círculos de estado
+7. Vista de detalle de issue (tres paneles con panel de propiedades)
+8. Modal de nuevo issue
+9. Comentarios de issues
+10. Selección múltiple y acciones masivas
+11. Vista de panel kanban
 
-### Phase 3: Entity Detail Views
-12. Project list + detail view
-13. Goal hierarchy view
-14. Agent list + detail view
+### Fase 3: Vistas de detalle de entidades
+12. Lista + vista de detalle de proyectos
+13. Vista de jerarquía de objetivos
+14. Lista + vista de detalle de agentes
 
-### Phase 4: Company-Level Views
-15. Inbox with inline approval actions (primary approval UX)
-16. Dashboard redesign with metric cards
-17. Org chart interactive visualization
-18. Cost dashboard
-19. Activity log with filtering
-20. Approvals list page (accessed via Inbox "See all", not sidebar)
+### Fase 4: Vistas a nivel de empresa
+15. Bandeja de entrada con acciones de aprobación en línea (UX primaria de aprobaciones)
+16. Rediseño del panel con tarjetas de métricas
+17. Visualización interactiva del organigrama
+18. Panel de costos
+19. Log de actividad con filtrado
+20. Página de lista de aprobaciones (accesible vía "Ver todo" de la bandeja, no la barra lateral)
 
-### Phase 5: Polish
-21. Keyboard shortcuts
-22. Responsive behavior
-23. Empty states and loading skeletons
-24. Error handling and toasts
-25. Saved views (custom filters)
+### Fase 5: Pulido
+21. Atajos de teclado
+22. Comportamiento responsivo
+23. Estados vacíos y esqueletos de carga
+24. Manejo de errores y toasts
+25. Vistas guardadas (filtros personalizados)

@@ -1,61 +1,61 @@
-# Kitchen Sink Plugin Plan
+# Plan del plugin Kitchen Sink
 
-## Goal
+## Objetivo
 
-Add a new first-party example plugin, `Kitchen Sink (Example)`, that demonstrates every currently implemented Paperclip plugin API surface in one place.
+Agregar un nuevo plugin de ejemplo de primera parte, `Kitchen Sink (Example)`, que demuestre cada superficie de API de plugins de Paperclip actualmente implementada en un solo lugar.
 
-This plugin is meant to be:
+Este plugin está pensado para ser:
 
-- a living reference implementation for contributors
-- a manual test harness for the plugin runtime
-- a discoverable demo of what plugins can actually do today
+- una implementación de referencia viva para contribuyentes
+- un arnés de pruebas manuales para el tiempo de ejecución de plugins
+- una demo descubrible de lo que los plugins realmente pueden hacer hoy
 
-It is not meant to be a polished end-user product plugin.
+No está pensado para ser un plugin de producto pulido para usuarios finales.
 
-## Why
+## Por qué
 
-The current plugin system has a real API surface, but it is spread across:
+El sistema de plugins actual tiene una superficie de API real, pero está repartida en:
 
-- SDK docs
-- SDK types
-- plugin spec prose
-- two example plugins that each show only a narrow slice
+- documentos del SDK
+- tipos del SDK
+- prosa de la especificación del plugin
+- dos plugins de ejemplo que cada uno muestra solo una porción estrecha
 
-That makes it hard to answer basic questions like:
+Eso hace difícil responder preguntas básicas como:
 
-- what can plugins render?
-- what can plugin workers actually do?
-- which surfaces are real versus aspirational?
-- how should a new plugin be structured in this repo?
+- ¿qué pueden renderizar los plugins?
+- ¿qué pueden hacer realmente los workers de plugins?
+- ¿qué superficies son reales vs aspiracionales?
+- ¿cómo debería estructurarse un nuevo plugin en este repositorio?
 
-The kitchen-sink plugin should answer those questions by example.
+El plugin kitchen-sink debería responder esas preguntas con ejemplos.
 
-## Success Criteria
+## Criterios de éxito
 
-The plugin is successful if a contributor can install it and, without reading the SDK first, discover and exercise the current plugin runtime surface area from inside Paperclip.
+El plugin es exitoso si un contribuyente puede instalarlo y, sin leer primero el SDK, descubrir y ejercitar el área de superficie del tiempo de ejecución actual de plugins desde dentro de Paperclip.
 
-Concretely:
+En concreto:
 
-- it installs from the bundled examples list
-- it exposes at least one demo for every implemented worker API surface
-- it exposes at least one demo for every host-mounted UI surface
-- it clearly labels local-only / trusted-only demos
-- it is safe enough for local development by default
-- it doubles as a regression harness for plugin runtime changes
+- se instala desde la lista de ejemplos incluidos
+- expone al menos una demo para cada superficie de API de worker implementada
+- expone al menos una demo para cada superficie de UI montada por el host
+- etiqueta claramente las demos solo locales / solo confiables
+- es lo suficientemente seguro para desarrollo local por defecto
+- sirve también como arnés de regresión para cambios en el tiempo de ejecución de plugins
 
-## Constraints
+## Restricciones
 
-- Keep it instance-installed, not company-installed.
-- Treat this as a trusted/local example plugin.
-- Do not rely on cloud-safe runtime assumptions.
-- Avoid destructive defaults.
-- Avoid irreversible mutations unless they are clearly labeled and easy to undo.
+- Mantenerlo instalado a nivel de instancia, no de empresa.
+- Tratar esto como un plugin de ejemplo confiable/local.
+- No depender de supuestos de tiempo de ejecución seguros en la nube.
+- Evitar valores predeterminados destructivos.
+- Evitar mutaciones irreversibles a menos que estén claramente etiquetadas y sean fáciles de deshacer.
 
-## Source Of Truth For This Plan
+## Fuente de verdad de este plan
 
-This plan is based on the currently implemented SDK/types/runtime, not only the long-horizon spec.
+Este plan se basa en el SDK/tipos/tiempo de ejecución actualmente implementados, no solo en la especificación de largo plazo.
 
-Primary references:
+Referencias principales:
 
 - `packages/plugins/sdk/README.md`
 - `packages/plugins/sdk/src/types.ts`
@@ -63,11 +63,11 @@ Primary references:
 - `packages/shared/src/constants.ts`
 - `packages/shared/src/types/plugin.ts`
 
-## Current Surface Inventory
+## Inventario de superficie actual
 
-### Worker/runtime APIs to demonstrate
+### API de worker/tiempo de ejecución a demostrar
 
-These are the concrete `ctx` clients currently exposed by the SDK:
+Estos son los clientes concretos de `ctx` actualmente expuestos por el SDK:
 
 - `ctx.config`
 - `ctx.events`
@@ -91,9 +91,9 @@ These are the concrete `ctx` clients currently exposed by the SDK:
 - `ctx.metrics`
 - `ctx.logger`
 
-### UI surfaces to demonstrate
+### Superficies de UI a demostrar
 
-Surfaces defined in the SDK:
+Superficies definidas en el SDK:
 
 - `page`
 - `settingsPage`
@@ -108,367 +108,367 @@ Surfaces defined in the SDK:
 - `commentAnnotation`
 - `commentContextMenuItem`
 
-### Current host confidence
+### Confianza actual del host
 
-Confirmed or strongly indicated as mounted in the current app:
+Confirmadas o fuertemente indicadas como montadas en la app actual:
 
 - `page`
 - `settingsPage`
 - `dashboardWidget`
 - `detailTab`
 - `projectSidebarItem`
-- comment surfaces
-- launcher infrastructure
+- superficies de comentarios
+- infraestructura de launchers
 
-Need explicit validation before claiming full demo coverage:
+Necesitan validación explícita antes de afirmar cobertura completa de demo:
 
 - `sidebar`
 - `sidebarPanel`
 - `taskDetailView`
-- `toolbarButton` as direct slot, distinct from launcher placement
-- `contextMenuItem` as direct slot, distinct from comment menu and launcher placement
+- `toolbarButton` como slot directo, distinto de la colocación de launcher
+- `contextMenuItem` como slot directo, distinto del menú de comentarios y la colocación de launcher
 
-The implementation should keep a small validation checklist for these before we call the plugin "complete".
+La implementación debería mantener una pequeña lista de validación para estas antes de llamar al plugin "completo".
 
-## Plugin Concept
+## Concepto del plugin
 
-The plugin should be named:
+El plugin debería llamarse:
 
-- display name: `Kitchen Sink (Example)`
-- package: `@paperclipai/plugin-kitchen-sink-example`
-- plugin id: `paperclip.kitchen-sink-example` or `paperclip-kitchen-sink-example`
+- nombre visible: `Kitchen Sink (Example)`
+- paquete: `@paperclipai/plugin-kitchen-sink-example`
+- id del plugin: `paperclip.kitchen-sink-example` o `paperclip-kitchen-sink-example`
 
-Recommendation: use `paperclip-kitchen-sink-example` to match current in-repo example naming style.
+Recomendación: usar `paperclip-kitchen-sink-example` para coincidir con el estilo de nombres de ejemplos actual del repositorio.
 
-Category mix:
+Mezcla de categorías:
 
 - `ui`
 - `automation`
 - `workspace`
 - `connector`
 
-That is intentionally broad because the point is coverage.
+Es intencionalmente amplia porque el punto es la cobertura.
 
-## UX Shape
+## Forma de UX
 
-The plugin should have one main full-page demo console plus smaller satellites on other surfaces.
+El plugin debería tener una consola demo principal de página completa más satélites más pequeños en otras superficies.
 
-### 1. Plugin page
+### 1. Página del plugin
 
-Primary route: the plugin `page` surface should be the central dashboard for all demos.
+Ruta principal: la superficie `page` del plugin debería ser el panel central para todas las demos.
 
-Recommended page sections:
+Secciones de página recomendadas:
 
 - `Overview`
-  - what this plugin demonstrates
-  - current capabilities granted
-  - current host context
+  - qué demuestra este plugin
+  - capacidades actuales otorgadas
+  - contexto actual del host
 - `UI Surfaces`
-  - links explaining where each other surface should appear
+  - enlaces que explican dónde debería aparecer cada otra superficie
 - `Data + Actions`
-  - buttons and forms for bridge-driven worker demos
+  - botones y formularios para demos de worker impulsadas por bridge
 - `Events + Streams`
-  - emit event
-  - watch event log
-  - stream demo output
+  - emitir evento
+  - ver registro de eventos
+  - salida de demo por stream
 - `Paperclip Domain APIs`
-  - companies
-  - projects/workspaces
+  - empresas
+  - proyectos/espacios de trabajo
   - issues
-  - goals
-  - agents
+  - objetivos
+  - agentes
 - `Local Workspace + Process`
-  - file listing
-  - file read/write scratch area
-  - child process demo
+  - listado de archivos
+  - lectura/escritura de archivos en área temporal
+  - demo de proceso hijo
 - `Jobs + Webhooks + Tools`
-  - job status
-  - webhook URL and recent deliveries
-  - declared tools
+  - estado de jobs
+  - URL de webhook y entregas recientes
+  - herramientas declaradas
 - `State + Entities + Assets`
-  - scoped state editor
-  - plugin entity inspector
-  - upload/generated asset demo
+  - editor de estado con alcance
+  - inspector de entidades del plugin
+  - demo de subida/recursos generados
 - `Observability`
-  - metrics written
-  - activity log samples
-  - latest worker logs
+  - métricas escritas
+  - muestras del registro de actividad
+  - últimos registros del worker
 
-### 2. Dashboard widget
+### 2. Widget del panel
 
-A compact widget on the main dashboard should show:
+Un widget compacto en el panel principal debería mostrar:
 
-- plugin health
-- count of demos exercised
-- recent event/stream activity
-- shortcut to the full plugin page
+- salud del plugin
+- conteo de demos ejercitadas
+- actividad reciente de eventos/streams
+- atajo a la página completa del plugin
 
-### 3. Project sidebar item
+### 3. Elemento de sidebar de proyecto
 
-Add a `Kitchen Sink` link under each project that deep-links into a project-scoped plugin tab.
+Agregar un enlace `Kitchen Sink` bajo cada proyecto que enlace profundo a una pestaña de plugin con alcance de proyecto.
 
-### 4. Detail tabs
+### 4. Pestañas de detalle
 
-Use detail tabs to demonstrate entity-context rendering on:
+Usar pestañas de detalle para demostrar renderizado con contexto de entidad en:
 
 - `project`
 - `issue`
 - `agent`
 - `goal`
 
-Each tab should show:
+Cada pestaña debería mostrar:
 
-- the host context it received
-- the relevant entity fetch via worker bridge
-- one small action scoped to that entity
+- el contexto del host que recibió
+- la obtención de entidad relevante vía worker bridge
+- una pequeña acción con alcance de esa entidad
 
-### 5. Comment surfaces
+### 5. Superficies de comentarios
 
-Use issue comment demos to prove comment-specific extension points:
+Usar demos de comentarios de issue para probar puntos de extensión específicos de comentarios:
 
 - `commentAnnotation`
-  - render parsed metadata below each comment
-  - show comment id, issue id, and a small derived status
+  - renderizar metadatos analizados debajo de cada comentario
+  - mostrar id de comentario, id de issue y un pequeño estado derivado
 - `commentContextMenuItem`
-  - add a menu action like `Copy Context To Kitchen Sink`
-  - action writes a plugin entity or state record for later inspection
+  - agregar una acción de menú como `Copy Context To Kitchen Sink`
+  - la acción escribe una entidad del plugin o un registro de estado para inspección posterior
 
-### 6. Settings page
+### 6. Página de ajustes
 
-Custom `settingsPage` should be intentionally simple and operational:
+La `settingsPage` personalizada debería ser intencionalmente simple y operativa:
 
 - `About`
 - `Danger / Trust Model`
-- demo toggles
-- local process defaults
-- workspace scratch-path behavior
-- secret reference inputs
-- event/job/webhook sample config
+- interruptores de demo
+- valores predeterminados de procesos locales
+- comportamiento de ruta temporal del espacio de trabajo
+- entradas de referencia de secretos
+- configuración de muestra de eventos/jobs/webhooks
 
-This plugin should also keep the generic plugin settings `Status` tab useful by writing health, logs, and metrics.
+Este plugin también debería mantener útil la pestaña genérica `Status` de ajustes del plugin escribiendo salud, registros y métricas.
 
-## Feature Matrix
+## Matriz de funciones
 
-Each implemented worker API should have a visible demo.
+Cada API de worker implementada debería tener una demo visible.
 
 ### `ctx.config`
 
 Demo:
 
-- read live config
-- show config JSON
-- react to config changes without restart where possible
+- leer configuración en vivo
+- mostrar JSON de configuración
+- reaccionar a cambios de configuración sin reiniciar donde sea posible
 
 ### `ctx.events`
 
 Demos:
 
-- emit a plugin event
-- subscribe to plugin events
-- subscribe to a core Paperclip event such as `issue.created`
-- show recent received events in a timeline
+- emitir un evento de plugin
+- suscribirse a eventos de plugin
+- suscribirse a un evento central de Paperclip como `issue.created`
+- mostrar eventos recibidos recientes en una línea de tiempo
 
 ### `ctx.jobs`
 
 Demos:
 
-- one scheduled heartbeat-style demo job
-- one manual run button from the UI if host supports manual job trigger
-- show last run result and timestamps
+- un job demo programado estilo latido
+- un botón de ejecución manual desde la UI si el host admite activación manual de jobs
+- mostrar último resultado de ejecución y marcas de tiempo
 
 ### `ctx.launchers`
 
 Demos:
 
-- declare launchers in manifest
-- optionally register one runtime launcher from the worker
-- show launcher metadata on the plugin page
+- declarar launchers en el manifiesto
+- opcionalmente registrar un launcher de tiempo de ejecución desde el worker
+- mostrar metadatos del launcher en la página del plugin
 
 ### `ctx.http`
 
 Demo:
 
-- make a simple outbound GET request to a safe endpoint
-- show status code, latency, and JSON result
+- hacer una simple solicitud GET saliente a un endpoint seguro
+- mostrar código de estado, latencia y resultado JSON
 
-Recommendation: default to a Paperclip-local endpoint or a stable public echo endpoint to avoid flaky docs.
+Recomendación: por defecto usar un endpoint local de Paperclip o un endpoint público estable de eco para evitar documentos inestables.
 
 ### `ctx.secrets`
 
 Demo:
 
-- operator enters a secret reference in config
-- plugin resolves it on demand
-- UI only shows masked result length / success status, never raw secret
+- el operador ingresa una referencia de secreto en la configuración
+- el plugin la resuelve bajo demanda
+- la UI solo muestra la longitud del resultado enmascarado / estado de éxito, nunca el secreto crudo
 
 ### `ctx.assets`
 
 Demos:
 
-- generate a text asset from the UI
-- optionally upload a tiny JSON blob or screenshot-like text file
-- show returned asset URL
+- generar un recurso de texto desde la UI
+- opcionalmente subir un pequeño blob JSON o archivo de texto tipo captura
+- mostrar la URL del recurso devuelta
 
 ### `ctx.activity`
 
 Demo:
 
-- button to write a plugin activity log entry against current company/entity
+- botón para escribir una entrada del registro de actividad del plugin contra la empresa/entidad actual
 
 ### `ctx.state`
 
 Demos:
 
-- instance-scoped state
-- company-scoped state
-- project-scoped state
-- issue-scoped state
-- delete/reset controls
+- estado con alcance de instancia
+- estado con alcance de empresa
+- estado con alcance de proyecto
+- estado con alcance de issue
+- controles de eliminación/restablecimiento
 
-Use a small state inspector/editor on the plugin page.
+Usar un pequeño inspector/editor de estado en la página del plugin.
 
 ### `ctx.entities`
 
 Demos:
 
-- create plugin-owned sample records
-- list/filter them
-- show one realistic use case such as "copied comments" or "demo sync records"
+- crear registros de muestra propios del plugin
+- listarlos/filtrarlos
+- mostrar un caso de uso realista como "comentarios copiados" o "registros demo de sincronización"
 
 ### `ctx.projects`
 
 Demos:
 
-- list projects
-- list project workspaces
-- resolve primary workspace
-- resolve workspace for issue
+- listar proyectos
+- listar espacios de trabajo de proyecto
+- resolver espacio de trabajo principal
+- resolver espacio de trabajo para issue
 
 ### `ctx.companies`
 
 Demo:
 
-- list companies and show current selected company
+- listar empresas y mostrar la empresa seleccionada actual
 
 ### `ctx.issues`
 
 Demos:
 
-- list issues in current company
-- create issue
-- update issue status/title
-- list comments
-- create comment
+- listar issues en la empresa actual
+- crear issue
+- actualizar estado/título de issue
+- listar comentarios
+- crear comentario
 
 ### `ctx.agents`
 
 Demos:
 
-- list agents
-- invoke one agent with a test prompt
-- pause/resume where safe
+- listar agentes
+- invocar un agente con un prompt de prueba
+- pausar/reanudar donde sea seguro
 
-Agent mutation controls should be behind an explicit warning.
+Los controles de mutación de agentes deberían estar detrás de una advertencia explícita.
 
 ### `ctx.agents.sessions`
 
 Demos:
 
-- create agent chat session
-- send message
-- stream events back to the UI
-- close session
+- crear sesión de chat de agente
+- enviar mensaje
+- devolver eventos por stream a la UI
+- cerrar sesión
 
-This is a strong candidate for the best "wow" demo on the plugin page.
+Esta es una fuerte candidata para la mejor demo "impactante" en la página del plugin.
 
 ### `ctx.goals`
 
 Demos:
 
-- list goals
-- create goal
-- update status/title
+- listar objetivos
+- crear objetivo
+- actualizar estado/título
 
 ### `ctx.data`
 
-Use throughout the plugin for all read-side bridge demos.
+Usar en todo el plugin para todas las demos de lectura vía bridge.
 
 ### `ctx.actions`
 
-Use throughout the plugin for all mutation-side bridge demos.
+Usar en todo el plugin para todas las demos de mutación vía bridge.
 
 ### `ctx.streams`
 
 Demos:
 
-- live event log stream
-- token-style stream from an agent session relay
-- fake progress stream for a long-running action
+- stream de registro de eventos en vivo
+- stream estilo tokens desde un relay de sesión de agente
+- stream de progreso falso para una acción de larga duración
 
 ### `ctx.tools`
 
 Demos:
 
-- declare 2-3 simple agent tools
-- tool 1: echo/diagnostics
-- tool 2: project/workspace summary
-- tool 3: create issue or write plugin state
+- declarar 2-3 herramientas de agente simples
+- herramienta 1: eco/diagnóstico
+- herramienta 2: resumen de proyecto/espacio de trabajo
+- herramienta 3: crear issue o escribir estado del plugin
 
-The plugin page should list declared tools and show example input payloads.
+La página del plugin debería listar las herramientas declaradas y mostrar cargas útiles de entrada de ejemplo.
 
 ### `ctx.metrics`
 
 Demo:
 
-- write a sample metric on each major demo action
-- surface a small recent metrics table in the plugin page
+- escribir una métrica de muestra en cada acción demo principal
+- mostrar una pequeña tabla de métricas recientes en la página del plugin
 
 ### `ctx.logger`
 
 Demo:
 
-- every action logs structured entries
-- plugin settings `Status` page then doubles as the log viewer
+- cada acción registra entradas estructuradas
+- la página `Status` de ajustes del plugin funciona entonces también como visor de registros
 
-## Local Workspace And Process Demos
+## Demos de espacio de trabajo local y procesos
 
-The plugin SDK intentionally leaves file/process operations to the plugin itself once it has workspace metadata.
+El SDK del plugin intencionalmente deja las operaciones de archivos/procesos al plugin mismo una vez que tiene metadatos del espacio de trabajo.
 
-The kitchen-sink plugin should demonstrate that explicitly.
+El plugin kitchen-sink debería demostrar eso explícitamente.
 
-### Workspace demos
+### Demos de espacio de trabajo
 
-- list files from a selected workspace
-- read a file
-- write to a plugin-owned scratch file
-- optionally search files with `rg` if available
+- listar archivos de un espacio de trabajo seleccionado
+- leer un archivo
+- escribir en un archivo temporal propio del plugin
+- opcionalmente buscar archivos con `rg` si está disponible
 
-### Process demos
+### Demos de procesos
 
-- run a short-lived command like `pwd`, `ls`, or `git status`
-- stream stdout/stderr back to UI
-- show exit code and timing
+- ejecutar un comando de corta duración como `pwd`, `ls` o `git status`
+- devolver stdout/stderr por stream a la UI
+- mostrar código de salida y tiempos
 
-Important safeguards:
+Salvaguardas importantes:
 
-- default commands must be read-only
-- no shell interpolation from arbitrary free-form input in v1
-- provide a curated command list or a strongly validated command form
-- clearly label this area as local-only and trusted-only
+- los comandos predeterminados deben ser de solo lectura
+- sin interpolación de shell desde entrada libre arbitraria en v1
+- proporcionar una lista de comandos curada o un formulario de comandos fuertemente validado
+- etiquetar claramente esta área como solo local y solo confiable
 
-## Proposed Manifest Coverage
+## Cobertura propuesta del manifiesto
 
-The plugin should aim to declare:
+El plugin debería aspirar a declarar:
 
 - `page`
 - `settingsPage`
 - `dashboardWidget`
-- `detailTab` for `project`, `issue`, `agent`, `goal`
+- `detailTab` para `project`, `issue`, `agent`, `goal`
 - `projectSidebarItem`
 - `commentAnnotation`
 - `commentContextMenuItem`
 
-Then, after host validation, add if supported:
+Luego, tras la validación del host, agregar si se admiten:
 
 - `sidebar`
 - `sidebarPanel`
@@ -476,15 +476,15 @@ Then, after host validation, add if supported:
 - `toolbarButton`
 - `contextMenuItem`
 
-It should also declare one or more `ui.launchers` entries to exercise launcher behavior independently of slot rendering.
+También debería declarar una o más entradas `ui.launchers` para ejercitar el comportamiento de launchers independientemente del renderizado de slots.
 
-## Proposed Package Layout
+## Diseño de paquete propuesto
 
-New package:
+Nuevo paquete:
 
 - `packages/plugins/examples/plugin-kitchen-sink-example/`
 
-Expected files:
+Archivos esperados:
 
 - `package.json`
 - `README.md`
@@ -496,37 +496,37 @@ Expected files:
 - `src/ui/components/...`
 - `src/ui/hooks/...`
 - `src/lib/...`
-- optional `scripts/build-ui.mjs` if UI bundling needs esbuild
+- opcional `scripts/build-ui.mjs` si el empaquetado de UI necesita esbuild
 
-## Proposed Internal Architecture
+## Arquitectura interna propuesta
 
-### Worker modules
+### Módulos del worker
 
-Recommended split:
+División recomendada:
 
 - `src/worker.ts`
-  - plugin definition and wiring
+  - definición del plugin y cableado
 - `src/worker/data.ts`
   - `ctx.data.register(...)`
 - `src/worker/actions.ts`
   - `ctx.actions.register(...)`
 - `src/worker/events.ts`
-  - event subscriptions and event log buffer
+  - suscripciones a eventos y búfer de registro de eventos
 - `src/worker/jobs.ts`
-  - scheduled job handlers
+  - manejadores de jobs programados
 - `src/worker/tools.ts`
-  - tool declarations and handlers
+  - declaraciones y manejadores de herramientas
 - `src/worker/local-runtime.ts`
-  - file/process demos
+  - demos de archivos/procesos
 - `src/worker/demo-store.ts`
-  - helpers for state/entities/assets/metrics
+  - ayudantes para estado/entidades/recursos/métricas
 
-### UI modules
+### Módulos de UI
 
-Recommended split:
+División recomendada:
 
 - `src/ui/index.tsx`
-  - exported slot components
+  - componentes de slot exportados
 - `src/ui/page/KitchenSinkPage.tsx`
 - `src/ui/settings/KitchenSinkSettingsPage.tsx`
 - `src/ui/widgets/KitchenSinkDashboardWidget.tsx`
@@ -538,11 +538,11 @@ Recommended split:
 - `src/ui/comments/KitchenSinkCommentMenuItem.tsx`
 - `src/ui/shared/...`
 
-## Configuration Schema
+## Esquema de configuración
 
-The plugin should have a substantial but understandable `instanceConfigSchema`.
+El plugin debería tener un `instanceConfigSchema` sustancial pero comprensible.
 
-Recommended config fields:
+Campos de configuración recomendados:
 
 - `enableDangerousDemos`
 - `enableWorkspaceDemos`
@@ -553,42 +553,42 @@ Recommended config fields:
 - `showCommentAnnotation`
 - `showCommentContextMenuItem`
 - `showToolbarLauncher`
-- `defaultDemoCompanyId` optional
+- `defaultDemoCompanyId` opcional
 - `secretRefExample`
 - `httpDemoUrl`
 - `processAllowedCommands`
 - `workspaceScratchSubdir`
 
-Defaults should keep risky behavior off.
+Los valores predeterminados deberían mantener desactivado el comportamiento riesgoso.
 
-## Safety Defaults
+## Valores de seguridad predeterminados
 
-Default posture:
+Postura predeterminada:
 
-- UI and read-only demos on
-- mutating domain demos on but explicitly labeled
-- process demos off by default
-- no arbitrary shell input by default
-- no raw secret rendering ever
+- UI y demos de solo lectura activadas
+- demos de dominio que mutan activadas pero explícitamente etiquetadas
+- demos de procesos desactivadas por defecto
+- sin entrada de shell arbitraria por defecto
+- nunca renderizar secretos crudos
 
-## Phased Build Plan
+## Plan de construcción por fases
 
-### Phase 1: Core plugin skeleton
+### Fase 1: Esqueleto central del plugin
 
-- scaffold package
-- add manifest, worker, UI entrypoints
-- add README
-- make it appear in bundled examples list
+- armar el paquete
+- agregar manifiesto, worker, puntos de entrada de UI
+- agregar README
+- hacer que aparezca en la lista de ejemplos incluidos
 
-### Phase 2: Core, confirmed UI surfaces
+### Fase 2: Superficies de UI centrales confirmadas
 
-- plugin page
-- settings page
-- dashboard widget
-- project sidebar item
-- detail tabs
+- página del plugin
+- página de ajustes
+- widget del panel
+- elemento de sidebar de proyecto
+- pestañas de detalle
 
-### Phase 3: Core worker APIs
+### Fase 3: API centrales de worker
 
 - config
 - state
@@ -597,103 +597,103 @@ Default posture:
 - data/actions
 - metrics/logger/activity
 
-### Phase 4: Real-time and automation APIs
+### Fase 4: API de tiempo real y automatización
 
 - streams
 - events
 - jobs
 - webhooks
-- agent sessions
+- sesiones de agente
 - tools
 
-### Phase 5: Local trusted runtime demos
+### Fase 5: Demos locales de tiempo de ejecución confiable
 
-- workspace file demos
-- child process demos
-- guarded by config
+- demos de archivos del espacio de trabajo
+- demos de procesos hijo
+- protegidas por configuración
 
-### Phase 6: Secondary UI surfaces
+### Fase 6: Superficies de UI secundarias
 
-- comment annotation
-- comment context menu item
+- anotación de comentarios
+- elemento de menú contextual de comentarios
 - launchers
 
-### Phase 7: Validation-only surfaces
+### Fase 7: Superficies solo de validación
 
-Validate whether the current host truly mounts:
+Validar si el host actual realmente monta:
 
 - `sidebar`
 - `sidebarPanel`
 - `taskDetailView`
-- direct-slot `toolbarButton`
-- direct-slot `contextMenuItem`
+- `toolbarButton` de slot directo
+- `contextMenuItem` de slot directo
 
-If mounted, add demos.
-If not mounted, document them as SDK-defined but host-pending.
+Si están montadas, agregar demos.
+Si no están montadas, documentarlas como definidas por el SDK pero pendientes del host.
 
-## Documentation Deliverables
+## Entregables de documentación
 
-The plugin should ship with a README that includes:
+El plugin debería incluir un README que contenga:
 
-- what it demonstrates
-- which surfaces are local-only
-- how to install it
-- where each UI surface should appear
-- a mapping from demo card to SDK API
+- qué demuestra
+- qué superficies son solo locales
+- cómo instalarlo
+- dónde debería aparecer cada superficie de UI
+- un mapeo de tarjeta de demo a API del SDK
 
-It should also be referenced from plugin docs as the "reference everything plugin".
+También debería referenciarse desde los documentos de plugins como el "plugin de referencia de todo".
 
-## Testing And Verification
+## Pruebas y verificación
 
-Minimum verification:
+Verificación mínima:
 
-- package typecheck/build
-- install from bundled example list
-- page loads
-- widget appears
-- project tab appears
-- comment surfaces render
-- settings page loads
-- key actions succeed
+- typecheck/build del paquete
+- instalación desde la lista de ejemplos incluidos
+- la página carga
+- el widget aparece
+- la pestaña de proyecto aparece
+- las superficies de comentarios se renderizan
+- la página de ajustes carga
+- las acciones clave tienen éxito
 
-Recommended manual checklist:
+Lista manual recomendada:
 
-- create issue from plugin
-- create goal from plugin
-- emit and receive plugin event
-- stream action output
-- open agent session and receive streamed reply
-- upload an asset
-- write plugin activity log
-- run a safe local process demo
+- crear issue desde el plugin
+- crear objetivo desde el plugin
+- emitir y recibir evento de plugin
+- salida de acción por stream
+- abrir sesión de agente y recibir respuesta por stream
+- subir un recurso
+- escribir registro de actividad del plugin
+- ejecutar una demo de proceso local segura
 
-## Open Questions
+## Preguntas abiertas
 
-1. Should the process demo remain curated-command-only in the first pass?
-   Recommendation: yes.
+1. ¿La demo de procesos debería seguir siendo solo de comandos curados en el primer pase?
+   Recomendación: sí.
 
-2. Should the plugin create throwaway "kitchen sink demo" issues/goals automatically?
-   Recommendation: no. Make creation explicit.
+2. ¿El plugin debería crear automáticamente issues/objetivos desechables de "kitchen sink demo"?
+   Recomendación: no. Hacer la creación explícita.
 
-3. Should we expose unsupported-but-typed surfaces in the UI even if host mounting is not wired?
-   Recommendation: yes, but label them as `SDK-defined / host validation pending`.
+3. ¿Deberíamos exponer en la UI superficies tipadas pero no admitidas aunque el montaje del host no esté cableado?
+   Recomendación: sí, pero etiquetarlas como `SDK-defined / host validation pending`.
 
-4. Should agent mutation demos include pause/resume by default?
-   Recommendation: probably yes, but behind a warning block.
+4. ¿Las demos de mutación de agentes deberían incluir pausa/reanudación por defecto?
+   Recomendación: probablemente sí, pero detrás de un bloque de advertencia.
 
-5. Should this plugin be treated as a supported regression harness in CI later?
-   Recommendation: yes. Long term, this should be the plugin-runtime smoke test package.
+5. ¿Este plugin debería tratarse más adelante como un arnés de regresión admitido en CI?
+   Recomendación: sí. A largo plazo, este debería ser el paquete de prueba de humo del tiempo de ejecución de plugins.
 
-## Recommended Next Step
+## Próximo paso recomendado
 
-If this plan looks right, the next implementation pass should start by building only:
+Si este plan parece correcto, el próximo pase de implementación debería comenzar construyendo solo:
 
-- package skeleton
-- page
-- settings page
-- dashboard widget
-- one project detail tab
-- one issue detail tab
-- the basic worker/action/data/state/event scaffolding
+- esqueleto del paquete
+- página
+- página de ajustes
+- widget del panel
+- una pestaña de detalle de proyecto
+- una pestaña de detalle de issue
+- el andamiaje básico de worker/acción/datos/estado/eventos
 
-That is enough to lock the architecture before filling in every demo surface.
+Eso es suficiente para fijar la arquitectura antes de llenar cada superficie de demo.

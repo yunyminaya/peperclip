@@ -16,7 +16,7 @@ fail() {
 
 require_cmd() {
   local cmd="$1"
-  command -v "$cmd" >/dev/null 2>&1 || fail "missing required command: $cmd"
+  command -v "$cmd" >/dev/null 2>&1 || fail "falta el comando requerido: $cmd"
 }
 
 require_cmd curl
@@ -125,7 +125,7 @@ capture_run_diagnostics() {
   if [[ "$RESPONSE_CODE" == "200" ]]; then
     printf "%s\n" "$RESPONSE_BODY" > "${OPENCLAW_DIAG_DIR}/${label}-${run_id}-events.json"
   else
-    warn "could not fetch events for run ${run_id} (HTTP ${RESPONSE_CODE})"
+    warn "no se pudieron obtener los eventos del run ${run_id} (HTTP ${RESPONSE_CODE})"
   fi
 
   api_request "GET" "/heartbeat-runs/${run_id}/log?limitBytes=524288"
@@ -133,7 +133,7 @@ capture_run_diagnostics() {
     printf "%s\n" "$RESPONSE_BODY" > "${OPENCLAW_DIAG_DIR}/${label}-${run_id}-log.json"
     jq -r '.content // ""' <<<"$RESPONSE_BODY" > "${OPENCLAW_DIAG_DIR}/${label}-${run_id}-log.txt" 2>/dev/null || true
   else
-    warn "could not fetch log for run ${run_id} (HTTP ${RESPONSE_CODE})"
+    warn "no se pudo obtener el log del run ${run_id} (HTTP ${RESPONSE_CODE})"
   fi
 }
 
@@ -159,7 +159,7 @@ capture_openclaw_container_logs() {
   local container
   container="$(detect_openclaw_container || true)"
   if [[ -z "$container" ]]; then
-    warn "could not detect OpenClaw container for diagnostics"
+    warn "no se pudo detectar el contenedor de OpenClaw para diagnósticos"
     return 0
   fi
   docker logs --tail=1200 "$container" > "${OPENCLAW_DIAG_DIR}/openclaw-container.log" 2>&1 || true
@@ -169,28 +169,28 @@ assert_status() {
   local expected="$1"
   if [[ "$RESPONSE_CODE" != "$expected" ]]; then
     echo "$RESPONSE_BODY" >&2
-    fail "expected HTTP ${expected}, got ${RESPONSE_CODE}"
+    fail "se esperaba HTTP ${expected}, se recibió ${RESPONSE_CODE}"
   fi
 }
 
 require_board_auth() {
   if [[ ${#AUTH_HEADERS[@]} -eq 0 ]]; then
-    fail "board auth required. Set PAPERCLIP_COOKIE or PAPERCLIP_AUTH_HEADER."
+    fail "se requiere autenticación de panel. Define PAPERCLIP_COOKIE o PAPERCLIP_AUTH_HEADER."
   fi
   api_request "GET" "/companies"
   if [[ "$RESPONSE_CODE" != "200" ]]; then
     echo "$RESPONSE_BODY" >&2
-    fail "board auth invalid for /api/companies (HTTP ${RESPONSE_CODE})"
+    fail "autenticación de panel inválida para /api/companies (HTTP ${RESPONSE_CODE})"
   fi
 }
 
 maybe_cleanup_openclaw_docker() {
   if [[ "$OPENCLAW_RESET_DOCKER" != "1" ]]; then
-    log "OPENCLAW_RESET_DOCKER=${OPENCLAW_RESET_DOCKER}; skipping docker cleanup"
+    log "OPENCLAW_RESET_DOCKER=${OPENCLAW_RESET_DOCKER}; omitiendo la limpieza de docker"
     return
   fi
 
-  log "cleaning OpenClaw docker state"
+  log "limpiando el estado de docker de OpenClaw"
   if [[ -d "$OPENCLAW_DOCKER_DIR" ]]; then
     docker compose -f "$OPENCLAW_DOCKER_DIR/docker-compose.yml" down --remove-orphans >/dev/null 2>&1 || true
   fi
@@ -201,7 +201,7 @@ maybe_cleanup_openclaw_docker() {
 }
 
 start_openclaw_docker() {
-  log "starting clean OpenClaw docker"
+  log "iniciando un docker limpio de OpenClaw"
   OPENCLAW_CONFIG_DIR="$OPENCLAW_CONFIG_DIR" OPENCLAW_WORKSPACE_DIR="$OPENCLAW_WORKSPACE_DIR" \
   OPENCLAW_RESET_STATE="$OPENCLAW_RESET_STATE" OPENCLAW_BUILD="$OPENCLAW_BUILD" OPENCLAW_WAIT_SECONDS="$OPENCLAW_WAIT_SECONDS" \
     ./scripts/smoke/openclaw-docker-ui.sh
@@ -333,10 +333,10 @@ resolve_company_id() {
     local available
     available="$(jq -r '.[] | "- id=\(.id) issuePrefix=\(.issuePrefix // "") name=\(.name // "")"' <<<"$RESPONSE_BODY")"
     echo "$available" >&2
-    fail "could not find company for selector '${COMPANY_SELECTOR}'"
+    fail "no se encontró la empresa para el selector '${COMPANY_SELECTOR}'"
   fi
 
-  log "resolved company ${COMPANY_ID} from selector ${COMPANY_SELECTOR}"
+  log "empresa resuelta ${COMPANY_ID} desde el selector ${COMPANY_SELECTOR}"
 }
 
 cleanup_openclaw_agents() {
@@ -346,21 +346,21 @@ cleanup_openclaw_agents() {
   local ids
   ids="$(jq -r '.[] | select((.adapterType == "openclaw" or .adapterType == "openclaw_gateway")) | .id' <<<"$RESPONSE_BODY")"
   if [[ -z "$ids" ]]; then
-    log "no prior OpenClaw agents to cleanup"
+    log "no hay agentes previos de OpenClaw para limpiar"
     return
   fi
 
   while IFS= read -r id; do
     [[ -n "$id" ]] || continue
-    log "terminating prior OpenClaw agent ${id}"
+    log "terminando el agente previo de OpenClaw ${id}"
     api_request "POST" "/agents/${id}/terminate" "{}"
     if [[ "$RESPONSE_CODE" != "200" && "$RESPONSE_CODE" != "404" ]]; then
-      warn "terminate ${id} returned HTTP ${RESPONSE_CODE}"
+      warn "terminate ${id} devolvió HTTP ${RESPONSE_CODE}"
     fi
 
     api_request "DELETE" "/agents/${id}"
     if [[ "$RESPONSE_CODE" != "200" && "$RESPONSE_CODE" != "404" ]]; then
-      warn "delete ${id} returned HTTP ${RESPONSE_CODE}"
+      warn "delete ${id} devolvió HTTP ${RESPONSE_CODE}"
     fi
   done <<<"$ids"
 }
@@ -368,7 +368,7 @@ cleanup_openclaw_agents() {
 cleanup_pending_join_requests() {
   api_request "GET" "/companies/${COMPANY_ID}/join-requests?status=pending_approval"
   if [[ "$RESPONSE_CODE" != "200" ]]; then
-    warn "join-request cleanup skipped (HTTP ${RESPONSE_CODE})"
+    warn "limpieza de join-requests omitida (HTTP ${RESPONSE_CODE})"
     return
   fi
 
@@ -380,10 +380,10 @@ cleanup_pending_join_requests() {
 
   while IFS= read -r request_id; do
     [[ -n "$request_id" ]] || continue
-    log "rejecting stale pending join request ${request_id}"
+    log "rechazando la solicitud de unión pendiente obsoleta ${request_id}"
     api_request "POST" "/companies/${COMPANY_ID}/join-requests/${request_id}/reject" "{}"
     if [[ "$RESPONSE_CODE" != "200" && "$RESPONSE_CODE" != "404" && "$RESPONSE_CODE" != "409" ]]; then
-      warn "reject ${request_id} returned HTTP ${RESPONSE_CODE}"
+      warn "reject ${request_id} devolvió HTTP ${RESPONSE_CODE}"
     fi
   done <<<"$ids"
 }
@@ -399,7 +399,7 @@ create_and_approve_gateway_join() {
   local invite_token
   invite_token="$(jq -r '.token // empty' <<<"$RESPONSE_BODY")"
   INVITE_ID="$(jq -r '.id // empty' <<<"$RESPONSE_BODY")"
-  [[ -n "$invite_token" && -n "$INVITE_ID" ]] || fail "invite creation missing token/id"
+  [[ -n "$invite_token" && -n "$INVITE_ID" ]] || fail "la creación de la invitación no devolvió token/id"
 
   local join_payload
   join_payload="$(jq -nc \
@@ -413,7 +413,7 @@ create_and_approve_gateway_join() {
       requestType: "agent",
       agentName: $name,
       adapterType: "openclaw_gateway",
-      capabilities: "OpenClaw gateway smoke harness",
+      capabilities: "Arnés de prueba de humo del gateway de OpenClaw",
       agentDefaultsPayload: {
         url: $url,
         headers: { "x-openclaw-token": $token },
@@ -435,23 +435,23 @@ create_and_approve_gateway_join() {
   claim_secret="$(jq -r '.claimSecret // empty' <<<"$RESPONSE_BODY")"
   local claim_path
   claim_path="$(jq -r '.claimApiKeyPath // empty' <<<"$RESPONSE_BODY")"
-  [[ -n "$JOIN_REQUEST_ID" && -n "$claim_secret" && -n "$claim_path" ]] || fail "join accept missing claim metadata"
+  [[ -n "$JOIN_REQUEST_ID" && -n "$claim_secret" && -n "$claim_path" ]] || fail "la aceptación de la unión no devolvió metadatos de reclamación"
 
-  log "approving join request ${JOIN_REQUEST_ID}"
+  log "aprobando la solicitud de unión ${JOIN_REQUEST_ID}"
   api_request "POST" "/companies/${COMPANY_ID}/join-requests/${JOIN_REQUEST_ID}/approve" "{}"
   assert_status "200"
 
   AGENT_ID="$(jq -r '.createdAgentId // empty' <<<"$RESPONSE_BODY")"
-  [[ -n "$AGENT_ID" ]] || fail "join approval missing createdAgentId"
+  [[ -n "$AGENT_ID" ]] || fail "la aprobación de la unión no devolvió createdAgentId"
 
-  log "claiming one-time agent API key"
+  log "reclamando la clave API de un solo uso del agente"
   local claim_payload
   claim_payload="$(jq -nc --arg secret "$claim_secret" '{claimSecret:$secret}')"
   api_request "POST" "$claim_path" "$claim_payload"
   assert_status "201"
 
   AGENT_API_KEY="$(jq -r '.token // empty' <<<"$RESPONSE_BODY")"
-  [[ -n "$AGENT_API_KEY" ]] || fail "claim response missing token"
+  [[ -n "$AGENT_API_KEY" ]] || fail "la respuesta de reclamación no incluye el token"
 
   persist_claimed_key_artifacts "$RESPONSE_BODY"
   inject_agent_api_key_payload_template
@@ -467,13 +467,13 @@ persist_claimed_key_artifacts() {
   mkdir -p "$workspace_dir" "$skill_dir"
   local token
   token="$(jq -r '.token // .apiKey // empty' <<<"$claim_json")"
-  [[ -n "$token" ]] || fail "claim response missing token/apiKey"
+  [[ -n "$token" ]] || fail "la respuesta de reclamación no incluye token/apiKey"
 
   printf "%s\n" "$claim_json" > "$claimed_raw_file"
   chmod 600 "$claimed_raw_file"
 
   jq -nc --arg token "$token" '{ token: $token, apiKey: $token }' > "$claimed_file"
-  # Keep this readable for OpenClaw runtime users across sandbox/container contexts.
+  # Mantiene este archivo legible para usuarios del runtime de OpenClaw en distintos contextos de sandbox/contenedor.
   chmod 644 "$claimed_file"
 
   local container
@@ -495,18 +495,18 @@ persist_claimed_key_artifacts() {
     chmod 600 "${skill_dir}/SKILL.md"
   fi
 
-  log "wrote claimed key artifacts to ${claimed_file} and ${claimed_raw_file}"
+  log "artefactos de la clave reclamada escritos en ${claimed_file} y ${claimed_raw_file}"
 }
 
 inject_agent_api_key_payload_template() {
-  [[ -n "$AGENT_ID" ]] || fail "inject_agent_api_key_payload_template requires AGENT_ID"
-  [[ -n "$AGENT_API_KEY" ]] || fail "inject_agent_api_key_payload_template requires AGENT_API_KEY"
+  [[ -n "$AGENT_ID" ]] || fail "inject_agent_api_key_payload_template requiere AGENT_ID"
+  [[ -n "$AGENT_API_KEY" ]] || fail "inject_agent_api_key_payload_template requiere AGENT_API_KEY"
 
   api_request "GET" "/agents/${AGENT_ID}"
   assert_status "200"
 
   local base_message
-  base_message="Set PAPERCLIP_API_KEY=${AGENT_API_KEY} in your run context before running Paperclip heartbeat steps."
+  base_message="Define PAPERCLIP_API_KEY=${AGENT_API_KEY} en tu contexto de ejecución antes de correr los pasos de heartbeat de Paperclip."
   if [[ -n "$PAYLOAD_TEMPLATE_MESSAGE_APPEND" ]]; then
     base_message="${base_message}\n\n${PAYLOAD_TEMPLATE_MESSAGE_APPEND}"
   fi
@@ -537,26 +537,26 @@ validate_joined_gateway_agent() {
   disable_device_auth="$(jq -r 'if .adapterConfig.disableDeviceAuth == true then "true" else "false" end' <<<"$RESPONSE_BODY")"
   device_key_len="$(jq -r '(.adapterConfig.devicePrivateKeyPem // "" | length)' <<<"$RESPONSE_BODY")"
 
-  [[ "$adapter_type" == "openclaw_gateway" ]] || fail "joined agent adapterType is '${adapter_type}', expected 'openclaw_gateway'"
-  [[ "$gateway_url" =~ ^wss?:// ]] || fail "joined agent gateway url is invalid: '${gateway_url}'"
-  [[ -n "$configured_token" ]] || fail "joined agent missing adapterConfig.headers.x-openclaw-token"
+  [[ "$adapter_type" == "openclaw_gateway" ]] || fail "el adapterType del agente unido es '${adapter_type}', se esperaba 'openclaw_gateway'"
+  [[ "$gateway_url" =~ ^wss?:// ]] || fail "la URL del gateway del agente unido es inválida: '${gateway_url}'"
+  [[ -n "$configured_token" ]] || fail "al agente unido le falta adapterConfig.headers.x-openclaw-token"
   if (( ${#configured_token} < 16 )); then
-    fail "joined agent gateway token looks too short (${#configured_token} chars)"
+    fail "el token del gateway del agente unido parece demasiado corto (${#configured_token} caracteres)"
   fi
 
   local expected_hash configured_hash
   expected_hash="$(hash_prefix "$expected_gateway_token")"
   configured_hash="$(hash_prefix "$configured_token")"
   if [[ "$expected_hash" != "$configured_hash" ]]; then
-    fail "joined agent gateway token hash mismatch (expected ${expected_hash}, got ${configured_hash})"
+    fail "el hash del token del gateway del agente unido no coincide (se esperaba ${expected_hash}, se recibió ${configured_hash})"
   fi
 
-  [[ "$disable_device_auth" == "false" ]] || fail "joined agent has disableDeviceAuth=true; smoke requires device auth enabled with persistent key"
+  [[ "$disable_device_auth" == "false" ]] || fail "el agente unido tiene disableDeviceAuth=true; la prueba de humo requiere la autenticación de dispositivos habilitada con clave persistente"
   if (( device_key_len < 32 )); then
-    fail "joined agent missing persistent devicePrivateKeyPem (length=${device_key_len})"
+    fail "al agente unido le falta devicePrivateKeyPem persistente (longitud=${device_key_len})"
   fi
 
-  log "validated joined gateway agent config (token sha256 prefix ${configured_hash})"
+  log "configuración del agente del gateway unido validada (prefijo sha256 del token ${configured_hash})"
 }
 
 run_log_contains_pairing_required() {
@@ -576,18 +576,18 @@ approve_latest_pairing_request() {
   container="$(detect_openclaw_container || true)"
   [[ -n "$container" ]] || return 1
 
-  log "approving latest gateway pairing request in ${container}"
+  log "aprobando la solicitud de emparejamiento más reciente del gateway en ${container}"
   local output
   if output="$(docker exec \
     -e OPENCLAW_GATEWAY_URL="$OPENCLAW_GATEWAY_URL" \
     -e OPENCLAW_GATEWAY_TOKEN="$gateway_token" \
     "$container" \
     sh -lc 'openclaw devices approve --latest --json --url "$OPENCLAW_GATEWAY_URL" --token "$OPENCLAW_GATEWAY_TOKEN"' 2>&1)"; then
-    log "pairing approval response: $(printf "%s" "$output" | tr '\n' ' ' | cut -c1-400)"
+    log "respuesta de la aprobación de emparejamiento: $(printf "%s" "$output" | tr '\n' ' ' | cut -c1-400)"
     return 0
   fi
 
-  warn "pairing auto-approve failed: $(printf "%s" "$output" | tr '\n' ' ' | cut -c1-400)"
+  warn "la aprobación automática de emparejamiento falló: $(printf "%s" "$output" | tr '\n' ' ' | cut -c1-400)"
   return 1
 }
 
@@ -605,12 +605,12 @@ trigger_wakeup() {
   api_request "POST" "/agents/${AGENT_ID}/wakeup" "$payload"
   if [[ "$RESPONSE_CODE" != "202" ]]; then
     echo "$RESPONSE_BODY" >&2
-    fail "wakeup failed (HTTP ${RESPONSE_CODE})"
+    fail "el wakeup falló (HTTP ${RESPONSE_CODE})"
   fi
 
   RUN_ID="$(jq -r '.id // empty' <<<"$RESPONSE_BODY")"
   if [[ -z "$RUN_ID" ]]; then
-    warn "wakeup response did not include run id; body: ${RESPONSE_BODY}"
+    warn "la respuesta del wakeup no incluyó el id del run; cuerpo: ${RESPONSE_BODY}"
   fi
 }
 
@@ -629,7 +629,7 @@ wait_for_run_terminal() {
   local timeout_sec="$2"
   local started now status
 
-  [[ -n "$run_id" ]] || fail "wait_for_run_terminal requires run id"
+  [[ -n "$run_id" ]] || fail "wait_for_run_terminal requiere el id del run"
   started="$(date +%s)"
 
   while true; do
@@ -716,7 +716,7 @@ create_issue_for_case() {
   local issue_id issue_identifier
   issue_id="$(jq -r '.id // empty' <<<"$RESPONSE_BODY")"
   issue_identifier="$(jq -r '.identifier // empty' <<<"$RESPONSE_BODY")"
-  [[ -n "$issue_id" ]] || fail "issue create missing id"
+  [[ -n "$issue_id" ]] || fail "la creación del issue no devolvió el id"
 
   echo "${issue_id}|${issue_identifier}"
 }
@@ -746,27 +746,27 @@ find_issue_by_query() {
 run_case_a() {
   local marker="OPENCLAW_CASE_A_OK_$(date +%s)"
   local description
-  description="Case A validation.\n\n1) Read this issue.\n2) Post a comment containing exactly: ${marker}\n3) Mark this issue done."
+  description="Validación del caso A.\n\n1) Lee este issue.\n2) Publica un comentario con exactamente: ${marker}\n3) Marca este issue como done."
 
   local created
   created="$(create_issue_for_case "[OpenClaw Gateway Smoke] Case A" "$description")"
   CASE_A_ISSUE_ID="${created%%|*}"
   local case_identifier="${created##*|}"
 
-  log "case A issue ${CASE_A_ISSUE_ID} (${case_identifier})"
+  log "issue del caso A ${CASE_A_ISSUE_ID} (${case_identifier})"
   trigger_wakeup "openclaw_gateway_smoke_case_a" "$CASE_A_ISSUE_ID"
 
   local run_status issue_status marker_found
   if [[ -n "$RUN_ID" ]]; then
     run_status="$(wait_for_run_terminal "$RUN_ID" "$RUN_TIMEOUT_SEC")"
-    log "case A run ${RUN_ID} status=${run_status}"
+    log "run del caso A ${RUN_ID} estado=${run_status}"
   else
     run_status="unknown"
   fi
 
   issue_status="$(wait_for_issue_terminal "$CASE_A_ISSUE_ID" "$CASE_TIMEOUT_SEC")"
   marker_found="$(issue_comments_contain "$CASE_A_ISSUE_ID" "$marker")"
-  log "case A issue_status=${issue_status} marker_found=${marker_found}"
+  log "caso A issue_status=${issue_status} marker_found=${marker_found}"
 
   if [[ "$issue_status" != "done" || "$marker_found" != "true" ]]; then
     capture_issue_diagnostics "$CASE_A_ISSUE_ID" "case-a"
@@ -777,9 +777,9 @@ run_case_a() {
   fi
 
   if [[ "$STRICT_CASES" == "1" ]]; then
-    [[ "$run_status" == "succeeded" ]] || fail "case A run did not succeed"
-    [[ "$issue_status" == "done" ]] || fail "case A issue did not reach done"
-    [[ "$marker_found" == "true" ]] || fail "case A marker not found in comments"
+    [[ "$run_status" == "succeeded" ]] || fail "el run del caso A no tuvo éxito"
+    [[ "$issue_status" == "done" ]] || fail "el issue del caso A no llegó a done"
+    [[ "$marker_found" == "true" ]] || fail "no se encontró el marcador del caso A en los comentarios"
   fi
 }
 
@@ -787,27 +787,27 @@ run_case_b() {
   local marker="OPENCLAW_CASE_B_OK_$(date +%s)"
   local message_text="${marker}"
   local description
-  description="Case B validation.\n\nUse the message tool to send this exact text to the user's main chat session in webchat:\n${message_text}\n\nAfter sending, post a Paperclip issue comment containing exactly: ${marker}\nThen mark this issue done."
+  description="Validación del caso B.\n\nUsa la herramienta de mensajes para enviar este texto exacto a la sesión principal de chat del usuario en webchat:\n${message_text}\n\nDespués de enviarlo, publica un comentario en el issue de Paperclip con exactamente: ${marker}\nLuego marca este issue como done."
 
   local created
   created="$(create_issue_for_case "[OpenClaw Gateway Smoke] Case B" "$description")"
   CASE_B_ISSUE_ID="${created%%|*}"
   local case_identifier="${created##*|}"
 
-  log "case B issue ${CASE_B_ISSUE_ID} (${case_identifier})"
+  log "issue del caso B ${CASE_B_ISSUE_ID} (${case_identifier})"
   trigger_wakeup "openclaw_gateway_smoke_case_b" "$CASE_B_ISSUE_ID"
 
   local run_status issue_status marker_found
   if [[ -n "$RUN_ID" ]]; then
     run_status="$(wait_for_run_terminal "$RUN_ID" "$RUN_TIMEOUT_SEC")"
-    log "case B run ${RUN_ID} status=${run_status}"
+    log "run del caso B ${RUN_ID} estado=${run_status}"
   else
     run_status="unknown"
   fi
 
   issue_status="$(wait_for_issue_terminal "$CASE_B_ISSUE_ID" "$CASE_TIMEOUT_SEC")"
   marker_found="$(issue_comments_contain "$CASE_B_ISSUE_ID" "$marker")"
-  log "case B issue_status=${issue_status} marker_found=${marker_found}"
+  log "caso B issue_status=${issue_status} marker_found=${marker_found}"
 
   if [[ "$issue_status" != "done" || "$marker_found" != "true" ]]; then
     capture_issue_diagnostics "$CASE_B_ISSUE_ID" "case-b"
@@ -817,12 +817,12 @@ run_case_b() {
     capture_openclaw_container_logs
   fi
 
-  warn "case B requires manual UX confirmation in OpenClaw main webchat: message '${message_text}' appears in main chat"
+  warn "el caso B requiere confirmación manual de UX en el webchat principal de OpenClaw: el mensaje '${message_text}' aparece en el chat principal"
 
   if [[ "$STRICT_CASES" == "1" ]]; then
-    [[ "$run_status" == "succeeded" ]] || fail "case B run did not succeed"
-    [[ "$issue_status" == "done" ]] || fail "case B issue did not reach done"
-    [[ "$marker_found" == "true" ]] || fail "case B marker not found in comments"
+    [[ "$run_status" == "succeeded" ]] || fail "el run del caso B no tuvo éxito"
+    [[ "$issue_status" == "done" ]] || fail "el issue del caso B no llegó a done"
+    [[ "$marker_found" == "true" ]] || fail "no se encontró el marcador del caso B en los comentarios"
   fi
 }
 
@@ -831,22 +831,22 @@ run_case_c() {
 
   local marker="OPENCLAW_CASE_C_CREATED_$(date +%s)"
   local ack_marker="OPENCLAW_CASE_C_ACK_$(date +%s)"
-  local original_issue_reference="the original case issue you are currently reading"
+  local original_issue_reference="el issue original del caso que estás leyendo ahora"
   local description
-  description="Case C validation.\n\nTreat this run as a fresh/new session.\nCreate a NEW Paperclip issue in this same company with title exactly:\n${marker}\nUse description: 'created by case C smoke'.\n\nThen post a comment on ${original_issue_reference} containing exactly: ${ack_marker}\nDo NOT post the ACK comment on the newly created issue.\nThen mark the original case issue done."
+  description="Validación del caso C.\n\nTrata este run como una sesión nueva/fresca.\nCrea un NUEVO issue de Paperclip en esta misma empresa con el título exactamente:\n${marker}\nUsa la descripción: 'creado por la prueba de humo del caso C'.\n\nLuego publica un comentario en ${original_issue_reference} con exactamente: ${ack_marker}\nNO publiques el comentario ACK en el issue recién creado.\nLuego marca el issue original del caso como done."
 
   local created
   created="$(create_issue_for_case "[OpenClaw Gateway Smoke] Case C" "$description")"
   CASE_C_ISSUE_ID="${created%%|*}"
   local case_identifier="${created##*|}"
 
-  log "case C issue ${CASE_C_ISSUE_ID} (${case_identifier})"
+  log "issue del caso C ${CASE_C_ISSUE_ID} (${case_identifier})"
   trigger_wakeup "openclaw_gateway_smoke_case_c" "$CASE_C_ISSUE_ID"
 
   local run_status issue_status marker_found created_issue
   if [[ -n "$RUN_ID" ]]; then
     run_status="$(wait_for_run_terminal "$RUN_ID" "$RUN_TIMEOUT_SEC")"
-    log "case C run ${RUN_ID} status=${run_status}"
+    log "run del caso C ${RUN_ID} estado=${run_status}"
   else
     run_status="unknown"
   fi
@@ -858,7 +858,7 @@ run_case_c() {
     created_issue=""
   fi
   CASE_C_CREATED_ISSUE_ID="$created_issue"
-  log "case C issue_status=${issue_status} marker_found=${marker_found} created_issue_id=${CASE_C_CREATED_ISSUE_ID:-none}"
+  log "caso C issue_status=${issue_status} marker_found=${marker_found} created_issue_id=${CASE_C_CREATED_ISSUE_ID:-none}"
 
   if [[ "$issue_status" != "done" || "$marker_found" != "true" || -z "$CASE_C_CREATED_ISSUE_ID" ]]; then
     capture_issue_diagnostics "$CASE_C_ISSUE_ID" "case-c"
@@ -872,22 +872,22 @@ run_case_c() {
   fi
 
   if [[ "$STRICT_CASES" == "1" ]]; then
-    [[ "$run_status" == "succeeded" ]] || fail "case C run did not succeed"
-    [[ "$issue_status" == "done" ]] || fail "case C issue did not reach done"
-    [[ "$marker_found" == "true" ]] || fail "case C ack marker not found in comments"
-    [[ -n "$CASE_C_CREATED_ISSUE_ID" ]] || fail "case C did not create the expected new issue"
+    [[ "$run_status" == "succeeded" ]] || fail "el run del caso C no tuvo éxito"
+    [[ "$issue_status" == "done" ]] || fail "el issue del caso C no llegó a done"
+    [[ "$marker_found" == "true" ]] || fail "no se encontró el marcador ACK del caso C en los comentarios"
+    [[ -n "$CASE_C_CREATED_ISSUE_ID" ]] || fail "el caso C no creó el nuevo issue esperado"
   fi
 }
 
 main() {
-  log "starting OpenClaw gateway E2E smoke"
+  log "iniciando la prueba de humo E2E del gateway de OpenClaw"
   mkdir -p "$OPENCLAW_DIAG_DIR"
-  log "diagnostics dir: ${OPENCLAW_DIAG_DIR}"
+  log "directorio de diagnósticos: ${OPENCLAW_DIAG_DIR}"
 
-  wait_http_ready "${PAPERCLIP_API_URL%/}/api/health" 15 || fail "Paperclip API health endpoint not reachable"
+  wait_http_ready "${PAPERCLIP_API_URL%/}/api/health" 15 || fail "el endpoint de salud de la API de Paperclip no es alcanzable"
   api_request "GET" "/health"
   assert_status "200"
-  log "paperclip health deploymentMode=$(jq -r '.deploymentMode // "unknown"' <<<"$RESPONSE_BODY") exposure=$(jq -r '.deploymentExposure // "unknown"' <<<"$RESPONSE_BODY")"
+  log "salud de paperclip modo de despliegue=$(jq -r '.deploymentMode // "unknown"' <<<"$RESPONSE_BODY") exposición=$(jq -r '.deploymentExposure // "unknown"' <<<"$RESPONSE_BODY")"
 
   require_board_auth
   resolve_company_id
@@ -896,18 +896,18 @@ main() {
 
   maybe_cleanup_openclaw_docker
   start_openclaw_docker
-  wait_http_ready "http://127.0.0.1:18789/" "$OPENCLAW_WAIT_SECONDS" || fail "OpenClaw HTTP health not reachable"
+  wait_http_ready "http://127.0.0.1:18789/" "$OPENCLAW_WAIT_SECONDS" || fail "la salud HTTP de OpenClaw no es alcanzable"
 
   local gateway_token
   gateway_token="$(detect_gateway_token || true)"
-  [[ -n "$gateway_token" ]] || fail "could not resolve OpenClaw gateway token"
-  log "resolved gateway token (sha256 prefix $(hash_prefix "$gateway_token"))"
+  [[ -n "$gateway_token" ]] || fail "no se pudo resolver el token del gateway de OpenClaw"
+  log "token del gateway resuelto (prefijo sha256 $(hash_prefix "$gateway_token"))"
 
-  log "probing gateway websocket challenge at ${OPENCLAW_GATEWAY_URL}"
+  log "sondeando el desafío websocket del gateway en ${OPENCLAW_GATEWAY_URL}"
   probe_gateway_ws "$OPENCLAW_GATEWAY_URL" "$gateway_token"
 
   create_and_approve_gateway_join "$gateway_token"
-  log "joined/approved agent ${AGENT_ID} invite=${INVITE_ID} joinRequest=${JOIN_REQUEST_ID}"
+  log "agente unido/aprobado ${AGENT_ID} invitación=${INVITE_ID} solicitud de unión=${JOIN_REQUEST_ID}"
   validate_joined_gateway_agent "$gateway_token"
 
   local connect_status="unknown"
@@ -920,26 +920,26 @@ main() {
     fi
     connect_status="$(wait_for_run_terminal "$RUN_ID" "$RUN_TIMEOUT_SEC")"
     if [[ "$connect_status" == "succeeded" ]]; then
-      log "connectivity wake run ${RUN_ID} succeeded (attempt=${connect_attempt})"
+      log "el run de wake de conectividad ${RUN_ID} tuvo éxito (intento=${connect_attempt})"
       break
     fi
 
     if [[ "$PAIRING_AUTO_APPROVE" == "1" && "$connect_attempt" -eq 1 ]] && run_log_contains_pairing_required "$RUN_ID"; then
-      log "connectivity run hit pairing gate; attempting one-time pairing approval"
-      approve_latest_pairing_request "$gateway_token" || fail "pairing approval failed after pairing-required run ${RUN_ID}"
+      log "el run de conectividad encontró la puerta de emparejamiento; intentando la aprobación de emparejamiento de un solo uso"
+      approve_latest_pairing_request "$gateway_token" || fail "la aprobación de emparejamiento falló después del run con emparejamiento requerido ${RUN_ID}"
       sleep 2
       continue
     fi
 
-    fail "connectivity wake run failed: ${connect_status} (attempt=${connect_attempt}, runId=${RUN_ID})"
+    fail "el run de wake de conectividad falló: ${connect_status} (intento=${connect_attempt}, runId=${RUN_ID})"
   done
-  [[ "$connect_status" == "succeeded" ]] || fail "connectivity wake run did not succeed after retries"
+  [[ "$connect_status" == "succeeded" ]] || fail "el run de wake de conectividad no tuvo éxito después de reintentos"
 
   run_case_a
   run_case_b
   run_case_c
 
-  log "success"
+  log "éxito"
   log "companyId=${COMPANY_ID}"
   log "agentId=${AGENT_ID}"
   log "inviteId=${INVITE_ID}"

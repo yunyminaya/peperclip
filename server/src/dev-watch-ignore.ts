@@ -13,7 +13,7 @@ function addIgnorePath(target: Set<string>, candidate: string): void {
     target.add(realPath);
     target.add(toGlobstarPath(realPath));
   } catch {
-    // Ignore paths that do not exist in the current checkout.
+    // Ignorar rutas que no existen en el checkout actual.
   }
 }
 

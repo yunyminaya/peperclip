@@ -2,25 +2,25 @@
 
 ## 0.3.1
 
-### Patch Changes
+### Cambios de parche
 
-- Stable release preparation for 0.3.1
-- Updated dependencies
+- Preparación de la versión estable 0.3.1
+- Dependencias actualizadas
   - @paperclipai/adapter-utils@0.3.1
 
 ## 0.3.0
 
-### Minor Changes
+### Cambios menores
 
-- Stable release preparation for 0.3.0
+- Preparación de la versión estable 0.3.0
 
-### Patch Changes
+### Cambios de parche
 
-- Updated dependencies
+- Dependencias actualizadas
   - @paperclipai/adapter-utils@0.3.0
 
 ## 0.2.7
 
-### Patch Changes
+### Cambios de parche
 
-- Added initial `cursor` adapter package for local Cursor CLI execution
+- Agregado el paquete inicial del adaptador `cursor` para la ejecución local de la CLI de Cursor

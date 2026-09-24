@@ -74,7 +74,7 @@ export interface CostByBiller {
   modelCount: number;
 }
 
-/** per-agent breakdown by provider + model, for identifying token-hungry agents */
+/** desglose por agente por proveedor + modelo, para identificar agentes que consumen muchos tokens */
 export interface CostByAgentModel {
   agentId: string;
   agentName: string | null;
@@ -88,13 +88,13 @@ export interface CostByAgentModel {
   outputTokens: number;
 }
 
-/** spend per provider for a fixed rolling time window */
+/** gasto por proveedor para una ventana de tiempo móvil fija */
 export interface CostWindowSpendRow {
   provider: string;
   biller: string;
-  /** duration label, e.g. "5h", "24h", "7d" */
+  /** etiqueta de duración, p. ej. "5h", "24h", "7d" */
   window: string;
-  /** rolling window duration in hours */
+  /** duración de la ventana móvil en horas */
   windowHours: number;
   costCents: number;
   inputTokens: number;
@@ -102,7 +102,7 @@ export interface CostWindowSpendRow {
   outputTokens: number;
 }
 
-/** cost attributed to a project via heartbeat run → activity log → issue → project chain */
+/** costo atribuido a un proyecto mediante la cadena ejecución de latido → registro de actividad → issue → proyecto */
 export interface CostByProject {
   projectId: string | null;
   projectName: string | null;

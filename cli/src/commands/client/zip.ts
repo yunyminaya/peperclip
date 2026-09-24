@@ -59,7 +59,7 @@ function bytesToPortableFileEntry(pathValue: string, bytes: Uint8Array): Company
 async function inflateZipEntry(compressionMethod: number, bytes: Uint8Array) {
   if (compressionMethod === 0) return bytes;
   if (compressionMethod !== 8) {
-    throw new Error("Unsupported zip archive: only STORE and DEFLATE entries are supported.");
+    throw new Error("Archivo zip no soportado: solo se soportan entradas STORE y DEFLATE.");
   }
   return new Uint8Array(inflateRawSync(bytes));
 }
@@ -76,11 +76,11 @@ export async function readZipArchive(source: ArrayBuffer | Uint8Array): Promise<
     const signature = readUint32(bytes, offset);
     if (signature === 0x02014b50 || signature === 0x06054b50) break;
     if (signature !== 0x04034b50) {
-      throw new Error("Invalid zip archive: unsupported local file header.");
+      throw new Error("Archivo zip inválido: encabezado de archivo local no soportado.");
     }
 
     if (offset + 30 > bytes.length) {
-      throw new Error("Invalid zip archive: truncated local file header.");
+      throw new Error("Archivo zip inválido: encabezado de archivo local truncado.");
     }
 
     const generalPurposeFlag = readUint16(bytes, offset + 6);
@@ -90,14 +90,14 @@ export async function readZipArchive(source: ArrayBuffer | Uint8Array): Promise<
     const extraFieldLength = readUint16(bytes, offset + 28);
 
     if ((generalPurposeFlag & 0x0008) !== 0) {
-      throw new Error("Unsupported zip archive: data descriptors are not supported.");
+      throw new Error("Archivo zip no soportado: los descriptores de datos no están soportados.");
     }
 
     const nameOffset = offset + 30;
     const bodyOffset = nameOffset + fileNameLength + extraFieldLength;
     const bodyEnd = bodyOffset + compressedSize;
     if (bodyEnd > bytes.length) {
-      throw new Error("Invalid zip archive: truncated file contents.");
+      throw new Error("Archivo zip inválido: contenido de archivo truncado.");
     }
 
     const rawArchivePath = textDecoder.decode(bytes.slice(nameOffset, nameOffset + fileNameLength));

@@ -5,33 +5,33 @@ import { resolveDefaultLogsDir, resolvePaperclipInstanceId } from "../config/hom
 export async function promptLogging(): Promise<LoggingConfig> {
   const defaultLogDir = resolveDefaultLogsDir(resolvePaperclipInstanceId());
   const mode = await p.select({
-    message: "Logging mode",
+    message: "Modo de logs",
     options: [
-      { value: "file" as const, label: "File-based logging", hint: "recommended" },
-      { value: "cloud" as const, label: "Cloud logging", hint: "coming soon" },
+      { value: "file" as const, label: "Registro en archivo", hint: "recomendado" },
+      { value: "cloud" as const, label: "Registro en la nube", hint: "próximamente" },
     ],
   });
 
   if (p.isCancel(mode)) {
-    p.cancel("Setup cancelled.");
+    p.cancel("Configuración cancelada.");
     process.exit(0);
   }
 
   if (mode === "file") {
     const logDir = await p.text({
-      message: "Log directory",
+      message: "Directorio de logs",
       defaultValue: defaultLogDir,
       placeholder: defaultLogDir,
     });
 
     if (p.isCancel(logDir)) {
-      p.cancel("Setup cancelled.");
+      p.cancel("Configuración cancelada.");
       process.exit(0);
     }
 
     return { mode: "file", logDir: logDir || defaultLogDir };
   }
 
-  p.note("Cloud logging is coming soon. Using file-based logging for now.");
+  p.note("El registro en la nube estará disponible próximamente. Usando registro en archivo por ahora.");
   return { mode: "file", logDir: defaultLogDir };
 }

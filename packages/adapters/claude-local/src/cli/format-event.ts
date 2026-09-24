@@ -34,7 +34,7 @@ export function printClaudeStreamEvent(raw: string, debug: boolean): void {
   if (type === "system" && parsed.subtype === "init") {
     const model = typeof parsed.model === "string" ? parsed.model : "unknown";
     const sessionId = typeof parsed.session_id === "string" ? parsed.session_id : "";
-    console.log(pc.blue(`Claude initialized (model: ${model}${sessionId ? `, session: ${sessionId}` : ""})`));
+    console.log(pc.blue(`Claude inicializado (modelo: ${model}${sessionId ? `, sesión: ${sessionId}` : ""})`));
     return;
   }
 

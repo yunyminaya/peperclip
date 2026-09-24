@@ -29,7 +29,7 @@ function decodeMasterKey(raw: string): Buffer | null {
     const decoded = Buffer.from(trimmed, "base64");
     if (decoded.length === 32) return decoded;
   } catch {
-    // ignored
+    // ignorado
   }
 
   if (Buffer.byteLength(trimmed, "utf8") === 32) {
@@ -44,7 +44,7 @@ function loadOrCreateMasterKey(): Buffer {
     const fromEnv = decodeMasterKey(envKeyRaw);
     if (!fromEnv) {
       throw badRequest(
-        "Invalid PAPERCLIP_SECRETS_MASTER_KEY (expected 32-byte base64, 64-char hex, or raw 32-char string)",
+        "PAPERCLIP_SECRETS_MASTER_KEY inválida (se esperan 32 bytes en base64, 64 caracteres hexadecimales o una cadena cruda de 32 caracteres)",
       );
     }
     return fromEnv;
@@ -55,7 +55,7 @@ function loadOrCreateMasterKey(): Buffer {
     const raw = readFileSync(keyPath, "utf8");
     const decoded = decodeMasterKey(raw);
     if (!decoded) {
-      throw badRequest(`Invalid secrets master key at ${keyPath}`);
+      throw badRequest(`Clave maestra de secretos inválida en ${keyPath}`);
     }
     return decoded;
   }
@@ -67,7 +67,7 @@ function loadOrCreateMasterKey(): Buffer {
   try {
     chmodSync(keyPath, 0o600);
   } catch {
-    // best effort
+    // mejor esfuerzo
   }
   return generated;
 }
@@ -110,7 +110,7 @@ function asLocalEncryptedMaterial(value: StoredSecretVersionMaterial): LocalEncr
   ) {
     return value as LocalEncryptedMaterial;
   }
-  throw badRequest("Invalid local_encrypted secret material");
+  throw badRequest("Material de secreto local_encrypted inválido");
 }
 
 export const localEncryptedProvider: SecretProviderModule = {

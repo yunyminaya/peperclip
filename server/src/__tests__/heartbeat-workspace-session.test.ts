@@ -72,7 +72,7 @@ describe("resolveRuntimeSessionParamsForWorkspace", () => {
       cwd: "/tmp/new-project-cwd",
       workspaceId: "workspace-1",
     });
-    expect(result.warning).toContain("Attempting to resume session");
+    expect(result.warning).toContain("Se intenta reanudar la sesión");
   });
 
   it("does not migrate when previous session cwd is not the fallback workspace", () => {

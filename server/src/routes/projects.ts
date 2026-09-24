@@ -63,7 +63,7 @@ export function projectRoutes(db: Db) {
     const id = req.params.id as string;
     const project = await svc.getById(id);
     if (!project) {
-      res.status(404).json({ error: "Project not found" });
+      res.status(404).json({ error: "Proyecto no encontrado" });
       return;
     }
     assertCompanyAccess(req, project.companyId);
@@ -84,7 +84,7 @@ export function projectRoutes(db: Db) {
       const createdWorkspace = await svc.createWorkspace(project.id, workspace);
       if (!createdWorkspace) {
         await svc.remove(project.id);
-        res.status(422).json({ error: "Invalid project workspace payload" });
+        res.status(422).json({ error: "Payload de espacio de trabajo de proyecto no válido" });
         return;
       }
       createdWorkspaceId = createdWorkspace.id;
@@ -112,7 +112,7 @@ export function projectRoutes(db: Db) {
     const id = req.params.id as string;
     const existing = await svc.getById(id);
     if (!existing) {
-      res.status(404).json({ error: "Project not found" });
+      res.status(404).json({ error: "Proyecto no encontrado" });
       return;
     }
     assertCompanyAccess(req, existing.companyId);
@@ -122,7 +122,7 @@ export function projectRoutes(db: Db) {
     }
     const project = await svc.update(id, body);
     if (!project) {
-      res.status(404).json({ error: "Project not found" });
+      res.status(404).json({ error: "Proyecto no encontrado" });
       return;
     }
 
@@ -145,7 +145,7 @@ export function projectRoutes(db: Db) {
     const id = req.params.id as string;
     const existing = await svc.getById(id);
     if (!existing) {
-      res.status(404).json({ error: "Project not found" });
+      res.status(404).json({ error: "Proyecto no encontrado" });
       return;
     }
     assertCompanyAccess(req, existing.companyId);
@@ -157,13 +157,13 @@ export function projectRoutes(db: Db) {
     const id = req.params.id as string;
     const existing = await svc.getById(id);
     if (!existing) {
-      res.status(404).json({ error: "Project not found" });
+      res.status(404).json({ error: "Proyecto no encontrado" });
       return;
     }
     assertCompanyAccess(req, existing.companyId);
     const workspace = await svc.createWorkspace(id, req.body);
     if (!workspace) {
-      res.status(422).json({ error: "Invalid project workspace payload" });
+      res.status(422).json({ error: "Payload de espacio de trabajo de proyecto no válido" });
       return;
     }
 
@@ -195,18 +195,18 @@ export function projectRoutes(db: Db) {
       const workspaceId = req.params.workspaceId as string;
       const existing = await svc.getById(id);
       if (!existing) {
-        res.status(404).json({ error: "Project not found" });
+        res.status(404).json({ error: "Proyecto no encontrado" });
         return;
       }
       assertCompanyAccess(req, existing.companyId);
       const workspaceExists = (await svc.listWorkspaces(id)).some((workspace) => workspace.id === workspaceId);
       if (!workspaceExists) {
-        res.status(404).json({ error: "Project workspace not found" });
+        res.status(404).json({ error: "Espacio de trabajo de proyecto no encontrado" });
         return;
       }
       const workspace = await svc.updateWorkspace(id, workspaceId, req.body);
       if (!workspace) {
-        res.status(422).json({ error: "Invalid project workspace payload" });
+        res.status(422).json({ error: "Payload de espacio de trabajo de proyecto no válido" });
         return;
       }
 
@@ -234,13 +234,13 @@ export function projectRoutes(db: Db) {
     const workspaceId = req.params.workspaceId as string;
     const existing = await svc.getById(id);
     if (!existing) {
-      res.status(404).json({ error: "Project not found" });
+      res.status(404).json({ error: "Proyecto no encontrado" });
       return;
     }
     assertCompanyAccess(req, existing.companyId);
     const workspace = await svc.removeWorkspace(id, workspaceId);
     if (!workspace) {
-      res.status(404).json({ error: "Project workspace not found" });
+      res.status(404).json({ error: "Espacio de trabajo de proyecto no encontrado" });
       return;
     }
 
@@ -266,13 +266,13 @@ export function projectRoutes(db: Db) {
     const id = req.params.id as string;
     const existing = await svc.getById(id);
     if (!existing) {
-      res.status(404).json({ error: "Project not found" });
+      res.status(404).json({ error: "Proyecto no encontrado" });
       return;
     }
     assertCompanyAccess(req, existing.companyId);
     const project = await svc.remove(id);
     if (!project) {
-      res.status(404).json({ error: "Project not found" });
+      res.status(404).json({ error: "Proyecto no encontrado" });
       return;
     }
 

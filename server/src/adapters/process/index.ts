@@ -7,18 +7,18 @@ export const processAdapter: ServerAdapterModule = {
   execute,
   testEnvironment,
   models: [],
-  agentConfigurationDoc: `# process agent configuration
+  agentConfigurationDoc: `# Configuración del agente process
 
-Adapter: process
+Adaptador: process
 
-Core fields:
-- command (string, required): command to execute
-- args (string[] | string, optional): command arguments
-- cwd (string, optional): absolute working directory
-- env (object, optional): KEY=VALUE environment variables
+Campos principales:
+- command (string, required): comando a ejecutar
+- args (string[] | string, optional): argumentos del comando
+- cwd (string, optional): directorio de trabajo absoluto
+- env (object, optional): variables de entorno KEY=VALUE
 
-Operational fields:
-- timeoutSec (number, optional): run timeout in seconds
-- graceSec (number, optional): SIGTERM grace period in seconds
+Campos operativos:
+- timeoutSec (number, optional): tiempo de espera de la ejecución en segundos
+- graceSec (number, optional): período de gracia SIGTERM en segundos
 `,
 };

@@ -58,7 +58,7 @@ function hasNonEmptyEnvValue(env: Record<string, string>, key: string): boolean 
 }
 
 function resolveCodexBillingType(env: Record<string, string>): "api" | "subscription" {
-  // Codex uses API-key auth when OPENAI_API_KEY is present; otherwise rely on local login/session auth.
+  // Codex usa autenticación por API key cuando OPENAI_API_KEY está presente; de lo contrario usa el inicio de sesión/sesión local.
   return hasNonEmptyEnvValue(env, "OPENAI_API_KEY") ? "api" : "subscription";
 }
 
@@ -130,7 +130,7 @@ async function pruneBrokenUnavailablePaperclipSkillSymlinks(
     await fs.unlink(target).catch(() => {});
     await onLog(
       "stdout",
-      `[paperclip] Removed stale Codex skill "${entry.name}" from ${skillsHome}\n`,
+      `[paperclip] Habilidad obsoleta de Codex "${entry.name}" eliminada de ${skillsHome}\n`,
     );
   }
 }
@@ -183,7 +183,7 @@ export async function ensureCodexSkillsInjected(
           }
           await onLog(
             "stdout",
-            `[paperclip] Repaired Codex skill "${entry.runtimeName}" into ${skillsHome}\n`,
+            `[paperclip] Habilidad de Codex "${entry.runtimeName}" reparada en ${skillsHome}\n`,
           );
           continue;
         }
@@ -194,12 +194,12 @@ export async function ensureCodexSkillsInjected(
 
       await onLog(
         "stdout",
-        `[paperclip] ${result === "repaired" ? "Repaired" : "Injected"} Codex skill "${entry.runtimeName}" into ${skillsHome}\n`,
+        `[paperclip] Habilidad de Codex "${entry.runtimeName}" ${result === "repaired" ? "reparada" : "inyectada"} en ${skillsHome}\n`,
       );
     } catch (err) {
       await onLog(
         "stderr",
-        `[paperclip] Failed to inject Codex skill "${entry.key}" into ${skillsHome}: ${err instanceof Error ? err.message : String(err)}\n`,
+        `[paperclip] No se pudo inyectar la habilidad de Codex "${entry.key}" en ${skillsHome}: ${err instanceof Error ? err.message : String(err)}\n`,
       );
     }
   }
@@ -273,8 +273,8 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const defaultCodexHome = resolveManagedCodexHomeDir(process.env, agent.companyId);
   const effectiveCodexHome = configuredCodexHome ?? preparedManagedCodexHome ?? defaultCodexHome;
   await fs.mkdir(effectiveCodexHome, { recursive: true });
-  // Inject skills into the same CODEX_HOME that Codex will actually run with
-  // (managed home in the default case, or an explicit override from adapter config).
+  // Inyectar las habilidades en el mismo CODEX_HOME con el que Codex se ejecutará realmente
+  // (home gestionado en el caso predeterminado, o un reemplazo explícito desde la configuración del adaptador).
   const codexSkillsDir = resolveCodexSkillsDir(effectiveCodexHome);
   await ensureCodexSkillsInjected(
     onLog,
@@ -402,7 +402,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   if (runtimeSessionId && !canResumeSession) {
     await onLog(
       "stdout",
-      `[paperclip] Codex session "${runtimeSessionId}" was saved for cwd "${runtimeSessionCwd}" and will not be resumed in "${cwd}".\n`,
+      `[paperclip] La sesión de Codex "${runtimeSessionId}" se guardó para el cwd "${runtimeSessionCwd}" y no se reanudará en "${cwd}".\n`,
     );
   }
   const instructionsFilePath = asString(config.instructionsFilePath, "").trim();
@@ -421,25 +421,25 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       const reason = err instanceof Error ? err.message : String(err);
       await onLog(
         "stdout",
-        `[paperclip] Warning: could not read agent instructions file "${instructionsFilePath}": ${reason}\n`,
+        `[paperclip] Advertencia: no se pudo leer el archivo de instrucciones del agente "${instructionsFilePath}": ${reason}\n`,
       );
     }
   }
   const repoAgentsNote =
-    "Codex exec automatically applies repo-scoped AGENTS.md instructions from the current workspace; Paperclip does not currently suppress that discovery.";
+    "Codex exec aplica automáticamente las instrucciones AGENTS.md del repositorio del workspace actual; Paperclip actualmente no suprime esa detección.";
   const commandNotes = (() => {
     if (!instructionsFilePath) {
       return [repoAgentsNote];
     }
     if (instructionsPrefix.length > 0) {
       return [
-        `Loaded agent instructions from ${instructionsFilePath}`,
-        `Prepended instructions + path directive to stdin prompt (relative references from ${instructionsDir}).`,
+        `Instrucciones del agente cargadas desde ${instructionsFilePath}`,
+        `Instrucciones + directiva de ruta antepuestas al prompt de stdin (referencias relativas desde ${instructionsDir}).`,
         repoAgentsNote,
       ];
     }
     return [
-      `Configured instructionsFilePath ${instructionsFilePath}, but file could not be read; continuing without injected instructions.`,
+      `instructionsFilePath ${instructionsFilePath} configurado, pero el archivo no se pudo leer; continuando sin instrucciones inyectadas.`,
       repoAgentsNote,
     ];
   })();
@@ -541,7 +541,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
         exitCode: attempt.proc.exitCode,
         signal: attempt.proc.signal,
         timedOut: true,
-        errorMessage: `Timed out after ${timeoutSec}s`,
+        errorMessage: `Se agotó el tiempo de espera después de ${timeoutSec}s`,
         clearSession: clearSessionOnMissingSession,
       };
     }
@@ -561,7 +561,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     const fallbackErrorMessage =
       parsedError ||
       stderrLine ||
-      `Codex exited with code ${attempt.proc.exitCode ?? -1}`;
+      `Codex terminó con el código ${attempt.proc.exitCode ?? -1}`;
 
     return {
       exitCode: attempt.proc.exitCode,
@@ -598,7 +598,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   ) {
     await onLog(
       "stdout",
-      `[paperclip] Codex resume session "${sessionId}" is unavailable; retrying with a fresh session.\n`,
+      `[paperclip] La sesión de reanudación de Codex "${sessionId}" no está disponible; reintentando con una sesión nueva.\n`,
     );
     const retry = await runAttempt(null);
     return toResult(retry, true);

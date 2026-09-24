@@ -55,13 +55,13 @@ export async function testEnvironment(
     checks.push({
       code: "gemini_cwd_valid",
       level: "info",
-      message: `Working directory is valid: ${cwd}`,
+      message: `El directorio de trabajo es válido: ${cwd}`,
     });
   } catch (err) {
     checks.push({
       code: "gemini_cwd_invalid",
       level: "error",
-      message: err instanceof Error ? err.message : "Invalid working directory",
+      message: err instanceof Error ? err.message : "Directorio de trabajo no válido",
       detail: cwd,
     });
   }
@@ -77,13 +77,13 @@ export async function testEnvironment(
     checks.push({
       code: "gemini_command_resolvable",
       level: "info",
-      message: `Command is executable: ${command}`,
+      message: `El comando es ejecutable: ${command}`,
     });
   } catch (err) {
     checks.push({
       code: "gemini_command_unresolvable",
       level: "error",
-      message: err instanceof Error ? err.message : "Command is not executable",
+      message: err instanceof Error ? err.message : "El comando no es ejecutable",
       detail: command,
     });
   }
@@ -101,22 +101,22 @@ export async function testEnvironment(
     hasGca
   ) {
     const source = hasGca
-      ? "Google account login (GCA)"
+      ? "Inicio de sesión con cuenta de Google (GCA)"
       : isNonEmpty(configGeminiApiKey) || isNonEmpty(configGoogleApiKey)
-        ? "adapter config env"
-        : "server environment";
+        ? "env de la configuración del adaptador"
+        : "entorno del servidor";
     checks.push({
       code: "gemini_api_key_present",
       level: "info",
-      message: "Gemini API credentials are set for CLI authentication.",
-      detail: `Detected in ${source}.`,
+      message: "Las credenciales de la API de Gemini están configuradas para la autenticación de la CLI.",
+      detail: `Detectadas en ${source}.`,
     });
   } else {
     checks.push({
       code: "gemini_api_key_missing",
       level: "info",
-      message: "No explicit API key detected. Gemini CLI may still authenticate via `gemini auth login` (OAuth).",
-      hint: "If the hello probe fails with an auth error, set GEMINI_API_KEY or GOOGLE_API_KEY in adapter env, or run `gemini auth login`.",
+      message: "No se detectó una clave de API explícita. La CLI de Gemini aún puede autenticarse con `gemini auth login` (OAuth).",
+      hint: "Si la sonda hello falla con un error de autenticación, configura GEMINI_API_KEY o GOOGLE_API_KEY en el env del adaptador, o ejecuta `gemini auth login`.",
     });
   }
 
@@ -127,9 +127,9 @@ export async function testEnvironment(
       checks.push({
         code: "gemini_hello_probe_skipped_custom_command",
         level: "info",
-        message: "Skipped hello probe because command is not `gemini`.",
+        message: "Se omitió la sonda hello porque el comando no es `gemini`.",
         detail: command,
-        hint: "Use the `gemini` CLI command to run the automatic installation and auth probe.",
+        hint: "Usa el comando CLI `gemini` para ejecutar la instalación automática y la sonda de autenticación.",
       });
     } else {
       const model = asString(config.model, DEFAULT_GEMINI_LOCAL_MODEL).trim();
@@ -182,17 +182,17 @@ export async function testEnvironment(
           code: "gemini_hello_probe_quota_exhausted",
           level: "warn",
           message: probe.timedOut
-            ? "Gemini CLI is retrying after quota exhaustion."
-            : "Gemini CLI authentication is configured, but the current account or API key is over quota.",
+            ? "La CLI de Gemini está reintentando tras agotar la cuota."
+            : "La autenticación de la CLI de Gemini está configurada, pero la cuenta actual o la clave de API superó la cuota.",
           ...(detail ? { detail } : {}),
-          hint: "The configured Gemini account or API key is over quota. Check ai.google.dev usage/billing, then retry the probe.",
+          hint: "La cuenta de Gemini configurada o la clave de API superó la cuota. Revisa el uso/facturación en ai.google.dev y reintenta la sonda.",
         });
       } else if (probe.timedOut) {
         checks.push({
           code: "gemini_hello_probe_timed_out",
           level: "warn",
-          message: "Gemini hello probe timed out.",
-          hint: "Retry the probe. If this persists, verify Gemini can run `Respond with hello.` from this directory manually.",
+          message: "La sonda hello de Gemini agotó el tiempo de espera.",
+          hint: "Reintenta la sonda. Si persiste, verifica que Gemini pueda ejecutar `Respond with hello.` manualmente desde este directorio.",
         });
       } else if ((probe.exitCode ?? 1) === 0) {
         const summary = parsed.summary.trim();
@@ -201,30 +201,30 @@ export async function testEnvironment(
           code: hasHello ? "gemini_hello_probe_passed" : "gemini_hello_probe_unexpected_output",
           level: hasHello ? "info" : "warn",
           message: hasHello
-            ? "Gemini hello probe succeeded."
-            : "Gemini probe ran but did not return `hello` as expected.",
+            ? "La sonda hello de Gemini se completó correctamente."
+            : "La sonda de Gemini se ejecutó, pero no devolvió `hello` como se esperaba.",
           ...(summary ? { detail: summary.replace(/\s+/g, " ").trim().slice(0, 240) } : {}),
           ...(hasHello
             ? {}
             : {
-              hint: "Try `gemini --output-format json \"Respond with hello.\"` manually to inspect full output.",
+              hint: "Prueba `gemini --output-format json \"Respond with hello.\"` manualmente para inspeccionar la salida completa.",
             }),
         });
       } else if (authMeta.requiresAuth) {
         checks.push({
           code: "gemini_hello_probe_auth_required",
           level: "warn",
-          message: "Gemini CLI is installed, but authentication is not ready.",
+          message: "La CLI de Gemini está instalada, pero la autenticación no está lista.",
           ...(detail ? { detail } : {}),
-          hint: "Run `gemini auth` or configure GEMINI_API_KEY / GOOGLE_API_KEY in adapter env/shell, then retry the probe.",
+          hint: "Ejecuta `gemini auth` o configura GEMINI_API_KEY / GOOGLE_API_KEY en el env/shell del adaptador, y reintenta la sonda.",
         });
       } else {
         checks.push({
           code: "gemini_hello_probe_failed",
           level: "error",
-          message: "Gemini hello probe failed.",
+          message: "La sonda hello de Gemini falló.",
           ...(detail ? { detail } : {}),
-          hint: "Run `gemini --output-format json \"Respond with hello.\"` manually in this working directory to debug.",
+          hint: "Ejecuta `gemini --output-format json \"Respond with hello.\"` manualmente en este directorio de trabajo para depurar.",
         });
       }
     }

@@ -1,397 +1,397 @@
-# Token Optimization Plan
+# Plan de optimización de tokens
 
-Date: 2026-03-13  
-Related discussion: https://github.com/paperclipai/paperclip/discussions/449
+Fecha: 2026-03-13  
+Discusión relacionada: https://github.com/paperclipai/paperclip/discussions/449
 
-## Goal
+## Objetivo
 
-Reduce token consumption materially without reducing agent capability, control-plane visibility, or task completion quality.
+Reducir el consumo de tokens de forma material sin reducir la capacidad de los agentes, la visibilidad del plano de control ni la calidad de completitud de tareas.
 
-This plan is based on:
+Este plan se basa en:
 
-- the current V1 control-plane design
-- the current adapter and heartbeat implementation
-- the linked user discussion
-- local runtime data from the default Paperclip instance on 2026-03-13
+- el diseño actual del plano de control V1
+- la implementación actual de adaptadores y latidos
+- la discusión de usuario enlazada
+- datos locales de tiempo de ejecución de la instancia default de Paperclip el 2026-03-13
 
-## Executive Summary
+## Resumen ejecutivo
 
-The discussion is directionally right about two things:
+La discusión acierta direccionalmente en dos cosas:
 
-1. We should preserve session and prompt-cache locality more aggressively.
-2. We should separate stable startup instructions from per-heartbeat dynamic context.
+1. Deberíamos preservar la localidad de sesión y caché de prompts de forma más agresiva.
+2. Deberíamos separar las instrucciones estables de arranque del contexto dinámico por latido.
 
-But that is not enough on its own.
+Pero eso por sí solo no basta.
 
-After reviewing the code and local run data, the token problem appears to have four distinct causes:
+Después de revisar el código y los datos locales de ejecución, el problema de tokens parece tener cuatro causas distintas:
 
-1. **Measurement inflation on sessioned adapters.** Some token counters, especially for `codex_local`, appear to be recorded as cumulative session totals instead of per-heartbeat deltas.
-2. **Avoidable session resets.** Task sessions are intentionally reset on timer wakes and manual wakes, which destroys cache locality for common heartbeat paths.
-3. **Repeated context reacquisition.** The `paperclip` skill tells agents to re-fetch assignments, issue details, ancestors, and full comment threads on every heartbeat. The API does not currently offer efficient delta-oriented alternatives.
-4. **Large static instruction surfaces.** Agent instruction files and globally injected skills are reintroduced at startup even when most of that content is unchanged and not needed for the current task.
+1. **Inflación de medición en adaptadores con sesión.** Algunos contadores de tokens, especialmente para `codex_local`, parecen registrarse como totales acumulados de sesión en lugar de deltas por latido.
+2. **Reinicios evitables de sesión.** Las sesiones de tareas se reinician intencionalmente en despertares de temporizador y despertares manuales, lo que destruye la localidad de caché para rutas comunes de latido.
+3. **Re-adquisición repetida de contexto.** La habilidad `paperclip` les dice a los agentes que re-obtengan asignaciones, detalles de issues, ancestros y hilos completos de comentarios en cada latido. La API actualmente no ofrece alternativas eficientes orientadas a deltas.
+4. **Superficies grandes de instrucciones estáticas.** Los archivos de instrucciones de agentes y las habilidades inyectadas globalmente se reintroducen al arrancar aunque la mayor parte de ese contenido no haya cambiado y no se necesite para la tarea actual.
 
-The correct approach is:
+El enfoque correcto es:
 
-1. fix telemetry so we can trust the numbers
-2. preserve reuse where it is safe
-3. make context retrieval incremental
-4. add session compaction/rotation so long-lived sessions do not become progressively more expensive
+1. corregir la telemetría para poder confiar en los números
+2. preservar la reutilización donde sea seguro
+3. hacer la recuperación de contexto incremental
+4. agregar compactación/rotación de sesiones para que las sesiones de vida larga no se vuelvan progresivamente más caras
 
-## Validated Findings
+## Hallazgos validados
 
-### 1. Token telemetry is at least partly overstated today
+### 1. La telemetría de tokens está al menos parcialmente sobreestimada hoy
 
-Observed from the local default instance:
+Observado desde la instancia local default:
 
-- `heartbeat_runs`: 11,360 runs between 2026-02-18 and 2026-03-13
-- summed `usage_json.inputTokens`: `2,272,142,368,952`
-- summed `usage_json.cachedInputTokens`: `2,217,501,559,420`
+- `heartbeat_runs`: 11,360 ejecuciones entre 2026-02-18 y 2026-03-13
+- suma de `usage_json.inputTokens`: `2,272,142,368,952`
+- suma de `usage_json.cachedInputTokens`: `2,217,501,559,420`
 
-Those totals are not credible as true per-heartbeat usage for the observed prompt sizes.
+Esos totales no son creíbles como uso verdadero por latido para los tamaños de prompt observados.
 
-Supporting evidence:
+Evidencia de soporte:
 
-- `adapter.invoke.payload.prompt` averages were small:
-  - `codex_local`: ~193 chars average, 6,067 chars max
-  - `claude_local`: ~160 chars average, 1,160 chars max
-- despite that, many `codex_local` runs report millions of input tokens
-- one reused Codex session in local data spans 3,607 runs and recorded `inputTokens` growing up to `1,155,283,166`
+- los promedios de `adapter.invoke.payload.prompt` eran pequeños:
+  - `codex_local`: ~193 caracteres de promedio, 6,067 caracteres máximo
+  - `claude_local`: ~160 caracteres de promedio, 1,160 caracteres máximo
+- a pesar de eso, muchas ejecuciones de `codex_local` reportan millones de tokens de entrada
+- una sesión de Codex reutilizada en los datos locales abarca 3,607 ejecuciones y registró `inputTokens` creciendo hasta `1,155,283,166`
 
-Interpretation:
+Interpretación:
 
-- for sessioned adapters, especially Codex, we are likely storing usage reported by the runtime as a **session total**, not a **per-run delta**
-- this makes trend reporting, optimization work, and customer trust worse
+- para adaptadores con sesión, especialmente Codex, probablemente estamos almacenando el uso reportado por el tiempo de ejecución como un **total de sesión**, no un **delta por ejecución**
+- esto empeora el reporte de tendencias, el trabajo de optimización y la confianza del cliente
 
-This does **not** mean there is no real token problem. It means we need a trustworthy baseline before we can judge optimization impact.
+Esto **no** significa que no haya un problema real de tokens. Significa que necesitamos una línea base confiable antes de poder juzgar el impacto de la optimización.
 
-### 2. Timer wakes currently throw away reusable task sessions
+### 2. Los despertares de temporizador actualmente descartan sesiones de tarea reutilizables
 
-In `server/src/services/heartbeat.ts`, `shouldResetTaskSessionForWake(...)` returns `true` for:
+En `server/src/services/heartbeat.ts`, `shouldResetTaskSessionForWake(...)` devuelve `true` para:
 
 - `wakeReason === "issue_assigned"`
 - `wakeSource === "timer"`
-- manual on-demand wakes
+- despertares manuales bajo demanda
 
-That means many normal heartbeats skip saved task-session resume even when the workspace is stable.
+Eso significa que muchos latidos normales omiten la reanudación de la sesión de tarea guardada aunque el workspace esté estable.
 
-Local data supports the impact:
+Los datos locales respaldan el impacto:
 
-- `timer/system` runs: 6,587 total
-- only 976 had a previous session
-- only 963 ended with the same session
+- ejecuciones `timer/system`: 6,587 en total
+- solo 976 tenían una sesión previa
+- solo 963 terminaron con la misma sesión
 
-So timer wakes are the largest heartbeat path and are mostly not resuming prior task state.
+Así que los despertares de temporizador son la ruta de latido más grande y mayormente no están reanudando el estado previo de tarea.
 
-### 3. We repeatedly ask agents to reload the same task context
+### 3. Repetidamente pedimos a los agentes recargar el mismo contexto de tarea
 
-The `paperclip` skill currently tells agents to do this on essentially every heartbeat:
+La habilidad `paperclip` actualmente les dice a los agentes que hagan esto en esencialmente cada latido:
 
-- fetch assignments
-- fetch issue details
-- fetch ancestor chain
-- fetch full issue comments
+- obtener asignaciones
+- obtener detalles del issue
+- obtener la cadena de ancestros
+- obtener los comentarios completos del issue
 
-Current API shape reinforces that pattern:
+La forma actual de la API refuerza ese patrón:
 
-- `GET /api/issues/:id/comments` returns the full thread
-- there is no `since`, cursor, digest, or summary endpoint for heartbeat consumption
-- `GET /api/issues/:id` returns full enriched issue context, not a minimal delta payload
+- `GET /api/issues/:id/comments` devuelve el hilo completo
+- no hay endpoint `since`, cursor, digest o resumen para consumo de latidos
+- `GET /api/issues/:id` devuelve el contexto enriquecido completo del issue, no un payload mínimo de delta
 
-This is safe but expensive. It forces the model to repeatedly consume unchanged information.
+Esto es seguro pero caro. Obliga al modelo a consumir repetidamente información sin cambios.
 
-### 4. Static instruction payloads are not separated cleanly from dynamic heartbeat prompts
+### 4. Los payloads de instrucciones estáticas no están separados limpiamente de los prompts dinámicos de latido
 
-The user discussion suggested a bootstrap prompt. That is the right direction.
+La discusión de usuario sugirió un prompt bootstrap. Esa es la dirección correcta.
 
-Current state:
+Estado actual:
 
-- the UI exposes `bootstrapPromptTemplate`
-- adapter execution paths do not currently use it
-- several adapters prepend `instructionsFilePath` content directly into the per-run prompt or system prompt
+- la UI expone `bootstrapPromptTemplate`
+- las rutas de ejecución de adaptadores actualmente no lo usan
+- varios adaptadores anteponen el contenido de `instructionsFilePath` directamente en el prompt por ejecución o en el prompt de sistema
 
-Result:
+Resultado:
 
-- stable instructions are re-sent or re-applied in the same path as dynamic heartbeat content
-- we are not deliberately optimizing for provider prompt caching
+- las instrucciones estables se reenvían o se reaplican en la misma ruta que el contenido dinámico del latido
+- no estamos optimizando deliberadamente para el caché de prompts del proveedor
 
-### 5. We inject more skill surface than most agents need
+### 5. Inyectamos más superficie de habilidades de la que la mayoría de los agentes necesita
 
-Local adapters inject repo skills into runtime skill directories.
+Los adaptadores locales inyectan habilidades del repo en directorios de habilidades del tiempo de ejecución.
 
-Important `codex_local` nuance:
+Matiz importante de `codex_local`:
 
-- Codex does not read skills directly from the active worktree.
-- Paperclip discovers repo skills from the current checkout, then symlinks them into `$CODEX_HOME/skills` or `~/.codex/skills`.
-- If an existing Paperclip skill symlink already points at another live checkout, the current implementation skips it instead of repointing it.
-- This can leave Codex using stale skill content from a different worktree even after Paperclip-side skill changes land.
-- That is both a correctness risk and a token-analysis risk, because runtime behavior may not reflect the instructions in the checkout being tested.
+- Codex no lee habilidades directamente del worktree activo.
+- Paperclip descubre habilidades del repo desde el checkout actual, luego las enlaza vía symlink a `$CODEX_HOME/skills` o `~/.codex/skills`.
+- Si un symlink existente de habilidad de Paperclip ya apunta a otro checkout vivo, la implementación actual lo omite en lugar de re-apuntarlo.
+- Esto puede dejar a Codex usando contenido obsoleto de habilidades de un worktree diferente incluso después de que los cambios de habilidades del lado de Paperclip aterricen.
+- Eso es tanto un riesgo de corrección como un riesgo de análisis de tokens, porque el comportamiento en tiempo de ejecución puede no reflejar las instrucciones en el checkout bajo prueba.
 
-Current repo skill sizes:
+Tamaños actuales de habilidades del repo:
 
 - `skills/paperclip/SKILL.md`: 17,441 bytes
 - `.agents/skills/create-agent-adapter/SKILL.md`: 31,832 bytes
 - `skills/paperclip-create-agent/SKILL.md`: 4,718 bytes
 - `skills/para-memory-files/SKILL.md`: 3,978 bytes
 
-That is nearly 58 KB of skill markdown before any company-specific instructions.
+Eso es casi 58 KB de markdown de habilidades antes de cualquier instrucción específica de la empresa.
 
-Not all of that is necessarily loaded into model context every run, but it increases startup surface area and should be treated as a token budget concern.
+No todo eso necesariamente se carga en el contexto del modelo en cada ejecución, pero aumenta la superficie de instrucciones de arranque y debería tratarse como una preocupación de presupuesto de tokens.
 
-## Principles
+## Principios
 
-We should optimize tokens under these rules:
+Deberíamos optimizar tokens bajo estas reglas:
 
-1. **Do not lose functionality.** Agents must still be able to resume work safely, understand why tasks exist, and act within governance rules.
-2. **Prefer stable context over repeated context.** Unchanged instructions should not be resent through the most expensive path.
-3. **Prefer deltas over full reloads.** Heartbeats should consume only what changed since the last useful run.
-4. **Measure normalized deltas, not raw adapter claims.** Especially for sessioned CLIs.
-5. **Keep escape hatches.** Board/manual runs may still want a forced fresh session.
+1. **No perder funcionalidad.** Los agentes aún deben poder reanudar el trabajo de forma segura, entender por qué existen las tareas y actuar dentro de las reglas de gobernanza.
+2. **Preferir contexto estable sobre contexto repetido.** Las instrucciones sin cambios no deberían reenviarse por la ruta más cara.
+3. **Preferir deltas sobre recargas completas.** Los latidos deberían consumir solo lo que cambió desde la última ejecución útil.
+4. **Medir deltas normalizados, no afirmaciones crudas del adaptador.** Especialmente para CLIs con sesión.
+5. **Mantener salidas de emergencia.** Las ejecuciones del tablero/manuales aún pueden querer una sesión fresca forzada.
 
 ## Plan
 
-## Phase 1: Make token telemetry trustworthy
+## Fase 1: Hacer confiable la telemetría de tokens
 
-This should happen first.
+Esto debería pasar primero.
 
-### Changes
+### Cambios
 
-- Store both:
-  - raw adapter-reported usage
-  - Paperclip-normalized per-run usage
-- For sessioned adapters, compute normalized deltas against prior usage for the same persisted session.
-- Add explicit fields for:
+- Almacenar ambos:
+  - uso crudo reportado por el adaptador
+  - uso por ejecución normalizado por Paperclip
+- Para adaptadores con sesión, calcular deltas normalizados contra el uso previo de la misma sesión persistida.
+- Agregar campos explícitos para:
   - `sessionReused`
   - `taskSessionReused`
   - `promptChars`
   - `instructionsChars`
   - `hasInstructionsFile`
-  - `skillSetHash` or skill count
+  - `skillSetHash` o conteo de habilidades
   - `contextFetchMode` (`full`, `delta`, `summary`)
-- Add per-adapter parser tests that distinguish cumulative-session counters from per-run counters.
+- Agregar pruebas de parser por adaptador que distingan contadores acumulados de sesión de contadores por ejecución.
 
-### Why
+### Por qué
 
-Without this, we cannot tell whether a reduction came from a real optimization or a reporting artifact.
+Sin esto, no podemos saber si una reducción vino de una optimización real o de un artefacto de reporte.
 
-### Success criteria
+### Criterios de éxito
 
-- per-run token totals stop exploding on long-lived sessions
-- a resumed session’s usage curve is believable and monotonic at the session level, but not double-counted at the run level
-- cost pages can show both raw and normalized numbers while we migrate
+- los totales de tokens por ejecución dejan de explotar en sesiones de vida larga
+- la curva de uso de una sesión reanudada es creíble y monotónica a nivel de sesión, pero no doblemente contada a nivel de ejecución
+- las páginas de costo pueden mostrar números crudos y normalizados mientras migramos
 
-## Phase 2: Preserve safe session reuse by default
+## Fase 2: Preservar la reutilización segura de sesiones por defecto
 
-This is the highest-leverage behavior change.
+Este es el cambio de comportamiento de mayor apalancamiento.
 
-### Changes
+### Cambios
 
-- Stop resetting task sessions on ordinary timer wakes.
-- Keep resetting on:
-  - explicit manual “fresh run” invocations
-  - assignment changes
-  - workspace mismatch
-  - model mismatch / invalid resume errors
-- Add an explicit wake flag like `forceFreshSession: true` when the board wants a reset.
-- Record why a session was reused or reset in run metadata.
+- Dejar de reiniciar sesiones de tareas en despertares ordinarios de temporizador.
+- Seguir reiniciando en:
+  - invocaciones manuales explícitas de "ejecución fresca"
+  - cambios de asignación
+  - mismatch de workspace
+  - mismatch de modelo / errores inválidos de reanudación
+- Agregar un flag explícito de despertar como `forceFreshSession: true` cuando el tablero quiera un reinicio.
+- Registrar por qué una sesión se reutilizó o reinició en los metadatos de ejecución.
 
-### Why
+### Por qué
 
-Timer wakes are the dominant heartbeat path. Resetting them destroys both session continuity and prompt cache reuse.
+Los despertares de temporizador son la ruta de latido dominante. Reiniciarlos destruye tanto la continuidad de sesión como la reutilización de caché de prompts.
 
-### Success criteria
+### Criterios de éxito
 
-- timer wakes resume the prior task session in the large majority of stable-workspace cases
-- no increase in stale-session failures
-- lower normalized input tokens per timer heartbeat
+- los despertares de temporizador reanudan la sesión de tarea previa en la gran mayoría de casos de workspace estable
+- sin aumento en fallas de sesiones obsoletas
+- menos tokens de entrada normalizados por latido de temporizador
 
-## Phase 3: Separate static bootstrap context from per-heartbeat context
+## Fase 3: Separar el contexto estático bootstrap del contexto por latido
 
-This is the right version of the discussion’s bootstrap idea.
+Esta es la versión correcta de la idea bootstrap de la discusión.
 
-### Changes
+### Cambios
 
-- Implement `bootstrapPromptTemplate` in adapter execution paths.
-- Use it only when starting a fresh session, not on resumed sessions.
-- Keep `promptTemplate` intentionally small and stable:
-  - who I am
-  - what triggered this wake
-  - which task/comment/approval to prioritize
-- Move long-lived setup text out of recurring per-run prompts where possible.
-- Add UI guidance and warnings when `promptTemplate` contains high-churn or large inline content.
+- Implementar `bootstrapPromptTemplate` en las rutas de ejecución de adaptadores.
+- Usarlo solo al iniciar una sesión fresca, no en sesiones reanudadas.
+- Mantener `promptTemplate` intencionalmente pequeño y estable:
+  - quién soy
+  - qué disparó este despertar
+  - qué tarea/comentario/aprobación priorizar
+- Mover el texto de configuración de vida larga fuera de los prompts recurrentes por ejecución donde sea posible.
+- Agregar guía y advertencias de UI cuando `promptTemplate` contenga contenido de alta rotación o grande inline.
 
-### Why
+### Por qué
 
-Static instructions and dynamic wake context have different cache behavior and should be modeled separately.
+Las instrucciones estáticas y el contexto dinámico de despertar tienen diferente comportamiento de caché y deberían modelarse por separado.
 
-For `codex_local`, this also requires isolating the Codex skill home per worktree or teaching Paperclip to repoint its own skill symlinks when the source checkout changes. Otherwise prompt and skill improvements in the active worktree may not reach the running agent.
+Para `codex_local`, esto también requiere aislar el skill home de Codex por worktree o enseñar a Paperclip a re-apuntar sus propios symlinks de habilidades cuando el checkout origen cambia. De lo contrario, las mejoras de prompts y habilidades en el worktree activo pueden no llegar al agente en ejecución.
 
-### Success criteria
+### Criterios de éxito
 
-- fresh-session prompts can remain richer without inflating every resumed heartbeat
-- resumed prompts become short and structurally stable
-- cache hit rates improve for session-preserving adapters
+- los prompts de sesión fresca pueden seguir siendo más ricos sin inflar cada latido reanudado
+- los prompts reanudados se vuelven cortos y estructuralmente estables
+- las tasas de acierto de caché mejoran para adaptadores que preservan sesiones
 
-## Phase 4: Make issue/task context incremental
+## Fase 4: Hacer incremental el contexto de issue/tarea
 
-This is the biggest product change and likely the biggest real token saver after session reuse.
+Este es el mayor cambio de producto y probablemente el mayor ahorrador real de tokens después de la reutilización de sesiones.
 
-### Changes
+### Cambios
 
-Add heartbeat-oriented endpoints and skill behavior:
+Agregar endpoints orientados a latidos y comportamiento de habilidades:
 
 - `GET /api/agents/me/inbox-lite`
-  - minimal assignment list
-  - issue id, identifier, status, priority, updatedAt, lastExternalCommentAt
+  - lista mínima de asignaciones
+  - id de issue, identificador, estado, prioridad, updatedAt, lastExternalCommentAt
 - `GET /api/issues/:id/heartbeat-context`
-  - compact issue state
-  - parent-chain summary
-  - latest execution summary
-  - change markers
-- `GET /api/issues/:id/comments?after=<cursor>` or `?since=<timestamp>`
-  - return only new comments
-- optional `GET /api/issues/:id/context-digest`
-  - server-generated compact summary for heartbeat use
+  - estado compacto del issue
+  - resumen de cadena de padres
+  - último resumen de ejecución
+  - marcadores de cambio
+- `GET /api/issues/:id/comments?after=<cursor>` o `?since=<timestamp>`
+  - devolver solo comentarios nuevos
+- opcional `GET /api/issues/:id/context-digest`
+  - resumen compacto generado por el servidor para uso de latidos
 
-Update the `paperclip` skill so the default pattern becomes:
+Actualizar la habilidad `paperclip` para que el patrón default sea:
 
-1. fetch compact inbox
-2. fetch compact task context
-3. fetch only new comments unless this is the first read, a mention-triggered wake, or a cache miss
-4. fetch full thread only on demand
+1. obtener bandeja de entrada compacta
+2. obtener contexto compacto de tarea
+3. obtener solo comentarios nuevos a menos que esta sea la primera lectura, un despertar disparado por mención o un cache miss
+4. obtener el hilo completo solo bajo demanda
 
-### Why
+### Por qué
 
-Today we are using full-fidelity board APIs as heartbeat APIs. That is convenient but token-inefficient.
+Hoy estamos usando APIs de tablero de fidelidad completa como APIs de latido. Eso es conveniente pero ineficiente en tokens.
 
-### Success criteria
+### Criterios de éxito
 
-- after first task acquisition, most heartbeats consume only deltas
-- repeated blocked-task or long-thread work no longer replays the whole comment history
-- mention-triggered wakes still have enough context to respond correctly
+- después de la primera adquisición de tarea, la mayoría de los latidos consumen solo deltas
+- el trabajo de tareas bloqueadas o de hilos largos ya no repite todo el historial de comentarios
+- los despertares disparados por mención aún tienen suficiente contexto para responder correctamente
 
-## Phase 5: Add session compaction and controlled rotation
+## Fase 5: Agregar compactación de sesiones y rotación controlada
 
-This protects against long-lived session bloat.
+Esto protege contra el bloat de sesiones de vida larga.
 
-### Changes
+### Cambios
 
-- Add rotation thresholds per adapter/session:
-  - turns
-  - normalized input tokens
-  - age
-  - cache hit degradation
-- Before rotating, produce a structured carry-forward summary:
-  - current objective
-  - work completed
-  - open decisions
-  - blockers
-  - files/artifacts touched
-  - next recommended action
-- Persist that summary in task session state or runtime state.
-- Start the next session with:
-  - bootstrap prompt
-  - compact carry-forward summary
-  - current wake trigger
+- Agregar umbrales de rotación por adaptador/sesión:
+  - turnos
+  - tokens de entrada normalizados
+  - edad
+  - degradación de acierto de caché
+- Antes de rotar, producir un resumen estructurado de continuidad:
+  - objetivo actual
+  - trabajo completado
+  - decisiones abiertas
+  - bloqueadores
+  - archivos/artefactos tocados
+  - próxima acción recomendada
+- Persistir ese resumen en el estado de la sesión de tarea o el estado de tiempo de ejecución.
+- Iniciar la próxima sesión con:
+  - prompt bootstrap
+  - resumen compacto de continuidad
+  - disparador actual de despertar
 
-### Why
+### Por qué
 
-Even when reuse is desirable, some sessions become too expensive to keep alive indefinitely.
+Incluso cuando la reutilización es deseable, algunas sesiones se vuelven demasiado caras para mantenerse vivas indefinidamente.
 
-### Success criteria
+### Criterios de éxito
 
-- very long sessions stop growing without bound
-- rotating a session does not cause loss of task continuity
-- successful task completion rate stays flat or improves
+- las sesiones muy largas dejan de crecer sin límite
+- rotar una sesión no causa pérdida de continuidad de tarea
+- la tasa de completitud exitosa de tareas se mantiene plana o mejora
 
-## Phase 6: Reduce unnecessary skill surface
+## Fase 6: Reducir la superficie innecesaria de habilidades
 
-### Changes
+### Cambios
 
-- Move from “inject all repo skills” to an allowlist per agent or per adapter.
-- Default local runtime skill set should likely be:
+- Moverse de "inyectar todas las habilidades del repo" a una lista de permitidos por agente o por adaptador.
+- El conjunto default de habilidades del tiempo de ejecución local probablemente debería ser:
   - `paperclip`
-- Add opt-in skills for specialized agents:
+- Agregar habilidades opt-in para agentes especializados:
   - `paperclip-create-agent`
   - `para-memory-files`
   - `create-agent-adapter`
-- Expose active skill set in agent config and run metadata.
-- For `codex_local`, either:
-  - run with a worktree-specific `CODEX_HOME`, or
-  - treat Paperclip-owned Codex skill symlinks as repairable when they point at a different checkout
+- Exponer el conjunto activo de habilidades en la configuración del agente y los metadatos de ejecución.
+- Para `codex_local`, ya sea:
+  - correr con un `CODEX_HOME` específico del worktree, o
+  - tratar los symlinks de habilidades de Codex propiedad de Paperclip como reparables cuando apuntan a un checkout diferente
 
-### Why
+### Por qué
 
-Most agents do not need adapter-authoring or memory-system skills on every run.
+La mayoría de los agentes no necesita habilidades de autoría de adaptadores o del sistema de memoria en cada ejecución.
 
-### Success criteria
+### Criterios de éxito
 
-- smaller startup instruction surface
-- no loss of capability for specialist agents that explicitly need extra skills
+- superficie menor de instrucciones de arranque
+- sin pérdida de capacidad para agentes especialistas que explícitamente necesitan habilidades extra
 
-## Rollout Order
+## Orden de despliegue
 
-Recommended order:
+Orden recomendado:
 
-1. telemetry normalization
-2. timer-wake session reuse
-3. bootstrap prompt implementation
-4. heartbeat delta APIs + `paperclip` skill rewrite
-5. session compaction/rotation
-6. skill allowlists
+1. normalización de telemetría
+2. reutilización de sesión en despertares de temporizador
+3. implementación del prompt bootstrap
+4. APIs delta de latido + reescritura de la habilidad `paperclip`
+5. compactación/rotación de sesiones
+6. listas de permitidos de habilidades
 
-## Acceptance Metrics
+## Métricas de aceptación
 
-We should treat this plan as successful only if we improve both efficiency and task outcomes.
+Deberíamos tratar este plan como exitoso solo si mejoramos tanto la eficiencia como los resultados de tareas.
 
-Primary metrics:
+Métricas primarias:
 
-- normalized input tokens per successful heartbeat
-- normalized input tokens per completed issue
-- cache-hit ratio for sessioned adapters
-- session reuse rate by invocation source
-- fraction of heartbeats that fetch full comment threads
+- tokens de entrada normalizados por latido exitoso
+- tokens de entrada normalizados por issue completado
+- ratio de acierto de caché para adaptadores con sesión
+- tasa de reutilización de sesiones por fuente de invocación
+- fracción de latidos que obtienen hilos completos de comentarios
 
-Guardrail metrics:
+Métricas de guarda:
 
-- task completion rate
-- blocked-task rate
-- stale-session failure rate
-- manual intervention rate
-- issue reopen rate after agent completion
+- tasa de completitud de tareas
+- tasa de tareas bloqueadas
+- tasa de fallas de sesiones obsoletas
+- tasa de intervención manual
+- tasa de reapertura de issues después de completitud del agente
 
-Initial targets:
+Objetivos iniciales:
 
-- 30% to 50% reduction in normalized input tokens per successful resumed heartbeat
-- 80%+ session reuse on stable timer wakes
-- 80%+ reduction in full-thread comment reloads after first task read
-- no statistically meaningful regression in completion rate or failure rate
+- 30% a 50% de reducción en tokens de entrada normalizados por latido reanudado exitoso
+- 80%+ de reutilización de sesión en despertares estables de temporizador
+- 80%+ de reducción en recargas completas de hilos de comentarios después de la primera lectura de tarea
+- sin regresión estadísticamente significativa en tasa de completitud o tasa de fallas
 
-## Concrete Engineering Tasks
+## Tareas concretas de ingeniería
 
-1. Add normalized usage fields and migration support for run analytics.
-2. Patch sessioned adapter accounting to compute deltas from prior session totals.
-3. Change `shouldResetTaskSessionForWake(...)` so timer wakes do not reset by default.
-4. Implement `bootstrapPromptTemplate` end-to-end in adapter execution.
-5. Add compact heartbeat context and incremental comment APIs.
-6. Rewrite `skills/paperclip/SKILL.md` around delta-fetch behavior.
-7. Add session rotation with carry-forward summaries.
-8. Replace global skill injection with explicit allowlists.
-9. Fix `codex_local` skill resolution so worktree-local skill changes reliably reach the runtime.
+1. Agregar campos de uso normalizado y soporte de migración para analítica de ejecuciones.
+2. Parchear la contabilidad de adaptadores con sesión para calcular deltas desde totales previos de sesión.
+3. Cambiar `shouldResetTaskSessionForWake(...)` para que los despertares de temporizador no reinicien por defecto.
+4. Implementar `bootstrapPromptTemplate` de punta a punta en la ejecución de adaptadores.
+5. Agregar APIs de contexto de latido compacto y comentarios incrementales.
+6. Reescribir `skills/paperclip/SKILL.md` alrededor del comportamiento de obtención delta.
+7. Agregar rotación de sesiones con resúmenes de continuidad.
+8. Reemplazar la inyección global de habilidades con listas de permitidos explícitas.
+9. Corregir la resolución de habilidades de `codex_local` para que los cambios de habilidades locales del worktree lleguen confiablemente al tiempo de ejecución.
 
-## Recommendation
+## Recomendación
 
-Treat this as a two-track effort:
+Tratar esto como un esfuerzo de dos vías:
 
-- **Track A: correctness and no-regret wins**
-  - telemetry normalization
-  - timer-wake session reuse
-  - bootstrap prompt implementation
-- **Track B: structural token reduction**
-  - delta APIs
-  - skill rewrite
-  - session compaction
-  - skill allowlists
+- **Vía A: corrección y ganancias sin arrepentimiento**
+  - normalización de telemetría
+  - reutilización de sesión en despertares de temporizador
+  - implementación del prompt bootstrap
+- **Vía B: reducción estructural de tokens**
+  - APIs delta
+  - reescritura de habilidades
+  - compactación de sesiones
+  - listas de permitidos de habilidades
 
-If we only do Track A, we will improve things, but agents will still re-read too much unchanged task context.
+Si solo hacemos la Vía A, mejoraremos las cosas, pero los agentes aún releerán demasiado contexto de tarea sin cambios.
 
-If we only do Track B without fixing telemetry first, we will not be able to prove the gains cleanly.
+Si solo hacemos la Vía B sin corregir la telemetría primero, no podremos probar limpiamente las ganancias.

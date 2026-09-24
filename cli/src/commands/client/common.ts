@@ -27,16 +27,16 @@ export interface ResolvedClientContext {
 
 export function addCommonClientOptions(command: Command, opts?: { includeCompany?: boolean }): Command {
   command
-    .option("-c, --config <path>", "Path to Paperclip config file")
-    .option("-d, --data-dir <path>", "Paperclip data directory root (isolates state from ~/.paperclip)")
-    .option("--context <path>", "Path to CLI context file")
-    .option("--profile <name>", "CLI context profile name")
-    .option("--api-base <url>", "Base URL for the Paperclip API")
-    .option("--api-key <token>", "Bearer token for agent-authenticated calls")
-    .option("--json", "Output raw JSON");
+    .option("-c, --config <path>", "Ruta al archivo de config de Paperclip")
+    .option("-d, --data-dir <path>", "Raíz del directorio de datos de Paperclip (aísla el estado de ~/.paperclip)")
+    .option("--context <path>", "Ruta al archivo de contexto del CLI")
+    .option("--profile <name>", "Nombre del perfil de contexto del CLI")
+    .option("--api-base <url>", "URL base para la API de Paperclip")
+    .option("--api-key <token>", "Token bearer para llamadas autenticadas de agente")
+    .option("--json", "Salida en JSON crudo");
 
   if (opts?.includeCompany) {
-    command.option("-C, --company-id <id>", "Company ID (overrides context default)");
+    command.option("-C, --company-id <id>", "ID de empresa (sobrescribe el valor por defecto del contexto)");
   }
 
   return command;
@@ -69,7 +69,7 @@ export function resolveCommandContext(
 
   if (opts?.requireCompany && !companyId) {
     throw new Error(
-      "Company ID is required. Pass --company-id, set PAPERCLIP_COMPANY_ID, or set context profile companyId via `paperclipai context set`.",
+      "Se requiere el ID de empresa. Pasa --company-id, define PAPERCLIP_COMPANY_ID, o define el companyId del perfil de contexto con `paperclipai context set`.",
     );
   }
 
@@ -125,7 +125,7 @@ export function printOutput(data: unknown, opts: { json?: boolean; label?: strin
 
   if (Array.isArray(data)) {
     if (data.length === 0) {
-      console.log(pc.dim("(empty)"));
+      console.log(pc.dim("(vacío)"));
       return;
     }
     for (const item of data) {
@@ -144,7 +144,7 @@ export function printOutput(data: unknown, opts: { json?: boolean; label?: strin
   }
 
   if (data === undefined || data === null) {
-    console.log(pc.dim("(null)"));
+    console.log(pc.dim("(nulo)"));
     return;
   }
 
@@ -211,7 +211,7 @@ function readKeyFromProfileEnv(profile: ClientContextProfile): string | undefine
 export function handleCommandError(error: unknown): never {
   if (error instanceof ApiRequestError) {
     const detailSuffix = error.details !== undefined ? ` details=${JSON.stringify(error.details)}` : "";
-    console.error(pc.red(`API error ${error.status}: ${error.message}${detailSuffix}`));
+    console.error(pc.red(`Error de API ${error.status}: ${error.message}${detailSuffix}`));
     process.exit(1);
   }
 

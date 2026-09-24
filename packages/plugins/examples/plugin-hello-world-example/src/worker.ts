@@ -1,22 +1,22 @@
 import { definePlugin, runWorker } from "@paperclipai/plugin-sdk";
 
 const PLUGIN_NAME = "hello-world-example";
-const HEALTH_MESSAGE = "Hello World example plugin ready";
+const HEALTH_MESSAGE = "Plugin de ejemplo Hola Mundo listo";
 
 /**
- * Worker lifecycle hooks for the Hello World reference plugin.
- * This stays intentionally small so new authors can copy the shape quickly.
+ * Hooks de ciclo de vida del worker para el plugin de referencia Hola Mundo.
+ * Se mantiene intencionalmente pequeño para que los nuevos autores copien la forma rápidamente.
  */
 const plugin = definePlugin({
   /**
-   * Called when the host starts the plugin worker.
+   * Llamado cuando el host inicia el worker del plugin.
    */
   async setup(ctx) {
-    ctx.logger.info(`${PLUGIN_NAME} plugin setup complete`);
+    ctx.logger.info(`${PLUGIN_NAME}: configuración del plugin completa`);
   },
 
   /**
-   * Called by the host health probe endpoint.
+   * Llamado por el endpoint de sonda de salud del host.
    */
   async onHealth() {
     return { status: "ok", message: HEALTH_MESSAGE };

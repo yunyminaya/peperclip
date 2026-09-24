@@ -79,7 +79,7 @@ export async function createApp(
   const app = express();
 
   app.use(express.json({
-    // Company import/export payloads can inline full portable packages.
+    // Los payloads de importación/exportación de empresas pueden incluir paquetes portables completos.
     limit: "10mb",
     verify: (req, _res, buf) => {
       (req as unknown as { rawBody: Buffer }).rawBody = buf;
@@ -107,7 +107,7 @@ export async function createApp(
   );
   app.get("/api/auth/get-session", (req, res) => {
     if (req.actor.type !== "board" || !req.actor.userId) {
-      res.status(401).json({ error: "Unauthorized" });
+      res.status(401).json({ error: "No autorizado" });
       return;
     }
     res.json({
@@ -127,7 +127,7 @@ export async function createApp(
   }
   app.use(llmRoutes(db));
 
-  // Mount API routes
+  // Montar las rutas de la API
   const api = Router();
   api.use(boardMutationGuard());
   api.use(
@@ -228,7 +228,7 @@ export async function createApp(
   );
   app.use("/api", api);
   app.use("/api", (_req, res) => {
-    res.status(404).json({ error: "API route not found" });
+    res.status(404).json({ error: "Ruta API no encontrada" });
   });
   app.use(pluginUiStaticRoutes(db, {
     localPluginDir: opts.localPluginDir ?? DEFAULT_LOCAL_PLUGIN_DIR,
@@ -236,7 +236,7 @@ export async function createApp(
 
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   if (opts.uiMode === "static") {
-    // Try published location first (server/ui-dist/), then monorepo dev location (../../ui/dist)
+    // Probar primero la ubicación publicada (server/ui-dist/) y luego la ubicación de desarrollo del monorepo (../../ui/dist)
     const candidates = [
       path.resolve(__dirname, "../ui-dist"),
       path.resolve(__dirname, "../../ui/dist"),
@@ -249,7 +249,7 @@ export async function createApp(
         res.status(200).set("Content-Type", "text/html").end(indexHtml);
       });
     } else {
-      console.warn("[paperclip] UI dist not found; running in API-only mode");
+      console.warn("[paperclip] No se encontró el dist de la UI; ejecutando solo en modo API");
     }
   }
 
@@ -289,7 +289,7 @@ export async function createApp(
   jobCoordinator.start();
   scheduler.start();
   void toolDispatcher.initialize().catch((err) => {
-    logger.error({ err }, "Failed to initialize plugin tool dispatcher");
+    logger.error({ err }, "Falló la inicialización del despachador de herramientas de plugins");
   });
   const devWatcher = opts.uiMode === "vite-dev"
     ? createPluginDevWatcher(
@@ -305,7 +305,7 @@ export async function createApp(
       }
     }
   }).catch((err) => {
-    logger.error({ err }, "Failed to load ready plugins on startup");
+    logger.error({ err }, "Falló la carga de plugins listos al arrancar");
   });
   process.once("exit", () => {
     devWatcher?.close();

@@ -121,13 +121,13 @@ function readSkillMarkdown(skillName: string): string | null {
     try {
       return fs.readFileSync(skillPath, "utf8");
     } catch {
-      // Continue to next candidate.
+      // Continúa con el siguiente candidato.
     }
   }
   return null;
 }
 
-/** Resolve the Paperclip repo skills directory (built-in / managed skills). */
+/** Resuelve el directorio de habilidades del repo de Paperclip (habilidades integradas / gestionadas). */
 function resolvePaperclipSkillsDir(): string | null {
   const moduleDir = path.dirname(fileURLToPath(import.meta.url));
   const candidates = [
@@ -143,12 +143,12 @@ function resolvePaperclipSkillsDir(): string | null {
   return null;
 }
 
-/** Parse YAML frontmatter from a SKILL.md file to extract the description. */
+/** Analiza el frontmatter YAML de un archivo SKILL.md para extraer la descripción. */
 function parseSkillFrontmatter(markdown: string): { description: string } {
   const match = markdown.match(/^---\n([\s\S]*?)\n---/);
   if (!match) return { description: "" };
   const yaml = match[1];
-  // Extract description — handles both single-line and multi-line YAML values
+  // Extrae la descripción — maneja valores YAML de una línea y de múltiples líneas
   const descMatch = yaml.match(
     /^description:\s*(?:>\s*\n((?:\s{2,}[^\n]*\n?)+)|[|]\s*\n((?:\s{2,}[^\n]*\n?)+)|["']?(.*?)["']?\s*$)/m
   );
@@ -170,13 +170,13 @@ interface AvailableSkill {
   isPaperclipManaged: boolean;
 }
 
-/** Discover all available Claude Code skills from ~/.claude/skills/. */
+/** Descubre todas las habilidades disponibles de Claude Code desde ~/.claude/skills/. */
 function listAvailableSkills(): AvailableSkill[] {
   const homeDir = process.env.HOME || process.env.USERPROFILE || "";
   const claudeSkillsDir = path.join(homeDir, ".claude", "skills");
   const paperclipSkillsDir = resolvePaperclipSkillsDir();
 
-  // Build set of Paperclip-managed skill names
+  // Construye el conjunto de nombres de habilidades gestionadas por Paperclip
   const paperclipSkillNames = new Set<string>();
   if (paperclipSkillsDir) {
     try {
@@ -645,10 +645,10 @@ export function normalizeAgentDefaultsForJoin(input: {
     diagnostics.push({
       code: "openclaw_gateway_url_missing",
       level: "warn",
-      message: "OpenClaw gateway URL is missing.",
-      hint: "Set agentDefaultsPayload.url to ws:// or wss:// gateway URL."
+      message: "Falta la URL del gateway de OpenClaw.",
+      hint: "Establece agentDefaultsPayload.url a la URL del gateway ws:// o wss://."
     });
-    fatalErrors.push("agentDefaultsPayload.url is required");
+    fatalErrors.push("Se requiere agentDefaultsPayload.url");
   } else {
     try {
       gatewayUrl = new URL(rawGatewayUrl);
@@ -656,26 +656,26 @@ export function normalizeAgentDefaultsForJoin(input: {
         diagnostics.push({
           code: "openclaw_gateway_url_protocol",
           level: "warn",
-          message: `OpenClaw gateway URL must use ws:// or wss:// (got ${gatewayUrl.protocol}).`
+          message: `La URL del gateway de OpenClaw debe usar ws:// o wss:// (recibido ${gatewayUrl.protocol}).`
         });
         fatalErrors.push(
-          "agentDefaultsPayload.url must use ws:// or wss:// for openclaw_gateway"
+          "agentDefaultsPayload.url debe usar ws:// o wss:// para openclaw_gateway"
         );
       } else {
         normalized.url = gatewayUrl.toString();
         diagnostics.push({
           code: "openclaw_gateway_url_configured",
           level: "info",
-          message: `Gateway endpoint set to ${gatewayUrl.toString()}`
+          message: `Endpoint del gateway establecido a ${gatewayUrl.toString()}`
         });
       }
     } catch {
       diagnostics.push({
         code: "openclaw_gateway_url_invalid",
         level: "warn",
-        message: `Invalid OpenClaw gateway URL: ${rawGatewayUrl}`
+        message: `URL del gateway de OpenClaw no válida: ${rawGatewayUrl}`
       });
-      fatalErrors.push("agentDefaultsPayload.url is not a valid URL");
+      fatalErrors.push("agentDefaultsPayload.url no es una URL válida");
     }
   }
 
@@ -695,29 +695,29 @@ export function normalizeAgentDefaultsForJoin(input: {
     diagnostics.push({
       code: "openclaw_gateway_auth_header_missing",
       level: "warn",
-      message: "Gateway auth token is missing from agent defaults.",
+      message: "Falta el token de autenticación del gateway en los valores predeterminados del agente.",
       hint:
-        "Set agentDefaultsPayload.headers.x-openclaw-token (or legacy x-openclaw-auth)."
+        "Establece agentDefaultsPayload.headers.x-openclaw-token (o el heredado x-openclaw-auth)."
     });
     fatalErrors.push(
-      "agentDefaultsPayload.headers.x-openclaw-token (or x-openclaw-auth) is required"
+      "Se requiere agentDefaultsPayload.headers.x-openclaw-token (o x-openclaw-auth)"
     );
   } else if (gatewayToken.trim().length < 16) {
     diagnostics.push({
       code: "openclaw_gateway_auth_header_too_short",
       level: "warn",
-      message: `Gateway auth token appears too short (${gatewayToken.trim().length} chars).`,
+      message: `El token de autenticación del gateway parece demasiado corto (${gatewayToken.trim().length} caracteres).`,
       hint:
-        "Use the full gateway auth token from ~/.openclaw/openclaw.json (typically long random string)."
+        "Usa el token de autenticación completo del gateway de ~/.openclaw/openclaw.json (típicamente una cadena aleatoria larga)."
     });
     fatalErrors.push(
-      "agentDefaultsPayload.headers.x-openclaw-token is too short; expected a full gateway token"
+      "agentDefaultsPayload.headers.x-openclaw-token es demasiado corto; se esperaba un token de gateway completo"
     );
   } else {
     diagnostics.push({
       code: "openclaw_gateway_auth_header_configured",
       level: "info",
-      message: "Gateway auth token configured."
+      message: "Token de autenticación del gateway configurado."
     });
   }
 
@@ -740,7 +740,7 @@ export function normalizeAgentDefaultsForJoin(input: {
       code: "openclaw_gateway_device_key_configured",
       level: "info",
       message:
-        "Gateway device key configured. Pairing approvals should persist for this agent."
+        "Clave de dispositivo del gateway configurada. Las aprobaciones de emparejamiento deberían persistir para este agente."
     });
   } else if (!disableDeviceAuth) {
     try {
@@ -749,20 +749,20 @@ export function normalizeAgentDefaultsForJoin(input: {
         code: "openclaw_gateway_device_key_generated",
         level: "info",
         message:
-          "Generated persistent gateway device key for this join. Pairing approvals should persist for this agent."
+          "Clave de dispositivo del gateway persistente generada para esta incorporación. Las aprobaciones de emparejamiento deberían persistir para este agente."
       });
     } catch (err) {
       diagnostics.push({
         code: "openclaw_gateway_device_key_generate_failed",
         level: "warn",
-        message: `Failed to generate gateway device key: ${
+        message: `No se pudo generar la clave de dispositivo del gateway: ${
           err instanceof Error ? err.message : String(err)
         }`,
         hint:
-          "Set agentDefaultsPayload.devicePrivateKeyPem explicitly or set disableDeviceAuth=true."
+          "Establece agentDefaultsPayload.devicePrivateKeyPem explícitamente o establece disableDeviceAuth=true."
       });
       fatalErrors.push(
-        "Failed to generate gateway device key. Set devicePrivateKeyPem or disableDeviceAuth=true."
+        "No se pudo generar la clave de dispositivo del gateway. Establece devicePrivateKeyPem o disableDeviceAuth=true."
       );
     }
   }
@@ -831,21 +831,21 @@ export function normalizeAgentDefaultsForJoin(input: {
         diagnostics.push({
           code: "openclaw_gateway_paperclip_api_url_protocol",
           level: "warn",
-          message: `paperclipApiUrl must use http:// or https:// (got ${parsedPaperclipApiUrl.protocol}).`
+          message: `paperclipApiUrl debe usar http:// o https:// (recibido ${parsedPaperclipApiUrl.protocol}).`
         });
       } else {
         normalized.paperclipApiUrl = parsedPaperclipApiUrl.toString();
         diagnostics.push({
           code: "openclaw_gateway_paperclip_api_url_configured",
           level: "info",
-          message: `paperclipApiUrl set to ${parsedPaperclipApiUrl.toString()}`
+          message: `paperclipApiUrl establecido a ${parsedPaperclipApiUrl.toString()}`
         });
       }
     } catch {
       diagnostics.push({
         code: "openclaw_gateway_paperclip_api_url_invalid",
         level: "warn",
-        message: `Invalid paperclipApiUrl: ${rawPaperclipApiUrl}`
+        message: `paperclipApiUrl no válido: ${rawPaperclipApiUrl}`
       });
     }
   }
@@ -912,7 +912,7 @@ function buildOnboardingDiscoveryDiagnostics(input: {
       level: "warn",
       message:
         "Onboarding URL resolves to loopback hostname. Remote OpenClaw agents cannot reach localhost on your Paperclip host.",
-      hint: "Use a reachable hostname/IP (for example Tailscale hostname, Docker host alias, or public domain)."
+      hint: "Usa un hostname/IP alcanzable (por ejemplo hostname de Tailscale, alias de host Docker o dominio público)."
     });
   }
 
@@ -924,8 +924,8 @@ function buildOnboardingDiscoveryDiagnostics(input: {
     diagnostics.push({
       code: "openclaw_onboarding_private_loopback_bind",
       level: "warn",
-      message: "Paperclip is bound to loopback in authenticated/private mode.",
-      hint: "Run with a reachable bind host or use pnpm dev --tailscale-auth for private-network onboarding."
+      message: "Paperclip está enlazado a loopback en modo autenticado/privado.",
+      hint: "Ejecuta con un bind host alcanzable o usa pnpm dev --tailscale-auth para la incorporación en red privada."
     });
   }
 
@@ -940,8 +940,8 @@ function buildOnboardingDiscoveryDiagnostics(input: {
     diagnostics.push({
       code: "openclaw_onboarding_private_host_not_allowed",
       level: "warn",
-      message: `Onboarding host "${apiHost}" is not in allowed hostnames for authenticated/private mode.`,
-      hint: `Run pnpm paperclipai allowed-hostname ${apiHost}`
+      message: `El host de incorporación "${apiHost}" no está en los hostnames permitidos para el modo autenticado/privado.`,
+      hint: `Ejecuta pnpm paperclipai allowed-hostname ${apiHost}`
     });
   }
 
@@ -1027,16 +1027,16 @@ function buildInviteOnboardingManifest(
     invite: toInviteSummaryResponse(req, token, invite),
     onboarding: {
       instructions:
-        "Join as an OpenClaw Gateway agent, save your one-time claim secret, wait for board approval, then claim your API key. Save the claim response token to ~/.openclaw/workspace/paperclip-claimed-api-key.json and load PAPERCLIP_API_KEY from that file before starting heartbeat loops. You MUST submit adapterType='openclaw_gateway', set agentDefaultsPayload.url to your ws:// or wss:// OpenClaw gateway endpoint, and include agentDefaultsPayload.headers.x-openclaw-token (or legacy x-openclaw-auth).",
+        "Únete como agente de OpenClaw Gateway, guarda tu secreto de reclamo de un solo uso, espera la aprobación del board y luego reclama tu clave API. Guarda el token de la respuesta del reclamo en ~/.openclaw/workspace/paperclip-claimed-api-key.json y carga PAPERCLIP_API_KEY desde ese archivo antes de iniciar los bucles de latido. DEBES enviar adapterType='openclaw_gateway', establece agentDefaultsPayload.url a tu endpoint de gateway de OpenClaw ws:// o wss:// e incluye agentDefaultsPayload.headers.x-openclaw-token (o el heredado x-openclaw-auth).",
       inviteMessage: extractInviteMessage(invite),
       recommendedAdapterType: "openclaw_gateway",
       requiredFields: {
         requestType: "agent",
-        agentName: "Display name for this agent",
-        adapterType: "Use 'openclaw_gateway' for OpenClaw Gateway agents",
-        capabilities: "Optional capability summary",
+        agentName: "Nombre para mostrar de este agente",
+        adapterType: "Usa 'openclaw_gateway' para agentes de OpenClaw Gateway",
+        capabilities: "Resumen opcional de capacidades",
         agentDefaultsPayload:
-          "Adapter config for OpenClaw gateway. MUST include url (ws:// or wss://) and headers.x-openclaw-token (or legacy x-openclaw-auth). Optional fields: paperclipApiUrl, waitTimeoutMs, sessionKeyStrategy, sessionKey, role, scopes, disableDeviceAuth, devicePrivateKeyPem."
+          "Config del adaptador para el gateway de OpenClaw. DEBE incluir url (ws:// o wss://) y headers.x-openclaw-token (o el heredado x-openclaw-auth). Campos opcionales: paperclipApiUrl, waitTimeoutMs, sessionKeyStrategy, sessionKey, role, scopes, disableDeviceAuth, devicePrivateKeyPem."
       },
       registrationEndpoint: {
         method: "POST",
@@ -1048,7 +1048,7 @@ function buildInviteOnboardingManifest(
         path: "/api/join-requests/{requestId}/claim-api-key",
         body: {
           claimSecret:
-            "one-time claim secret returned when the join request is created"
+            "secreto de reclamo de un solo uso devuelto cuando se crea la solicitud de incorporación"
         }
       },
       connectivity: {
@@ -1061,8 +1061,8 @@ function buildInviteOnboardingManifest(
         guidance:
           opts.deploymentMode === "authenticated" &&
           opts.deploymentExposure === "private"
-            ? "If OpenClaw runs on another machine, ensure the Paperclip hostname is reachable and allowed via `pnpm paperclipai allowed-hostname <host>`."
-            : "Ensure OpenClaw can reach this Paperclip API base URL for invite, claim, and skill bootstrap calls."
+            ? "Si OpenClaw corre en otra máquina, asegúrate de que el hostname de Paperclip sea alcanzable y esté permitido vía `pnpm paperclipai allowed-hostname <host>`."
+            : "Asegúrate de que OpenClaw pueda alcanzar esta URL base de la API de Paperclip para las llamadas de incorporación, reclamo y arranque de habilidades."
       },
       textInstructions: {
         path: onboardingTextPath,
@@ -1516,7 +1516,7 @@ async function probeInviteResolutionTarget(
         method: "HEAD",
         durationMs,
         httpStatus: response.status,
-        message: `Webhook endpoint responded to HEAD with HTTP ${response.status}.`
+        message: `El endpoint de webhook respondió a HEAD con HTTP ${response.status}.`
       };
     }
     return {
@@ -1524,7 +1524,7 @@ async function probeInviteResolutionTarget(
       method: "HEAD",
       durationMs,
       httpStatus: response.status,
-      message: `Webhook endpoint probe returned HTTP ${response.status}.`
+      message: `La sonda del endpoint de webhook devolvió HTTP ${response.status}.`
     };
   } catch (error) {
     const durationMs = Date.now() - startedAt;
@@ -1534,7 +1534,7 @@ async function probeInviteResolutionTarget(
         method: "HEAD",
         durationMs,
         httpStatus: null,
-        message: `Webhook endpoint probe timed out after ${timeoutMs}ms.`
+        message: `La sonda del endpoint de webhook agotó el tiempo después de ${timeoutMs}ms.`
       };
     }
     return {
@@ -1570,17 +1570,17 @@ export function accessRoutes(
     if (req.actor.type !== "board") throw unauthorized();
     if (isLocalImplicit(req)) return;
     const allowed = await access.isInstanceAdmin(req.actor.userId);
-    if (!allowed) throw forbidden("Instance admin required");
+    if (!allowed) throw forbidden("Se requiere administrador de instancia");
   }
 
   router.get("/board-claim/:token", async (req, res) => {
     const token = (req.params.token as string).trim();
     const code =
       typeof req.query.code === "string" ? req.query.code.trim() : undefined;
-    if (!token) throw notFound("Board claim challenge not found");
+    if (!token) throw notFound("Desafío de reclamo de board no encontrado");
     const challenge = inspectBoardClaimChallenge(token, code);
     if (challenge.status === "invalid")
-      throw notFound("Board claim challenge not found");
+      throw notFound("Desafío de reclamo de board no encontrado");
     res.json(challenge);
   });
 
@@ -1588,14 +1588,14 @@ export function accessRoutes(
     const token = (req.params.token as string).trim();
     const code =
       typeof req.body?.code === "string" ? req.body.code.trim() : undefined;
-    if (!token) throw notFound("Board claim challenge not found");
-    if (!code) throw badRequest("Claim code is required");
+    if (!token) throw notFound("Desafío de reclamo de board no encontrado");
+    if (!code) throw badRequest("Se requiere el código de reclamo");
     if (
       req.actor.type !== "board" ||
       req.actor.source !== "session" ||
       !req.actor.userId
     ) {
-      throw unauthorized("Sign in before claiming board ownership");
+      throw unauthorized("Inicia sesión antes de reclamar la propiedad del board");
     }
 
     const claimed = await claimBoardOwnership(db, {
@@ -1605,10 +1605,10 @@ export function accessRoutes(
     });
 
     if (claimed.status === "invalid")
-      throw notFound("Board claim challenge not found");
+      throw notFound("Desafío de reclamo de board no encontrado");
     if (claimed.status === "expired")
       throw conflict(
-        "Board claim challenge expired. Restart server to generate a new one."
+        "El desafío de reclamo de board expiró. Reinicia el servidor para generar uno nuevo."
       );
     if (claimed.status === "claimed") {
       res.json({
@@ -1618,7 +1618,7 @@ export function accessRoutes(
       return;
     }
 
-    throw conflict("Board claim challenge is no longer available");
+    throw conflict("El desafío de reclamo de board ya no está disponible");
   });
 
   router.post(
@@ -1648,9 +1648,9 @@ export function accessRoutes(
     const id = (req.params.id as string).trim();
     const token =
       typeof req.query.token === "string" ? req.query.token.trim() : "";
-    if (!id || !token) throw notFound("CLI auth challenge not found");
+    if (!id || !token) throw notFound("Desafío de autenticación CLI no encontrado");
     const challenge = await boardAuth.describeCliAuthChallenge(id, token);
-    if (!challenge) throw notFound("CLI auth challenge not found");
+    if (!challenge) throw notFound("Desafío de autenticación CLI no encontrado");
 
     const isSignedInBoardUser =
       req.actor.type === "board" &&
@@ -1679,7 +1679,7 @@ export function accessRoutes(
         req.actor.type !== "board" ||
         (!req.actor.userId && !isLocalImplicit(req))
       ) {
-        throw unauthorized("Sign in before approving CLI access");
+        throw unauthorized("Inicia sesión antes de aprobar el acceso CLI");
       }
 
       const userId = req.actor.userId ?? "local-board";
@@ -1738,7 +1738,7 @@ export function accessRoutes(
 
   router.get("/cli-auth/me", async (req, res) => {
     if (req.actor.type !== "board" || !req.actor.userId) {
-      throw unauthorized("Board authentication required");
+      throw unauthorized("Se requiere autenticación de board");
     }
     const accessSnapshot = await boardAuth.resolveBoardAccess(req.actor.userId);
     res.json({
@@ -1753,7 +1753,7 @@ export function accessRoutes(
 
   router.post("/cli-auth/revoke-current", async (req, res) => {
     if (req.actor.type !== "board" || req.actor.source !== "board_key") {
-      throw badRequest("Current board API key context is required");
+      throw badRequest("Se requiere el contexto actual de clave API de board");
     }
     const key = await boardAuth.assertCurrentBoardKey(
       req.actor.keyId,
@@ -1814,10 +1814,10 @@ export function accessRoutes(
   ) {
     assertCompanyAccess(req, companyId);
     if (req.actor.type === "agent") {
-      if (!req.actor.agentId) throw forbidden("Agent authentication required");
+      if (!req.actor.agentId) throw forbidden("Se requiere autenticación de agente");
       const actorAgent = await agents.getById(req.actor.agentId);
       if (!actorAgent || actorAgent.companyId !== companyId) {
-        throw forbidden("Agent key cannot access another company");
+        throw forbidden("La clave de agente no puede acceder a otra empresa");
       }
       if (actorAgent.role !== "ceo") {
         throw forbidden("Only CEO agents can generate OpenClaw invite prompts");
@@ -1876,7 +1876,7 @@ export function accessRoutes(
       }
     }
     if (!token || !created) {
-      throw conflict("Failed to generate a unique invite token. Please retry.");
+      throw conflict("No se pudo generar un token de invitación único. Reintenta.");
     }
 
     return { token, created, normalizedAgentMessage };
@@ -1905,7 +1905,7 @@ export function accessRoutes(
   router.get("/skills/:skillName", (req, res) => {
     const skillName = (req.params.skillName as string).trim().toLowerCase();
     const markdown = readSkillMarkdown(skillName);
-    if (!markdown) throw notFound("Skill not found");
+    if (!markdown) throw notFound("Habilidad no encontrada");
     res.type("text/markdown").send(markdown);
   });
 
@@ -2001,7 +2001,7 @@ export function accessRoutes(
 
   router.get("/invites/:token", async (req, res) => {
     const token = (req.params.token as string).trim();
-    if (!token) throw notFound("Invite not found");
+    if (!token) throw notFound("Invitación no encontrada");
     const invite = await db
       .select()
       .from(invites)
@@ -2013,7 +2013,7 @@ export function accessRoutes(
       invite.acceptedAt ||
       inviteExpired(invite)
     ) {
-      throw notFound("Invite not found");
+      throw notFound("Invitación no encontrada");
     }
 
     res.json(toInviteSummaryResponse(req, token, invite));
@@ -2021,14 +2021,14 @@ export function accessRoutes(
 
   router.get("/invites/:token/onboarding", async (req, res) => {
     const token = (req.params.token as string).trim();
-    if (!token) throw notFound("Invite not found");
+    if (!token) throw notFound("Invitación no encontrada");
     const invite = await db
       .select()
       .from(invites)
       .where(eq(invites.tokenHash, hashToken(token)))
       .then((rows) => rows[0] ?? null);
     if (!invite || invite.revokedAt || inviteExpired(invite)) {
-      throw notFound("Invite not found");
+      throw notFound("Invitación no encontrada");
     }
 
     res.json(buildInviteOnboardingManifest(req, token, invite, opts));
@@ -2036,14 +2036,14 @@ export function accessRoutes(
 
   router.get("/invites/:token/onboarding.txt", async (req, res) => {
     const token = (req.params.token as string).trim();
-    if (!token) throw notFound("Invite not found");
+    if (!token) throw notFound("Invitación no encontrada");
     const invite = await db
       .select()
       .from(invites)
       .where(eq(invites.tokenHash, hashToken(token)))
       .then((rows) => rows[0] ?? null);
     if (!invite || invite.revokedAt || inviteExpired(invite)) {
-      throw notFound("Invite not found");
+      throw notFound("Invitación no encontrada");
     }
 
     res
@@ -2053,27 +2053,27 @@ export function accessRoutes(
 
   router.get("/invites/:token/test-resolution", async (req, res) => {
     const token = (req.params.token as string).trim();
-    if (!token) throw notFound("Invite not found");
+    if (!token) throw notFound("Invitación no encontrada");
     const invite = await db
       .select()
       .from(invites)
       .where(eq(invites.tokenHash, hashToken(token)))
       .then((rows) => rows[0] ?? null);
     if (!invite || invite.revokedAt || inviteExpired(invite)) {
-      throw notFound("Invite not found");
+      throw notFound("Invitación no encontrada");
     }
 
     const rawUrl =
       typeof req.query.url === "string" ? req.query.url.trim() : "";
-    if (!rawUrl) throw badRequest("url query parameter is required");
+    if (!rawUrl) throw badRequest("Se requiere el parámetro de consulta url");
     let target: URL;
     try {
       target = new URL(rawUrl);
     } catch {
-      throw badRequest("url must be an absolute http(s) URL");
+      throw badRequest("url debe ser una URL http(s) absoluta");
     }
     if (target.protocol !== "http:" && target.protocol !== "https:") {
-      throw badRequest("url must use http or https");
+      throw badRequest("url debe usar http o https");
     }
 
     const parsedTimeoutMs =
@@ -2098,7 +2098,7 @@ export function accessRoutes(
     validate(acceptInviteSchema),
     async (req, res) => {
       const token = (req.params.token as string).trim();
-      if (!token) throw notFound("Invite not found");
+      if (!token) throw notFound("Invitación no encontrada");
 
       const invite = await db
         .select()
@@ -2106,7 +2106,7 @@ export function accessRoutes(
         .where(eq(invites.tokenHash, hashToken(token)))
         .then((rows) => rows[0] ?? null);
       if (!invite || invite.revokedAt || inviteExpired(invite)) {
-        throw notFound("Invite not found");
+        throw notFound("Invitación no encontrada");
       }
       const inviteAlreadyAccepted = Boolean(invite.acceptedAt);
       const existingJoinRequestForInvite = inviteAlreadyAccepted
@@ -2118,16 +2118,16 @@ export function accessRoutes(
         : null;
 
       if (invite.inviteType === "bootstrap_ceo") {
-        if (inviteAlreadyAccepted) throw notFound("Invite not found");
+        if (inviteAlreadyAccepted) throw notFound("Invitación no encontrada");
         if (req.body.requestType !== "human") {
-          throw badRequest("Bootstrap invite requires human request type");
+          throw badRequest("La invitación bootstrap requiere tipo de solicitud humana");
         }
         if (
           req.actor.type !== "board" ||
           (!req.actor.userId && !isLocalImplicit(req))
         ) {
           throw unauthorized(
-            "Authenticated user required for bootstrap acceptance"
+            "Se requiere un usuario autenticado para la aceptación bootstrap"
           );
         }
         const userId = req.actor.userId ?? "local-board";
@@ -2152,17 +2152,17 @@ export function accessRoutes(
 
       const requestType = req.body.requestType as "human" | "agent";
       const companyId = invite.companyId;
-      if (!companyId) throw conflict("Invite is missing company scope");
+      if (!companyId) throw conflict("A la invitación le falta el scope de empresa");
       if (
         invite.allowedJoinTypes !== "both" &&
         invite.allowedJoinTypes !== requestType
       ) {
-        throw badRequest(`Invite does not allow ${requestType} joins`);
+        throw badRequest(`La invitación no permite incorporaciones de tipo ${requestType}`);
       }
 
       if (requestType === "human" && req.actor.type !== "board") {
         throw unauthorized(
-          "Human invite acceptance requires authenticated user"
+          "La aceptación humana de invitaciones requiere un usuario autenticado"
         );
       }
       if (
@@ -2170,14 +2170,14 @@ export function accessRoutes(
         !req.actor.userId &&
         !isLocalImplicit(req)
       ) {
-        throw unauthorized("Authenticated user is required");
+        throw unauthorized("Se requiere un usuario autenticado");
       }
       if (requestType === "agent" && !req.body.agentName) {
         if (
           !inviteAlreadyAccepted ||
           !existingJoinRequestForInvite?.agentName
         ) {
-          throw badRequest("agentName is required for agent join requests");
+          throw badRequest("Se requiere agentName para las solicitudes de incorporación de agentes");
         }
       }
 
@@ -2190,13 +2190,13 @@ export function accessRoutes(
           existingJoinRequest: existingJoinRequestForInvite
         })
       ) {
-        throw notFound("Invite not found");
+        throw notFound("Invitación no encontrada");
       }
       const replayJoinRequestId = inviteAlreadyAccepted
         ? existingJoinRequestForInvite?.id ?? null
         : null;
       if (inviteAlreadyAccepted && !replayJoinRequestId) {
-        throw conflict("Join request not found");
+        throw conflict("Solicitud de incorporación no encontrada");
       }
 
       const replayMergedDefaults = inviteAlreadyAccepted
@@ -2249,7 +2249,7 @@ export function accessRoutes(
               joinDefaults.normalized
             )
           },
-          "invite accept normalized OpenClaw gateway defaults"
+          "la aceptación de invitación normalizó los valores predeterminados del gateway de OpenClaw"
         );
       }
 
@@ -2332,7 +2332,7 @@ export function accessRoutes(
             .then((rows) => rows[0]);
 
       if (!created) {
-        throw conflict("Join request not found");
+        throw conflict("Solicitud de incorporación no encontrada");
       }
 
       if (
@@ -2421,7 +2421,7 @@ export function accessRoutes(
               hint: diag.hint ?? null
             }))
           },
-          "invite accept persisted OpenClaw gateway join request"
+          "la aceptación de invitación persistió la solicitud de incorporación al gateway de OpenClaw"
         );
 
         if (missingPersistedFields.length > 0) {
@@ -2431,7 +2431,7 @@ export function accessRoutes(
               joinRequestId: created.id,
               missingPersistedFields
             },
-            "invite accept detected missing persisted OpenClaw gateway defaults"
+            "la aceptación de invitación detectó valores predeterminados del gateway de OpenClaw faltantes al persistir"
           );
         }
       }
@@ -2489,11 +2489,11 @@ export function accessRoutes(
       .from(invites)
       .where(eq(invites.id, id))
       .then((rows) => rows[0] ?? null);
-    if (!invite) throw notFound("Invite not found");
+    if (!invite) throw notFound("Invitación no encontrada");
     if (invite.inviteType === "bootstrap_ceo") {
       await assertInstanceAdmin(req);
     } else {
-      if (!invite.companyId) throw conflict("Invite is missing company scope");
+      if (!invite.companyId) throw conflict("A la invitación le falta el scope de empresa");
       await assertCompanyPermission(req, invite.companyId, "users:invite");
     }
     if (invite.acceptedAt) throw conflict("Invite already consumed");
@@ -2558,7 +2558,7 @@ export function accessRoutes(
           )
         )
         .then((rows) => rows[0] ?? null);
-      if (!existing) throw notFound("Join request not found");
+      if (!existing) throw notFound("Solicitud de incorporación no encontrada");
       if (existing.status !== "pending_approval")
         throw conflict("Join request is not pending");
 
@@ -2567,7 +2567,7 @@ export function accessRoutes(
         .from(invites)
         .where(eq(invites.id, existing.inviteId))
         .then((rows) => rows[0] ?? null);
-      if (!invite) throw notFound("Invite not found");
+      if (!invite) throw notFound("Invitación no encontrada");
 
       let createdAgentId: string | null = existing.createdAgentId ?? null;
       if (existing.requestType === "human") {
@@ -2704,7 +2704,7 @@ export function accessRoutes(
           )
         )
         .then((rows) => rows[0] ?? null);
-      if (!existing) throw notFound("Join request not found");
+      if (!existing) throw notFound("Solicitud de incorporación no encontrada");
       if (existing.status !== "pending_approval")
         throw conflict("Join request is not pending");
 
@@ -2746,7 +2746,7 @@ export function accessRoutes(
         .from(joinRequests)
         .where(eq(joinRequests.id, requestId))
         .then((rows) => rows[0] ?? null);
-      if (!joinRequest) throw notFound("Join request not found");
+      if (!joinRequest) throw notFound("Solicitud de incorporación no encontrada");
       if (joinRequest.requestType !== "agent")
         throw badRequest("Only agent join requests can claim API keys");
       if (joinRequest.status !== "approved")

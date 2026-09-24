@@ -472,7 +472,7 @@ function parseFrontmatterMarkdown(raw: string): { frontmatter: Record<string, un
 async function fetchText(url: string) {
   const response = await fetch(url);
   if (!response.ok) {
-    throw unprocessable(`Failed to fetch ${url}: ${response.status}`);
+    throw unprocessable(`No se pudo obtener ${url}: ${response.status}`);
   }
   return response.text();
 }
@@ -484,7 +484,7 @@ async function fetchJson<T>(url: string): Promise<T> {
     },
   });
   if (!response.ok) {
-    throw unprocessable(`Failed to fetch ${url}: ${response.status}`);
+    throw unprocessable(`No se pudo obtener ${url}: ${response.status}`);
   }
   return response.json() as Promise<T>;
 }
@@ -502,7 +502,7 @@ async function resolveGitHubCommitSha(owner: string, repo: string, ref: string) 
   );
   const sha = asString(response.sha);
   if (!sha) {
-    throw unprocessable(`Failed to resolve GitHub ref ${ref}`);
+    throw unprocessable(`No se pudo resolver la ref de GitHub ${ref}`);
   }
   return sha;
 }
@@ -510,11 +510,11 @@ async function resolveGitHubCommitSha(owner: string, repo: string, ref: string) 
 function parseGitHubSourceUrl(rawUrl: string) {
   const url = new URL(rawUrl);
   if (url.hostname !== "github.com") {
-    throw unprocessable("GitHub source must use github.com URL");
+    throw unprocessable("La fuente de GitHub debe usar una URL de github.com");
   }
   const parts = url.pathname.split("/").filter(Boolean);
   if (parts.length < 2) {
-    throw unprocessable("Invalid GitHub URL");
+    throw unprocessable("URL de GitHub no válida");
   }
   const owner = parts[0]!;
   const repo = parts[1]!.replace(/\.git$/i, "");
@@ -562,7 +562,7 @@ function extractCommandTokens(raw: string) {
 export function parseSkillImportSourceInput(rawInput: string): ParsedSkillImportSource {
   const trimmed = rawInput.trim();
   if (!trimmed) {
-    throw unprocessable("Skill source is required.");
+    throw unprocessable("Se requiere la fuente del skill.");
   }
 
   const warnings: string[] = [];
@@ -595,10 +595,10 @@ export function parseSkillImportSourceInput(rawInput: string): ParsedSkillImport
 
   const normalizedSource = source.trim();
   if (!normalizedSource) {
-    throw unprocessable("Skill source is required.");
+    throw unprocessable("Se requiere la fuente del skill.");
   }
 
-  // Key-style imports (org/repo/skill) originate from the skills.sh registry
+  // Las importaciones estilo clave (org/repo/skill) provienen del registro de skills.sh
   if (!/^https?:\/\//i.test(normalizedSource) && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(normalizedSource)) {
     const [owner, repo, skillSlugRaw] = normalizedSource.split("/");
     return {
@@ -618,7 +618,7 @@ export function parseSkillImportSourceInput(rawInput: string): ParsedSkillImport
     };
   }
 
-  // Detect skills.sh URLs and resolve to GitHub: https://skills.sh/org/repo/skill → org/repo/skill key
+  // Detecta URLs de skills.sh y las resuelve a GitHub: https://skills.sh/org/repo/skill → clave org/repo/skill
   const skillsShMatch = normalizedSource.match(/^https?:\/\/(?:www\.)?skills\.sh\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)(?:\/([A-Za-z0-9_.-]+))?(?:[?#].*)?$/i);
   if (skillsShMatch) {
     const [, owner, repo, skillSlugRaw] = skillsShMatch;
@@ -796,7 +796,7 @@ async function collectLocalSkillInventory(
   const skillFilePath = path.join(skillDir, "SKILL.md");
   const skillFileStat = await statPath(skillFilePath);
   if (!skillFileStat?.isFile()) {
-    throw unprocessable(`No SKILL.md file was found in ${skillDir}.`);
+    throw unprocessable(`No se encontró ningún archivo SKILL.md en ${skillDir}.`);
   }
 
   const allFiles = new Set<string>(["SKILL.md"]);
@@ -905,7 +905,7 @@ async function readLocalSkillImports(companyId: string, sourcePath: string): Pro
   const resolvedPath = path.resolve(sourcePath);
   const stat = await fs.stat(resolvedPath).catch(() => null);
   if (!stat) {
-    throw unprocessable(`Skill source path does not exist: ${sourcePath}`);
+    throw unprocessable(`La ruta de la fuente del skill no existe: ${sourcePath}`);
   }
 
   if (stat.isFile()) {
@@ -949,7 +949,7 @@ async function readLocalSkillImports(companyId: string, sourcePath: string): Pro
   await walkLocalFiles(root, root, allFiles);
   const skillPaths = allFiles.filter((entry) => path.posix.basename(entry).toLowerCase() === "skill.md");
   if (skillPaths.length === 0) {
-    throw unprocessable("No SKILL.md files were found in the provided path.");
+    throw unprocessable("No se encontraron archivos SKILL.md en la ruta proporcionada.");
   }
 
   const imports: ImportedSkill[] = [];
@@ -988,7 +988,7 @@ async function readUrlSkillImports(
     const tree = await fetchJson<{ tree?: Array<{ path: string; type: string }> }>(
       `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/${ref}?recursive=1`,
     ).catch(() => {
-      throw unprocessable(`Failed to read GitHub tree for ${url}`);
+      throw unprocessable(`No se pudo leer el árbol de GitHub para ${url}`);
     });
     const allPaths = (tree.tree ?? [])
       .filter((entry) => entry.type === "blob")
@@ -1007,7 +1007,7 @@ async function readUrlSkillImports(
     );
     if (skillPaths.length === 0) {
       throw unprocessable(
-        "No SKILL.md files were found in the provided GitHub source.",
+        "No se encontraron archivos SKILL.md en la fuente de GitHub proporcionada.",
       );
     }
     const skills: ImportedSkill[] = [];
@@ -1066,8 +1066,8 @@ async function readUrlSkillImports(
     if (skills.length === 0) {
       throw unprocessable(
         requestedSkillSlug
-          ? `Skill ${requestedSkillSlug} was not found in the provided GitHub source.`
-          : "No SKILL.md files were found in the provided GitHub source.",
+          ? `No se encontró el skill ${requestedSkillSlug} en la fuente de GitHub proporcionada.`
+          : "No se encontraron archivos SKILL.md en la fuente de GitHub proporcionada.",
       );
     }
     return { skills, warnings };
@@ -1112,7 +1112,7 @@ async function readUrlSkillImports(
     };
   }
 
-  throw unprocessable("Unsupported skill source. Use a local path or URL.");
+  throw unprocessable("Fuente de skill no compatible. Usa una ruta local o una URL.");
 }
 
 function toCompanySkill(row: CompanySkillRow): CompanySkill {
@@ -1217,12 +1217,12 @@ function resolveRequestedSkillKeysOrThrow(
   if (ambiguous.size > 0 || missing.size > 0) {
     const problems: string[] = [];
     if (ambiguous.size > 0) {
-      problems.push(`ambiguous references: ${Array.from(ambiguous).sort().join(", ")}`);
+      problems.push(`referencias ambiguas: ${Array.from(ambiguous).sort().join(", ")}`);
     }
     if (missing.size > 0) {
-      problems.push(`unknown references: ${Array.from(missing).sort().join(", ")}`);
+      problems.push(`referencias desconocidas: ${Array.from(missing).sort().join(", ")}`);
     }
-    throw unprocessable(`Invalid company skill selection (${problems.join("; ")}).`);
+    throw unprocessable(`Selección de skills de empresa no válida (${problems.join("; ")}).`);
   }
 
   return Array.from(resolved);
@@ -1328,8 +1328,8 @@ function deriveSkillSourceInfo(skill: CompanySkill): {
   if (metadata.sourceKind === "paperclip_bundled") {
     return {
       editable: false,
-      editableReason: "Bundled Paperclip skills are read-only.",
-      sourceLabel: "Paperclip bundled",
+      editableReason: "Los skills empaquetados de Paperclip son de solo lectura.",
+      sourceLabel: "Empaquetado de Paperclip",
       sourceBadge: "paperclip",
       sourcePath: null,
     };
@@ -1340,7 +1340,7 @@ function deriveSkillSourceInfo(skill: CompanySkill): {
     const repo = asString(metadata.repo) ?? null;
     return {
       editable: false,
-      editableReason: "Skills.sh-managed skills are read-only.",
+      editableReason: "Los skills administrados por Skills.sh son de solo lectura.",
       sourceLabel: skill.sourceLocator ?? (owner && repo ? `${owner}/${repo}` : null),
       sourceBadge: "skills_sh",
       sourcePath: null,
@@ -1352,7 +1352,7 @@ function deriveSkillSourceInfo(skill: CompanySkill): {
     const repo = asString(metadata.repo) ?? null;
     return {
       editable: false,
-      editableReason: "Remote GitHub skills are read-only. Fork or import locally to edit them.",
+      editableReason: "Los skills remotos de GitHub son de solo lectura. Haz un fork o impórtalos localmente para editarlos.",
       sourceLabel: owner && repo ? `${owner}/${repo}` : skill.sourceLocator,
       sourceBadge: "github",
       sourcePath: null,
@@ -1362,7 +1362,7 @@ function deriveSkillSourceInfo(skill: CompanySkill): {
   if (skill.sourceType === "url") {
     return {
       editable: false,
-      editableReason: "URL-based skills are read-only. Save them locally to edit them.",
+      editableReason: "Los skills basados en URL son de solo lectura. Guárdalos localmente para editarlos.",
       sourceLabel: skill.sourceLocator,
       sourceBadge: "url",
       sourcePath: null,
@@ -1378,7 +1378,7 @@ function deriveSkillSourceInfo(skill: CompanySkill): {
       return {
         editable: true,
         editableReason: null,
-        sourceLabel: "Paperclip workspace",
+        sourceLabel: "Workspace de Paperclip",
         sourceBadge: "paperclip",
         sourcePath: managedRoot,
       };
@@ -1398,7 +1398,7 @@ function deriveSkillSourceInfo(skill: CompanySkill): {
 
   return {
     editable: false,
-    editableReason: "This skill source is read-only.",
+    editableReason: "Esta fuente de skill es de solo lectura.",
     sourceLabel: skill.sourceLocator,
     sourceBadge: "catalog",
     sourcePath: null,
@@ -1660,7 +1660,7 @@ export function companySkillService(db: Db) {
     const normalizedPath = normalizePortablePath(relativePath || "SKILL.md");
     const fileEntry = skill.fileInventory.find((entry) => entry.path === normalizedPath);
     if (!fileEntry) {
-      throw notFound("Skill file not found");
+      throw notFound("Archivo de skill no encontrado");
     }
 
     const source = deriveSkillSourceInfo(skill);
@@ -1673,7 +1673,7 @@ export function companySkillService(db: Db) {
       } else if (normalizedPath === "SKILL.md") {
         content = skill.markdown;
       } else {
-        throw notFound("Skill file not found");
+        throw notFound("Archivo de skill no encontrado");
       }
     } else if (skill.sourceType === "github" || skill.sourceType === "skills_sh") {
       const metadata = getSkillMeta(skill);
@@ -1682,17 +1682,17 @@ export function companySkillService(db: Db) {
       const ref = skill.sourceRef ?? asString(metadata.ref) ?? "main";
       const repoSkillDir = normalizeGitHubSkillDirectory(asString(metadata.repoSkillDir), skill.slug);
       if (!owner || !repo) {
-        throw unprocessable("Skill source metadata is incomplete.");
+        throw unprocessable("Los metadatos de la fuente del skill están incompletos.");
       }
       const repoPath = normalizePortablePath(path.posix.join(repoSkillDir, normalizedPath));
       content = await fetchText(resolveRawGitHubUrl(owner, repo, ref, repoPath));
     } else if (skill.sourceType === "url") {
       if (normalizedPath !== "SKILL.md") {
-        throw notFound("This skill source only exposes SKILL.md");
+        throw notFound("Esta fuente de skill solo expone SKILL.md");
       }
       content = skill.markdown;
     } else {
-      throw unprocessable("Unsupported skill source.");
+      throw unprocessable("Fuente de skill no compatible.");
     }
 
     return {
@@ -1724,7 +1724,7 @@ export function companySkillService(db: Db) {
         "",
         `# ${input.name}`,
         "",
-        input.description?.trim() ? input.description.trim() : "Describe what this skill does.",
+        input.description?.trim() ? input.description.trim() : "Describe lo que hace este skill.",
         "",
       ].join("\n"));
 
@@ -1752,16 +1752,16 @@ export function companySkillService(db: Db) {
   async function updateFile(companyId: string, skillId: string, relativePath: string, content: string): Promise<CompanySkillFileDetail> {
     await ensureSkillInventoryCurrent(companyId);
     const skill = await getById(skillId);
-    if (!skill || skill.companyId !== companyId) throw notFound("Skill not found");
+    if (!skill || skill.companyId !== companyId) throw notFound("Skill no encontrado");
 
     const source = deriveSkillSourceInfo(skill);
     if (!source.editable || skill.sourceType !== "local_path") {
-      throw unprocessable(source.editableReason ?? "This skill cannot be edited.");
+      throw unprocessable(source.editableReason ?? "Este skill no se puede editar.");
     }
 
     const normalizedPath = normalizePortablePath(relativePath);
     const absolutePath = resolveLocalSkillFilePath(skill, normalizedPath);
-    if (!absolutePath) throw notFound("Skill file not found");
+    if (!absolutePath) throw notFound("Archivo de skill no encontrado");
 
     await fs.mkdir(path.dirname(absolutePath), { recursive: true });
     await fs.writeFile(absolutePath, content, "utf8");
@@ -1785,7 +1785,7 @@ export function companySkillService(db: Db) {
     }
 
     const detail = await readFile(companyId, skillId, normalizedPath);
-    if (!detail) throw notFound("Skill file not found");
+    if (!detail) throw notFound("Archivo de skill no encontrado");
     return detail;
   }
 
@@ -1796,16 +1796,16 @@ export function companySkillService(db: Db) {
 
     const status = await updateStatus(companyId, skillId);
     if (!status?.supported) {
-      throw unprocessable(status?.reason ?? "This skill does not support updates.");
+      throw unprocessable(status?.reason ?? "Este skill no admite actualizaciones.");
     }
     if (!skill.sourceLocator) {
-      throw unprocessable("Skill source locator is missing.");
+      throw unprocessable("Falta el localizador de la fuente del skill.");
     }
 
     const result = await readUrlSkillImports(companyId, skill.sourceLocator, skill.slug);
     const matching = result.skills.find((entry) => entry.key === skill.key) ?? result.skills[0] ?? null;
     if (!matching) {
-      throw unprocessable(`Skill ${skill.key} could not be re-imported from its source.`);
+      throw unprocessable(`No se pudo reimportar el skill ${skill.key} desde su fuente.`);
     }
 
     const imported = await upsertImportedSkills(companyId, [matching]);
@@ -2126,7 +2126,7 @@ export function companySkillService(db: Db) {
           originalSlug,
           existingBefore: existingByIncomingKey,
           actionHint: existingByIncomingKey ? "updated" : "created",
-          reason: existingByIncomingKey ? "Existing skill key matched; replace strategy." : null,
+          reason: existingByIncomingKey ? "Clave de skill existente coincidente; estrategia replace." : null,
         });
         usedSlugs.add(normalizedSlug);
         usedKeys.add(importedSkill.key);
@@ -2140,7 +2140,7 @@ export function companySkillService(db: Db) {
           originalKey,
           originalSlug,
           requestedRefs: Array.from(new Set([originalKey, originalSlug])),
-          reason: "Existing skill matched; skip strategy.",
+          reason: "Skill existente coincidente; estrategia skip.",
         });
         continue;
       }
@@ -2243,7 +2243,7 @@ export function companySkillService(db: Db) {
           .values(values)
           .returning()
           .then((rows) => rows[0] ?? null);
-      if (!row) throw notFound("Failed to persist company skill");
+      if (!row) throw notFound("No se pudo persistir el skill de empresa");
       out.push(toCompanySkill(row));
     }
     return out;
@@ -2270,11 +2270,11 @@ export function companySkillService(db: Db) {
     if (filteredSkills.length === 0) {
       throw unprocessable(
         parsed.requestedSkillSlug
-          ? `Skill ${parsed.requestedSkillSlug} was not found in the provided source.`
-          : "No skills were found in the provided source.",
+          ? `No se encontró el skill ${parsed.requestedSkillSlug} en la fuente proporcionada.`
+          : "No se encontraron skills en la fuente proporcionada.",
       );
     }
-    // Override sourceType/sourceLocator for skills imported via skills.sh
+    // Sobrescribe sourceType/sourceLocator para los skills importados vía skills.sh
     if (parsed.originalSkillsShUrl) {
       for (const skill of filteredSkills) {
         skill.sourceType = "skills_sh";
@@ -2299,7 +2299,7 @@ export function companySkillService(db: Db) {
 
     const skill = toCompanySkill(row);
 
-    // Remove from any agent desiredSkills that reference this skill
+    // Elimina de los desiredSkills de cualquier agente que referencien este skill
     const agentRows = await agents.list(companyId);
     const allSkills = await listFull(companyId);
     for (const agent of agentRows) {
@@ -2320,12 +2320,12 @@ export function companySkillService(db: Db) {
       }
     }
 
-    // Delete DB row
+    // Elimina la fila de la BD
     await db
       .delete(companySkills)
       .where(eq(companySkills.id, skillId));
 
-    // Clean up materialized runtime files
+    // Limpia los archivos materializados del runtime
     await fs.rm(resolveRuntimeSkillMaterializedPath(companyId, skill), { recursive: true, force: true });
 
     return skill;

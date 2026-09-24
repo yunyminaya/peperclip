@@ -53,9 +53,9 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
         .where(eq(agents.id, data.agentId))
         .then((rows) => rows[0] ?? null);
 
-      if (!agent) throw notFound("Agent not found");
+      if (!agent) throw notFound("Agente no encontrado");
       if (agent.companyId !== companyId) {
-        throw unprocessable("Agent does not belong to company");
+        throw unprocessable("El agente no pertenece a la empresa");
       }
 
       const event = await db
@@ -103,7 +103,7 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
         .where(eq(companies.id, companyId))
         .then((rows) => rows[0] ?? null);
 
-      if (!company) throw notFound("Company not found");
+      if (!company) throw notFound("Empresa no encontrada");
 
       const conditions: ReturnType<typeof eq>[] = [eq(costEvents.companyId, companyId)];
       if (range?.from) conditions.push(gte(costEvents.occurredAt, range.from));
@@ -226,9 +226,9 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
     },
 
     /**
-     * aggregates cost_events by provider for each of three rolling windows:
-     * last 5 hours, last 24 hours, last 7 days.
-     * purely internal consumption data, no external rate-limit sources.
+     * Agrega cost_events por proveedor para cada una de tres ventanas móviles:
+     * últimas 5 horas, últimas 24 horas, últimos 7 días.
+     * Datos de consumo puramente internos, sin fuentes externas de límites de tasa.
      */
     windowSpend: async (companyId: string) => {
       const windows = [
@@ -280,10 +280,11 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
       if (range?.from) conditions.push(gte(costEvents.occurredAt, range.from));
       if (range?.to) conditions.push(lte(costEvents.occurredAt, range.to));
 
-      // single query: group by agent + provider + model.
-      // the (companyId, agentId, occurredAt) composite index covers this well.
-      // order by provider + model for stable db-level ordering; cost-desc sort
-      // within each agent's sub-rows is done client-side in the ui memo.
+      // Una sola consulta: agrupa por agente + proveedor + modelo.
+      // El índice compuesto (companyId, agentId, occurredAt) cubre bien este caso.
+      // Ordena por proveedor + modelo para un orden estable a nivel de base de datos;
+      // el orden descendente por costo dentro de las subfilas de cada agente
+      // se hace en el cliente, en el memo de la ui.
       return db
         .select({
           agentId: costEvents.agentId,

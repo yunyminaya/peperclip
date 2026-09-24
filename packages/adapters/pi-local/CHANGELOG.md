@@ -2,19 +2,19 @@
 
 ## 0.3.1
 
-### Patch Changes
+### Cambios de parche
 
-- Stable release preparation for 0.3.1
-- Updated dependencies
+- Preparación de la versión estable 0.3.1
+- Dependencias actualizadas
   - @paperclipai/adapter-utils@0.3.1
 
 ## 0.3.0
 
-### Minor Changes
+### Cambios menores
 
-- Stable release preparation for 0.3.0
+- Preparación de la versión estable 0.3.0
 
-### Patch Changes
+### Cambios de parche
 
-- Updated dependencies
+- Dependencias actualizadas
   - @paperclipai/adapter-utils@0.3.0

@@ -101,10 +101,10 @@ describe("claude local skill sync", () => {
       state: "external",
       managed: false,
       origin: "user_installed",
-      originLabel: "User-installed",
+      originLabel: "Instalada por el usuario",
       locationLabel: "~/.claude/skills",
       readOnly: true,
-      detail: "Installed outside Paperclip management in the Claude skills home.",
+      detail: "Instalada fuera de la administración de Paperclip en el directorio de habilidades de Claude.",
     }));
   });
 });

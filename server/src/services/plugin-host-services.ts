@@ -36,33 +36,34 @@ import { isIP } from "node:net";
 import { logger } from "../middleware/logger.js";
 
 // ---------------------------------------------------------------------------
-// SSRF protection for plugin HTTP fetch
+// Protección SSRF para el fetch HTTP de plugins
 // ---------------------------------------------------------------------------
 
-/** Maximum time (ms) a plugin fetch request may take before being aborted. */
+/** Tiempo máximo (ms) que puede tardar una petición fetch de plugin antes de abortarse. */
 const PLUGIN_FETCH_TIMEOUT_MS = 30_000;
 
-/** Maximum time (ms) to wait for a DNS lookup before aborting. */
+/** Tiempo máximo (ms) de espera para una búsqueda DNS antes de abortar. */
 const DNS_LOOKUP_TIMEOUT_MS = 5_000;
 
-/** Only these protocols are allowed for plugin HTTP requests. */
+/** Solo estos protocolos están permitidos para peticiones HTTP de plugins. */
 const ALLOWED_PROTOCOLS = new Set(["http:", "https:"]);
 
 /**
- * Check if an IP address is in a private/reserved range (RFC 1918, loopback,
- * link-local, etc.) that plugins should never be able to reach.
+ * Verifica si una dirección IP está en un rango privado/reservado (RFC 1918,
+ * loopback, link-local, etc.) al que los plugins nunca deben poder llegar.
  *
- * Handles IPv4-mapped IPv6 addresses (e.g. ::ffff:127.0.0.1) which Node's
- * dns.lookup may return depending on OS configuration.
+ * Maneja direcciones IPv6 mapeadas a IPv4 (p. ej. ::ffff:127.0.0.1) que el
+ * dns.lookup de Node puede devolver según la configuración del SO.
  */
 function isPrivateIP(ip: string): boolean {
   const lower = ip.toLowerCase();
 
-  // Unwrap IPv4-mapped IPv6 addresses (::ffff:x.x.x.x) and re-check as IPv4
+  // Desenvuelve direcciones IPv6 mapeadas a IPv4 (::ffff:x.x.x.x) y las
+  // re-verifica como IPv4
   const v4MappedMatch = lower.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
   if (v4MappedMatch && v4MappedMatch[1]) return isPrivateIP(v4MappedMatch[1]);
 
-  // IPv4 patterns
+  // Patrones IPv4
   if (ip.startsWith("10.")) return true;
   if (ip.startsWith("172.")) {
     const second = parseInt(ip.split(".")[1]!, 10);
@@ -73,7 +74,7 @@ function isPrivateIP(ip: string): boolean {
   if (ip.startsWith("169.254.")) return true;               // link-local
   if (ip === "0.0.0.0") return true;
 
-  // IPv6 patterns
+  // Patrones IPv6
   if (lower === "::1") return true;                          // loopback
   if (lower.startsWith("fc") || lower.startsWith("fd")) return true; // ULA
   if (lower.startsWith("fe80")) return true;                 // link-local
@@ -83,20 +84,24 @@ function isPrivateIP(ip: string): boolean {
 }
 
 /**
- * Validate a URL for plugin fetch: protocol whitelist + private IP blocking.
+ * Valida una URL para el fetch de plugins: lista blanca de protocolos +
+ * bloqueo de IPs privadas.
  *
- * SSRF Prevention Strategy:
- * 1. Parse and validate the URL syntax
- * 2. Enforce protocol whitelist (http/https only)
- * 3. Resolve the hostname to IP(s) via DNS
- * 4. Validate that ALL resolved IPs are non-private
- * 5. Pin the first safe IP into the URL so fetch() does not re-resolve DNS
+ * Estrategia de prevención SSRF:
+ * 1. Analiza y valida la sintaxis de la URL
+ * 2. Aplica la lista blanca de protocolos (solo http/https)
+ * 3. Resuelve el hostname a IP(s) vía DNS
+ * 4. Valida que TODAS las IPs resueltas sean no privadas
+ * 5. Fija la primera IP segura en la URL para que fetch() no vuelva a
+ *    resolver DNS
  *
- * This prevents DNS rebinding attacks where an attacker controls DNS to
- * resolve to a safe IP during validation, then to a private IP when fetch() runs.
+ * Esto previene ataques de DNS rebinding donde un atacante controla el DNS
+ * para resolver a una IP segura durante la validación y luego a una IP
+ * privada cuando fetch() se ejecuta.
  *
- * @returns Request-routing metadata used to connect directly to the resolved IP
- *          while preserving the original hostname for HTTP Host and TLS SNI.
+ * @returns Metadatos de enrutamiento de la petición usados para conectarse
+ *          directamente a la IP resuelta preservando el hostname original
+ *          para el Host HTTP y el SNI TLS.
  */
 interface ValidatedFetchTarget {
   parsedUrl: URL;
@@ -111,27 +116,27 @@ async function validateAndResolveFetchUrl(urlString: string): Promise<ValidatedF
   try {
     parsed = new URL(urlString);
   } catch {
-    throw new Error(`Invalid URL: ${urlString}`);
+    throw new Error(`URL inválida: ${urlString}`);
   }
 
   if (!ALLOWED_PROTOCOLS.has(parsed.protocol)) {
     throw new Error(
-      `Disallowed protocol "${parsed.protocol}" — only http: and https: are permitted`,
+      `Protocolo no permitido "${parsed.protocol}" — solo se permiten http: y https:`,
     );
   }
 
-  // Resolve the hostname to an IP and check for private ranges.
-  // We pin the resolved IP into the URL to eliminate the TOCTOU window
-  // between DNS resolution here and the second resolution fetch() would do.
-  const originalHostname = parsed.hostname.replace(/^\[|\]$/g, ""); // strip IPv6 brackets
-  const hostHeader = parsed.host; // includes port if non-default
+  // Resuelve el hostname a una IP y verifica que no esté en rangos privados.
+  // Fijamos la IP resuelta en la URL para eliminar la ventana TOCTOU entre
+  // la resolución DNS aquí y la segunda resolución que haría fetch().
+  const originalHostname = parsed.hostname.replace(/^\[|\]$/g, ""); // quita corchetes IPv6
+  const hostHeader = parsed.host; // incluye el puerto si no es el predeterminado
 
-  // Race the DNS lookup against a timeout to prevent indefinite hangs
-  // when DNS is misconfigured or unresponsive.
+  // Competir la búsqueda DNS contra un timeout para evitar bloqueos
+  // indefinidos cuando el DNS está mal configurado o no responde.
   const dnsPromise = dnsLookup(originalHostname, { all: true });
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(
-      () => reject(new Error(`DNS lookup timed out after ${DNS_LOOKUP_TIMEOUT_MS}ms for ${originalHostname}`)),
+      () => reject(new Error(`La búsqueda DNS agotó el tiempo de espera tras ${DNS_LOOKUP_TIMEOUT_MS}ms para ${originalHostname}`)),
       DNS_LOOKUP_TIMEOUT_MS,
     );
   });
@@ -139,16 +144,16 @@ async function validateAndResolveFetchUrl(urlString: string): Promise<ValidatedF
   try {
     const results = await Promise.race([dnsPromise, timeoutPromise]);
     if (results.length === 0) {
-      throw new Error(`DNS resolution returned no results for ${originalHostname}`);
+      throw new Error(`La resolución DNS no devolvió resultados para ${originalHostname}`);
     }
 
-    // Filter to only non-private IPs instead of rejecting the entire request
-    // when some IPs are private. This handles multi-homed hosts that resolve
-    // to both private and public addresses.
+    // Filtrar solo las IPs no privadas en lugar de rechazar toda la petición
+    // cuando algunas IPs son privadas. Esto maneja hosts multi-homed que
+    // resuelven tanto a direcciones privadas como públicas.
     const safeResults = results.filter((entry) => !isPrivateIP(entry.address));
     if (safeResults.length === 0) {
       throw new Error(
-        `All resolved IPs for ${originalHostname} are in private/reserved ranges`,
+        `Todas las IPs resueltas para ${originalHostname} están en rangos privados/reservados`,
       );
     }
 
@@ -163,13 +168,13 @@ async function validateAndResolveFetchUrl(urlString: string): Promise<ValidatedF
       useTls: parsed.protocol === "https:",
     };
   } catch (err) {
-    // Re-throw our own errors; wrap DNS failures
+    // Re-lanza nuestros propios errores; envuelve fallos de DNS
     if (err instanceof Error && (
-      err.message.startsWith("All resolved IPs") ||
-      err.message.startsWith("DNS resolution returned") ||
-      err.message.startsWith("DNS lookup timed out")
+      err.message.startsWith("Todas las IPs resueltas") ||
+      err.message.startsWith("La resolución DNS no devolvió") ||
+      err.message.startsWith("La búsqueda DNS agotó el tiempo")
     )) throw err;
-    throw new Error(`DNS resolution failed for ${originalHostname}: ${(err as Error).message}`);
+    throw new Error(`Falló la resolución DNS para ${originalHostname}: ${(err as Error).message}`);
   }
 }
 
@@ -242,7 +247,7 @@ async function executePinnedHttpRequest(
       totalBytes += buf.length;
       if (totalBytes > MAX_RESPONSE_BODY_BYTES) {
         chunks.length = 0;
-        response.destroy(new Error(`Response body exceeded ${MAX_RESPONSE_BODY_BYTES} bytes`));
+        response.destroy(new Error(`El cuerpo de la respuesta excedió ${MAX_RESPONSE_BODY_BYTES} bytes`));
         return;
       }
       chunks.push(buf);
@@ -298,29 +303,29 @@ function sanitizeWorkspaceName(name: string, fallbackPath: string): string {
   }
   const normalized = fallbackPath.trim().replace(/[\\/]+$/, "");
   const segments = normalized.split(/[\\/]/).filter(Boolean);
-  return segments[segments.length - 1] ?? "Workspace";
+  return segments[segments.length - 1] ?? "Espacio de trabajo";
 }
 
 // ---------------------------------------------------------------------------
-// Buffered plugin log writes
+// Escrituras de logs de plugins con buffer
 // ---------------------------------------------------------------------------
 
-/** How many buffered log entries trigger an immediate flush. */
+/** Cuántas entradas de log en buffer disparan un volcado inmediato. */
 const LOG_BUFFER_FLUSH_SIZE = 100;
 
-/** How often (ms) the buffer is flushed regardless of size. */
+/** Cada cuánto (ms) se vacía el buffer sin importar el tamaño. */
 const LOG_BUFFER_FLUSH_INTERVAL_MS = 5_000;
 
-/** Max length for a single plugin log message (bytes/chars). */
+/** Longitud máxima de un mensaje de log de plugin (bytes/caracteres). */
 const MAX_LOG_MESSAGE_LENGTH = 10_000;
 
-/** Max serialised JSON size for plugin log meta objects. */
+/** Tamaño máximo del JSON serializado para objetos meta de logs de plugins. */
 const MAX_LOG_META_JSON_LENGTH = 50_000;
 
-/** Max length for a metric name. */
+/** Longitud máxima del nombre de una métrica. */
 const MAX_METRIC_NAME_LENGTH = 500;
 
-/** Pino reserved field names that plugins must not overwrite. */
+/** Nombres de campos reservados de Pino que los plugins no deben sobrescribir. */
 const PINO_RESERVED_KEYS = new Set([
   "level",
   "time",
@@ -330,23 +335,23 @@ const PINO_RESERVED_KEYS = new Set([
   "v",
 ]);
 
-/** Truncate a string to `max` characters, appending a marker if truncated. */
+/** Trunca un string a `max` caracteres, agregando un marcador si se truncó. */
 function truncStr(s: string, max: number): string {
   if (s.length <= max) return s;
-  return s.slice(0, max) + "...[truncated]";
+  return s.slice(0, max) + "...[truncado]";
 }
 
-/** Sanitise a plugin-supplied meta object: enforce size limit and strip reserved keys. */
+/** Sanea un objeto meta provisto por un plugin: aplica límite de tamaño y quita claves reservadas. */
 function sanitiseMeta(meta: Record<string, unknown> | null | undefined): Record<string, unknown> | null {
   if (meta == null) return null;
-  // Strip pino reserved keys
+  // Quita las claves reservadas de pino
   const cleaned: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(meta)) {
     if (!PINO_RESERVED_KEYS.has(k)) {
       cleaned[k] = v;
     }
   }
-  // Enforce total serialised size
+  // Aplica el límite de tamaño total serializado
   let json: string;
   try {
     json = JSON.stringify(cleaned);
@@ -370,17 +375,20 @@ interface BufferedLogEntry {
 const _logBuffer: BufferedLogEntry[] = [];
 
 /**
- * Flush all buffered log entries to the database in a single batch insert per
- * unique db instance. Errors are swallowed with a console.error fallback so
- * flushing never crashes the process.
+ * Vacía todas las entradas de log en buffer a la base de datos en una sola
+ * inserción en lote por cada instancia de BD única. Los errores se absorben
+ * con un respaldo de console.error para que el volcado nunca bloquee el
+ * proceso.
  */
 export async function flushPluginLogBuffer(): Promise<void> {
   if (_logBuffer.length === 0) return;
 
-  // Drain the buffer atomically so concurrent flushes don't double-insert.
+  // Drena el buffer de forma atómica para que volcados concurrentes no
+  // inserten dos veces.
   const entries = _logBuffer.splice(0, _logBuffer.length);
 
-  // Group entries by db identity so multi-db scenarios are handled correctly.
+  // Agrupa las entradas por identidad de BD para manejar correctamente
+  // escenarios con múltiples BD.
   const byDb = new Map<Db, BufferedLogEntry[]>();
   for (const entry of entries) {
     const group = byDb.get(entry.db);
@@ -402,38 +410,39 @@ export async function flushPluginLogBuffer(): Promise<void> {
       await dbInstance.insert(pluginLogs).values(values);
     } catch (err) {
       try {
-        logger.warn({ err, count: values.length }, "Failed to batch-persist plugin logs to DB");
+        logger.warn({ err, count: values.length }, "No se pudieron persistir en lote los logs de plugins a la BD");
       } catch {
-        console.error("[plugin-host-services] Batch log flush failed:", err);
+        console.error("[plugin-host-services] Falló el volcado de logs en lote:", err);
       }
     }
   }
 }
 
-/** Interval handle for the periodic log flush. */
+/** Manejador del intervalo para el volcado periódico de logs. */
 const _logFlushInterval = setInterval(() => {
   flushPluginLogBuffer().catch((err) => {
-    console.error("[plugin-host-services] Periodic log flush error:", err);
+    console.error("[plugin-host-services] Error en el volcado periódico de logs:", err);
   });
 }, LOG_BUFFER_FLUSH_INTERVAL_MS);
 
-// Allow the interval to be unref'd so it doesn't keep the process alive in tests.
+// Permite que el intervalo sea unref'd para que no mantenga vivo el proceso en pruebas.
 if (_logFlushInterval.unref) _logFlushInterval.unref();
 
 /**
- * buildHostServices — creates a concrete implementation of the `HostServices`
- * interface for a specific plugin.
+ * buildHostServices — crea una implementación concreta de la interfaz
+ * `HostServices` para un plugin específico.
  *
- * This implementation delegates to the core Paperclip domain services,
- * providing the bridge between the plugin worker's SDK and the host platform.
+ * Esta implementación delega a los servicios de dominio centrales de
+ * Paperclip, proporcionando el puente entre el SDK del worker del plugin y
+ * la plataforma host.
  *
- * @param db - Database connection instance.
- * @param pluginId - The UUID of the plugin installation record.
- * @param pluginKey - The unique identifier from the plugin manifest (e.g., "acme.linear").
- * @param eventBus - The system-wide event bus for publishing plugin events.
- * @returns An object implementing the HostServices interface for the plugin SDK.
+ * @param db - Instancia de conexión a la base de datos.
+ * @param pluginId - El UUID del registro de instalación del plugin.
+ * @param pluginKey - El identificador único del manifiesto del plugin (p. ej. "acme.linear").
+ * @param eventBus - El bus de eventos de todo el sistema para publicar eventos de plugins.
+ * @returns Un objeto que implementa la interfaz HostServices para el SDK del plugin.
  */
-/** Maximum time (ms) to keep a session event subscription alive before forcing cleanup. */
+/** Tiempo máximo (ms) para mantener viva una suscripción de eventos de sesión antes de forzar su limpieza. */
 const SESSION_EVENT_SUBSCRIPTION_TIMEOUT_MS = 30 * 60 * 1_000; // 30 minutes
 
 export function buildHostServices(
@@ -458,12 +467,12 @@ export function buildHostServices(
   const assets = assetService(db);
   const scopedBus = eventBus.forPlugin(pluginKey);
 
-  // Track active session event subscriptions for cleanup
+  // Rastrear las suscripciones activas de eventos de sesión para limpieza
   const activeSubscriptions = new Set<{ unsubscribe: () => void; timer: ReturnType<typeof setTimeout> }>();
   let disposed = false;
 
   const ensureCompanyId = (companyId?: string) => {
-    if (!companyId) throw new Error("companyId is required for this operation");
+    if (!companyId) throw new Error("companyId es obligatorio para esta operación");
     return companyId;
   };
 
@@ -488,9 +497,10 @@ export function buildHostServices(
   };
 
   /**
-   * Plugins are instance-wide in the current runtime. Company IDs are still
-   * required for company-scoped data access, but there is no per-company
-   * availability gate to enforce here.
+   * Los plugins son de alcance de instancia en el runtime actual. Los IDs de
+   * empresa siguen siendo obligatorios para el acceso a datos con alcance de
+   * empresa, pero aquí no hay que aplicar ninguna puerta de disponibilidad
+   * por empresa.
    */
   const ensurePluginAvailableForCompany = async (_companyId: string) => {};
 
@@ -505,7 +515,7 @@ export function buildHostServices(
     companyId: string,
   ): T => {
     if (!inCompany(record, companyId)) {
-      throw new Error(`${entityName} not found`);
+      throw new Error(`${entityName} no encontrado`);
     }
     return record;
   };
@@ -574,8 +584,9 @@ export function buildHostServices(
 
     http: {
       async fetch(params) {
-        // SSRF protection: validate protocol whitelist + block private IPs.
-        // Resolve once, then connect directly to that IP to prevent DNS rebinding.
+        // Protección SSRF: valida la lista blanca de protocolos + bloquea IPs privadas.
+        // Resuelve una vez y luego se conecta directamente a esa IP para
+        // prevenir DNS rebinding.
         const target = await validateAndResolveFetchUrl(params.url);
 
         const controller = new AbortController();
@@ -617,10 +628,10 @@ export function buildHostServices(
         const safeName = truncStr(String(params.name ?? ""), MAX_METRIC_NAME_LENGTH);
         logger.debug({ pluginId, name: safeName, value: params.value, tags: params.tags }, "Plugin metric write");
 
-        // Persist metrics to plugin_logs via the batch buffer (same path as
-        // logger.log) so they benefit from batched writes and are flushed
-        // reliably on shutdown. Using level "metric" makes them queryable
-        // alongside regular logs via the same API (§26).
+        // Persiste las métricas en plugin_logs vía el buffer de lote (la misma
+        // ruta que logger.log) para que se beneficien de escrituras en lote y
+        // se vacíen de forma confiable al apagar. Usar el nivel "metric" las
+        // hace consultables junto a los logs regulares vía la misma API (§26).
         _logBuffer.push({
           db,
           pluginId,
@@ -630,7 +641,7 @@ export function buildHostServices(
         });
         if (_logBuffer.length >= LOG_BUFFER_FLUSH_SIZE) {
           flushPluginLogBuffer().catch((err) => {
-            console.error("[plugin-host-services] Triggered metric flush failed:", err);
+            console.error("[plugin-host-services] Falló el volcado de métricas disparado:", err);
           });
         }
       },
@@ -653,8 +664,8 @@ export function buildHostServices(
         else if (level === "debug") pluginLogger.debug(logFields, `[plugin] ${safeMessage}`);
         else pluginLogger.info(logFields, `[plugin] ${safeMessage}`);
 
-        // Persist to plugin_logs table via the module-level batch buffer (§26.1).
-        // Fire-and-forget — logging should never block the worker.
+        // Persiste en la tabla plugin_logs vía el buffer de lote a nivel de módulo (§26.1).
+        // Fire-and-forget — el logging nunca debe bloquear al worker.
         _logBuffer.push({
           db,
           pluginId,
@@ -664,7 +675,7 @@ export function buildHostServices(
         });
         if (_logBuffer.length >= LOG_BUFFER_FLUSH_SIZE) {
           flushPluginLogBuffer().catch((err) => {
-            console.error("[plugin-host-services] Triggered log flush failed:", err);
+            console.error("[plugin-host-services] Falló el volcado de logs disparado:", err);
           });
         }
       },
@@ -876,7 +887,7 @@ export function buildHostServices(
           requestedByActorType: "system",
           requestedByActorId: pluginId,
         });
-        if (!run) throw new Error("Agent wakeup was skipped by heartbeat policy");
+        if (!run) throw new Error("La activación del agente fue omitida por la política de heartbeat");
         return { runId: run.id };
       },
     },
@@ -978,13 +989,13 @@ export function buildHostServices(
 
       async sendMessage(params) {
         if (disposed) {
-          throw new Error("Host services have been disposed");
+          throw new Error("Los servicios del host ya fueron liberados");
         }
 
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
 
-        // Verify session exists and belongs to this plugin
+        // Verifica que la sesión exista y pertenezca a este plugin
         const session = await db
           .select()
           .from(agentTaskSessionsTable)
@@ -996,7 +1007,7 @@ export function buildHostServices(
             ),
           )
           .then((rows) => rows[0] ?? null);
-        if (!session) throw new Error(`Session not found: ${params.sessionId}`);
+        if (!session) throw new Error(`Sesión no encontrada: ${params.sessionId}`);
 
         const run = await heartbeat.wakeup(session.agentId, {
           source: "automation",
@@ -1011,11 +1022,12 @@ export function buildHostServices(
           requestedByActorType: "system",
           requestedByActorId: pluginId,
         });
-        if (!run) throw new Error("Agent wakeup was skipped by heartbeat policy");
+        if (!run) throw new Error("La activación del agente fue omitida por la política de heartbeat");
 
-        // Subscribe to live events and forward to the plugin worker as notifications.
-        // Track the subscription so it can be cleaned up on dispose() if the run
-        // never reaches a terminal status (hang, crash, network partition).
+        // Suscribirse a los eventos en vivo y reenviarlos al worker del plugin
+        // como notificaciones. Rastrear la suscripción para poder limpiarla en
+        // dispose() si el run nunca alcanza un estado terminal (bloqueo,
+        // caída, partición de red).
         if (notifyWorker) {
           const TERMINAL_STATUSES = new Set(["succeeded", "failed", "cancelled", "timed_out"]);
 
@@ -1048,7 +1060,7 @@ export function buildHostServices(
                   seq: 0,
                   eventType: status === "succeeded" ? "done" : "error",
                   stream: "system",
-                  message: status === "succeeded" ? "Run completed" : `Run ${status}`,
+                  message: status === "succeeded" ? "Ejecución completada" : `Ejecución ${status}`,
                   payload: payload,
                 });
                 cleanup();
@@ -1059,19 +1071,20 @@ export function buildHostServices(
                   seq: 0,
                   eventType: "status",
                   stream: "system",
-                  message: `Run status: ${status}`,
+                  message: `Estado de la ejecución: ${status}`,
                   payload: payload,
                 });
               }
             }
           });
 
-          // Safety-net timeout: if the run never reaches a terminal status,
-          // force-cleanup the subscription to prevent unbounded leaks.
+          // Timeout de red de seguridad: si el run nunca alcanza un estado
+          // terminal, limpia forzosamente la suscripción para evitar fugas
+          // ilimitadas.
           const timeoutTimer = setTimeout(() => {
             logger.warn(
               { pluginId, pluginKey, runId: run.id },
-              "session event subscription timed out — forcing cleanup",
+              "la suscripción de eventos de sesión agotó el tiempo — forzando limpieza",
             );
             cleanup();
           }, SESSION_EVENT_SUBSCRIPTION_TIMEOUT_MS);
@@ -1097,23 +1110,26 @@ export function buildHostServices(
           )
           .returning()
           .then((rows) => rows.length);
-        if (deleted === 0) throw new Error(`Session not found: ${params.sessionId}`);
+        if (deleted === 0) throw new Error(`Sesión no encontrada: ${params.sessionId}`);
       },
     },
 
     /**
-     * Clean up all active session event subscriptions and flush any buffered
-     * log entries. Must be called when the plugin worker is stopped, crashed,
-     * or unloaded to prevent leaked listeners and lost log entries.
+     * Limpia todas las suscripciones activas de eventos de sesión y vacía las
+     * entradas de log en buffer. Debe llamarse cuando el worker del plugin se
+     * detiene, falla o se descarga para evitar listeners filtrados y
+     * entradas de log perdidas.
      */
     dispose() {
       disposed = true;
 
-      // Clear event bus subscriptions to prevent accumulation on worker restart.
-      // Without this, each crash/restart cycle adds duplicate subscriptions.
+      // Limpia las suscripciones del bus de eventos para evitar acumulación
+      // al reiniciar el worker. Sin esto, cada ciclo de caída/reinicio agrega
+      // suscripciones duplicadas.
       scopedBus.clear();
 
-      // Snapshot to avoid iterator invalidation from concurrent sendMessage() calls
+      // Instantánea para evitar invalidación del iterador por llamadas
+      // concurrentes a sendMessage()
       const snapshot = Array.from(activeSubscriptions);
       activeSubscriptions.clear();
 
@@ -1122,9 +1138,10 @@ export function buildHostServices(
         entry.unsubscribe();
       }
 
-      // Flush any buffered log entries synchronously-as-possible on dispose.
+      // Vacía las entradas de log en buffer de forma lo más sincrónica
+      // posible en dispose.
       flushPluginLogBuffer().catch((err) => {
-        console.error("[plugin-host-services] dispose() log flush failed:", err);
+        console.error("[plugin-host-services] Falló el volcado de logs en dispose():", err);
       });
     },
   };

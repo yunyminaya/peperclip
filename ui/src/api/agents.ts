@@ -73,8 +73,9 @@ export const agentsApi = {
     try {
       return await api.get<AgentDetail>(agentPath(id, companyId));
     } catch (error) {
-      // Backward-compat fallback: if backend shortname lookup reports ambiguity,
-      // resolve using company agent list while ignoring terminated agents.
+      // Compatibilidad hacia atrás: si la búsqueda del backend por nombre corto
+      // reporta ambigüedad, resolver usando la lista de agentes de la empresa
+      // ignorando los agentes terminados.
       if (
         !(error instanceof ApiError) ||
         error.status !== 409 ||

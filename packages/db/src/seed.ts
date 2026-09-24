@@ -2,17 +2,17 @@ import { createDb } from "./client.js";
 import { companies, agents, goals, projects, issues } from "./schema/index.js";
 
 const url = process.env.DATABASE_URL;
-if (!url) throw new Error("DATABASE_URL is required");
+if (!url) throw new Error("DATABASE_URL es obligatorio");
 
 const db = createDb(url);
 
-console.log("Seeding database...");
+console.log("Insertando datos iniciales en la base de datos...");
 
 const [company] = await db
   .insert(companies)
   .values({
     name: "Paperclip Demo Co",
-    description: "A demo autonomous company",
+    description: "Una empresa autónoma de demostración",
     status: "active",
     budgetMonthlyCents: 50000,
   })
@@ -22,9 +22,9 @@ const [ceo] = await db
   .insert(agents)
   .values({
     companyId: company!.id,
-    name: "CEO Agent",
+    name: "Agente CEO",
     role: "ceo",
-    title: "Chief Executive Officer",
+    title: "Director ejecutivo",
     status: "idle",
     adapterType: "process",
     adapterConfig: { command: "echo", args: ["hello from ceo"] },
@@ -36,9 +36,9 @@ const [engineer] = await db
   .insert(agents)
   .values({
     companyId: company!.id,
-    name: "Engineer Agent",
+    name: "Agente ingeniero",
     role: "engineer",
-    title: "Software Engineer",
+    title: "Ingeniero de software",
     status: "idle",
     reportsTo: ceo!.id,
     adapterType: "process",
@@ -51,8 +51,8 @@ const [goal] = await db
   .insert(goals)
   .values({
     companyId: company!.id,
-    title: "Ship V1",
-    description: "Deliver first control plane release",
+    title: "Lanzar V1",
+    description: "Entregar la primera versión del plano de control",
     level: "company",
     status: "active",
     ownerAgentId: ceo!.id,
@@ -64,8 +64,8 @@ const [project] = await db
   .values({
     companyId: company!.id,
     goalId: goal!.id,
-    name: "Control Plane MVP",
-    description: "Implement core board + agent loop",
+    name: "MVP del plano de control",
+    description: "Implementar el panel principal + el ciclo del agente",
     status: "in_progress",
     leadAgentId: ceo!.id,
   })
@@ -76,8 +76,8 @@ await db.insert(issues).values([
     companyId: company!.id,
     projectId: project!.id,
     goalId: goal!.id,
-    title: "Implement atomic task checkout",
-    description: "Ensure in_progress claiming is conflict-safe",
+    title: "Implementar checkout atómico de tareas",
+    description: "Garantizar que reclamar tareas in_progress sea seguro ante conflictos",
     status: "todo",
     priority: "high",
     assigneeAgentId: engineer!.id,
@@ -87,13 +87,13 @@ await db.insert(issues).values([
     companyId: company!.id,
     projectId: project!.id,
     goalId: goal!.id,
-    title: "Add budget auto-pause",
-    description: "Pause agent at hard budget ceiling",
+    title: "Agregar pausa automática del presupuesto",
+    description: "Pausar el agente al alcanzar el límite máximo del presupuesto",
     status: "backlog",
     priority: "medium",
     createdByAgentId: ceo!.id,
   },
 ]);
 
-console.log("Seed complete");
+console.log("Datos iniciales insertados");
 process.exit(0);

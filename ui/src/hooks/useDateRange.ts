@@ -3,19 +3,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 export type DatePreset = "mtd" | "7d" | "30d" | "ytd" | "all" | "custom";
 
 export const PRESET_LABELS: Record<DatePreset, string> = {
-  mtd: "Month to Date",
-  "7d": "Last 7 Days",
-  "30d": "Last 30 Days",
-  ytd: "Year to Date",
-  all: "All Time",
-  custom: "Custom",
+  mtd: "Este mes",
+  "7d": "Últimos 7 días",
+  "30d": "Últimos 30 días",
+  ytd: "Este año",
+  all: "Todo el tiempo",
+  custom: "Personalizado",
 };
 
 export const PRESET_KEYS: DatePreset[] = ["mtd", "7d", "30d", "ytd", "all", "custom"];
 
-// note: computeRange is called inside a useMemo that re-evaluates once per minute
-// (driven by minuteTick). this means sliding windows (7d, 30d) advance their upper
-// bound at most once per minute — acceptable for a cost dashboard.
+// nota: computeRange se llama dentro de un useMemo que se reevalúa una vez por minuto
+// (impulsado por minuteTick). esto significa que las ventanas deslizantes (7d, 30d) avanzan su
+// límite superior como máximo una vez por minuto — aceptable para un panel de costos.
 function computeRange(preset: DatePreset): { from: string; to: string } {
   const now = new Date();
   const to = now.toISOString();
@@ -42,8 +42,8 @@ function computeRange(preset: DatePreset): { from: string; to: string } {
   }
 }
 
-// floor a Date to the nearest minute so the query key is stable across
-// 30s refetch ticks (prevents new cache entries on every poll cycle)
+// redondear un Date al minuto más cercano para que la clave de consulta sea estable entre
+// ciclos de relectura de 30s (evita nuevas entradas de caché en cada ciclo de sondeo)
 function floorToMinute(d: Date): string {
   const floored = new Date(d);
   floored.setSeconds(0, 0);
@@ -69,9 +69,9 @@ export function useDateRange(): UseDateRangeResult {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
 
-  // tick at the next calendar minute boundary, then every 60s, so sliding presets
-  // (7d, 30d) advance their upper bound in sync with wall clock minutes rather than
-  // drifting by the mount offset.
+  // marcar el siguiente límite de minuto calendario y luego cada 60s, para que los presets
+  // deslizantes (7d, 30d) avancen su límite superior en sincronía con los minutos del reloj
+  // en lugar de derivarse del desfase de montaje.
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [minuteTick, setMinuteTick] = useState(() => floorToMinute(new Date()));
   useEffect(() => {
@@ -92,15 +92,15 @@ export function useDateRange(): UseDateRangeResult {
 
   const { from, to } = useMemo(() => {
     if (preset !== "custom") return computeRange(preset);
-    // treat custom date strings as local-date boundaries so the full day is included
-    // regardless of the user's timezone. "from" starts at local midnight, "to" at 23:59:59.999.
+    // tratar las cadenas de fecha personalizadas como límites de fecha local para que el día completo quede incluido
+    // sin importar la zona horaria del usuario. "from" empieza a la medianoche local, "to" a las 23:59:59.999.
     const fromDate = customFrom ? new Date(customFrom + "T00:00:00") : null;
     const toDate = customTo ? new Date(customTo + "T23:59:59.999") : null;
     return {
       from: fromDate ? fromDate.toISOString() : "",
       to: toDate ? toDate.toISOString() : "",
     };
-  // minuteTick drives re-evaluation of sliding presets once per minute.
+  // minuteTick impulsa la reevaluación de los presets deslizantes una vez por minuto.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preset, customFrom, customTo, minuteTick]);
 

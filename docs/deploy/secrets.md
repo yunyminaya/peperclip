@@ -1,72 +1,72 @@
 ---
-title: Secrets Management
-summary: Master key, encryption, and strict mode
+title: Gestión de secretos
+summary: Clave maestra, cifrado y modo estricto
 ---
 
-Paperclip encrypts secrets at rest using a local master key. Agent environment variables that contain sensitive values (API keys, tokens) are stored as encrypted secret references.
+Paperclip cifra los secretos en reposo usando una clave maestra local. Las variables de entorno del agente que contienen valores sensibles (claves de API, tokens) se almacenan como referencias cifradas de secretos.
 
-## Default Provider: `local_encrypted`
+## Proveedor por defecto: `local_encrypted`
 
-Secrets are encrypted with a local master key stored at:
+Los secretos se cifran con una clave maestra local almacenada en:
 
 ```
 ~/.paperclip/instances/default/secrets/master.key
 ```
 
-This key is auto-created during onboarding. The key never leaves your machine.
+Esta clave se crea automáticamente durante la incorporación. La clave nunca sale de tu máquina.
 
-## Configuration
+## Configuración
 
-### CLI Setup
+### Configuración con la CLI
 
-Onboarding writes default secrets config:
+La incorporación escribe la configuración de secretos por defecto:
 
 ```sh
 pnpm paperclipai onboard
 ```
 
-Update secrets settings:
+Actualiza los ajustes de secretos:
 
 ```sh
 pnpm paperclipai configure --section secrets
 ```
 
-Validate secrets config:
+Valida la configuración de secretos:
 
 ```sh
 pnpm paperclipai doctor
 ```
 
-### Environment Overrides
+### Sobrescrituras de entorno
 
-| Variable | Description |
+| Variable | Descripción |
 |----------|-------------|
-| `PAPERCLIP_SECRETS_MASTER_KEY` | 32-byte key as base64, hex, or raw string |
-| `PAPERCLIP_SECRETS_MASTER_KEY_FILE` | Custom key file path |
-| `PAPERCLIP_SECRETS_STRICT_MODE` | Set to `true` to enforce secret refs |
+| `PAPERCLIP_SECRETS_MASTER_KEY` | Clave de 32 bytes como base64, hex o cadena cruda |
+| `PAPERCLIP_SECRETS_MASTER_KEY_FILE` | Ruta personalizada del archivo de clave |
+| `PAPERCLIP_SECRETS_STRICT_MODE` | Define en `true` para forzar referencias de secretos |
 
-## Strict Mode
+## Modo estricto
 
-When strict mode is enabled, sensitive env keys (matching `*_API_KEY`, `*_TOKEN`, `*_SECRET`) must use secret references instead of inline plain values.
+Cuando el modo estricto está habilitado, las claves de entorno sensibles (que coincidan con `*_API_KEY`, `*_TOKEN`, `*_SECRET`) deben usar referencias de secretos en lugar de valores planos en línea.
 
 ```sh
 PAPERCLIP_SECRETS_STRICT_MODE=true
 ```
 
-Recommended for any deployment beyond local trusted.
+Recomendado para cualquier despliegue más allá del modo local de confianza.
 
-## Migrating Inline Secrets
+## Migrar secretos en línea
 
-If you have existing agents with inline API keys in their config, migrate them to encrypted secret refs:
+Si tienes agentes existentes con claves de API en línea en su configuración, mígralos a referencias cifradas de secretos:
 
 ```sh
-pnpm secrets:migrate-inline-env         # dry run
-pnpm secrets:migrate-inline-env --apply # apply migration
+pnpm secrets:migrate-inline-env         # simulación
+pnpm secrets:migrate-inline-env --apply # aplicar la migración
 ```
 
-## Secret References in Agent Config
+## Referencias de secretos en la configuración del agente
 
-Agent environment variables use secret references:
+Las variables de entorno del agente usan referencias de secretos:
 
 ```json
 {
@@ -80,4 +80,4 @@ Agent environment variables use secret references:
 }
 ```
 
-The server resolves and decrypts these at runtime, injecting the real value into the agent process environment.
+El servidor las resuelve y descifra en tiempo de ejecución, inyectando el valor real en el entorno del proceso del agente.

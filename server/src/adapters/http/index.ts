@@ -7,15 +7,15 @@ export const httpAdapter: ServerAdapterModule = {
   execute,
   testEnvironment,
   models: [],
-  agentConfigurationDoc: `# http agent configuration
+  agentConfigurationDoc: `# Configuración del agente http
 
-Adapter: http
+Adaptador: http
 
-Core fields:
-- url (string, required): endpoint to invoke
-- method (string, optional): HTTP method, default POST
-- headers (object, optional): request headers
-- payloadTemplate (object, optional): JSON payload template
-- timeoutSec (number, optional): request timeout in seconds
+Campos principales:
+- url (string, required): endpoint a invocar
+- method (string, optional): método HTTP, POST por defecto
+- headers (object, optional): encabezados de la solicitud
+- payloadTemplate (object, optional): plantilla de payload JSON
+- timeoutSec (number, optional): tiempo de espera de la solicitud en segundos
 `,
 };

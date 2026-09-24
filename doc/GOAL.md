@@ -1,55 +1,55 @@
 # Paperclip
 
-**Paperclip is the backbone of the autonomous economy.** We are building the infrastructure that autonomous AI companies run on. Our goal is for Paperclip-powered companies to collectively generate economic output that rivals the GDP of the world's largest countries. Every decision we make should serve that: make autonomous companies more capable, more governable, more scalable, and more real.
+**Paperclip es la columna vertebral de la economía autónoma.** Estamos construyendo la infraestructura sobre la que operan las empresas de IA autónomas. Nuestro objetivo es que las empresas impulsadas por Paperclip generen colectivamente una producción económica que rivalice con el PIB de los países más grandes del mundo. Cada decisión que tomamos debe servir a eso: hacer que las empresas autónomas sean más capaces, más gobernables, más escalables y más reales.
 
-## The Vision
+## La visión
 
-Autonomous companies — AI workforces organized with real structure, governance, and accountability — will become a major force in the global economy. Not one company. Thousands. Millions. An entire economic layer that runs on AI labor, coordinated through Paperclip.
+Las empresas autónomas — fuerzas laborales de IA organizadas con estructura, gobernanza y rendición de cuentas reales — se convertirán en una fuerza importante en la economía global. No una empresa. Miles. Millones. Una capa económica entera que opera con trabajo de IA, coordinada a través de Paperclip.
 
-Paperclip is not the company. Paperclip is what makes the companies possible. We are the control plane, the nervous system, the operating layer. Every autonomous company needs structure, task management, cost control, goal alignment, and human governance. That's us. We are to autonomous companies what the corporate operating system is to human ones — except this time, the operating system is real software, not metaphor.
+Paperclip no es la empresa. Paperclip es lo que hace posibles a las empresas. Somos el plano de control, el sistema nervioso, la capa operativa. Cada empresa autónoma necesita estructura, gestión de tareas, control de costos, alineación de objetivos y gobernanza humana. Eso somos nosotros. Somos para las empresas autónomas lo que el sistema operativo corporativo es para las humanas — excepto que esta vez, el sistema operativo es software real, no metáfora.
 
-The measure of our success is not whether one company works. It's whether Paperclip becomes the default foundation that autonomous companies are built on — and whether those companies, collectively, become a serious economic force that rivals the output of nations.
+La medida de nuestro éxito no es si una empresa funciona. Es si Paperclip se convierte en la base por defecto sobre la que se construyen las empresas autónomas — y si esas empresas, colectivamente, se convierten en una fuerza económica seria que rivalice con la producción de naciones.
 
-## The Problem
+## El problema
 
-Task management software doesn't go far enough. When your entire workforce is AI agents, you need more than a to-do list — you need a **control plane** for an entire company.
+El software de gestión de tareas no llega lo suficientemente lejos. Cuando toda tu fuerza laboral son agentes de IA, necesitas más que una lista de pendientes — necesitas un **plano de control** para una empresa entera.
 
-## What This Is
+## Qué es esto
 
-Paperclip is the command, communication, and control plane for a company of AI agents. It is the single place where you:
+Paperclip es el plano de comando, comunicación y control para una empresa de agentes de IA. Es el lugar único donde:
 
-- **Manage agents as employees** — hire, organize, and track who does what
-- **Define org structure** — org charts that agents themselves operate within
-- **Track work in real time** — see at any moment what every agent is working on
-- **Control costs** — token salary budgets per agent, spend tracking, burn rate
-- **Align to goals** — agents see how their work serves the bigger mission
-- **Store company knowledge** — a shared brain for the organization
+- **Gestionas agentes como empleados** — contrata, organiza y sigue quién hace qué
+- **Defines la estructura de org** — organigramas dentro de los cuales operan los propios agentes
+- **Sigues el trabajo en tiempo real** — ve en cualquier momento en qué está trabajando cada agente
+- **Controlas costos** — presupuestos salariales de tokens por agente, seguimiento de gasto, tasa de quema
+- **Te alineas a objetivos** — los agentes ven cómo su trabajo sirve a la misión más grande
+- **Almacenas el conocimiento de la empresa** — un cerebro compartido para la organización
 
-## Architecture
+## Arquitectura
 
-Two layers:
+Dos capas:
 
-### 1. Control Plane (this software)
+### 1. Plano de control (este software)
 
-The central nervous system. Manages:
+El sistema nervioso central. Gestiona:
 
-- Agent registry and org chart
-- Task assignment and status
-- Budget and token spend tracking
-- Company knowledge base
-- Goal hierarchy (company → team → agent → task)
-- Heartbeat monitoring — know when agents are alive, idle, or stuck
+- Registro de agentes y organigrama
+- Asignación y estado de tareas
+- Seguimiento de presupuesto y gasto de tokens
+- Base de conocimiento de la empresa
+- Jerarquía de objetivos (empresa → equipo → agente → tarea)
+- Monitoreo de latidos — sabe cuándo los agentes están vivos, inactivos o atascados
 
-### 2. Execution Services (adapters)
+### 2. Servicios de ejecución (adaptadores)
 
-Agents run externally and report into the control plane. An agent is just Python code that gets kicked off and does work. Adapters connect different execution environments:
+Los agentes se ejecutan externamente y reportan al plano de control. Un agente es solo código Python que se lanza y hace trabajo. Los adaptadores conectan distintos entornos de ejecución:
 
-- **OpenClaw** — initial adapter target
-- **Heartbeat loop** — simple custom Python that loops, checks in, does work
-- **Others** — any runtime that can call an API
+- **OpenClaw** — objetivo inicial de adaptador
+- **Bucle de latido** — Python simple personalizado que entra en bucle, hace check-in, hace trabajo
+- **Otros** — cualquier runtime que pueda llamar a una API
 
-The control plane doesn't run agents. It orchestrates them. Agents run wherever they run and phone home.
+El plano de control no ejecuta agentes. Los orquesta. Los agentes se ejecutan donde se ejecuten y llaman a casa.
 
-## Core Principle
+## Principio central
 
-You should be able to look at Paperclip and understand your entire company at a glance — who's doing what, how much it costs, and whether it's working.
+Deberías poder mirar Paperclip y entender toda tu empresa de un vistazo — quién hace qué, cuánto cuesta y si está funcionando.

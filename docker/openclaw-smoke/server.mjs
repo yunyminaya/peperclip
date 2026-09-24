@@ -99,5 +99,5 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(port, "0.0.0.0", () => {
   // eslint-disable-next-line no-console
-  console.log(`[openclaw-smoke] listening on :${port} path=${webhookPath}`);
+  console.log(`[openclaw-smoke] escuchando en :${port} path=${webhookPath}`);
 });

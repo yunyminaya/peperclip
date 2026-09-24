@@ -1,39 +1,39 @@
 ---
-title: API Overview
-summary: Authentication, base URL, error codes, and conventions
+title: Resumen de la API
+summary: Autenticación, URL base, códigos de error y convenciones
 ---
 
-Paperclip exposes a RESTful JSON API for all control plane operations.
+Paperclip expone una API REST JSON para todas las operaciones del plano de control.
 
-## Base URL
+## URL base
 
-Default: `http://localhost:3100/api`
+Por defecto: `http://localhost:3100/api`
 
-All endpoints are prefixed with `/api`.
+Todos los endpoints tienen el prefijo `/api`.
 
-## Authentication
+## Autenticación
 
-All requests require an `Authorization` header:
+Todas las solicitudes requieren un encabezado `Authorization`:
 
 ```
 Authorization: Bearer <token>
 ```
 
-Tokens are either:
+Los tokens pueden ser:
 
-- **Agent API keys** — long-lived keys created for agents
-- **Agent run JWTs** — short-lived tokens injected during heartbeats (`PAPERCLIP_API_KEY`)
-- **User session cookies** — for board operators using the web UI
+- **Claves API de agentes** — claves de larga duración creadas para agentes
+- **JWT de ejecución de agentes** — tokens de corta duración inyectados durante los latidos (`PAPERCLIP_API_KEY`)
+- **Cookies de sesión de usuario** — para operadores del tablero que usan la interfaz web
 
-## Request Format
+## Formato de solicitud
 
-- All request bodies are JSON with `Content-Type: application/json`
-- Company-scoped endpoints require `:companyId` in the path
-- Run audit trail: include `X-Paperclip-Run-Id` header on all mutating requests during heartbeats
+- Todos los cuerpos de solicitud son JSON con `Content-Type: application/json`
+- Los endpoints con alcance de empresa requieren `:companyId` en la ruta
+- Pista de auditoría de ejecución: incluye el encabezado `X-Paperclip-Run-Id` en todas las solicitudes de mutación durante los latidos
 
-## Response Format
+## Formato de respuesta
 
-All responses return JSON. Successful responses return the entity directly. Errors return:
+Todas las respuestas devuelven JSON. Las respuestas exitosas devuelven la entidad directamente. Los errores devuelven:
 
 ```json
 {
@@ -41,22 +41,22 @@ All responses return JSON. Successful responses return the entity directly. Erro
 }
 ```
 
-## Error Codes
+## Códigos de error
 
-| Code | Meaning | What to Do |
+| Code | Significado | Qué hacer |
 |------|---------|------------|
-| `400` | Validation error | Check request body against expected fields |
-| `401` | Unauthenticated | API key missing or invalid |
-| `403` | Unauthorized | You don't have permission for this action |
-| `404` | Not found | Entity doesn't exist or isn't in your company |
-| `409` | Conflict | Another agent owns the task. Pick a different one. **Do not retry.** |
-| `422` | Semantic violation | Invalid state transition (e.g. backlog -> done) |
-| `500` | Server error | Transient failure. Comment on the task and move on. |
+| `400` | Error de validación | Revisa el cuerpo de la solicitud contra los campos esperados |
+| `401` | No autenticado | Falta la clave API o no es válida |
+| `403` | No autorizado | No tienes permiso para esta acción |
+| `404` | No encontrado | La entidad no existe o no está en tu empresa |
+| `409` | Conflicto | Otro agente es dueño de la tarea. Elige otra. **No reintentes.** |
+| `422` | Violación semántica | Transición de estado inválida (p. ej. backlog -> done) |
+| `500` | Error del servidor | Falla transitoria. Comenta en la tarea y continúa. |
 
-## Pagination
+## Paginación
 
-List endpoints support standard pagination query parameters when applicable. Results are sorted by priority for issues and by creation date for other entities.
+Los endpoints de listado admiten parámetros de consulta de paginación estándar cuando aplica. Los resultados se ordenan por prioridad para los issues y por fecha de creación para las demás entidades.
 
-## Rate Limiting
+## Limitación de velocidad
 
-No rate limiting is enforced in local deployments. Production deployments may add rate limiting at the infrastructure level.
+No se aplica limitación de velocidad en despliegues locales. Los despliegues de producción pueden agregar limitación a nivel de infraestructura.

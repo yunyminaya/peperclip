@@ -26,12 +26,12 @@ async function buildCodexSkillSnapshot(
     managed: true,
     state: desiredSet.has(entry.key) ? "configured" : "available",
     origin: entry.required ? "paperclip_required" : "company_managed",
-    originLabel: entry.required ? "Required by Paperclip" : "Managed by Paperclip",
+    originLabel: entry.required ? "Requerida por Paperclip" : "Administrada por Paperclip",
     readOnly: false,
     sourcePath: entry.source,
     targetPath: null,
     detail: desiredSet.has(entry.key)
-      ? "Will be linked into the effective CODEX_HOME/skills/ directory on the next run."
+      ? "Se enlazará en el directorio CODEX_HOME/skills/ efectivo en la próxima ejecución."
       : null,
     required: Boolean(entry.required),
     requiredReason: entry.requiredReason ?? null,
@@ -40,7 +40,7 @@ async function buildCodexSkillSnapshot(
 
   for (const desiredSkill of desiredSkills) {
     if (availableByKey.has(desiredSkill)) continue;
-    warnings.push(`Desired skill "${desiredSkill}" is not available from the Paperclip skills directory.`);
+    warnings.push(`La habilidad deseada "${desiredSkill}" no está disponible en el directorio de habilidades de Paperclip.`);
     entries.push({
       key: desiredSkill,
       runtimeName: null,
@@ -48,11 +48,11 @@ async function buildCodexSkillSnapshot(
       managed: true,
       state: "missing",
       origin: "external_unknown",
-      originLabel: "External or unavailable",
+      originLabel: "Externa o no disponible",
       readOnly: false,
       sourcePath: null,
       targetPath: null,
-      detail: "Paperclip cannot find this skill in the local runtime skills directory.",
+      detail: "Paperclip no encuentra esta habilidad en el directorio local de habilidades de ejecución.",
     });
   }
 

@@ -189,12 +189,12 @@ async function toApiError(response: Response): Promise<ApiRequestError> {
     const message =
       (typeof body.error === "string" && body.error.trim()) ||
       (typeof body.message === "string" && body.message.trim()) ||
-      `Request failed with status ${response.status}`;
+      `La solicitud falló con el estado ${response.status}`;
 
     return new ApiRequestError(response.status, message, body.details, parsed);
   }
 
-  return new ApiRequestError(response.status, `Request failed with status ${response.status}`, undefined, parsed);
+  return new ApiRequestError(response.status, `La solicitud falló con el estado ${response.status}`, undefined, parsed);
 }
 
 function buildConnectionErrorMessage(input: {
@@ -205,21 +205,21 @@ function buildConnectionErrorMessage(input: {
 }): string {
   const healthUrl = buildHealthCheckUrl(input.url);
   const lines = [
-    "Could not reach the Paperclip API.",
+    "No se pudo contactar la API de Paperclip.",
     "",
-    `Request: ${input.method} ${input.url}`,
+    `Solicitud: ${input.method} ${input.url}`,
   ];
   if (input.causeMessage) {
-    lines.push(`Cause: ${input.causeMessage}`);
+    lines.push(`Causa: ${input.causeMessage}`);
   }
   lines.push(
     "",
-    "This usually means the Paperclip server is not running, the configured URL is wrong, or the request is being blocked before it reaches Paperclip.",
+    "Esto suele significar que el servidor de Paperclip no está en ejecución, que la URL configurada es incorrecta o que la solicitud se está bloqueando antes de llegar a Paperclip.",
     "",
-    "Try:",
-    "- Start Paperclip with `pnpm dev` or `pnpm paperclipai run`.",
-    `- Verify the server is reachable with \`curl ${healthUrl}\`.`,
-    `- If Paperclip is running elsewhere, pass \`--api-base ${input.apiBase.replace(/\/+$/, "")}\` or set \`PAPERCLIP_API_URL\`.`,
+    "Prueba:",
+    "- Inicia Paperclip con `pnpm dev` o `pnpm paperclipai run`.",
+    `- Verifica que el servidor responda con \`curl ${healthUrl}\`.`,
+    `- Si Paperclip se ejecuta en otro lugar, pasa \`--api-base ${input.apiBase.replace(/\/+$/, "")}\` o define \`PAPERCLIP_API_URL\`.`,
   );
   return lines.join("\n");
 }

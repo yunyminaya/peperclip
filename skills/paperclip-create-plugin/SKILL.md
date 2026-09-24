@@ -7,37 +7,37 @@ description: >
   scaffold flow, and verification steps.
 ---
 
-# Create a Paperclip Plugin
+# Crear un plugin de Paperclip
 
-Use this skill when the task is to create, scaffold, or document a Paperclip plugin.
+Usa esta habilidad cuando la tarea sea crear, generar el scaffold o documentar un plugin de Paperclip.
 
-## 1. Ground rules
+## 1. Reglas básicas
 
-Read these first when needed:
+Lee estos primero cuando lo necesites:
 
 1. `doc/plugins/PLUGIN_AUTHORING_GUIDE.md`
 2. `packages/plugins/sdk/README.md`
-3. `doc/plugins/PLUGIN_SPEC.md` only for future-looking context
+3. `doc/plugins/PLUGIN_SPEC.md` solo para contexto futuro
 
-Current runtime assumptions:
+Suposiciones del runtime actual:
 
-- plugin workers are trusted code
-- plugin UI is trusted same-origin host code
-- worker APIs are capability-gated
-- plugin UI is not sandboxed by manifest capabilities
-- no host-provided shared plugin UI component kit yet
-- `ctx.assets` is not supported in the current runtime
+- los workers de plugins son código de confianza
+- la UI del plugin es código de host confiable del mismo origen
+- las APIs de workers están limitadas por capacidades
+- la UI del plugin no está aislada por capacidades del manifiesto
+- aún no hay un kit compartido de componentes UI de plugin provisto por el host
+- `ctx.assets` no está soportado en el runtime actual
 
-## 2. Preferred workflow
+## 2. Flujo de trabajo preferido
 
-Use the scaffold package instead of hand-writing the boilerplate:
+Usa el paquete scaffold en lugar de escribir el boilerplate a mano:
 
 ```bash
 pnpm --filter @paperclipai/create-paperclip-plugin build
 node packages/plugins/create-paperclip-plugin/dist/index.js <npm-package-name> --output <target-dir>
 ```
 
-For a plugin that lives outside the Paperclip repo, pass `--sdk-path` and let the scaffold snapshot the local SDK/shared packages into `.paperclip-sdk/`:
+Para un plugin que vive fuera del repositorio de Paperclip, pasa `--sdk-path` y deja que el scaffold copie el SDK/paquetes compartidos locales en `.paperclip-sdk/`:
 
 ```bash
 pnpm --filter @paperclipai/create-paperclip-plugin build
@@ -46,14 +46,14 @@ node packages/plugins/create-paperclip-plugin/dist/index.js @acme/plugin-name \
   --sdk-path /absolute/path/to/paperclip/packages/plugins/sdk
 ```
 
-Recommended target inside this repo:
+Destino recomendado dentro de este repositorio:
 
-- `packages/plugins/examples/` for example plugins
-- another `packages/plugins/<name>/` folder if it is becoming a real package
+- `packages/plugins/examples/` para plugins de ejemplo
+- otra carpeta `packages/plugins/<name>/` si se está convirtiendo en un paquete real
 
-## 3. After scaffolding
+## 3. Después del scaffold
 
-Check and adjust:
+Revisa y ajusta:
 
 - `src/manifest.ts`
 - `src/worker.ts`
@@ -61,27 +61,27 @@ Check and adjust:
 - `tests/plugin.spec.ts`
 - `package.json`
 
-Make sure the plugin:
+Asegúrate de que el plugin:
 
-- declares only supported capabilities
-- does not use `ctx.assets`
-- does not import host UI component stubs
-- keeps UI self-contained
-- uses `routePath` only on `page` slots
-- is installed into Paperclip from an absolute local path during development
+- declare solo capacidades soportadas
+- no use `ctx.assets`
+- no importe stubs de componentes UI del host
+- mantenga la UI autocontenida
+- use `routePath` solo en slots de `page`
+- se instale en Paperclip desde una ruta local absoluta durante el desarrollo
 
-## 4. If the plugin should appear in the app
+## 4. Si el plugin debe aparecer en la app
 
-For bundled example/discoverable behavior, update the relevant host wiring:
+Para el comportamiento de ejemplo incluido/descubrible, actualiza el cableado del host relevante:
 
-- bundled example list in `server/src/routes/plugins.ts`
-- any docs that list in-repo examples
+- lista de ejemplos incluidos en `server/src/routes/plugins.ts`
+- cualquier documento que liste ejemplos del repositorio
 
-Only do this if the user wants the plugin surfaced as a bundled example.
+Haz esto solo si el usuario quiere que el plugin aparezca como un ejemplo incluido.
 
-## 5. Verification
+## 5. Verificación
 
-Always run:
+Ejecuta siempre:
 
 ```bash
 pnpm --filter <plugin-package> typecheck
@@ -89,13 +89,13 @@ pnpm --filter <plugin-package> test
 pnpm --filter <plugin-package> build
 ```
 
-If you changed SDK/host/plugin runtime code too, also run broader repo checks as appropriate.
+Si también cambiaste código del SDK/host/runtime de plugins, ejecuta también verificaciones más amplias del repositorio según corresponda.
 
-## 6. Documentation expectations
+## 6. Expectativas de la documentación
 
-When authoring or updating plugin docs:
+Al crear o actualizar documentos del plugin:
 
-- distinguish current implementation from future spec ideas
-- be explicit about the trusted-code model
-- do not promise host UI components or asset APIs
-- prefer npm-package deployment guidance over repo-local workflows for production
+- distingue la implementación actual de las ideas futuras de la especificación
+- sé explícito sobre el modelo de código de confianza
+- no prometas componentes UI del host ni APIs de assets
+- prefiere guía de despliegue como paquete npm sobre flujos locales del repositorio para producción

@@ -1,52 +1,52 @@
 ---
-title: Local Development
-summary: Set up Paperclip for local development
+title: Desarrollo local
+summary: Configura Paperclip para desarrollo local
 ---
 
-Run Paperclip locally with zero external dependencies.
+Ejecuta Paperclip localmente sin dependencias externas.
 
-## Prerequisites
+## Prerrequisitos
 
 - Node.js 20+
 - pnpm 9+
 
-## Start Dev Server
+## Iniciar el servidor de desarrollo
 
 ```sh
 pnpm install
 pnpm dev
 ```
 
-This starts:
+Esto inicia:
 
-- **API server** at `http://localhost:3100`
-- **UI** served by the API server in dev middleware mode (same origin)
+- **Servidor API** en `http://localhost:3100`
+- **UI** servida por el servidor API en modo middleware de desarrollo (mismo origen)
 
-No Docker or external database required. Paperclip uses embedded PostgreSQL automatically.
+No se requieren Docker ni base de datos externa. Paperclip usa PostgreSQL embebido automáticamente.
 
-## One-Command Bootstrap
+## Arranque con un solo comando
 
-For a first-time install:
+Para una primera instalación:
 
 ```sh
 pnpm paperclipai run
 ```
 
-This does:
+Esto hace:
 
-1. Auto-onboards if config is missing
-2. Runs `paperclipai doctor` with repair enabled
-3. Starts the server when checks pass
+1. Incorpora automáticamente si falta la configuración
+2. Ejecuta `paperclipai doctor` con la reparación activada
+3. Inicia el servidor cuando pasan las comprobaciones
 
-## Tailscale/Private Auth Dev Mode
+## Modo de desarrollo Tailscale/Auth privada
 
-To run in `authenticated/private` mode for network access:
+Para ejecutar en modo `authenticated/private` para acceso en red:
 
 ```sh
 pnpm dev --tailscale-auth
 ```
 
-This binds the server to `0.0.0.0` for private-network access.
+Esto enlaza el servidor a `0.0.0.0` para acceso en red privada.
 
 Alias:
 
@@ -54,15 +54,15 @@ Alias:
 pnpm dev --authenticated-private
 ```
 
-Allow additional private hostnames:
+Permite nombres de host privados adicionales:
 
 ```sh
 pnpm paperclipai allowed-hostname dotta-macbook-pro
 ```
 
-For full setup and troubleshooting, see [Tailscale Private Access](/deploy/tailscale-private-access).
+Para la configuración completa y la resolución de problemas, consulta [Acceso privado con Tailscale](/deploy/tailscale-private-access).
 
-## Health Checks
+## Comprobaciones de salud
 
 ```sh
 curl http://localhost:3100/api/health
@@ -72,26 +72,26 @@ curl http://localhost:3100/api/companies
 # -> []
 ```
 
-## Reset Dev Data
+## Restablecer datos de desarrollo
 
-To wipe local data and start fresh:
+Para borrar los datos locales y empezar de cero:
 
 ```sh
 rm -rf ~/.paperclip/instances/default/db
 pnpm dev
 ```
 
-## Data Locations
+## Ubicaciones de datos
 
-| Data | Path |
+| Datos | Ruta |
 |------|------|
-| Config | `~/.paperclip/instances/default/config.json` |
-| Database | `~/.paperclip/instances/default/db` |
-| Storage | `~/.paperclip/instances/default/data/storage` |
-| Secrets key | `~/.paperclip/instances/default/secrets/master.key` |
-| Logs | `~/.paperclip/instances/default/logs` |
+| Configuración | `~/.paperclip/instances/default/config.json` |
+| Base de datos | `~/.paperclip/instances/default/db` |
+| Almacenamiento | `~/.paperclip/instances/default/data/storage` |
+| Clave de secretos | `~/.paperclip/instances/default/secrets/master.key` |
+| Registros | `~/.paperclip/instances/default/logs` |
 
-Override with environment variables:
+Sobrescribe con variables de entorno:
 
 ```sh
 PAPERCLIP_HOME=/custom/path PAPERCLIP_INSTANCE_ID=dev pnpm paperclipai run

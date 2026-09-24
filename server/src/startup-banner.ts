@@ -61,7 +61,7 @@ function redactConnectionString(raw: string): string {
     const auth = `${user}:***@`;
     return `${u.protocol}//${auth}${u.host}${u.pathname}`;
   } catch {
-    return "<invalid DATABASE_URL>";
+    return "<DATABASE_URL inválida>";
   }
 }
 
@@ -75,7 +75,7 @@ function resolveAgentJwtSecretStatus(
   if (envValue) {
     return {
       status: "pass",
-      message: "set",
+      message: "configurado",
     };
   }
 
@@ -85,14 +85,14 @@ function resolveAgentJwtSecretStatus(
     if (fileValue) {
       return {
         status: "warn",
-        message: `found in ${envFilePath} but not loaded`,
+        message: `encontrada en ${envFilePath} pero no cargada`,
       };
     }
   }
 
   return {
     status: "warn",
-    message: "missing (run `pnpm paperclipai onboard`)",
+    message: "falta (ejecuta `pnpm paperclipai onboard`)",
   };
 }
 
@@ -100,7 +100,7 @@ export function printStartupBanner(opts: StartupBannerOptions): void {
   const baseHost = opts.host === "0.0.0.0" ? "localhost" : opts.host;
   const baseUrl = `http://${baseHost}:${opts.listenPort}`;
   const apiUrl = `${baseUrl}/api`;
-  const uiUrl = opts.uiMode === "none" ? "disabled" : baseUrl;
+  const uiUrl = opts.uiMode === "none" ? "deshabilitada" : baseUrl;
   const configPath = resolvePaperclipConfigPath();
   const envFilePath = resolvePaperclipEnvPath();
   const agentJwtSecret = resolveAgentJwtSecretStatus(envFilePath);
@@ -119,7 +119,7 @@ export function printStartupBanner(opts: StartupBannerOptions): void {
   const portValue =
     opts.requestedPort === opts.listenPort
       ? `${opts.listenPort}`
-      : `${opts.listenPort} ${color(`(requested ${opts.requestedPort})`, "dim")}`;
+      : `${opts.listenPort} ${color(`(solicitado ${opts.requestedPort})`, "dim")}`;
 
   const dbDetails =
     opts.db.mode === "embedded-postgres"
@@ -127,11 +127,11 @@ export function printStartupBanner(opts: StartupBannerOptions): void {
       : redactConnectionString(opts.db.connectionString);
 
   const heartbeat = opts.heartbeatSchedulerEnabled
-    ? `enabled ${color(`(${opts.heartbeatSchedulerIntervalMs}ms)`, "dim")}`
-    : color("disabled", "yellow");
+    ? `habilitado ${color(`(${opts.heartbeatSchedulerIntervalMs}ms)`, "dim")}`
+    : color("deshabilitado", "yellow");
   const dbBackup = opts.databaseBackupEnabled
-    ? `enabled ${color(`(every ${opts.databaseBackupIntervalMinutes}m, keep ${opts.databaseBackupRetentionDays}d)`, "dim")}`
-    : color("disabled", "yellow");
+    ? `habilitado ${color(`(cada ${opts.databaseBackupIntervalMinutes}m, conservar ${opts.databaseBackupRetentionDays}d)`, "dim")}`
+    : color("deshabilitado", "yellow");
 
   const art = [
     color("██████╗  █████╗ ██████╗ ███████╗██████╗  ██████╗██╗     ██╗██████╗ ", "cyan"),
@@ -146,24 +146,24 @@ export function printStartupBanner(opts: StartupBannerOptions): void {
     "",
     ...art,
     color("  ───────────────────────────────────────────────────────", "blue"),
-    row("Mode", `${dbMode}  |  ${uiMode}`),
-    row("Deploy", `${opts.deploymentMode} (${opts.deploymentExposure})`),
-    row("Auth", opts.authReady ? color("ready", "green") : color("not-ready", "yellow")),
-    row("Server", portValue),
-    row("API", `${apiUrl} ${color(`(health: ${apiUrl}/health)`, "dim")}`),
+    row("Modo", `${dbMode}  |  ${uiMode}`),
+    row("Despliegue", `${opts.deploymentMode} (${opts.deploymentExposure})`),
+    row("Autenticación", opts.authReady ? color("listo", "green") : color("no listo", "yellow")),
+    row("Servidor", portValue),
+    row("API", `${apiUrl} ${color(`(salud: ${apiUrl}/health)`, "dim")}`),
     row("UI", uiUrl),
-    row("Database", dbDetails),
-    row("Migrations", opts.migrationSummary),
+    row("Base de datos", dbDetails),
+    row("Migraciones", opts.migrationSummary),
     row(
-      "Agent JWT",
+      "JWT de agente",
       agentJwtSecret.status === "pass"
         ? color(agentJwtSecret.message, "green")
         : color(agentJwtSecret.message, "yellow"),
     ),
-    row("Heartbeat", heartbeat),
-    row("DB Backup", dbBackup),
-    row("Backup Dir", opts.databaseBackupDir),
-    row("Config", configPath),
+    row("Latido", heartbeat),
+    row("Respaldo de BD", dbBackup),
+    row("Dir de respaldo", opts.databaseBackupDir),
+    row("Configuración", configPath),
     agentJwtSecret.status === "warn"
       ? color("  ───────────────────────────────────────────────────────", "yellow")
       : null,

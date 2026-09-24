@@ -64,7 +64,7 @@ export function companySkillRoutes(db: Db) {
     assertCompanyAccess(req, companyId);
     const result = await svc.detail(companyId, skillId);
     if (!result) {
-      res.status(404).json({ error: "Skill not found" });
+      res.status(404).json({ error: "Habilidad no encontrada" });
       return;
     }
     res.json(result);
@@ -76,7 +76,7 @@ export function companySkillRoutes(db: Db) {
     assertCompanyAccess(req, companyId);
     const result = await svc.updateStatus(companyId, skillId);
     if (!result) {
-      res.status(404).json({ error: "Skill not found" });
+      res.status(404).json({ error: "Habilidad no encontrada" });
       return;
     }
     res.json(result);
@@ -89,7 +89,7 @@ export function companySkillRoutes(db: Db) {
     assertCompanyAccess(req, companyId);
     const result = await svc.readFile(companyId, skillId, relativePath);
     if (!result) {
-      res.status(404).json({ error: "Skill not found" });
+      res.status(404).json({ error: "Habilidad no encontrada" });
       return;
     }
     res.json(result);
@@ -227,7 +227,7 @@ export function companySkillRoutes(db: Db) {
     await assertCanMutateCompanySkills(req, companyId);
     const result = await svc.deleteSkill(companyId, skillId);
     if (!result) {
-      res.status(404).json({ error: "Skill not found" });
+      res.status(404).json({ error: "Habilidad no encontrada" });
       return;
     }
 
@@ -256,7 +256,7 @@ export function companySkillRoutes(db: Db) {
     await assertCanMutateCompanySkills(req, companyId);
     const result = await svc.installUpdate(companyId, skillId);
     if (!result) {
-      res.status(404).json({ error: "Skill not found" });
+      res.status(404).json({ error: "Habilidad no encontrada" });
       return;
     }
 

@@ -33,7 +33,7 @@ function stringifyError(error: unknown): string {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.oauthOnly && args.cliOnly) {
-    throw new Error("Choose either --oauth-only or --cli-only, not both.");
+    throw new Error("Elige --oauth-only o --cli-only, no ambos.");
   }
 
   const authStatus = await readClaudeAuthStatus();
@@ -49,7 +49,7 @@ async function main() {
     if (!token) {
       result.oauth = {
         ok: false,
-        error: "No Claude OAuth access token found in local credentials files.",
+        error: "No se encontró ningún token de acceso OAuth de Claude en los archivos de credenciales locales.",
         windows: [],
       };
     } else {

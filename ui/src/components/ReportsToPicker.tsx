@@ -16,8 +16,8 @@ export function ReportsToPicker({
   onChange,
   disabled = false,
   excludeAgentIds = [],
-  disabledEmptyLabel = "Reports to: N/A (CEO)",
-  chooseLabel = "Reports to...",
+  disabledEmptyLabel = "Reporta a: N/D (CEO)",
+  chooseLabel = "Reporta a…",
 }: {
   agents: Agent[];
   value: string | null;
@@ -51,7 +51,7 @@ export function ReportsToPicker({
           {unknownManager ? (
             <>
               <User className="h-3 w-3 shrink-0 text-muted-foreground" />
-              <span className="min-w-0 truncate text-muted-foreground">Unknown manager (stale ID)</span>
+              <span className="min-w-0 truncate text-muted-foreground">Gerente desconocido (ID obsoleto)</span>
             </>
           ) : current ? (
             <>
@@ -62,7 +62,7 @@ export function ReportsToPicker({
                   terminatedManager && "text-amber-900 dark:text-amber-200",
                 )}
               >
-                {`Reports to ${current.name}${terminatedManager ? " (terminated)" : ""}`}
+                {`Reporta a ${current.name}${terminatedManager ? " (terminado)" : ""}`}
               </span>
             </>
           ) : (
@@ -87,19 +87,19 @@ export function ReportsToPicker({
             setOpen(false);
           }}
         >
-          No manager
+          No hay gerente
         </button>
         {terminatedManager && (
           <div className="flex min-w-0 items-center gap-2 overflow-hidden px-2 py-1.5 text-xs text-muted-foreground border-b border-border mb-0.5">
             <AgentIcon icon={current.icon} className="shrink-0 h-3 w-3" />
             <span className="min-w-0 truncate">
-              Current: {current.name} (terminated)
+              Actual: {current.name} (terminado)
             </span>
           </div>
         )}
         {unknownManager && (
           <div className="px-2 py-1.5 text-xs text-muted-foreground border-b border-border mb-0.5">
-            Saved manager is missing from this company. Choose a new manager or clear.
+            El gerente guardado no existe en esta empresa. Elige un nuevo gerente o borra la selección.
           </div>
         )}
         {rows.map((a) => (

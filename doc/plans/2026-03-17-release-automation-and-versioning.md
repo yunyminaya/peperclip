@@ -1,8 +1,8 @@
-# Release Automation and Versioning Simplification Plan
+# Plan de automatización de versiones y simplificación de versionado
 
-## Context
+## Contexto
 
-Paperclip's current release flow is documented in `doc/RELEASING.md` and implemented through:
+El flujo actual de versiones de Paperclip está documentado en `doc/RELEASING.md` e implementado a través de:
 
 - `.github/workflows/release.yml`
 - `scripts/release-lib.sh`
@@ -11,478 +11,478 @@ Paperclip's current release flow is documented in `doc/RELEASING.md` and impleme
 - `scripts/release.sh`
 - `scripts/create-github-release.sh`
 
-Today the model is:
+Hoy el modelo es:
 
-1. pick `patch`, `minor`, or `major`
-2. create `release/X.Y.Z`
-3. draft `releases/vX.Y.Z.md`
-4. publish one or more canaries from that release branch
-5. publish stable from that same branch
-6. push tag + create GitHub Release
-7. merge the release branch back to `master`
+1. elegir `patch`, `minor` o `major`
+2. crear `release/X.Y.Z`
+3. redactar `releases/vX.Y.Z.md`
+4. publicar una o más canaries desde esa rama de versión
+5. publicar estable desde esa misma rama
+6. hacer push del tag + crear GitHub Release
+7. fusionar la rama de versión de vuelta a `master`
 
-That is workable, but it creates friction in exactly the places that should be cheap:
+Eso es viable, pero crea fricción exactamente en los lugares que deberían ser baratos:
 
-- deciding `patch` vs `minor` vs `major`
-- cutting and carrying release branches
-- manually publishing canaries
-- thinking about changelog generation for canaries
-- handling npm credentials safely in a public repo
+- decidir `patch` vs `minor` vs `major`
+- cortar y mantener ramas de versión
+- publicar canaries manualmente
+- pensar en la generación de changelog para canaries
+- manejar credenciales de npm con seguridad en un repositorio público
 
-The target state from this discussion is simpler:
+El estado objetivo de esta discusión es más simple:
 
-- every push to `master` publishes a canary automatically
-- stable releases are promoted deliberately from a vetted commit
-- versioning is date-driven instead of semantics-driven
-- stable publishing is secure even in a public open-source repository
-- changelog generation happens only for real stable releases
+- cada push a `master` publica una canary automáticamente
+- las versiones estables se promueven deliberadamente desde un commit verificado
+- el versionado es basado en fecha en lugar de basado en semántica
+- la publicación estable es segura incluso en un repositorio público de código abierto
+- la generación de changelog ocurre solo para versiones estables reales
 
-## Recommendation In One Sentence
+## Recomendación en una oración
 
-Move Paperclip to semver-compatible calendar versioning, auto-publish canaries from `master`, promote stable from a chosen tested commit, and use npm trusted publishing plus GitHub environments so no long-lived npm or LLM token needs to live in Actions.
+Mover Paperclip a versionado de calendario compatible con semver, auto-publicar canaries desde `master`, promover estable desde un commit probado elegido, y usar trusted publishing de npm más entornos de GitHub para que ningún token de npm o LLM de larga vida necesite vivir en Actions.
 
-## Core Decisions
+## Decisiones centrales
 
-### 1. Use calendar versions, but keep semver syntax
+### 1. Usar versiones de calendario, pero mantener la sintaxis semver
 
-The repo and npm tooling still assume semver-shaped version strings in many places. That does not mean Paperclip must keep semver as a product policy. It does mean the version format should remain semver-valid.
+El repositorio y las herramientas de npm aún asumen cadenas de versión con forma semver en muchos lugares. Eso no significa que Paperclip deba mantener semver como política de producto. Sí significa que el formato de versión debería seguir siendo válido como semver.
 
-Recommended format:
+Formato recomendado:
 
-- stable: `YYYY.MDD.P`
+- estable: `YYYY.MDD.P`
 - canary: `YYYY.MDD.P-canary.N`
 
-Examples:
+Ejemplos:
 
-- first stable on March 17, 2026: `2026.317.0`
-- third canary on the `2026.317.0` line: `2026.317.0-canary.2`
+- primera estable el 17 de marzo de 2026: `2026.317.0`
+- tercera canary en la línea `2026.317.0`: `2026.317.0-canary.2`
 
-Why this shape:
+Por qué esta forma:
 
-- it removes `patch/minor/major` decisions
-- it is valid semver syntax
-- it stays compatible with npm, dist-tags, and existing semver validators
-- it is close to the format you actually want
+- elimina las decisiones de `patch/minor/major`
+- es sintaxis semver válida
+- sigue siendo compatible con npm, dist-tags y validadores semver existentes
+- es cercana al formato que realmente quieres
 
-Important constraints:
+Restricciones importantes:
 
-- the middle numeric slot should be `MDD`, where `M` is the month and `DD` is the zero-padded day
-- `2026.03.17` is not the format to use
-  - numeric semver identifiers do not allow leading zeroes
-- `2026.3.17.1` is not the format to use
-  - semver has three numeric components, not four
-- the practical semver-safe equivalent is `2026.317.0-canary.8`
+- el slot numérico del medio debería ser `MDD`, donde `M` es el mes y `DD` es el día con cero a la izquierda
+- `2026.03.17` no es el formato a usar
+  - los identificadores numéricos semver no permiten ceros a la izquierda
+- `2026.3.17.1` no es el formato a usar
+  - semver tiene tres componentes numéricos, no cuatro
+- el equivalente semver-safe práctico es `2026.317.0-canary.8`
 
-This is effectively CalVer on semver rails.
+Esto es efectivamente CalVer sobre rieles de semver.
 
-### 2. Accept that CalVer changes the compatibility contract
+### 2. Aceptar que CalVer cambia el contrato de compatibilidad
 
-This is not semver in spirit anymore. It is semver in syntax only.
+Esto ya no es semver en espíritu. Es semver solo en sintaxis.
 
-That tradeoff is probably acceptable for Paperclip, but it should be explicit:
+Ese tradeoff probablemente es aceptable para Paperclip, pero debería ser explícito:
 
-- consumers no longer infer compatibility from `major/minor/patch`
-- release notes become the compatibility signal
-- downstream users should prefer exact pins or deliberate upgrades
+- los consumidores ya no infieren compatibilidad desde `major/minor/patch`
+- las notas de versión se convierten en la señal de compatibilidad
+- los usuarios downstream deberían preferir fijados exactos o actualizaciones deliberadas
 
-This is especially relevant for public library packages like `@paperclipai/shared`, `@paperclipai/db`, and the adapter packages.
+Esto es especialmente relevante para paquetes públicos de biblioteca como `@paperclipai/shared`, `@paperclipai/db` y los paquetes de adaptadores.
 
-### 3. Drop release branches for normal publishing
+### 3. Eliminar las ramas de versión para publicación normal
 
-If every merge to `master` publishes a canary, the current `release/X.Y.Z` train model becomes more ceremony than value.
+Si cada merge a `master` publica una canary, el actual modelo de tren `release/X.Y.Z` se convierte en más ceremonia que valor.
 
-Recommended replacement:
+Reemplazo recomendado:
 
-- `master` is the only canary train
-- every push to `master` can publish a canary
-- stable is published from a chosen commit or canary tag on `master`
+- `master` es el único tren canary
+- cada push a `master` puede publicar una canary
+- estable se publica desde un commit o tag canary elegido en `master`
 
-This matches the workflow you actually want:
+Esto coincide con el flujo de trabajo que realmente quieres:
 
-- merge continuously
-- let npm always have a fresh canary
-- choose a known-good canary later and promote that commit to stable
+- fusionar continuamente
+- dejar que npm siempre tenga una canary fresca
+- elegir más adelante una canary conocida-buena y promover ese commit a estable
 
-### 4. Promote by source ref, not by "renaming" a canary
+### 4. Promover por referencia de fuente, no "renombrando" una canary
 
-This is the most important mechanical constraint.
+Esta es la restricción mecánica más importante.
 
-npm can move dist-tags, but it does not let you rename an already-published version. That means:
+npm puede mover dist-tags, pero no permite renombrar una versión ya publicada. Eso significa:
 
-- you can move `latest` to `paperclipai@1.2.3`
-- you cannot turn `paperclipai@2026.317.0-canary.8` into `paperclipai@2026.317.0`
+- puedes mover `latest` a `paperclipai@1.2.3`
+- no puedes convertir `paperclipai@2026.317.0-canary.8` en `paperclipai@2026.317.0`
 
-So "promote canary to stable" really means:
+Así que "promover canary a estable" realmente significa:
 
-1. choose the commit or canary tag you trust
-2. rebuild from that exact commit
-3. publish it again with the stable version string
+1. elegir el commit o tag canary en el que confías
+2. reconstruir desde ese commit exacto
+3. publicarlo de nuevo con la cadena de versión estable
 
-Because of that, the stable workflow should take a source ref, not just a bump type.
+Por eso, el flujo de trabajo estable debería tomar una referencia de fuente, no solo un tipo de bump.
 
-Recommended stable input:
+Entrada estable recomendada:
 
 - `source_ref`
-  - commit SHA, or
-  - a canary git tag such as `canary/v2026.317.1-canary.8`
+  - SHA de commit, o
+  - un tag canary de git como `canary/v2026.317.1-canary.8`
 
-### 5. Only stable releases get release notes, tags, and GitHub Releases
+### 5. Solo las versiones estables obtienen notas de versión, tags y GitHub Releases
 
-Canaries should stay lightweight:
+Las canaries deberían seguir siendo ligeras:
 
-- publish to npm under `canary`
-- optionally create a lightweight or annotated git tag
-- do not create GitHub Releases
-- do not require `releases/v*.md`
-- do not spend LLM tokens
+- publicar en npm bajo `canary`
+- opcionalmente crear un tag de git ligero o anotado
+- no crear GitHub Releases
+- no requerir `releases/v*.md`
+- no gastar tokens de LLM
 
-Stable releases should remain the public narrative surface:
+Las versiones estables deberían seguir siendo la superficie narrativa pública:
 
-- git tag `v2026.317.0`
+- tag de git `v2026.317.0`
 - GitHub Release `v2026.317.0`
-- stable changelog file `releases/v2026.317.0.md`
+- archivo de changelog estable `releases/v2026.317.0.md`
 
-## Security Model
+## Modelo de seguridad
 
-### Recommendation
+### Recomendación
 
-Use npm trusted publishing with GitHub Actions OIDC, then disable token-based publishing access for the packages.
+Usar trusted publishing de npm con GitHub Actions OIDC, luego deshabilitar el acceso de publicación basado en token para los paquetes.
 
-Why:
+Por qué:
 
-- no long-lived `NPM_TOKEN` in repo or org secrets
-- no personal npm token in Actions
-- short-lived credentials minted only for the authorized workflow
-- automatic npm provenance for public packages in public repos
+- sin `NPM_TOKEN` de larga vida en secretos del repositorio u organización
+- sin token personal de npm en Actions
+- credenciales de corta vida emitidas solo para el flujo de trabajo autorizado
+- procedencia automática de npm para paquetes públicos en repositorios públicos
 
-This is the cleanest answer to the open-repo security concern.
+Esta es la respuesta más limpia a la preocupación de seguridad del repositorio abierto.
 
-### Concrete controls
+### Controles concretos
 
-#### 1. Use one release workflow file
+#### 1. Usar un archivo de flujo de trabajo de versión
 
-Use one workflow filename for both canary and stable publishing:
+Usar un nombre de archivo de flujo de trabajo para publicación canary y estable:
 
 - `.github/workflows/release.yml`
 
-Why:
+Por qué:
 
-- npm trusted publishing is configured per workflow filename
-- npm currently allows one trusted publisher configuration per package
-- GitHub environments can still provide separate canary/stable approval rules inside the same workflow
+- el trusted publishing de npm se configura por nombre de archivo de flujo de trabajo
+- npm actualmente permite una configuración de publicador confiable por paquete
+- los entornos de GitHub aún pueden proporcionar reglas separadas de aprobación canary/estable dentro del mismo flujo de trabajo
 
-#### 2. Use separate GitHub environments
+#### 2. Usar entornos separados de GitHub
 
-Recommended environments:
+Entornos recomendados:
 
 - `npm-canary`
 - `npm-stable`
 
-Recommended policy:
+Política recomendada:
 
 - `npm-canary`
-  - allowed branch: `master`
-  - no human reviewer required
+  - rama permitida: `master`
+  - sin revisor humano requerido
 - `npm-stable`
-  - allowed branch: `master`
-  - required reviewer enabled
-  - prevent self-review enabled
-  - admin bypass disabled
+  - rama permitida: `master`
+  - revisor requerido habilitado
+  - autorevisión prevenida habilitada
+  - bypass de admin deshabilitado
 
-Stable should require an explicit second human gate even if the workflow is manually dispatched.
+Estable debería requerir una segunda puerta humana explícita incluso si el flujo de trabajo se despacha manualmente.
 
-#### 3. Lock down workflow edits
+#### 3. Bloquear ediciones del flujo de trabajo
 
-Add or tighten `CODEOWNERS` coverage for:
+Agregar o reforzar la cobertura de `CODEOWNERS` para:
 
 - `.github/workflows/*`
 - `scripts/release*`
 - `doc/RELEASING.md`
 
-This matters because trusted publishing authorizes a workflow file. The biggest remaining risk is not secret exfiltration from forks. It is a maintainer-approved change to the release workflow itself.
+Esto importa porque el trusted publishing autoriza un archivo de flujo de trabajo. El mayor riesgo restante no es la exfiltración de secretos desde forks. Es un cambio aprobado por un mantenedor al propio flujo de trabajo de versión.
 
-#### 4. Remove traditional npm token access after OIDC works
+#### 4. Eliminar el acceso tradicional de token de npm después de que OIDC funcione
 
-After trusted publishing is verified:
+Después de verificar el trusted publishing:
 
-- set package publishing access to require 2FA and disallow tokens
-- revoke any legacy automation tokens
+- establecer el acceso de publicación del paquete para requerir 2FA y no permitir tokens
+- revocar cualquier token de automatización heredado
 
-That eliminates the "someone stole the npm token" class of failure.
+Eso elimina la clase de falla de "alguien robó el token de npm".
 
-### What not to do
+### Qué no hacer
 
-- do not put your personal Claude or npm token in GitHub Actions
-- do not run release logic from `pull_request_target`
-- do not make stable publishing depend on a repo secret if OIDC can handle it
-- do not create canary GitHub Releases
+- no poner tu token personal de Claude o npm en GitHub Actions
+- no ejecutar lógica de versión desde `pull_request_target`
+- no hacer que la publicación estable dependa de un secreto del repositorio si OIDC puede manejarlo
+- no crear GitHub Releases canary
 
-## Changelog Strategy
+## Estrategia de changelog
 
-### Recommendation
+### Recomendación
 
-Generate stable changelogs only, and keep LLM-assisted changelog generation out of CI for now.
+Generar changelogs solo estables, y mantener la generación de changelog asistida por LLM fuera de CI por ahora.
 
-Reasoning:
+Razonamiento:
 
-- canaries happen too often
-- canaries do not need polished public notes
-- putting a personal Claude token into Actions is not worth the risk
-- stable release cadence is low enough that a human-in-the-loop step is acceptable
+- las canaries ocurren con demasiada frecuencia
+- las canaries no necesitan notas públicas pulidas
+- poner un token personal de Claude en Actions no vale el riesgo
+- la cadencia de versiones estables es lo suficientemente baja como para que un paso humano en el ciclo sea aceptable
 
-Recommended stable path:
+Ruta estable recomendada:
 
-1. pick a canary commit or tag
-2. run changelog generation locally from a trusted machine
-3. commit `releases/vYYYY.MDD.P.md`
-4. run stable promotion
+1. elegir un commit o tag canary
+2. ejecutar la generación de changelog localmente desde una máquina confiable
+3. hacer commit de `releases/vYYYY.MDD.P.md`
+4. ejecutar la promoción estable
 
-If the notes are not ready yet, a fallback is acceptable:
+Si las notas aún no están listas, un fallback es aceptable:
 
-- publish stable
-- create a minimal GitHub Release
-- update `releases/vYYYY.MDD.P.md` immediately afterward
+- publicar estable
+- crear un GitHub Release mínimo
+- actualizar `releases/vYYYY.MDD.P.md` inmediatamente después
 
-But the better steady-state is to have the stable notes committed before stable publish.
+Pero el estado estable mejor es tener las notas estables en commit antes de la publicación estable.
 
-### Future option
+### Opción futura
 
-If you later want CI-assisted changelog drafting, do it with:
+Si más adelante quieres borrador de changelog asistido por CI, hacerlo con:
 
-- a dedicated service account
-- a token scoped only for changelog generation
-- a manual workflow
-- a dedicated environment with required reviewers
+- una cuenta de servicio dedicada
+- un token con alcance solo para generación de changelog
+- un flujo de trabajo manual
+- un entorno dedicado con revisores requeridos
 
-That is phase-two hardening work, not a phase-one requirement.
+Eso es trabajo de endurecimiento de fase dos, no un requisito de fase uno.
 
-## Proposed Future Workflow
+## Flujo de trabajo futuro propuesto
 
-### Canary workflow
+### Flujo de trabajo canary
 
-Trigger:
+Activador:
 
-- `push` on `master`
+- `push` en `master`
 
-Steps:
+Pasos:
 
-1. checkout the merged `master` commit
-2. run verification on that exact commit
-3. compute canary version for current UTC date
-4. version public packages to `YYYY.MDD.P-canary.N`
-5. publish to npm with dist-tag `canary`
-6. create a canary git tag for traceability
+1. checkout del commit fusionado de `master`
+2. ejecutar verificación en ese commit exacto
+3. calcular la versión canary para la fecha UTC actual
+4. versionar los paquetes públicos a `YYYY.MDD.P-canary.N`
+5. publicar en npm con dist-tag `canary`
+6. crear un tag canary de git para trazabilidad
 
-Recommended canary tag format:
+Formato recomendado de tag canary:
 
 - `canary/v2026.317.1-canary.4`
 
-Outputs:
+Salidas:
 
-- npm canary published
-- git tag created
-- no GitHub Release
-- no changelog file required
+- canary de npm publicada
+- tag de git creado
+- sin GitHub Release
+- sin archivo de changelog requerido
 
-### Stable workflow
+### Flujo de trabajo estable
 
-Trigger:
+Activador:
 
 - `workflow_dispatch`
 
-Inputs:
+Entradas:
 
 - `source_ref`
-- optional `stable_date`
+- `stable_date` opcional
 - `dry_run`
 
-Steps:
+Pasos:
 
-1. checkout `source_ref`
-2. run verification on that exact commit
-3. compute the next stable patch slot for the UTC date or provided override
-4. fail if `vYYYY.MDD.P` already exists
-5. require `releases/vYYYY.MDD.P.md`
-6. version public packages to `YYYY.MDD.P`
-7. publish to npm under `latest`
-8. create git tag `vYYYY.MDD.P`
-9. push tag
-10. create GitHub Release from `releases/vYYYY.MDD.P.md`
+1. checkout de `source_ref`
+2. ejecutar verificación en ese commit exacto
+3. calcular el siguiente slot de parche estable para la fecha UTC o la sobrescritura proporcionada
+4. fallar si `vYYYY.MDD.P` ya existe
+5. requerir `releases/vYYYY.MDD.P.md`
+6. versionar los paquetes públicos a `YYYY.MDD.P`
+7. publicar en npm bajo `latest`
+8. crear tag de git `vYYYY.MDD.P`
+9. hacer push del tag
+10. crear GitHub Release desde `releases/vYYYY.MDD.P.md`
 
-Outputs:
+Salidas:
 
-- stable npm release
-- stable git tag
+- versión estable de npm
+- tag estable de git
 - GitHub Release
-- clean public changelog surface
+- superficie pública limpia de changelog
 
-## Implementation Guidance
+## Guía de implementación
 
-### 1. Replace bump-type version math with explicit version computation
+### 1. Reemplazar la matemática de versionado de tipo bump con computación explícita de versión
 
-The current release scripts depend on:
+Los scripts actuales de versión dependen de:
 
 - `patch`
 - `minor`
 - `major`
 
-That logic should be replaced with:
+Esa lógica debería reemplazarse con:
 
 - `compute_canary_version_for_date`
 - `compute_stable_version_for_date`
 
-For example:
+Por ejemplo:
 
 - `next_stable_version(2026-03-17) -> 2026.317.0`
 - `next_canary_for_utc_date(2026-03-17) -> 2026.317.0-canary.0`
 
-### 2. Stop requiring `release/X.Y.Z`
+### 2. Dejar de requerir `release/X.Y.Z`
 
-These current invariants should be removed from the happy path:
+Estas invariantes actuales deberían eliminarse de la ruta feliz:
 
-- "must run from branch `release/X.Y.Z`"
-- "stable and canary for `X.Y.Z` come from the same release branch"
+- "debe ejecutarse desde la rama `release/X.Y.Z`"
+- "estable y canary para `X.Y.Z` vienen de la misma rama de versión"
 - `release-start.sh`
 
-Replace them with:
+Reemplazarlas con:
 
-- canary must run from `master`
-- stable may run from a pinned `source_ref`
+- canary debe ejecutarse desde `master`
+- estable puede ejecutarse desde un `source_ref` fijado
 
-### 3. Keep Changesets only if it stays helpful
+### 3. Mantener Changesets solo si sigue siendo útil
 
-The current system uses Changesets to:
+El sistema actual usa Changesets para:
 
-- rewrite package versions
-- maintain package-level `CHANGELOG.md` files
-- publish packages
+- reescribir versiones de paquetes
+- mantener archivos `CHANGELOG.md` a nivel de paquete
+- publicar paquetes
 
-With CalVer, Changesets may still be useful for publish orchestration, but it should no longer own version selection.
+Con CalVer, Changesets aún puede ser útil para la orquestación de publicación, pero ya no debería ser dueño de la selección de versión.
 
-Recommended implementation order:
+Orden de implementación recomendado:
 
-1. keep `changeset publish` if it works with explicitly-set versions
-2. replace version computation with a small explicit versioning script
-3. if Changesets keeps fighting the model, remove it from release publishing entirely
+1. mantener `changeset publish` si funciona con versiones establecidas explícitamente
+2. reemplazar la computación de versión con un pequeño script explícito de versionado
+3. si Changesets sigue peleando con el modelo, eliminarlo por completo de la publicación de versiones
 
-Paperclip's release problem is now "publish the whole fixed package set at one explicit version", not "derive the next semantic bump from human intent".
+El problema de versión de Paperclip es ahora "publicar todo el conjunto fijo de paquetes en una versión explícita", no "derivar el próximo bump semántico desde la intención humana".
 
-### 4. Add a dedicated versioning script
+### 4. Agregar un script dedicado de versionado
 
-Recommended new script:
+Nuevo script recomendado:
 
 - `scripts/set-release-version.mjs`
 
-Responsibilities:
+Responsabilidades:
 
-- set the version in all public publishable packages
-- update any internal exact-version references needed for publishing
-- update CLI version strings
-- avoid broad string replacement across unrelated files
+- establecer la versión en todos los paquetes públicos publicables
+- actualizar cualquier referencia interna de versión exacta necesaria para publicar
+- actualizar cadenas de versión del CLI
+- evitar reemplazo amplio de cadenas en archivos no relacionados
 
-This is safer than keeping a bump-oriented changeset flow and then forcing it into a date-based scheme.
+Esto es más seguro que mantener un flujo de changeset orientado a bump y luego forzarlo en un esquema basado en fecha.
 
-### 5. Keep rollback based on dist-tags
+### 5. Mantener el rollback basado en dist-tags
 
-`rollback-latest.sh` should stay, but it should stop assuming a semver meaning beyond syntax.
+`rollback-latest.sh` debería mantenerse, pero debería dejar de asumir un significado semver más allá de la sintaxis.
 
-It should continue to:
+Debería seguir:
 
-- repoint `latest` to a prior stable version
-- never unpublish
+- reapuntando `latest` a una versión estable previa
+- nunca despublicando
 
-## Tradeoffs and Risks
+## Tradeoffs y riesgos
 
-### 1. The stable patch slot is now part of the version contract
+### 1. El slot de parche estable ahora es parte del contrato de versión
 
-With `YYYY.MDD.P`, same-day hotfixes are supported, but the stable patch slot is now part of the visible version format.
+Con `YYYY.MDD.P`, los hotfixes del mismo día están admitidos, pero el slot de parche estable ahora es parte del formato de versión visible.
 
-That is the right tradeoff because:
+Ese es el tradeoff correcto porque:
 
-1. npm still gets semver-valid versions
-2. same-day hotfixes stay possible
-3. chronological ordering still works as long as the day is zero-padded inside `MDD`
+1. npm aún obtiene versiones válidas como semver
+2. los hotfixes del mismo día siguen siendo posibles
+3. el orden cronológico aún funciona mientras el día esté con cero a la izquierda dentro de `MDD`
 
-### 2. Public package consumers lose semver intent signaling
+### 2. Los consumidores de paquetes públicos pierden la señal de intención semver
 
-This is the main downside of CalVer.
+Esta es la principal desventaja de CalVer.
 
-If that becomes a problem, one alternative is:
+Si eso se convierte en un problema, una alternativa es:
 
-- use CalVer for the CLI package only
-- keep semver for library packages
+- usar CalVer solo para el paquete CLI
+- mantener semver para paquetes de biblioteca
 
-That is more complex operationally, so I would not start there unless package consumers actually need it.
+Eso es más complejo operativamente, así que no empezaría ahí a menos que los consumidores de paquetes realmente lo necesiten.
 
-### 3. Auto-canary means more publish traffic
+### 3. La canary automática significa más tráfico de publicación
 
-Publishing on every `master` merge means:
+Publicar en cada merge de `master` significa:
 
-- more npm versions
-- more git tags
-- more registry noise
+- más versiones de npm
+- más tags de git
+- más ruido de registro
 
-That is acceptable if canaries stay clearly separate:
+Eso es aceptable si las canaries se mantienen claramente separadas:
 
-- npm dist-tag `canary`
-- no GitHub Release
-- no external announcement
+- dist-tag de npm `canary`
+- sin GitHub Release
+- sin anuncio externo
 
-## Rollout Plan
+## Plan de despliegue
 
-### Phase 1: Security foundation
+### Fase 1: Base de seguridad
 
-1. Create `release.yml`
-2. Configure npm trusted publishers for all public packages
-3. Create `npm-canary` and `npm-stable` environments
-4. Add `CODEOWNERS` protection for release files
-5. Verify OIDC publishing works
-6. Disable token-based publishing access and revoke old tokens
+1. Crear `release.yml`
+2. Configurar publicadores confiables de npm para todos los paquetes públicos
+3. Crear entornos `npm-canary` y `npm-stable`
+4. Agregar protección de `CODEOWNERS` para archivos de versión
+5. Verificar que la publicación OIDC funciona
+6. Deshabilitar el acceso de publicación basado en token y revocar tokens antiguos
 
-### Phase 2: Canary automation
+### Fase 2: Automatización canary
 
-1. Add canary workflow on `push` to `master`
-2. Add explicit calendar-version computation
-3. Add canary git tagging
-4. Remove changelog requirement from canaries
-5. Update `doc/RELEASING.md`
+1. Agregar flujo de trabajo canary en `push` a `master`
+2. Agregar computación explícita de versión de calendario
+3. Agregar etiquetado canary de git
+4. Eliminar el requisito de changelog de las canaries
+5. Actualizar `doc/RELEASING.md`
 
-### Phase 3: Stable promotion
+### Fase 3: Promoción estable
 
-1. Add manual stable workflow with `source_ref`
-2. Require stable notes file
-3. Publish stable + tag + GitHub Release
-4. Update rollback docs and scripts
-5. Retire release-branch assumptions
+1. Agregar flujo de trabajo estable manual con `source_ref`
+2. Requerir archivo de notas estables
+3. Publicar estable + tag + GitHub Release
+4. Actualizar documentos y scripts de rollback
+5. Retirar los supuestos de ramas de versión
 
-### Phase 4: Cleanup
+### Fase 4: Limpieza
 
-1. Remove `release-start.sh` from the primary path
-2. Remove `patch/minor/major` from maintainer docs
-3. Decide whether to keep or remove Changesets from publishing
-4. Document the CalVer compatibility contract publicly
+1. Eliminar `release-start.sh` de la ruta principal
+2. Eliminar `patch/minor/major` de los documentos de mantenedor
+3. Decidir si mantener o eliminar Changesets de la publicación
+4. Documentar públicamente el contrato de compatibilidad de CalVer
 
-## Concrete Recommendation
+## Recomendación concreta
 
-Paperclip should adopt this model:
+Paperclip debería adoptar este modelo:
 
-- stable versions: `YYYY.MDD.P`
-- canary versions: `YYYY.MDD.P-canary.N`
-- canaries auto-published on every push to `master`
-- stables manually promoted from a chosen tested commit or canary tag
-- no release branches in the default path
-- no canary changelog files
-- no canary GitHub Releases
-- no Claude token in GitHub Actions
-- no npm automation token in GitHub Actions
-- npm trusted publishing plus GitHub environments for release security
+- versiones estables: `YYYY.MDD.P`
+- versiones canary: `YYYY.MDD.P-canary.N`
+- canaries auto-publicadas en cada push a `master`
+- estables promovidas manualmente desde un commit o tag canary probado elegido
+- sin ramas de versión en la ruta predeterminada
+- sin archivos de changelog canary
+- sin GitHub Releases canary
+- sin token de Claude en GitHub Actions
+- sin token de automatización de npm en GitHub Actions
+- trusted publishing de npm más entornos de GitHub para seguridad de versión
 
-That gets rid of the annoying part of semver without fighting npm, makes canaries cheap, keeps stables deliberate, and materially improves the security posture of the public repository.
+Eso elimina la parte molesta de semver sin pelear con npm, hace baratas las canaries, mantiene deliberadas las estables, y mejora materialmente la postura de seguridad del repositorio público.
 
-## External References
+## Referencias externas
 
-- npm trusted publishing: https://docs.npmjs.com/trusted-publishers/
-- npm dist-tags: https://docs.npmjs.com/adding-dist-tags-to-packages/
-- npm semantic versioning guidance: https://docs.npmjs.com/about-semantic-versioning/
-- GitHub environments and deployment protection rules: https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments
-- GitHub secrets behavior for forks: https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets
+- trusted publishing de npm: https://docs.npmjs.com/trusted-publishers/
+- dist-tags de npm: https://docs.npmjs.com/adding-dist-tags-to-packages/
+- guía de versionado semántico de npm: https://docs.npmjs.com/about-semantic-versioning/
+- entornos de GitHub y reglas de protección de despliegue: https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments
+- comportamiento de secretos de GitHub para forks: https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets

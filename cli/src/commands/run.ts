@@ -45,22 +45,22 @@ export async function runCommand(opts: RunOptions): Promise<void> {
   loadPaperclipEnvFile(configPath);
 
   p.intro(pc.bgCyan(pc.black(" paperclipai run ")));
-  p.log.message(pc.dim(`Home: ${paths.homeDir}`));
-  p.log.message(pc.dim(`Instance: ${paths.instanceId}`));
+  p.log.message(pc.dim(`Inicio: ${paths.homeDir}`));
+  p.log.message(pc.dim(`Instancia: ${paths.instanceId}`));
   p.log.message(pc.dim(`Config: ${configPath}`));
 
   if (!configExists(configPath)) {
     if (!process.stdin.isTTY || !process.stdout.isTTY) {
-      p.log.error("No config found and terminal is non-interactive.");
-      p.log.message(`Run ${pc.cyan("paperclipai onboard")} once, then retry ${pc.cyan("paperclipai run")}.`);
+      p.log.error("No se encontró config y la terminal no es interactiva.");
+      p.log.message(`Ejecuta ${pc.cyan("paperclipai onboard")} una vez, y luego reintenta ${pc.cyan("paperclipai run")}.`);
       process.exit(1);
     }
 
-    p.log.step("No config found. Starting onboarding...");
+    p.log.step("No se encontró config. Iniciando el onboarding...");
     await onboard({ config: configPath, invokedByRun: true });
   }
 
-  p.log.step("Running doctor checks...");
+  p.log.step("Ejecutando chequeos de doctor...");
   const summary = await doctor({
     config: configPath,
     repair: opts.repair ?? true,
@@ -68,21 +68,21 @@ export async function runCommand(opts: RunOptions): Promise<void> {
   });
 
   if (summary.failed > 0) {
-    p.log.error("Doctor found blocking issues. Not starting server.");
+    p.log.error("Doctor encontró problemas bloqueantes. No se inicia el servidor.");
     process.exit(1);
   }
 
   const config = readConfig(configPath);
   if (!config) {
-    p.log.error(`No config found at ${configPath}.`);
+    p.log.error(`No se encontró config en ${configPath}.`);
     process.exit(1);
   }
 
-  p.log.step("Starting Paperclip server...");
+  p.log.step("Iniciando el servidor de Paperclip...");
   const startedServer = await importServerEntry();
 
   if (shouldGenerateBootstrapInviteAfterStart(config)) {
-    p.log.step("Generating bootstrap CEO invite");
+    p.log.step("Generando invitación bootstrap de CEO");
     await bootstrapCeoInvite({
       config: configPath,
       dbUrl: startedServer.databaseUrl,
@@ -147,7 +147,7 @@ function maybeEnableUiDevMiddleware(entrypoint: string): void {
 }
 
 async function importServerEntry(): Promise<StartedServer> {
-  // Dev mode: try local workspace path (monorepo with tsx)
+  // Modo dev: probar la ruta local del workspace (monorepo con tsx)
   const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
   const devEntry = path.resolve(projectRoot, "server/src/index.ts");
   if (fs.existsSync(devEntry)) {
@@ -156,7 +156,7 @@ async function importServerEntry(): Promise<StartedServer> {
     return await startServerFromModule(mod, devEntry);
   }
 
-  // Production mode: import the published @paperclipai/server package
+  // Modo producción: importar el paquete publicado @paperclipai/server
   try {
     const mod = await import("@paperclipai/server");
     return await startServerFromModule(mod, "@paperclipai/server");
@@ -165,13 +165,13 @@ async function importServerEntry(): Promise<StartedServer> {
     const missingServerEntrypoint = !missingSpecifier || missingSpecifier === "@paperclipai/server";
     if (isModuleNotFoundError(err) && missingServerEntrypoint) {
       throw new Error(
-        `Could not locate a Paperclip server entrypoint.\n` +
-          `Tried: ${devEntry}, @paperclipai/server\n` +
+        `No se pudo localizar un punto de entrada del servidor de Paperclip.\n` +
+          `Se intentó: ${devEntry}, @paperclipai/server\n` +
           `${formatError(err)}`,
       );
     }
     throw new Error(
-      `Paperclip server failed to start.\n` +
+      `El servidor de Paperclip no pudo iniciar.\n` +
         `${formatError(err)}`,
     );
   }
@@ -184,7 +184,7 @@ function shouldGenerateBootstrapInviteAfterStart(config: PaperclipConfig): boole
 async function startServerFromModule(mod: unknown, label: string): Promise<StartedServer> {
   const startServer = (mod as { startServer?: () => Promise<StartedServer> }).startServer;
   if (typeof startServer !== "function") {
-    throw new Error(`Paperclip server entrypoint did not export startServer(): ${label}`);
+    throw new Error(`El punto de entrada del servidor de Paperclip no exportó startServer(): ${label}`);
   }
   return await startServer();
 }

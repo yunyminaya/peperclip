@@ -108,19 +108,19 @@ export async function discoverOpenCodeModels(input: {
   const command = resolveOpenCodeCommand(input.command);
   const cwd = asString(input.cwd, process.cwd());
   const env = normalizeEnv(input.env);
-  // Ensure HOME points to the actual running user's home directory.
-  // When the server is started via `runuser -u <user>`, HOME may still
-  // reflect the parent process (e.g. /root), causing OpenCode to miss
-  // provider auth credentials stored under the target user's home.
+  // Asegurarse de que HOME apunte al directorio personal real del usuario en ejecución.
+  // Cuando el servidor se inicia con `runuser -u <user>`, HOME aún puede
+  // reflejar el proceso padre (p. ej. /root), lo que hace que OpenCode no encuentre
+  // las credenciales de autenticación del proveedor guardadas en el directorio personal del usuario objetivo.
   let resolvedHome: string | undefined;
   try {
     resolvedHome = os.userInfo().homedir || undefined;
   } catch {
-    // os.userInfo() throws a SystemError when the current UID has no
+    // os.userInfo() lanza un SystemError cuando el UID actual no tiene
     // /etc/passwd entry (e.g. `docker run --user 1234` with a minimal
-    // image). Fall back to process.env.HOME.
+    // imagen). Volver a process.env.HOME.
   }
-  // Prevent OpenCode from writing an opencode.json into the working directory.
+  // Evita que OpenCode escriba un opencode.json en el directorio de trabajo.
   const runtimeEnv = normalizeEnv(ensurePathInEnv({ ...process.env, ...env, ...(resolvedHome ? { HOME: resolvedHome } : {}), OPENCODE_DISABLE_PROJECT_CONFIG: "true" }));
 
   const result = await runChildProcess(
@@ -174,7 +174,7 @@ export async function ensureOpenCodeModelConfiguredAndAvailable(input: {
 }): Promise<AdapterModel[]> {
   const model = asString(input.model, "").trim();
   if (!model) {
-    throw new Error("OpenCode requires `adapterConfig.model` in provider/model format.");
+    throw new Error("OpenCode requiere `adapterConfig.model` en formato proveedor/modelo.");
   }
 
   const models = await discoverOpenCodeModelsCached({
@@ -184,13 +184,13 @@ export async function ensureOpenCodeModelConfiguredAndAvailable(input: {
   });
 
   if (models.length === 0) {
-    throw new Error("OpenCode returned no models. Run `opencode models` and verify provider auth.");
+    throw new Error("OpenCode no devolvió modelos. Ejecuta `opencode models` y verifica la autenticación del proveedor.");
   }
 
   if (!models.some((entry) => entry.id === model)) {
     const sample = models.slice(0, 12).map((entry) => entry.id).join(", ");
     throw new Error(
-      `Configured OpenCode model is unavailable: ${model}. Available models: ${sample}${models.length > 12 ? ", ..." : ""}`,
+      `El modelo de OpenCode configurado no está disponible: ${model}. Modelos disponibles: ${sample}${models.length > 12 ? ", ..." : ""}`,
     );
   }
 

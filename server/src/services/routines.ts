@@ -54,7 +54,7 @@ function assertTimeZone(timeZone: string) {
   try {
     new Intl.DateTimeFormat("en-US", { timeZone }).format(new Date());
   } catch {
-    throw unprocessable(`Invalid timezone: ${timeZone}`);
+    throw unprocessable(`Zona horaria inválida: ${timeZone}`);
   }
 }
 
@@ -79,7 +79,7 @@ function getZonedMinuteParts(date: Date, timeZone: string) {
   const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   const weekday = WEEKDAY_INDEX[map.weekday ?? ""];
   if (weekday == null) {
-    throw new Error(`Unable to resolve weekday for timezone ${timeZone}`);
+    throw new Error(`No se pudo resolver el día de la semana para la zona horaria ${timeZone}`);
   }
   return {
     year: Number(map.year),
@@ -124,11 +124,11 @@ function nextCronTickInTimeZone(expression: string, timeZone: string, after: Dat
 }
 
 function nextResultText(status: string, issueId?: string | null) {
-  if (status === "issue_created" && issueId) return `Created execution issue ${issueId}`;
-  if (status === "coalesced") return "Coalesced into an existing live execution issue";
-  if (status === "skipped") return "Skipped because a live execution issue already exists";
-  if (status === "completed") return "Execution issue completed";
-  if (status === "failed") return "Execution failed";
+  if (status === "issue_created" && issueId) return `Issue de ejecución creado ${issueId}`;
+  if (status === "coalesced") return "Fusionado en un issue de ejecución vivo existente";
+  if (status === "skipped") return "Omitido porque ya existe un issue de ejecución vivo";
+  if (status === "completed") return "Issue de ejecución completado";
+  if (status === "failed") return "La ejecución falló";
   return status;
 }
 
@@ -161,8 +161,8 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
 
   async function assertRoutineAccess(companyId: string, routineId: string) {
     const routine = await getRoutineById(routineId);
-    if (!routine) throw notFound("Routine not found");
-    if (routine.companyId !== companyId) throw forbidden("Routine must belong to same company");
+    if (!routine) throw notFound("Rutina no encontrada");
+    if (routine.companyId !== companyId) throw forbidden("La rutina debe pertenecer a la misma compañía");
     return routine;
   }
 
@@ -172,10 +172,10 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       .from(agents)
       .where(eq(agents.id, agentId))
       .then((rows) => rows[0] ?? null);
-    if (!agent) throw notFound("Assignee agent not found");
-    if (agent.companyId !== companyId) throw unprocessable("Assignee must belong to same company");
-    if (agent.status === "pending_approval") throw conflict("Cannot assign routines to pending approval agents");
-    if (agent.status === "terminated") throw conflict("Cannot assign routines to terminated agents");
+    if (!agent) throw notFound("Agente asignado no encontrado");
+    if (agent.companyId !== companyId) throw unprocessable("El asignado debe pertenecer a la misma compañía");
+    if (agent.status === "pending_approval") throw conflict("No se pueden asignar rutinas a agentes pendientes de aprobación");
+    if (agent.status === "terminated") throw conflict("No se pueden asignar rutinas a agentes terminados");
   }
 
   async function assertProject(companyId: string, projectId: string) {
@@ -184,8 +184,8 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       .from(projects)
       .where(eq(projects.id, projectId))
       .then((rows) => rows[0] ?? null);
-    if (!project) throw notFound("Project not found");
-    if (project.companyId !== companyId) throw unprocessable("Project must belong to same company");
+    if (!project) throw notFound("Proyecto no encontrado");
+    if (project.companyId !== companyId) throw unprocessable("El proyecto debe pertenecer a la misma compañía");
   }
 
   async function assertGoal(companyId: string, goalId: string) {
@@ -194,8 +194,8 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       .from(goals)
       .where(eq(goals.id, goalId))
       .then((rows) => rows[0] ?? null);
-    if (!goal) throw notFound("Goal not found");
-    if (goal.companyId !== companyId) throw unprocessable("Goal must belong to same company");
+    if (!goal) throw notFound("Objetivo no encontrado");
+    if (goal.companyId !== companyId) throw unprocessable("El objetivo debe pertenecer a la misma compañía");
   }
 
   async function assertParentIssue(companyId: string, issueId: string) {
@@ -204,8 +204,8 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       .from(issues)
       .where(eq(issues.id, issueId))
       .then((rows) => rows[0] ?? null);
-    if (!parentIssue) throw notFound("Parent issue not found");
-    if (parentIssue.companyId !== companyId) throw unprocessable("Parent issue must belong to same company");
+    if (!parentIssue) throw notFound("Issue padre no encontrado");
+    if (parentIssue.companyId !== companyId) throw unprocessable("El issue padre debe pertenecer a la misma compañía");
   }
 
   async function listTriggersForRoutineIds(companyId: string, routineIds: string[]) {
@@ -279,7 +279,7 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
           ? {
             id: row.linkedIssueId,
             identifier: row.issueIdentifier,
-            title: row.issueTitle ?? "Routine execution",
+            title: row.issueTitle ?? "Ejecución de rutina",
             status: row.issueStatus ?? "todo",
             priority: row.issuePriority ?? "medium",
             updatedAt: row.issueUpdatedAt ?? row.updatedAt,
@@ -499,13 +499,13 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
   }
 
   async function resolveTriggerSecret(trigger: typeof routineTriggers.$inferSelect, companyId: string) {
-    if (!trigger.secretId) throw notFound("Routine trigger secret not found");
+    if (!trigger.secretId) throw notFound("Secreto del disparador de rutina no encontrado");
     const secret = await db
       .select()
       .from(companySecrets)
       .where(eq(companySecrets.id, trigger.secretId))
       .then((rows) => rows[0] ?? null);
-    if (!secret || secret.companyId !== companyId) throw notFound("Routine trigger secret not found");
+    if (!secret || secret.companyId !== companyId) throw notFound("Secreto del disparador de rutina no encontrado");
     const value = await secretsSvc.resolveSecretValue(companyId, trigger.secretId, "latest");
     return value;
   }
@@ -629,7 +629,7 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
           return updated ?? createdRun;
         }
 
-        // Keep the dispatch lock until the issue is linked to a queued heartbeat run.
+        // Mantiene el lock de despacho hasta que el issue se vincule a una ejecución heartbeat en cola.
         await queueIssueAssignmentWakeup({
           heartbeat,
           issue: createdIssue,
@@ -691,7 +691,7 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
           },
         });
       } catch (err) {
-        logger.warn({ err, routineId: input.routine.id, runId: run.id }, "failed to log automated routine run");
+        logger.warn({ err, routineId: input.routine.id, runId: run.id }, "falló el registro de la ejecución de rutina automatizada");
       }
     }
 
@@ -790,7 +790,7 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
                 ? {
                   id: run.linkedIssueId,
                   identifier: run.issueIdentifier,
-                  title: run.issueTitle ?? "Routine execution",
+                  title: run.issueTitle ?? "Ejecución de rutina",
                   status: run.issueStatus ?? "todo",
                   priority: run.issuePriority ?? "medium",
                   updatedAt: run.issueUpdatedAt ?? run.updatedAt,
@@ -884,7 +884,7 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       actor: Actor,
     ): Promise<{ trigger: RoutineTrigger; secretMaterial: RoutineTriggerSecretMaterial | null }> => {
       const routine = await getRoutineById(routineId);
-      if (!routine) throw notFound("Routine not found");
+      if (!routine) throw notFound("Rutina no encontrada");
 
       let secretMaterial: RoutineTriggerSecretMaterial | null = null;
       let secretId: string | null = null;
@@ -948,13 +948,13 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
 
       if (existing.kind === "schedule") {
         if (patch.cronExpression !== undefined) {
-          if (patch.cronExpression == null) throw unprocessable("Scheduled triggers require cronExpression");
+          if (patch.cronExpression == null) throw unprocessable("Los disparadores programados requieren cronExpression");
           const error = validateCron(patch.cronExpression);
           if (error) throw unprocessable(error);
           cronExpression = patch.cronExpression;
         }
         if (patch.timezone !== undefined) {
-          if (patch.timezone == null) throw unprocessable("Scheduled triggers require timezone");
+          if (patch.timezone == null) throw unprocessable("Los disparadores programados requieren timezone");
           assertTimeZone(patch.timezone);
           timezone = patch.timezone;
         }
@@ -995,9 +995,9 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       actor: Actor,
     ): Promise<{ trigger: RoutineTrigger; secretMaterial: RoutineTriggerSecretMaterial }> => {
       const existing = await getTriggerById(id);
-      if (!existing) throw notFound("Routine trigger not found");
+      if (!existing) throw notFound("Disparador de rutina no encontrado");
       if (existing.kind !== "webhook" || !existing.publicId || !existing.secretId) {
-        throw unprocessable("Only webhook triggers can rotate secrets");
+        throw unprocessable("Solo los disparadores webhook pueden rotar secretos");
       }
 
       const secretValue = crypto.randomBytes(24).toString("hex");
@@ -1024,11 +1024,11 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
 
     runRoutine: async (id: string, input: RunRoutine) => {
       const routine = await getRoutineById(id);
-      if (!routine) throw notFound("Routine not found");
-      if (routine.status === "archived") throw conflict("Routine is archived");
+      if (!routine) throw notFound("Rutina no encontrada");
+      if (routine.status === "archived") throw conflict("La rutina está archivada");
       const trigger = input.triggerId ? await getTriggerById(input.triggerId) : null;
-      if (trigger && trigger.routineId !== routine.id) throw forbidden("Trigger does not belong to routine");
-      if (trigger && !trigger.enabled) throw conflict("Routine trigger is not active");
+      if (trigger && trigger.routineId !== routine.id) throw forbidden("El disparador no pertenece a la rutina");
+      if (trigger && !trigger.enabled) throw conflict("El disparador de rutina no está activo");
       return dispatchRoutineRun({
         routine,
         trigger,
@@ -1051,10 +1051,10 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
         .from(routineTriggers)
         .where(and(eq(routineTriggers.publicId, publicId), eq(routineTriggers.kind, "webhook")))
         .then((rows) => rows[0] ?? null);
-      if (!trigger) throw notFound("Routine trigger not found");
+      if (!trigger) throw notFound("Disparador de rutina no encontrado");
       const routine = await getRoutineById(trigger.routineId);
-      if (!routine) throw notFound("Routine not found");
-      if (!trigger.enabled || routine.status !== "active") throw conflict("Routine trigger is not active");
+      if (!routine) throw notFound("Rutina no encontrada");
+      if (!trigger.enabled || routine.status !== "active") throw conflict("El disparador de rutina no está activo");
 
       const secretValue = await resolveTriggerSecret(trigger, routine.companyId);
       if (trigger.signingMode === "bearer") {
@@ -1155,7 +1155,7 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
           ? {
             id: row.linkedIssueId,
             identifier: row.issueIdentifier,
-            title: row.issueTitle ?? "Routine execution",
+            title: row.issueTitle ?? "Ejecución de rutina",
             status: row.issueStatus ?? "todo",
             priority: row.issuePriority ?? "medium",
             updatedAt: row.issueUpdatedAt ?? row.updatedAt,
